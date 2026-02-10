@@ -1,0 +1,7 @@
+基本的なドキュメントを含めるinclude README.md
+include LICENSE
+include pyproject.tomlソースコードディレクトリを再帰的に含めるgraft srcサンプルコードディレクトリを含める(ユーザーが使い方を参照できるようにするため)graft examplesただし、サンプル内のデータフォルダ（もしあれば）は除外する(MNISTデータなどでパッケージサイズが肥大化するのを防ぐ)prune examples/data不要なバイナリ、キャッシュ、システムファイルを除外global-exclude pycache
+global-exclude *.py[cod]
+global-exclude .so
+global-exclude .DS_Store
+global-exclude .git
