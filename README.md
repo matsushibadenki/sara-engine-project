@@ -1,79 +1,85 @@
 # **SARA Engine (Liquid Harmony)**
 
-**SARA (Spiking Advanced Recursive Architecture)** は、生物学的脳の「省電力・イベント駆動・自己組織化」を模倣した次世代AIエンジン（SNNベース）です。
+**SARA (Spiking Advanced Recursive Architecture)** is a next-generation AI engine (SNN-based) that mimics the biological brain's "power efficiency, event-driven processing, and self-organization."
 
-現代の深層学習（ANN）が依存する「誤差逆伝播法（BP）」や「行列演算」を完全に排除し、**スパースなスパイク通信のみ**で高度な認識・学習能力を実現しました。
+It completely eliminates the "backpropagation (BP)" and "matrix operations" that modern deep learning (ANNs) rely on, achieving advanced recognition and learning capabilities using **only sparse spike communication**.
 
-GPUを一切使用せず、CPUのみで動作します。
+It operates on CPU only, without using any GPU.
 
 Current Version: **v35.1 (Code Name: Liquid Harmony)**
 
-## **特徴**
+## **Features**
 
-* **No Backpropagation**: 誤差逆伝播法を使用せず、局所的な学習則（Momentum Delta）とリザーバ計算を用いて学習します。  
-* **CPU Only & Lightweight**: 高価なGPUリソースを必要としません。標準的なCPU環境で高速に動作します。  
-* **Multi-Scale True Liquid Reservoir**: 異なる時間特性（Decay）を持つ3つのリザーバ層を並列配置し、さらに層内再帰結合（Recurrent Connections）を実装。情報の「反響（Echo）」を利用して短期記憶を実現しています。  
-* **Sleep Phase**: 学習エポック間に「睡眠フェーズ」を設け、不要なシナプスを物理的に切断（Pruning）することで過学習を抑制します。
+* **No Backpropagation**: Learns without error backpropagation, using local learning rules (Momentum Delta) and reservoir computing.
+* **CPU Only & Lightweight**: Does not require expensive GPU resources. Runs fast on standard CPU environments.
+* **Multi-Scale True Liquid Reservoir**: Three parallel reservoir layers with different temporal characteristics (Decay), with recurrent connections within each layer. Achieves short-term memory using information "echo."
+* **Sleep Phase**: Implements a "sleep phase" between learning epochs to physically prune unnecessary synapses, preventing overfitting.
 
-## **インストール**
+## **Installation**
 
+```bash
 pip install sara-engine
+```
 
-## **クイックスタート**
+## **Quick Start**
 
-from sara\_engine import SaraEngine
+```python
+from sara_engine import SaraEngine
 
-\# 1\. エンジンの初期化 (入力:784, 出力:10クラス)  
-engine \= SaraEngine(input\_size=784, output\_size=10)
+# 1. Initialize the engine (input: 784, output: 10 classes)
+engine = SaraEngine(input_size=784, output_size=10)
 
-\# 2\. データの準備 (ポアソンエンコーディングされたスパイク列)  
-\# spike\_train \= \[\[neuron\_idx, ...\], \[\], \[neuron\_idx\], ...\]   
-\# ... (データ準備の詳細は examples/train\_mnist.py を参照)
+# 2. Prepare data (Poisson-encoded spike train)
+# spike_train = [[neuron_idx, ...], [], [neuron_idx], ...]
+# ... (See examples/train_mnist.py for data preparation details)
 
-\# 3\. 学習 (GPU不要、CPUで動作)  
-\# target\_label: 正解クラスのインデックス  
-engine.train\_step(spike\_train, target\_label=1)
+# 3. Training (No GPU required, runs on CPU)
+# target_label: index of the correct class
+engine.train_step(spike_train, target_label=1)
 
-\# 4\. 推論  
-prediction \= engine.predict(spike\_train)
+# 4. Inference
+prediction = engine.predict(spike_train)
+```
 
-## **アーキテクチャ (v35.1)**
+## **Architecture (v35.1)**
 
-SARAは脳の皮質構造を模倣し、以下の3つのReservoir層を持っています。
+SARA mimics the cortical structure of the brain and has three Reservoir layers:
 
-| 層タイプ | ニューロン数 | 減衰率 (Decay) | 役割 | 再帰結合強度 |
-| :---- | :---- | :---- | :---- | :---- |
-| **Fast** | 1,500 | 0.3 (速い) | エッジ検出・ノイズ処理 | 1.2 (中) |
-| **Medium** | 2,000 | 0.7 (中) | 形状・ストロークの統合 | 1.5 (強) |
-| **Slow** | 1,500 | 0.95 (遅い) | 文脈・大域的パターンの保持 | 2.0 (最強) |
+| Layer Type | Neuron Count | Decay Rate | Role | Recurrent Connection Strength |
+|:-----------|:-------------|:-----------|:-----|:------------------------------|
+| **Fast** | 1,500 | 0.3 (Fast) | Edge detection, noise processing | 1.2 (Medium) |
+| **Medium** | 2,000 | 0.7 (Medium) | Shape and stroke integration | 1.5 (Strong) |
+| **Slow** | 1,500 | 0.95 (Slow) | Context and global pattern retention | 2.0 (Strongest) |
 
-### **処理フロー**
+### **Processing Flow**
 
-graph TD  
-    Image\[Image / Sensor\] \--\>|Poisson Encoding| Spikes  
-    Spikes \--\> Fast\[Fast Reservoir\]  
-    Spikes \--\> Med\[Medium Reservoir\]  
-    Spikes \--\> Slow\[Slow Reservoir\]  
-      
-    Fast \<--\> Fast  
-    Med \<--\> Med  
-    Slow \<--\> Slow  
-      
-    Fast \--\> Readout  
-    Med \--\> Readout  
-    Slow \--\> Readout  
-      
-    Readout \--\>|Momentum Delta| Class
+```mermaid
+graph TD
+    Image["Image / Sensor"] -->|Poisson Encoding| Spikes
+    Spikes --> Fast["Fast Reservoir"]
+    Spikes --> Med["Medium Reservoir"]
+    Spikes --> Slow["Slow Reservoir"]
+    
+    Fast <--> Fast
+    Med <--> Med
+    Slow <--> Slow
+    
+    Fast --> Readout
+    Med --> Readout
+    Slow --> Readout
+    
+    Readout -->|Momentum Delta| Class
+```
 
-## **推奨パラメータ (Best Practice)**
+## **Recommended Parameters (Best Practice)**
 
-MNISTタスクにおける黄金比率です。
+Golden ratios for MNIST tasks:
 
-* **Samples**: 20,000 (最低ライン)  
-* **Reservoir Size**: 5,000 neurons (Fast:1500, Med:2000, Slow:1500)  
-* **Input Scale**: Fast層には強く(1.0)、Slow層には弱く(0.4)入力する。  
-* **Sleep Pruning**: 5% (毎エポック実行を推奨)
+* **Samples**: 20,000 (minimum baseline)
+* **Reservoir Size**: 5,000 neurons (Fast: 1500, Med: 2000, Slow: 1500)
+* **Input Scale**: Strong input to Fast layer (1.0), weak input to Slow layer (0.4)
+* **Sleep Pruning**: 5% (recommended to execute every epoch)
 
-## **ライセンス**
+## **License**
 
 MIT License
