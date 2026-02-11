@@ -61,8 +61,7 @@ def load_mnist_data(data_dir='./data'):
     MNISTデータをロードする（torchvisionが必要）
     """
     try:
-        import torch
-        # 修正: type: ignore 追加
+        import torch # type: ignore
         from torchvision import datasets, transforms # type: ignore
         
         transform = transforms.Compose([

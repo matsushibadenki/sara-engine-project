@@ -1,5 +1,6 @@
 # examples/run_classifier.py
 # 分類タスク実行スクリプト（MNIST / Text Classification）
+# v2.0: Core側の適応型プルーニングに対応
 
 import argparse
 import time
@@ -11,7 +12,6 @@ import sys
 try:
     from utils import setup_path, img_to_poisson, text_to_spikes, load_mnist_data
 except ImportError:
-    # 修正: type: ignore 追加
     from .utils import setup_path, img_to_poisson, text_to_spikes, load_mnist_data # type: ignore
 
 # パス設定
@@ -55,23 +55,8 @@ def run_mnist(epochs=5, samples=8000, save_path="sara_mnist_model.pkl"):
                 rate = (i+1) / elapsed
                 print(f"  Processed {i+1}/{samples} images ({rate:.1f} img/s)", end='\r')
         
-        print(f"\n  [Sleep Phase] Optimizing connections...")
-        
-        # 修正: サンプル数が多い場合や学習後半は、刈り込みを劇的に減らす
-        if samples >= 1000:
-            # 大量データ時: 最初だけ少し整理し、あとはほぼ維持（0.1%のみ）
-            if epoch == 0:
-                prune_rate = 0.01  # 1% (ノイズ除去)
-            elif epoch == 1:
-                prune_rate = 0.005 # 0.5%
-            else:
-                prune_rate = 0.001 # 0.1% (ほぼ維持)
-        else:
-            # 少量データ時: 従来どおり少し強めに
-            prune_rate = 0.02 if epoch < 2 else 0.01
-
-        print(f"  (Prune Rate: {prune_rate*100:.2f}%)") # 確認用ログ
-        engine.sleep_phase(prune_rate=prune_rate)
+        # 修正: Core側のロジックに任せるため、prune_rate計算を削除し引数を変更
+        engine.sleep_phase(epoch=epoch, sample_size=samples)
         
         # 簡易評価
         print("  Evaluating (500 samples)...")
@@ -126,7 +111,9 @@ def run_text_classification(epochs=10):
         
         accuracy = correct / len(data) * 100
         print(f"Epoch {epoch+1}: Accuracy {accuracy:.1f}%")
-        engine.sleep_phase(prune_rate=0.02)
+        
+        # 修正: テキスト分類も新しいシグネチャに対応
+        engine.sleep_phase(epoch=epoch, sample_size=len(data))
     
     # テスト
     print("\n--- Test Results ---")

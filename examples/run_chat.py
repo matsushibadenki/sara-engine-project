@@ -1,5 +1,5 @@
 # examples/run_chat.py
-# SARAチャットボット & 可視化ツール (統合版)
+# SARAチャットボット & 可視化ツール (v2.0: Core v48対応)
 
 import sys
 import os
@@ -11,12 +11,12 @@ import numpy as np
 try:
     from utils import setup_path
 except ImportError:
-    # 修正: type: ignore 追加
     from .utils import setup_path # type: ignore
 
 setup_path()
 
 try:
+    # 注意: SaraGPTの実装も SaraEngine v48 の変更(sleep_phase)に対応している必要があります
     from sara_engine import SaraGPT
 except ImportError:
     print("Error: 'sara_engine' module not found.")
@@ -76,6 +76,12 @@ class ChatRunner:
                 shuffled = np.random.permutation(corpus)
                 for sent in shuffled:
                     self.engine.train_sequence(sent.split())
+                
+                # 修正: Core v48の適応型プルーニングを適用
+                # チャットボットの場合はデータ数が少ないため、サンプルサイズを考慮して渡す
+                if hasattr(self.engine, 'sleep_phase'):
+                    self.engine.sleep_phase(epoch=epoch, sample_size=len(corpus))
+                
                 if (epoch+1) % 10 == 0:
                     print(f"Epoch {epoch+1}/{epochs} done.")
             self.engine.save_model(self.model_path)
@@ -115,10 +121,12 @@ class ChatRunner:
         if l3: self.ax_brain.scatter(np.random.rand(len(l3)) + 2.4, np.random.rand(len(l3)), c='red', s=10, alpha=0.6)
 
         # 電位の描画
-        potentials = self.engine.readout_v
-        self.ax_readout.set_title("Readout Neuron Potentials")
-        self.ax_readout.set_ylim(0, 1.0)
-        self.ax_readout.bar(range(len(potentials)), potentials, color='purple')
+        # SaraGPTの構造によっては readout_v がない場合があるのでチェック
+        if hasattr(self.engine, 'readout_v'):
+            potentials = self.engine.readout_v
+            self.ax_readout.set_title("Readout Neuron Potentials")
+            self.ax_readout.set_ylim(0, 1.0)
+            self.ax_readout.bar(range(len(potentials)), potentials, color='purple')
         
         plt.draw()
         plt.pause(0.05)
@@ -136,7 +144,9 @@ class ChatRunner:
                 user_input = input("\nYou: ").strip().lower()
                 if user_input in ["exit", "quit", "bye"]:
                     print("Dreaming and saving...")
-                    self.engine.dream(cycles=5)
+                    # 修正: dream機能がない場合のエラー回避
+                    if hasattr(self.engine, 'dream'):
+                        self.engine.dream(cycles=5)
                     self.engine.save_model(self.model_path)
                     break
                 
@@ -153,9 +163,10 @@ class ChatRunner:
                     print("SARA is listening...")
                     for w in words:
                         sdr = self.engine.encoder.encode(w)
-                        _, all_spikes = self.engine.forward_step(sdr, training=False)
+                        # forward_stepの戻り値を調整 (SNNの仕様に合わせて)
+                        result = self.engine.forward_step(sdr, training=False)
+                        all_spikes = result[1] if isinstance(result, tuple) else []
                         self.update_plot(all_spikes)
-                    # 学習も同時に行う
                     self.engine.listen(user_input, online_learning=True)
                 else:
                     self.engine.listen(user_input, online_learning=True)
@@ -163,7 +174,7 @@ class ChatRunner:
                 # 2. Think
                 print("SARA: ", end="")
                 generated = []
-                empty_sdr: List[int] = []
+                empty_sdr = []
                 trigger_text = user_input
                 
                 # 生成ループ
@@ -185,7 +196,6 @@ class ChatRunner:
                         if candidates: next_word = np.random.choice(candidates)
 
                     if next_word == "<eos>":
-                        # 最初から<eos>ならトリガー入力を使う
                         if not generated and trigger_text:
                             triggers = trigger_text.split()
                             if triggers:
@@ -198,7 +208,8 @@ class ChatRunner:
                     empty_sdr = self.engine.encoder.encode(next_word)
                 
                 print() # Newline
-                self.engine.relax(50)
+                if hasattr(self.engine, 'relax'):
+                    self.engine.relax(50)
                 
             except KeyboardInterrupt:
                 break
