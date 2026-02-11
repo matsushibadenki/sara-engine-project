@@ -7,14 +7,16 @@ import os
 import numpy as np
 
 # ライブラリのインポート（パス解決）
-sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
-from snn_research.models.experimental.sara_v35_1_engine import SaraEngineV35_1
-
 try:
     from sara_engine import SaraEngine
 except ImportError:
-    print("Error: 'sara_engine' module not found.")
-    sys.exit(1)
+    # ローカル開発用に親ディレクトリをパスに追加する場合
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
+    try:
+        from sara_engine import SaraEngine
+    except ImportError:
+        print("Error: 'sara_engine' module not found. Please install it via pip or check your path.")
+        sys.exit(1)
 
 def text_to_spikes(text, vocab_map, steps_per_char=3):
     """

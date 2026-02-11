@@ -21,6 +21,9 @@ wheels/
 *.egg
 MANIFEST
 
+# Rust関連 (追加)
+sara_rust_core/target/
+
 # Virtual Environments
 venv/
 env/
@@ -28,7 +31,7 @@ env/
 .venv/
 ENV/
 
-# Unit Test / Coverage
+# Unit Test / Coverage / Type Check
 htmlcov/
 .tox/
 .nox/
@@ -41,6 +44,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.mypy_cache/
 
 # Jupyter Notebook
 .ipynb_checkpoints
