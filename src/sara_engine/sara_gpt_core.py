@@ -1,6 +1,6 @@
 # src/sara_engine/sara_gpt_core.py
-# SARA-GPT Core Logic (v45: Attention & Dynamic Dynamics)
-# 行列演算なし・CPU特化・Attention機構搭載
+# SARA-GPT Core Logic (v47: Tuned Criticality)
+# 沈黙問題を解消し、適度な発火率(Critical Regime)を維持する調整版
 
 import numpy as np
 import hashlib
@@ -11,7 +11,6 @@ from .spike_attention import SpikeAttention
 
 # --- 共通ユーティリティ ---
 class SDREncoder:
-    """決定論的SDRエンコーダー"""
     def __init__(self, input_size: int, density: float = 0.02):
         self.input_size = input_size
         self.density = density
@@ -44,12 +43,12 @@ class SDREncoder:
 
 class DynamicLiquidLayer:
     """
-    v45: Dynamic Liquid Layer with STDP
-    強制K-WTAを廃止し、ホメオスタシスとSTDPによる自律的な学習を実現
+    v47: Dynamic Liquid Layer (Re-tuned)
+    過剰抑制を解除し、適度な発火を促す。
     """
     def __init__(self, input_size: int, hidden_size: int, decay: float, 
-                 density: float = 0.1, input_scale: float = 1.0, 
-                 rec_scale: float = 1.0, feedback_scale: float = 0.5):
+                 density: float = 0.05, input_scale: float = 1.0, 
+                 rec_scale: float = 0.8, feedback_scale: float = 0.5):
         
         self.size = hidden_size
         self.decay = decay
@@ -60,12 +59,13 @@ class DynamicLiquidLayer:
         self.rec_indices: List[np.ndarray] = []
         self.rec_weights: List[np.ndarray] = []
         
-        # Init Input Weights
+        # Init Input Weights (スケールを少し戻す)
         for i in range(input_size):
             n = int(hidden_size * density)
             if n > 0:
                 idx = np.random.choice(hidden_size, n, replace=False).astype(np.int32)
-                w = np.random.uniform(-input_scale, input_scale, n).astype(np.float32)
+                # 入力を少し強めに設定して初動を確保
+                w = np.random.uniform(-input_scale * 1.2, input_scale * 1.2, n).astype(np.float32)
                 self.in_indices.append(idx)
                 self.in_weights.append(w)
             else:
@@ -73,12 +73,12 @@ class DynamicLiquidLayer:
                 self.in_weights.append(np.array([], dtype=np.float32))
         
         # Init Recurrent Weights
-        rec_density = 0.12
+        rec_density = 0.1
         for i in range(hidden_size):
             n = int(hidden_size * rec_density)
             if n > 0:
                 idx = np.random.choice(hidden_size, n, replace=False).astype(np.int32)
-                idx = idx[idx != i] # No self-loop
+                idx = idx[idx != i]
                 w = np.random.uniform(-rec_scale, rec_scale, len(idx)).astype(np.float32)
                 self.rec_indices.append(idx)
                 self.rec_weights.append(w)
@@ -90,8 +90,14 @@ class DynamicLiquidLayer:
         self.v = np.zeros(hidden_size, dtype=np.float32)
         self.refractory = np.zeros(hidden_size, dtype=np.float32)
         
-        # Homeostasis
-        self.base_thresh = 0.8
+        # Homeostasis (閾値を現実的な値へ緩和)
+        if decay < 0.5:
+            self.base_thresh = 1.1  # Fast layer
+        elif decay < 0.8:
+            self.base_thresh = 1.3  # Medium layer
+        else:
+            self.base_thresh = 1.4  # Slow layer
+            
         self.dynamic_thresh = np.ones(hidden_size, dtype=np.float32) * self.base_thresh
         
         # Feedback
@@ -114,14 +120,14 @@ class DynamicLiquidLayer:
         # 2. 膜電位減衰
         self.v *= self.decay
         
-        # 3. 入力統合 (Input -> Hidden)
+        # 3. 入力統合
         for pre_id in active_inputs:
             if pre_id < len(self.in_indices):
                 targets = self.in_indices[pre_id]
                 ws = self.in_weights[pre_id]
                 if len(targets) > 0: self.v[targets] += ws
         
-        # Recurrent (Hidden -> Hidden)
+        # Recurrent
         for pre_h_id in prev_active_hidden:
             if pre_h_id < len(self.rec_indices):
                 targets = self.rec_indices[pre_h_id]
@@ -135,7 +141,7 @@ class DynamicLiquidLayer:
                     targets = self.feedback_weights[fb_id]
                     self.v[targets] += self.feedback_scale
 
-        # Attention Injection
+        # Attention
         if attention_signal:
             attn_scale = 1.5
             for idx in attention_signal:
@@ -147,35 +153,44 @@ class DynamicLiquidLayer:
         candidates_indices = np.where(ready_mask)[0]
         
         fired_indices = []
-        max_spikes = int(self.size * 0.15) # Max 15% activity
+        # Max spike limit (過剰発火防止キャップ)
+        max_spikes = int(self.size * 0.10) # 10%程度に制限
         
         if len(candidates_indices) > 0:
             if len(candidates_indices) > max_spikes:
-                # Soft Cap
+                # 活性が高すぎる場合は上位のみ通過
                 potentials = self.v[candidates_indices]
                 top_indices = np.argsort(potentials)[-max_spikes:]
                 fired_indices = candidates_indices[top_indices].tolist()
+                
+                # ペナルティ: 閾値を上げて抑制
+                self.dynamic_thresh[fired_indices] += 0.3
             else:
                 fired_indices = candidates_indices.tolist()
             
             fired_arr = np.array(fired_indices, dtype=int)
             self.v[fired_arr] = 0.0
             
-            # 不応期のランダム化
-            ref_periods = np.random.uniform(2.0, 4.0, size=len(fired_arr))
+            # 不応期 (2.0 - 5.0)
+            ref_periods = np.random.uniform(2.0, 5.0, size=len(fired_arr))
             self.refractory[fired_arr] = ref_periods
             
             # Homeostasis: 抑制
-            self.dynamic_thresh[fired_arr] += 0.08
+            self.dynamic_thresh[fired_arr] += 0.10
 
-        # Homeostasis: 興奮
+        # Homeostasis: 興奮 (回復ロジック強化)
         not_fired_mask = np.ones(self.size, dtype=bool)
         if fired_indices:
             not_fired_mask[np.array(fired_indices, dtype=int)] = False
-        self.dynamic_thresh[not_fired_mask] -= 0.002
-        np.clip(self.dynamic_thresh, 0.1, 5.0, out=self.dynamic_thresh)
         
-        # 5. STDP (Recurrent Learning)
+        # 発火しなかったら閾値を下げる（前回より少し速く下げる）
+        self.dynamic_thresh[not_fired_mask] -= 0.008
+        
+        # 下限設定 (これ以上は下がらない = ノイズ過敏防止)
+        min_thresh = 0.5
+        np.clip(self.dynamic_thresh, min_thresh, 5.0, out=self.dynamic_thresh)
+        
+        # 5. STDP
         if learning and fired_indices and prev_active_hidden:
             fired_arr = np.array(fired_indices, dtype=int)
             for pre_id in prev_active_hidden:
@@ -183,7 +198,7 @@ class DynamicLiquidLayer:
                     targets = self.rec_indices[pre_id]
                     mask = np.isin(targets, fired_arr)
                     if np.any(mask):
-                        self.rec_weights[pre_id][mask] += 0.015
+                        self.rec_weights[pre_id][mask] += 0.01
                         np.clip(self.rec_weights[pre_id], -2.0, 2.0, out=self.rec_weights[pre_id])
 
         return fired_indices
@@ -201,7 +216,7 @@ class DynamicLiquidLayer:
             self.dynamic_thresh -= diff * 0.1
 
 class SaraGPT:
-    """v45: SARA-GPT with Spike Attention"""
+    """v47: Re-tuned SARA-GPT"""
     def __init__(self, sdr_size: int = 1024):
         self.sdr_size = sdr_size
         self.encoder = SDREncoder(sdr_size, density=0.02)
@@ -209,29 +224,26 @@ class SaraGPT:
         self.h_size = 2000
         self.total_hidden = self.h_size * 3
         
-        # Layers
+        # Layers (パラメータ調整)
         self.l1 = DynamicLiquidLayer(sdr_size, self.h_size, decay=0.3, density=0.08, 
-                                     input_scale=2.0, rec_scale=1.1, feedback_scale=0.3)
+                                     input_scale=2.0, rec_scale=1.0, feedback_scale=0.3)
         self.l2 = DynamicLiquidLayer(self.h_size, self.h_size, decay=0.6, density=0.08, 
-                                     input_scale=1.5, rec_scale=1.4, feedback_scale=0.5)
+                                     input_scale=1.5, rec_scale=1.2, feedback_scale=0.5)
         self.l3 = DynamicLiquidLayer(self.h_size, self.h_size, decay=0.92, density=0.08, 
-                                     input_scale=1.0, rec_scale=1.8, feedback_scale=0.0)
+                                     input_scale=1.2, rec_scale=1.5, feedback_scale=0.0)
         
         self.layers = [self.l1, self.l2, self.l3]
         self.offsets = [0, self.h_size, self.h_size * 2]
-        # 修正: 型ヒント追加
         self.prev_spikes: List[List[int]] = [[], [], []]
         
-        # Attention Module
+        # Attention
         self.attention = SpikeAttention(input_size=self.h_size, hidden_size=500, memory_size=60)
         self.attention_active = True
         
-        # 修正: 型ヒント追加
         self.episodic_memory: List[List[str]] = []
         self.max_episodic_size = 150
 
         # Readout
-        # 修正: 型ヒントを明示して mypy の __iadd__ エラーを回避
         self.readout_weights: List[Dict[str, Any]] = []
         for _ in range(sdr_size):
             fan_in = 600
@@ -260,7 +272,7 @@ class SaraGPT:
 
     def save_model(self, filepath: str):
         state = {
-            'version': 'v45',
+            'version': 'v47',
             'sdr_size': self.sdr_size,
             'layers': [{'in_idx': l.in_indices, 'in_w': l.in_weights, 
                         'rec_idx': l.rec_indices, 'rec_w': l.rec_weights, 
@@ -329,7 +341,6 @@ class SaraGPT:
         
         self.prev_spikes = [spikes_1, spikes_2, spikes_3]
         
-        # Merge Spikes
         all_spikes = []
         all_spikes.extend(spikes_1)
         all_spikes.extend([x + self.offsets[1] for x in spikes_2])
@@ -350,7 +361,6 @@ class SaraGPT:
                 indices = mapping['idx']
                 weights = mapping['w']
                 
-                # Fast accumulation without dot product
                 active_mask = np.isin(indices, all_spikes)
                 if np.any(active_mask):
                     self.readout_v[out_idx] += np.sum(weights[active_mask])
@@ -419,10 +429,8 @@ class SaraGPT:
                 self.forward_step(sdr, training=False, force_output=False)
         
         generated = []
-        # 修正: 型ヒント追加
         empty_sdr: List[int] = []
         search_vocab = vocabulary + ["<eos>"] if "<eos>" not in vocabulary else vocabulary
-        # 修正: 型ヒント追加
         recent_window: List[str] = []
         
         for i in range(length):
@@ -474,7 +482,6 @@ class SaraGPT:
                 active_mask = np.isin(indices, active_spikes)
                 if not np.any(active_mask): continue
                 
-                # 型推論エラー回避のため weights は Any または ndarray として扱われる
                 if out_idx in target_set:
                     weights[active_mask] += base_lr * 0.08
                 else:

@@ -23,7 +23,7 @@ python examples/run_classifier.py text
 
 # MNIST画像分類（データダウンロードが発生します。時間がなければ省略可）
 python examples/run_classifier.py mnist --epochs 1 --samples 100
-
+python examples/run_classifier.py mnist --epochs 5 --samples 1000
 ```
 
 ### 3. チャットの確認（完了済み）

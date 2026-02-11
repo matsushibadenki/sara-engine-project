@@ -1,6 +1,6 @@
 # src/sara_engine/core.py
-# Saraエンジン・コアロジック (Improved Version)
-# Liquid State MachineとSNNを用いた学習モデルのクラス定義および実装
+# Saraエンジン・コアロジック (Improved Version v47)
+# MNIST精度回復用: 閾値緩和と入力感度の適正化
 
 import numpy as np
 import random
@@ -18,23 +18,23 @@ class LiquidLayer:
         self.rec_indices: List[np.ndarray] = []
         self.rec_weights: List[np.ndarray] = []
         
-        # Input Weights - 改善: より良い初期化
+        # Input Weights
         fan_in = max(1, int(input_size * density))
-        w_range_in = input_scale * np.sqrt(2.0 / fan_in)  # He初期化風
+        w_range_in = input_scale * np.sqrt(2.0 / fan_in)
         
         for i in range(input_size):
             n = int(hidden_size * density)
             if n > 0:
                 idx = np.random.choice(hidden_size, n, replace=False).astype(np.int32)
-                w = np.random.normal(0, w_range_in, n).astype(np.float32)  # 正規分布
+                w = np.random.normal(0, w_range_in, n).astype(np.float32)
                 self.in_indices.append(idx)
                 self.in_weights.append(w)
             else:
                 self.in_indices.append(np.array([], dtype=np.int32))
                 self.in_weights.append(np.array([], dtype=np.float32))
 
-        # Recurrent Weights - 改善: 密度を調整
-        rec_density = 0.12  # 少し増やす
+        # Recurrent Weights
+        rec_density = 0.12
         fan_in_rec = max(1, int(hidden_size * rec_density))
         w_range_rec = rec_scale / np.sqrt(fan_in_rec)
         
@@ -52,17 +52,17 @@ class LiquidLayer:
         self.v = np.zeros(hidden_size, dtype=np.float32)
         self.refractory = np.zeros(hidden_size, dtype=np.float32)
         
-        # 改善: より適切な閾値設定
+        # 修正: 閾値を適切な範囲へ戻す (3.0+ -> 1.0~1.4)
         if decay < 0.4:  
-            self.base_thresh = 0.6  # 少し下げて発火しやすく
+            self.base_thresh = 1.0
             self.target_rate = 0.025
-            self.refractory_period = 2.5
+            self.refractory_period = 2.0
         elif decay < 0.8:  
-            self.base_thresh = 0.7
+            self.base_thresh = 1.2
             self.target_rate = 0.035
             self.refractory_period = 2.0
         else:  
-            self.base_thresh = 0.8
+            self.base_thresh = 1.4
             self.target_rate = 0.025
             self.refractory_period = 1.5
             
@@ -73,14 +73,16 @@ class LiquidLayer:
         self.refractory.fill(0)
 
     def update_homeostasis(self, activity_history: np.ndarray, steps: int):
-        if steps == 0:
-            return
+        if steps == 0: return
         rate = activity_history / float(steps)
         diff = rate - self.target_rate
-        # 改善: より適応的な調整
+        
+        # 調整ゲイン
         gain = np.where(np.abs(diff) > 0.08, 0.2, 0.05)
         self.thresh += gain * diff
-        self.thresh = np.clip(self.thresh, self.base_thresh * 0.4, self.base_thresh * 6.0)
+        
+        # 下限を設定してノイズ耐性は維持
+        self.thresh = np.clip(self.thresh, self.base_thresh * 0.5, self.base_thresh * 5.0)
 
     def forward(self, active_inputs: List[int], prev_active_hidden: List[int]) -> List[int]:
         self.refractory = np.maximum(0, self.refractory - 1)
@@ -103,6 +105,14 @@ class LiquidLayer:
         ready_mask = (self.v >= self.thresh) & (self.refractory <= 0)
         fired_indices = np.where(ready_mask)[0]
         
+        # キャップ処理: 多すぎる場合はランダムに間引く
+        max_spikes = int(self.hidden_size * 0.20)
+        if len(fired_indices) > max_spikes:
+            np.random.shuffle(fired_indices)
+            fired_indices = fired_indices[:max_spikes]
+            # 閾値を少し上げて抑制
+            self.thresh += 0.05
+        
         if len(fired_indices) > 0:
             self.v[fired_indices] -= self.thresh[fired_indices]
             self.v = np.maximum(self.v, 0.0)
@@ -119,12 +129,12 @@ class SaraEngine:
         self.input_size = input_size
         self.output_size = output_size
         
-        # 改善: レイヤー構成を最適化 (4層に増やす)
+        # レイヤー構成 (4層)
         self.reservoirs = [
-            LiquidLayer(input_size, 1200, decay=0.25, input_scale=1.2, rec_scale=1.3),  # 高速
-            LiquidLayer(input_size, 1800, decay=0.5, input_scale=1.0, rec_scale=1.6),   # 中速
-            LiquidLayer(input_size, 1800, decay=0.75, input_scale=0.7, rec_scale=1.8),  # 低速
-            LiquidLayer(input_size, 1200, decay=0.92, input_scale=0.5, rec_scale=2.2),  # 超低速
+            LiquidLayer(input_size, 1200, decay=0.25, input_scale=1.2, rec_scale=1.3),
+            LiquidLayer(input_size, 1800, decay=0.5, input_scale=1.0, rec_scale=1.6),
+            LiquidLayer(input_size, 1800, decay=0.75, input_scale=0.7, rec_scale=1.8),
+            LiquidLayer(input_size, 1200, decay=0.92, input_scale=0.5, rec_scale=2.2),
         ]
         
         self.total_hidden = sum(r.hidden_size for r in self.reservoirs)
@@ -134,9 +144,8 @@ class SaraEngine:
         self.m_ho: List[np.ndarray] = []
         self.v_ho: List[np.ndarray] = []
         
-        # 改善: 出力層の初期化
         for _ in range(output_size):
-            limit = np.sqrt(2.0 / self.total_hidden)  # He初期化
+            limit = np.sqrt(2.0 / self.total_hidden)
             w = np.random.normal(0, limit, self.total_hidden).astype(np.float32)
             self.w_ho.append(w)
             self.m_ho.append(np.zeros(self.total_hidden, dtype=np.float32))
@@ -144,23 +153,18 @@ class SaraEngine:
             
         self.o_v = np.zeros(output_size, dtype=np.float32)
         
-        # 改善: 学習率とパラメータ
-        self.lr = 0.0015  # 少し上げる
+        self.lr = 0.002
         self.beta1 = 0.9
         self.beta2 = 0.999
         self.epsilon = 1e-8
-        self.o_decay = 0.88  # 少し早く減衰
+        self.o_decay = 0.88
         
         self.layer_activity_counters = [np.zeros(r.hidden_size, dtype=np.float32) for r in self.reservoirs]
-        # 修正: 型ヒント追加
         self.prev_spikes: List[List[int]] = [[] for _ in self.reservoirs]
-        
-        # 改善: 学習率スケジューリング用
-        self.t = 0  # タイムステップ
+        self.t = 0
 
     def reset_state(self):
-        for r in self.reservoirs:
-            r.reset()
+        for r in self.reservoirs: r.reset()
         self.o_v.fill(0)
         for c in self.layer_activity_counters: c.fill(0)
         self.prev_spikes = [[] for _ in self.reservoirs]
@@ -201,7 +205,7 @@ class SaraEngine:
         self.prev_spikes = [[] for _ in self.reservoirs]
         print(f"Model loaded from {filepath}")
 
-    def sleep_phase(self, prune_rate: float = 0.03):  # 改善: プルーニング率を下げる
+    def sleep_phase(self, prune_rate: float = 0.03):
         print(f"  [Sleep Phase] Consolidating memory...")
         pruned_total = 0
         total_weights = 0
@@ -209,7 +213,7 @@ class SaraEngine:
         for o in range(self.output_size):
             weights = self.w_ho[o]
             total_weights += len(weights)
-            weights *= 0.997  # 改善: より緩やかな減衰
+            weights *= 0.997
             
             abs_w = np.abs(weights)
             nonzero_w = abs_w[abs_w > 1e-6]
@@ -220,7 +224,7 @@ class SaraEngine:
                 weights[mask] = 0.0
             
             norm = np.linalg.norm(weights)
-            if norm > 6.0: weights *= (6.0 / norm)  # 改善: より寛容に
+            if norm > 6.0: weights *= (6.0 / norm)
             self.w_ho[o] = weights
             
         print(f"  [Sleep Phase] Pruned {pruned_total} / {total_weights} connections.")
@@ -229,9 +233,7 @@ class SaraEngine:
         self.reset_state()
         self.t += 1
         
-        # 改善: 学習率の減衰（オプション）
         current_lr = self.lr * (1.0 / (1.0 + 0.00001 * self.t))
-        
         grad_accumulator = [np.zeros_like(w) for w in self.w_ho]
         steps = len(spike_train)
         
@@ -258,7 +260,7 @@ class SaraEngine:
             if not all_hidden_spikes:
                 continue
 
-            # 改善: スケーリング調整
+            # スケーリング調整
             num_spikes = len(all_hidden_spikes)
             scale_factor = 12.0 / (num_spikes + 15.0)
             
@@ -266,31 +268,27 @@ class SaraEngine:
                 current = np.sum(self.w_ho[o][all_hidden_spikes])
                 self.o_v[o] += current * scale_factor
             
-            # 改善: 正規化を調整
             if np.max(self.o_v) > 0:
                 self.o_v -= 0.08 * np.mean(self.o_v)
             self.o_v = np.clip(self.o_v, -6.0, 6.0)
 
-            # 改善: より強い学習信号
             errors = np.zeros(self.output_size, dtype=np.float32)
-            if self.o_v[target_label] < 1.5:  # ターゲットを上げる
+            if self.o_v[target_label] < 1.5:
                 errors[target_label] = 1.5 - self.o_v[target_label]
             
             for o in range(self.output_size):
-                if o != target_label and self.o_v[o] > -0.2:  # より強く抑制
+                if o != target_label and self.o_v[o] > -0.2:
                     errors[o] = -0.2 - self.o_v[o]
             
             for o in range(self.output_size):
                 if abs(errors[o]) > 0.01:
                     grad_accumulator[o][all_hidden_spikes] += errors[o]
 
-        # Adam更新
         for o in range(self.output_size):
             grad = grad_accumulator[o]
             self.m_ho[o] = self.beta1 * self.m_ho[o] + (1 - self.beta1) * grad
             self.v_ho[o] = self.beta2 * self.v_ho[o] + (1 - self.beta2) * (grad ** 2)
             
-            # バイアス補正
             m_hat = self.m_ho[o] / (1 - self.beta1 ** min(self.t, 1000))
             v_hat = self.v_ho[o] / (1 - self.beta2 ** min(self.t, 1000))
             

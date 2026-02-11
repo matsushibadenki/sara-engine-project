@@ -56,7 +56,21 @@ def run_mnist(epochs=5, samples=8000, save_path="sara_mnist_model.pkl"):
                 print(f"  Processed {i+1}/{samples} images ({rate:.1f} img/s)", end='\r')
         
         print(f"\n  [Sleep Phase] Optimizing connections...")
-        prune_rate = 0.04 if epoch < 2 else 0.03
+        
+        # 修正: サンプル数が多い場合や学習後半は、刈り込みを劇的に減らす
+        if samples >= 1000:
+            # 大量データ時: 最初だけ少し整理し、あとはほぼ維持（0.1%のみ）
+            if epoch == 0:
+                prune_rate = 0.01  # 1% (ノイズ除去)
+            elif epoch == 1:
+                prune_rate = 0.005 # 0.5%
+            else:
+                prune_rate = 0.001 # 0.1% (ほぼ維持)
+        else:
+            # 少量データ時: 従来どおり少し強めに
+            prune_rate = 0.02 if epoch < 2 else 0.01
+
+        print(f"  (Prune Rate: {prune_rate*100:.2f}%)") # 確認用ログ
         engine.sleep_phase(prune_rate=prune_rate)
         
         # 簡易評価
