@@ -60,7 +60,15 @@ class ChatRunner:
             "thinking is fun"
         ]
         
-        # 語彙リスト生成
+        # --- 追加ここから ---
+        # エンジン内のトークナイザーをコーパスで鍛える
+        # これにより、corpus内の単語を適切に分割できるようになります
+        if hasattr(self.engine.encoder, 'tokenizer'):
+            print("Training tokenizer on corpus...")
+            self.engine.encoder.tokenizer.train(corpus)
+        # --- 追加ここまで ---
+
+        # 語彙リスト生成（表示・デコード用）
         vocab = set()
         for sent in corpus:
             for w in sent.split(): vocab.add(w)
@@ -71,19 +79,23 @@ class ChatRunner:
             self.engine.load_model(self.model_path)
         else:
             print(f"Training on {len(corpus)} sentences...")
-            epochs = 50
+            
+            # 修正: 50 -> 500 に変更 (脳に回路を焼き付ける！)
+            epochs = 500
+            
             for epoch in range(epochs):
                 shuffled = np.random.permutation(corpus)
                 for sent in shuffled:
                     self.engine.train_sequence(sent.split())
                 
-                # 修正: Core v48の適応型プルーニングを適用
-                # チャットボットの場合はデータ数が少ないため、サンプルサイズを考慮して渡す
+                # Sleep Phase
                 if hasattr(self.engine, 'sleep_phase'):
                     self.engine.sleep_phase(epoch=epoch, sample_size=len(corpus))
                 
-                if (epoch+1) % 10 == 0:
+                # ログを少し間引く（50回ごとに表示）
+                if (epoch+1) % 50 == 0:
                     print(f"Epoch {epoch+1}/{epochs} done.")
+            
             self.engine.save_model(self.model_path)
 
     def init_plot(self):
@@ -174,9 +186,12 @@ class ChatRunner:
                 # 2. Think
                 print("SARA: ", end="")
                 generated = []
-                empty_sdr = []
+                empty_sdr = [] 
                 trigger_text = user_input
                 
+                # ループ検知用のウィンドウ（過去3単語を記憶）
+                recent_window = []
+
                 # 生成ループ
                 for _ in range(20):
                     predicted_sdr, all_spikes = self.engine.forward_step(
@@ -190,10 +205,20 @@ class ChatRunner:
                     search_vocab = self.vocab_list + ["<eos>"]
                     next_word = self.engine.encoder.decode(predicted_sdr, search_vocab)
                     
-                    # リピート回避（簡易版）
-                    if generated and generated[-1] == next_word:
-                        candidates = [w for w in self.vocab_list if w != next_word]
-                        if candidates: next_word = np.random.choice(candidates)
+                    # --- 強化版リピート回避ロジック ---
+                    # 直前だけでなく、最近のウィンドウに含まれる単語を避ける
+                    if next_word in recent_window or (generated and next_word == generated[-1]):
+                        # 候補から除外してランダムに選ぶ（脱出）
+                        candidates = [w for w in self.vocab_list if w not in recent_window and w != "<eos>"]
+                        if candidates:
+                            # ランダム性を少し持たせてループを断ち切る
+                            next_word = np.random.choice(candidates)
+                    
+                    # ウィンドウ更新
+                    recent_window.append(next_word)
+                    if len(recent_window) > 4: # 4単語以上前なら許容
+                        recent_window.pop(0)
+                    # --------------------------------
 
                     if next_word == "<eos>":
                         if not generated and trigger_text:
@@ -205,6 +230,8 @@ class ChatRunner:
                     
                     print(f"{next_word} ", end="", flush=True)
                     generated.append(next_word)
+                    
+                    # 次のステップへの入力
                     empty_sdr = self.engine.encoder.encode(next_word)
                 
                 print() # Newline

@@ -80,37 +80,63 @@ Golden ratios for MNIST tasks:
 * **Input Scale**: Strong input to Fast layer (1.0), weak input to Slow layer (0.4)
 * **Sleep Pruning**: 5% (recommended to execute every epoch)
 
-## **How to use**  
-  
-To use these new engines, call them as follows:  
-STDP pre-training example:  
-  
-bash```
+## **How to Use**
+
+### STDP Pre-training Example
+
+```python
 from sara_engine import STDPSaraEngine
 
-# Initialize the STDP engine  
+# Initialize the STDP engine
 engine = STDPSaraEngine(input_size=784, output_size=10)
 
 # 1. Unsupervised pre-training (no labels required)
 # spike_data_list = [spike_train1, spike_train2, ...]
 engine.pretrain(spike_data_list, epochs=1)
 
-# 2. Supervised fine-tuning 
+# 2. Supervised fine-tuning
 for spikes, label in labeled_data:
     engine.train_step(spikes, label)
-```    
-  
-Example of a hierarchical engine:   
-  
-bash```
+```
+
+### Hierarchical Engine Example
+
+```python
 from sara_engine import HierarchicalSaraEngine
 
-# Initialize Deep SNN  
+# Initialize Deep SNN
 deep_engine = HierarchicalSaraEngine(input_size=784, output_size=10)
 
-# Learn as usual  
+# Learn as usual
 deep_engine.train_step(spike_train, label)
-```  
+```
+
+### Tokenizer Usage
+
+```python
+from sara_engine.tokenizer import SaraTokenizer
+
+# 1. Initialize
+tokenizer = SaraTokenizer(vocab_size=2000)
+
+# 2. Train (from chat history or corpus)
+corpus = [
+    "hello world",
+    "sara is an artificial intelligence",
+    "unhappiness is not good",
+    "i am learning python code"
+]
+tokenizer.train(corpus)
+
+# 3. Encode (convert to IDs)
+text = "unhappiness"
+ids = tokenizer.encode(text)
+# Example result: [45, 12, 89] -> split as "un", "happi", "ness"
+
+# 4. Decode (restore)
+print(tokenizer.decode(ids))
+# -> "unhappiness"
+```
 
 ## **License**
 

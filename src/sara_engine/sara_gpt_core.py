@@ -9,22 +9,77 @@ import random
 from typing import List, Dict, Tuple, Optional, Any
 from .spike_attention import SpikeAttention
 
+# Tokenizerのインポート
+try:
+    from .tokenizer import SaraTokenizer
+except ImportError:
+    # パス解決がうまくいかない場合のフォールバック（開発環境用）
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    from tokenizer import SaraTokenizer
+    
 # --- 共通ユーティリティ ---
 class SDREncoder:
-    def __init__(self, input_size: int, density: float = 0.02):
+    def __init__(self, input_size: int, density: float = 0.02, use_tokenizer: bool = True):
         self.input_size = input_size
         self.density = density
         self.cache: Dict[str, List[int]] = {}
+        
+        # Tokenizerの初期化
+        self.use_tokenizer = use_tokenizer
+        if self.use_tokenizer:
+            self.tokenizer = SaraTokenizer(vocab_size=2000, model_path="sara_vocab.json")
+            # IDごとのSDRキャッシュ
+            self.token_sdr_map: Dict[int, List[int]] = {}
 
-    def encode(self, text: str) -> List[int]:
-        if text in self.cache: return self.cache[text]
-        hash_obj = hashlib.sha256(text.encode('utf-8'))
-        seed = int(hash_obj.hexdigest(), 16) % (2**32)
-        rng = np.random.RandomState(seed)
+    def _get_token_sdr(self, token_id: int) -> List[int]:
+        """トークンIDに対応する固定のSDRを返す"""
+        if token_id in self.token_sdr_map:
+            return self.token_sdr_map[token_id]
+        
+        # IDをシードにしてランダムなSDRを生成
+        rng = np.random.RandomState(token_id)
         target_n = int(self.input_size * self.density)
         indices = rng.choice(self.input_size, target_n, replace=False)
         indices.sort()
         result = indices.tolist()
+        
+        self.token_sdr_map[token_id] = result
+        return result
+
+    def encode(self, text: str) -> List[int]:
+        if text in self.cache: return self.cache[text]
+        
+        if not self.use_tokenizer:
+            # 従来方式（ハッシュ）
+            hash_obj = hashlib.sha256(text.encode('utf-8'))
+            seed = int(hash_obj.hexdigest(), 16) % (2**32)
+            rng = np.random.RandomState(seed)
+            target_n = int(self.input_size * self.density)
+            indices = rng.choice(self.input_size, target_n, replace=False)
+            indices.sort()
+            result = indices.tolist()
+        else:
+            # 新方式（Tokenizerベース）
+            # テキストをトークンIDに分解
+            token_ids = self.tokenizer.encode(text)
+            
+            if not token_ids:
+                return []
+            
+            # 各トークンのSDRを結合（Union）
+            combined_indices = set()
+            for tid in token_ids:
+                sdr = self._get_token_sdr(tid)
+                combined_indices.update(sdr)
+            
+            # 密度が高くなりすぎないように間引く（オプション）
+            result = sorted(list(combined_indices))
+            
+            # もし結合で密度が高すぎたらランダムに間引く処理を入れても良いが
+            # ここでは情報は多いほうがいいのでそのままにする
+
         self.cache[text] = result
         return result
 
@@ -33,12 +88,21 @@ class SDREncoder:
         best_word = "<unk>"
         best_overlap = -1
         sdr_set = set(sdr)
+        
+        # 候補単語とのオーバーラップを計算
+        # ※ decode時はTokenizerを使わず、登録済み単語（candidates）との比較を行うのが現実的
+        # なぜなら、SDRから直接トークン列を復元するのは「重ね合わせ問題」で難しいから。
+        
         for word in candidates:
             target_sdr = self.encode(word)
             overlap = len(sdr_set.intersection(target_sdr))
+            
+            # 正規化: 長い単語（トークンが多い）ほどSDRが密になるため、長さで割るなどの補正も有効だが
+            # ここでは単純なオーバーラップ数で比較
             if overlap > best_overlap:
                 best_overlap = overlap
                 best_word = word
+                
         return best_word
 
 class DynamicLiquidLayer:
