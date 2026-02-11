@@ -1,6 +1,6 @@
 # examples/chat_sara.py
-# title: SARA Chat v17 (Dynamic Vocabulary & Associative Trigger)
-# description: 未知語の学習と、連想トリガーによる会話維持を実装したデモ
+# title: SARA Chat v33 (Full Knowledge Base)
+# description: 拡張された学習データを持つチャットボット。必ず更新してください。
 
 import sys
 import os
@@ -16,13 +16,33 @@ except ImportError:
     sys.exit(1)
 
 def main():
-    # 基本語彙（シード）
+    # --- 拡張コーパス (ここが重要！) ---
     corpus = [
-        "hello sara", "hello world", "sara is a good ai", "sara likes to learn",
-        "the cat likes fish", "the dog likes meat", "the cat sleeps on bed",
-        "the dog sleeps on floor", "fish is good food", "meat is good food",
-        "i like the cat", "i like the dog", "good morning sara", "good night sara",
-        "sara is smart", "ai is smart"
+        # Greetings
+        "hello sara", "hello world", "hi sara", "hi there",
+        "good morning sara", "good afternoon", "good evening", "good night",
+        "how are you?", "i am fine", "i am good",
+        
+        # Self Identification
+        "who are you?", "i am sara", "i am an ai", "i am a brain",
+        "what is your name?", "my name is sara",
+        "are you human?", "no i am ai", "i am a machine",
+        
+        # Simple Facts
+        "sara is smart", "sara likes to learn", "ai is intelligence",
+        "the cat likes fish", "the dog likes meat",
+        "birds fly in sky", "fish swim in water",
+        "sun is hot", "ice is cold", "fire is hot",
+        "water is wet", "earth is round",
+        
+        # Preferences
+        "i like cats", "i like dogs", "i love learning",
+        "cats are cute", "dogs are loyal", "books are good",
+        
+        # Abstract
+        "what is love?", "love is good",
+        "what is time?", "time is flowing",
+        "knowledge is power", "thinking is fun"
     ]
     
     # 語彙リストの初期化
@@ -33,8 +53,9 @@ def main():
     vocab_list = sorted(list(vocabulary))
     
     print("===========================================")
-    print(f"  SARA v17: Dynamic Vocabulary Chat")
+    print(f"  SARA v33: Full Knowledge Base")
     print(f"  Initial Vocab: {len(vocab_list)} words")
+    print(f"  Training Corpus: {len(corpus)} sentences")
     print("===========================================")
 
     engine = SaraGPT(sdr_size=1024)
@@ -47,16 +68,29 @@ def main():
         engine.load_model(model_path)
         print("Done!")
     else:
-        print("\nNo brain found. Training base knowledge...", end="", flush=True)
+        print(f"\nNo brain found. Starting training on {len(corpus)} sentences...")
         start_time = time.time()
-        epochs = 80
+        epochs = 80 
+        
         for epoch in range(epochs):
             shuffled_corpus = np.random.permutation(corpus)
             for sentence in shuffled_corpus:
                 words = sentence.split()
                 engine.train_sequence(words)
-            if (epoch+1) % 10 == 0: print(".", end="", flush=True)
-        print(f"\nFinished in {time.time() - start_time:.1f}s")
+            
+            elapsed = time.time() - start_time
+            avg_time = elapsed / (epoch + 1)
+            remaining = avg_time * (epochs - epoch - 1)
+            
+            bar_len = 20
+            progress = (epoch + 1) / epochs
+            filled_len = int(bar_len * progress)
+            bar = '=' * filled_len + '-' * (bar_len - filled_len)
+            
+            sys.stdout.write(f"\r[{bar}] Epoch {epoch+1}/{epochs} | Time: {elapsed:.1f}s | ETA: {remaining:.1f}s ")
+            sys.stdout.flush()
+            
+        print(f"\n\nTraining Finished in {time.time() - start_time:.1f}s")
         engine.save_model(model_path)
 
     print("\n--- Conversation Started ---")
@@ -67,7 +101,8 @@ def main():
         try:
             user_input = input("You: ").strip().lower()
             if user_input in ["exit", "quit", "bye"]:
-                print("Saving memories...")
+                print("Dreaming and saving memories...")
+                engine.dream(cycles=10) 
                 engine.save_model(model_path)
                 break
             if not user_input: continue
@@ -76,7 +111,6 @@ def main():
             input_words = user_input.split()
             new_words = []
             
-            # 未知語の動的登録
             for w in input_words:
                 if w not in vocab_list and w != "<eos>":
                     vocab_list.append(w)
@@ -86,20 +120,20 @@ def main():
                 vocab_list.sort()
                 print(f"SARA: (I learned new words: {', '.join(new_words)})")
             
-            # トリガー用の既知語リストを作成（ここが抜けていました）
             known_words = [w for w in input_words if w in vocab_list]
 
-            # 1. Listen (Online Learning)
-            # 強力に学習 (Mental Rehearsal)
+            # 1. Listen
             engine.listen(user_input, online_learning=True)
             
-            # 2. Think & Speak
-            # 既知の単語をトリガーにして思考を開始
+            # 2. Think
             trigger_text = " ".join(known_words)
             response = engine.think(length=20, vocabulary=vocab_list, trigger_text=trigger_text)
             print(f"SARA: {response}")
             
-            # 3. Relax
+            # 3. Relax & Dream
+            print("  (Dreaming...)")
+            # v39: Increase dream cycles to consolidate memory
+            engine.dream(cycles=5) 
             engine.relax(steps=50)
             
         except KeyboardInterrupt:
