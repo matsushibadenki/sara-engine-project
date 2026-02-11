@@ -1,5 +1,5 @@
 # directory: examples/train_mnist.py
-# title: MNIST Training Example with SARA Engine
+# title: MNIST Training Example with SARA Engine (Improved)
 # description: PyPIパッケージとしてインストールされたsara_engineを使用したMNIST学習デモ。
 
 import sys
@@ -42,11 +42,13 @@ def get_mnist_data():
     test = datasets.MNIST(data_path, train=False, transform=transform)
     return train, test
 
-def img_to_poisson(img_flat, time_steps=50):
+def img_to_poisson(img_flat, time_steps=60):  # 改善: タイムステップを増やす
     """画像をポアソンスパイク列に変換（レートコーディング）"""
     img_flat = np.maximum(0, img_flat)
     img_flat = img_flat / (np.max(img_flat) + 1e-6)
-    rate = img_flat * 0.4
+    
+    # 改善: レートを調整
+    rate = img_flat * 0.5  # 少し高く
     spike_train = []
     for _ in range(time_steps):
         # 乱数とピクセル強度を比較して発火判定
@@ -54,7 +56,7 @@ def img_to_poisson(img_flat, time_steps=50):
         spike_train.append(fired)
     return spike_train
 
-def evaluate(engine, dataset, n_samples=300, steps=50):
+def evaluate(engine, dataset, n_samples=300, steps=60):
     """精度評価"""
     correct = 0
     indices = np.random.choice(len(dataset), n_samples, replace=False)
@@ -68,17 +70,17 @@ def evaluate(engine, dataset, n_samples=300, steps=50):
 
 def main():
     parser = argparse.ArgumentParser(description="SARA Engine MNIST Training Example")
-    parser.add_argument("--epochs", type=int, default=3, help="Number of epochs")
-    parser.add_argument("--samples", type=int, default=5000, help="Samples per epoch (default: 5000 for quick test)")
+    parser.add_argument("--epochs", type=int, default=5, help="Number of epochs")  # 改善: エポック数を増やす
+    parser.add_argument("--samples", type=int, default=8000, help="Samples per epoch")  # 改善: サンプル数を増やす
     parser.add_argument("--save", type=str, default="sara_mnist_model.pkl", help="Path to save the model")
     args = parser.parse_args()
 
     input_size = 784
     output_size = 10
-    time_steps = 50
+    time_steps = 60  # 改善: タイムステップを増やす
     
-    print(f"Initializing SARA Engine (Liquid Harmony)...")
-    print(f"Settings: Epochs={args.epochs}, Samples={args.samples}")
+    print(f"Initializing SARA Engine (Liquid Harmony - Improved)...")
+    print(f"Settings: Epochs={args.epochs}, Samples={args.samples}, TimeSteps={time_steps}")
     
     engine = SaraEngine(input_size, output_size)
     
@@ -86,10 +88,14 @@ def main():
     train_data, test_data = get_mnist_data()
     
     start_total = time.time()
+    best_acc = 0.0
     
     for epoch in range(args.epochs):
         indices = np.random.choice(len(train_data), args.samples, replace=False)
         print(f"\n--- Epoch {epoch+1}/{args.epochs} ---")
+        
+        # 改善: エポックごとにdropout rateを調整
+        dropout = 0.1 if epoch < 2 else 0.08
         
         epoch_start = time.time()
         for i, idx in enumerate(indices):
@@ -97,7 +103,7 @@ def main():
             spike_train = img_to_poisson(img.numpy().flatten(), time_steps)
             
             # 学習ステップ
-            engine.train_step(spike_train, target, dropout_rate=0.1)
+            engine.train_step(spike_train, target, dropout_rate=dropout)
             
             if (i+1) % 100 == 0:
                 elapsed = time.time() - epoch_start
@@ -105,11 +111,20 @@ def main():
                 print(f"  Processed {i+1}/{args.samples} images ({rate:.1f} img/s)", end='\r')
         
         print(f"\n  [Sleep Phase] Optimizing connections...")
-        engine.sleep_phase(prune_rate=0.05)
+        # 改善: エポックごとにプルーニング率を調整
+        prune_rate = 0.04 if epoch < 2 else 0.03
+        engine.sleep_phase(prune_rate=prune_rate)
         
         print("  Evaluating...")
         val_acc = evaluate(engine, test_data, n_samples=500, steps=time_steps)
         print(f"  Epoch {epoch+1} Validation Accuracy: {val_acc:.2f}%")
+        
+        # ベストモデルの保存
+        if val_acc > best_acc:
+            best_acc = val_acc
+            if args.save:
+                engine.save_model(args.save.replace('.pkl', '_best.pkl'))
+                print(f"  New best model saved! (Acc: {val_acc:.2f}%)")
 
     total_time = time.time() - start_total
     print(f"\nTraining Finished in {total_time:.1f}s")
@@ -120,7 +135,8 @@ def main():
     
     if args.save:
         engine.save_model(args.save)
-        print(f"Model saved to {args.save}")
+        print(f"Final model saved to {args.save}")
+        print(f"Best model saved to {args.save.replace('.pkl', '_best.pkl')}")
 
 if __name__ == "__main__":
     main()
