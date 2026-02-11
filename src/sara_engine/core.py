@@ -1,6 +1,6 @@
 # src/sara_engine/core.py
-# Saraエンジン・コアロジック (Improved Version v48)
-# MNIST精度94.6%達成版: 適応型プルーニング(Adaptive Pruning)の実装
+# Saraエンジン・コアロジック (Improved Version v50)
+# Vectorized Sparse Ops & WTA Readout Layer
 
 import numpy as np
 import random
@@ -83,19 +83,38 @@ class LiquidLayer:
         self.refractory = np.maximum(0, self.refractory - 1)
         self.v *= self.decay
         
-        for pre_id in active_inputs:
-            if pre_id < len(self.in_indices):
-                targets = self.in_indices[pre_id]
-                ws = self.in_weights[pre_id]
-                if len(targets) > 0:
-                    self.v[targets] += ws
-                    
-        for pre_h_id in prev_active_hidden:
-            if pre_h_id < len(self.rec_indices):
-                targets = self.rec_indices[pre_h_id]
-                ws = self.rec_weights[pre_h_id]
-                if len(targets) > 0:
-                    self.v[targets] += ws
+        # 修正: ベクトル化による高速化
+        if active_inputs:
+            all_targets = []
+            all_weights = []
+            for pre_id in active_inputs:
+                if pre_id < len(self.in_indices):
+                    targets = self.in_indices[pre_id]
+                    ws = self.in_weights[pre_id]
+                    if len(targets) > 0:
+                        all_targets.append(targets)
+                        all_weights.append(ws)
+            
+            if all_targets:
+                combined_targets = np.concatenate(all_targets)
+                combined_weights = np.concatenate(all_weights)
+                np.add.at(self.v, combined_targets, combined_weights)
+        
+        if prev_active_hidden:
+            all_targets = []
+            all_weights = []
+            for pre_h_id in prev_active_hidden:
+                if pre_h_id < len(self.rec_indices):
+                    targets = self.rec_indices[pre_h_id]
+                    ws = self.rec_weights[pre_h_id]
+                    if len(targets) > 0:
+                        all_targets.append(targets)
+                        all_weights.append(ws)
+            
+            if all_targets:
+                combined_targets = np.concatenate(all_targets)
+                combined_weights = np.concatenate(all_weights)
+                np.add.at(self.v, combined_targets, combined_weights)
         
         ready_mask = (self.v >= self.thresh) & (self.refractory <= 0)
         fired_indices = np.where(ready_mask)[0]
@@ -132,23 +151,27 @@ class SaraEngine:
         self.total_hidden = sum(r.hidden_size for r in self.reservoirs)
         self.offsets = [0, 1200, 3000, 4800]
         
-        self.w_ho: List[np.ndarray] = []
-        self.m_ho: List[np.ndarray] = []
-        self.v_ho: List[np.ndarray] = []
+        # 修正: 中間層 (Winner-Take-All) を追加
+        self.intermediate_size = 500
+        self.w_hi = []  # Hidden -> Intermediate
+        self.w_io = []  # Intermediate -> Output
         
+        # Hidden -> Intermediate
+        for _ in range(self.intermediate_size):
+            fan_in = 600
+            idx = np.random.choice(self.total_hidden, fan_in, replace=False)
+            w = np.random.normal(0, 0.05, fan_in).astype(np.float32)
+            self.w_hi.append({'idx': idx, 'w': w})
+        
+        # Intermediate -> Output
         for _ in range(output_size):
-            limit = np.sqrt(2.0 / self.total_hidden)
-            w = np.random.normal(0, limit, self.total_hidden).astype(np.float32)
-            self.w_ho.append(w)
-            self.m_ho.append(np.zeros(self.total_hidden, dtype=np.float32))
-            self.v_ho.append(np.zeros(self.total_hidden, dtype=np.float32))
+            w = np.random.normal(0, 0.1, self.intermediate_size).astype(np.float32)
+            self.w_io.append(w)
             
+        self.intermediate_v = np.zeros(self.intermediate_size, dtype=np.float32)
         self.o_v = np.zeros(output_size, dtype=np.float32)
         
         self.lr = 0.002
-        self.beta1 = 0.9
-        self.beta2 = 0.999
-        self.epsilon = 1e-8
         self.o_decay = 0.88
         
         self.layer_activity_counters = [np.zeros(r.hidden_size, dtype=np.float32) for r in self.reservoirs]
@@ -158,6 +181,7 @@ class SaraEngine:
     def reset_state(self):
         for r in self.reservoirs: r.reset()
         self.o_v.fill(0)
+        self.intermediate_v.fill(0)
         for c in self.layer_activity_counters: c.fill(0)
         self.prev_spikes = [[] for _ in self.reservoirs]
 
@@ -167,9 +191,8 @@ class SaraEngine:
             'output_size': self.output_size,
             'reservoirs': self.reservoirs,
             'offsets': self.offsets,
-            'w_ho': self.w_ho,
-            'm_ho': self.m_ho,
-            'v_ho': self.v_ho,
+            'w_hi': self.w_hi,
+            'w_io': self.w_io,
             'lr': self.lr,
             't': self.t
         }
@@ -185,13 +208,14 @@ class SaraEngine:
         self.output_size = state['output_size']
         self.reservoirs = state['reservoirs']
         self.offsets = state['offsets']
-        self.w_ho = state['w_ho']
-        self.m_ho = state['m_ho']
-        self.v_ho = state['v_ho']
+        self.w_hi = state['w_hi']
+        self.w_io = state['w_io']
         self.lr = state.get('lr', 0.001)
         self.t = state.get('t', 0)
         
         self.total_hidden = sum(r.hidden_size for r in self.reservoirs)
+        self.intermediate_size = len(self.w_io[0])
+        self.intermediate_v = np.zeros(self.intermediate_size, dtype=np.float32)
         self.o_v = np.zeros(self.output_size, dtype=np.float32)
         self.layer_activity_counters = [np.zeros(r.hidden_size, dtype=np.float32) for r in self.reservoirs]
         self.prev_spikes = [[] for _ in self.reservoirs]
@@ -199,30 +223,25 @@ class SaraEngine:
 
     def sleep_phase(self, epoch: int = 0, sample_size: int = 0):
         """
-        睡眠フェーズ：記憶の整理とシナプスの刈り込みを実行
-        Adaptive Pruning: 学習データ量とエポック数に応じて刈り込み強度を自動調整
+        睡眠フェーズ：記憶の整理とシナプスの刈り込みを実行 (WTA版)
         """
-        # デフォルト設定（少量データ時）
         prune_rate = 0.02
         if epoch >= 2: prune_rate = 0.01
 
-        # 大量データ時（1000サンプル以上）の適応ロジック
         if sample_size >= 1000:
-            if epoch == 0:
-                prune_rate = 0.01   # 1%: ノイズ除去
-            elif epoch == 1:
-                prune_rate = 0.005  # 0.5%: 微調整
-            else:
-                prune_rate = 0.001  # 0.1%: ほぼ維持（忘却防止）
+            if epoch == 0: prune_rate = 0.01
+            elif epoch == 1: prune_rate = 0.005
+            else: prune_rate = 0.001
 
         print(f"  [Sleep Phase] Consolidating memory (Auto-rate: {prune_rate*100:.2f}%)...")
         pruned_total = 0
         total_weights = 0
         
+        # Prune Intermediate -> Output weights (w_io)
         for o in range(self.output_size):
-            weights = self.w_ho[o]
+            weights = self.w_io[o]
             total_weights += len(weights)
-            weights *= 0.997  # 全体的な減衰
+            weights *= 0.997
             
             abs_w = np.abs(weights)
             nonzero_w = abs_w[abs_w > 1e-6]
@@ -234,16 +253,13 @@ class SaraEngine:
             
             norm = np.linalg.norm(weights)
             if norm > 6.0: weights *= (6.0 / norm)
-            self.w_ho[o] = weights
+            self.w_io[o] = weights
             
         print(f"  [Sleep Phase] Pruned {pruned_total} / {total_weights} connections.")
 
     def train_step(self, spike_train: List[List[int]], target_label: int, dropout_rate: float = 0.08):
         self.reset_state()
         self.t += 1
-        
-        current_lr = self.lr * (1.0 / (1.0 + 0.00001 * self.t))
-        grad_accumulator = [np.zeros_like(w) for w in self.w_ho]
         steps = len(spike_train)
         
         for input_spikes in spike_train:
@@ -264,22 +280,30 @@ class SaraEngine:
                     base = self.offsets[i]
                     all_hidden_spikes.extend([idx + base for idx in local_spikes])
             
+            # 修正: Hidden -> Intermediate (Winner-Take-All)
+            self.intermediate_v.fill(0)
+            if all_hidden_spikes:
+                for i in range(self.intermediate_size):
+                    mapping = self.w_hi[i]
+                    active_mask = np.isin(mapping['idx'], all_hidden_spikes)
+                    if np.any(active_mask):
+                        self.intermediate_v[i] = np.sum(mapping['w'][active_mask])
+            
+            # Top-K (Sparse)
+            k = int(self.intermediate_size * 0.2)
+            if k > 0:
+                top_k_indices = np.argpartition(self.intermediate_v, -k)[-k:]
+                intermediate_spikes = top_k_indices[self.intermediate_v[top_k_indices] > 0].tolist()
+            else:
+                intermediate_spikes = []
+
+            # Intermediate -> Output
             self.o_v *= self.o_decay
+            if intermediate_spikes:
+                for o in range(self.output_size):
+                    self.o_v[o] += np.sum(self.w_io[o][intermediate_spikes])
             
-            if not all_hidden_spikes:
-                continue
-
-            num_spikes = len(all_hidden_spikes)
-            scale_factor = 12.0 / (num_spikes + 15.0)
-            
-            for o in range(self.output_size):
-                current = np.sum(self.w_ho[o][all_hidden_spikes])
-                self.o_v[o] += current * scale_factor
-            
-            if np.max(self.o_v) > 0:
-                self.o_v -= 0.08 * np.mean(self.o_v)
-            self.o_v = np.clip(self.o_v, -6.0, 6.0)
-
+            # 学習 (Online Delta Rule)
             errors = np.zeros(self.output_size, dtype=np.float32)
             if self.o_v[target_label] < 1.5:
                 errors[target_label] = 1.5 - self.o_v[target_label]
@@ -288,21 +312,12 @@ class SaraEngine:
                 if o != target_label and self.o_v[o] > -0.2:
                     errors[o] = -0.2 - self.o_v[o]
             
-            for o in range(self.output_size):
-                if abs(errors[o]) > 0.01:
-                    grad_accumulator[o][all_hidden_spikes] += errors[o]
+            # Weight Update (w_io)
+            if intermediate_spikes:
+                for o in range(self.output_size):
+                    if abs(errors[o]) > 0.01:
+                        self.w_io[o][intermediate_spikes] += self.lr * errors[o]
 
-        for o in range(self.output_size):
-            grad = grad_accumulator[o]
-            self.m_ho[o] = self.beta1 * self.m_ho[o] + (1 - self.beta1) * grad
-            self.v_ho[o] = self.beta2 * self.v_ho[o] + (1 - self.beta2) * (grad ** 2)
-            
-            m_hat = self.m_ho[o] / (1 - self.beta1 ** min(self.t, 1000))
-            v_hat = self.v_ho[o] / (1 - self.beta2 ** min(self.t, 1000))
-            
-            self.w_ho[o] += current_lr * m_hat / (np.sqrt(v_hat) + self.epsilon)
-            np.clip(self.w_ho[o], -4.0, 4.0, out=self.w_ho[o])
-        
         for i, r in enumerate(self.reservoirs):
             r.update_homeostasis(self.layer_activity_counters[i], steps)
 
@@ -318,15 +333,26 @@ class SaraEngine:
                 base = self.offsets[i]
                 all_hidden_spikes.extend([x + base for x in local])
             
-            self.o_v *= self.o_decay
+            # Forward WTA
+            self.intermediate_v.fill(0)
             if all_hidden_spikes:
-                num_spikes = len(all_hidden_spikes)
-                scale_factor = 12.0 / (num_spikes + 15.0)
-                for o in range(self.output_size):
-                    self.o_v[o] += np.sum(self.w_ho[o][all_hidden_spikes]) * scale_factor
+                for i in range(self.intermediate_size):
+                    mapping = self.w_hi[i]
+                    active_mask = np.isin(mapping['idx'], all_hidden_spikes)
+                    if np.any(active_mask):
+                        self.intermediate_v[i] = np.sum(mapping['w'][active_mask])
             
-            if np.max(self.o_v) > 0:
-                self.o_v -= 0.08 * np.mean(self.o_v)
+            k = int(self.intermediate_size * 0.2)
+            intermediate_spikes = []
+            if k > 0:
+                top_k_indices = np.argpartition(self.intermediate_v, -k)[-k:]
+                intermediate_spikes = top_k_indices[self.intermediate_v[top_k_indices] > 0].tolist()
+
+            self.o_v *= self.o_decay
+            if intermediate_spikes:
+                for o in range(self.output_size):
+                    self.o_v[o] += np.sum(self.w_io[o][intermediate_spikes])
+            
             total_potentials += self.o_v
             
         return int(np.argmax(total_potentials))

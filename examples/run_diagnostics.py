@@ -1,5 +1,5 @@
 # examples/run_diagnostics.py
-# 診断・デバッグ・テストツール (v2.0: SaraEngine Core v48対応版)
+# 診断・デバッグ・テストツール (v2.1: SaraEngine Core v50対応版)
 
 import sys
 import os
@@ -24,7 +24,7 @@ except ImportError:
 
 def run_debug_tool():
     print("=" * 60)
-    print("SARA Engine Debug Tool (Core v48 Check)")
+    print("SARA Engine Debug Tool (Core v50 Check)")
     print("=" * 60)
     
     # ダミー設定でエンジン初期化
@@ -36,10 +36,12 @@ def run_debug_tool():
     print("-" * 60)
     print(f"Reservoirs: {len(engine.reservoirs)} layers")
     print(f"Total Hidden Neurons: {engine.total_hidden}")
+    print(f"Intermediate Layer Size: {engine.intermediate_size}")
     
-    # 重みの統計チェック
-    w_mean = np.mean([np.mean(np.abs(w)) for w in engine.w_ho])
-    print(f"Readout Weights Mean Abs: {w_mean:.4f}")
+    # 重みの統計チェック (v50: w_ho ではなく w_io をチェック)
+    # w_io: Intermediate -> Output の重みリスト
+    w_mean = np.mean([np.mean(np.abs(w)) for w in engine.w_io])
+    print(f"Readout (Inter->Out) Weights Mean Abs: {w_mean:.4f}")
     if w_mean > 0:
         print("✓ Weights initialized correctly.")
     else:
@@ -48,14 +50,17 @@ def run_debug_tool():
     print("\n[2] Testing Sleep Phase (Adaptive Pruning)...")
     print("-" * 60)
     try:
-        # 新しいシグネチャ (epoch, sample_size) のテスト
-        print("Testing: sleep_phase(epoch=0, sample_size=5000) [Large Data Mode]")
-        engine.sleep_phase(epoch=0, sample_size=5000)
-        print("✓ Large data pruning executed successfully.")
-        
-        print("Testing: sleep_phase(epoch=5, sample_size=100) [Small Data Mode]")
-        engine.sleep_phase(epoch=5, sample_size=100)
-        print("✓ Small data pruning executed successfully.")
+        if hasattr(engine, 'sleep_phase'):
+            # 新しいシグネチャ (epoch, sample_size) のテスト
+            print("Testing: sleep_phase(epoch=0, sample_size=5000) [Large Data Mode]")
+            engine.sleep_phase(epoch=0, sample_size=5000)
+            print("✓ Large data pruning executed successfully.")
+            
+            print("Testing: sleep_phase(epoch=5, sample_size=100) [Small Data Mode]")
+            engine.sleep_phase(epoch=5, sample_size=100)
+            print("✓ Small data pruning executed successfully.")
+        else:
+             print("✗ FAIL: sleep_phase method missing in SaraEngine.")
     except TypeError as e:
         print(f"✗ FAIL: Method signature mismatch. {e}")
         print("  Make sure core.py has sleep_phase(self, epoch, sample_size).")
@@ -77,6 +82,8 @@ def run_debug_tool():
         print("✓ train_step & predict executed without errors.")
     except Exception as e:
         print(f"✗ FAIL: Execution error. {e}")
+        import traceback
+        traceback.print_exc()
 
     print("\nDiagnosis Complete.")
 

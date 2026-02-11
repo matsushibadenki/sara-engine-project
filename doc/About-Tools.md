@@ -29,6 +29,9 @@ python examples/run_classifier.py mnist --epochs 5 --samples 1000
 ### 3. チャットの確認（完了済み）
 
 ```bash
+# 学習開始
+python examples/run_chat.py --train 
+  
 # チャット開始
 python examples/run_chat.py
 ```

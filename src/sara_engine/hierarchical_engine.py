@@ -23,12 +23,13 @@ class HierarchicalSaraEngine:
         self.l1 = STDPLiquidLayer(input_size, 1500, decay=0.3, 
                                   input_scale=1.5, rec_scale=1.2, density=0.1)
         
-        # Layer 2: L1 Output -> Hidden (中速、統合)
-        # 入力サイズはL1のニューロン数と同じ
+        # Layer 2: L1 Output (1500) -> Hidden (中速、統合)
+        # 修正: 入力サイズをL1のhidden_sizeに合わせる
         self.l2 = STDPLiquidLayer(1500, 1500, decay=0.6, 
                                   input_scale=1.0, rec_scale=1.5, density=0.08)
         
-        # Layer 3: L2 Output -> Hidden (低速、文脈)
+        # Layer 3: L2 Output (1500) -> Hidden (低速、文脈)
+        # 修正: 入力サイズをL2のhidden_sizeに合わせる
         self.l3 = STDPLiquidLayer(1500, 1000, decay=0.9, 
                                   input_scale=0.8, rec_scale=1.8, density=0.08)
         
@@ -45,9 +46,6 @@ class HierarchicalSaraEngine:
             self.w_ho.append(w)
             
         self.o_v = np.zeros(output_size, dtype=np.float32)
-        
-        # State
-        # 修正: 型ヒント追加
         self.prev_spikes: List[List[int]] = [[], [], []]
         self.lr = 0.002
 
@@ -84,8 +82,6 @@ class HierarchicalSaraEngine:
         self.reset_state()
         
         for input_spikes in spike_train:
-            # 教師あり学習中も、下層では教師なしSTDPを弱く働かせることが可能（Hybrid）
-            # ここではシンプルにするためSTDP=Falseとする
             all_spikes = self.forward_hierarchical(input_spikes, learning=False)
             
             # Readout Update (Delta Rule)
@@ -94,8 +90,6 @@ class HierarchicalSaraEngine:
                 for o in range(self.output_size):
                     self.o_v[o] += np.sum(self.w_ho[o][all_spikes]) * 0.1
             
-            # Simple Online Delta Learning
-            # ターゲットに近づける、他を遠ざける
             prediction = self.o_v
             error = np.zeros(self.output_size)
             
@@ -106,7 +100,6 @@ class HierarchicalSaraEngine:
                 if o != target_label and prediction[o] > 0.0:
                     error[o] = 0.0 - prediction[o]
             
-            # Weight Update
             if all_spikes:
                 for o in range(self.output_size):
                     if abs(error[o]) > 0.01:

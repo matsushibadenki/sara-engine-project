@@ -1,19 +1,17 @@
 # src/sara_engine/sara_gpt_core.py
-# SARA-GPT Core Logic (v47: Tuned Criticality)
-# 沈黙問題を解消し、適度な発火率(Critical Regime)を維持する調整版
+# SARA-GPT Core Logic (v49: Improved Criticality & Stability)
 
 import numpy as np
 import hashlib
 import pickle
 import random
 from typing import List, Dict, Tuple, Optional, Any
+from collections import OrderedDict
 from .spike_attention import SpikeAttention
 
-# Tokenizerのインポート
 try:
     from .tokenizer import SaraTokenizer
 except ImportError:
-    # パス解決がうまくいかない場合のフォールバック（開発環境用）
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -21,24 +19,21 @@ except ImportError:
     
 # --- 共通ユーティリティ ---
 class SDREncoder:
-    def __init__(self, input_size: int, density: float = 0.02, use_tokenizer: bool = True):
+    def __init__(self, input_size: int, density: float = 0.02, use_tokenizer: bool = True, cache_size: int = 10000):
         self.input_size = input_size
         self.density = density
-        self.cache: Dict[str, List[int]] = {}
+        self.cache = OrderedDict() # LRUキャッシュに変更
+        self.cache_size = cache_size
         
-        # Tokenizerの初期化
         self.use_tokenizer = use_tokenizer
         if self.use_tokenizer:
             self.tokenizer = SaraTokenizer(vocab_size=2000, model_path="sara_vocab.json")
-            # IDごとのSDRキャッシュ
             self.token_sdr_map: Dict[int, List[int]] = {}
 
     def _get_token_sdr(self, token_id: int) -> List[int]:
-        """トークンIDに対応する固定のSDRを返す"""
         if token_id in self.token_sdr_map:
             return self.token_sdr_map[token_id]
         
-        # IDをシードにしてランダムなSDRを生成
         rng = np.random.RandomState(token_id)
         target_n = int(self.input_size * self.density)
         indices = rng.choice(self.input_size, target_n, replace=False)
@@ -49,10 +44,12 @@ class SDREncoder:
         return result
 
     def encode(self, text: str) -> List[int]:
-        if text in self.cache: return self.cache[text]
+        if text in self.cache:
+            self.cache.move_to_end(text)
+            return self.cache[text]
         
+        result = []
         if not self.use_tokenizer:
-            # 従来方式（ハッシュ）
             hash_obj = hashlib.sha256(text.encode('utf-8'))
             seed = int(hash_obj.hexdigest(), 16) % (2**32)
             rng = np.random.RandomState(seed)
@@ -61,26 +58,27 @@ class SDREncoder:
             indices.sort()
             result = indices.tolist()
         else:
-            # 新方式（Tokenizerベース）
-            # テキストをトークンIDに分解
             token_ids = self.tokenizer.encode(text)
-            
             if not token_ids:
                 return []
             
-            # 各トークンのSDRを結合（Union）
             combined_indices = set()
             for tid in token_ids:
                 sdr = self._get_token_sdr(tid)
                 combined_indices.update(sdr)
             
-            # 密度が高くなりすぎないように間引く（オプション）
             result = sorted(list(combined_indices))
             
-            # もし結合で密度が高すぎたらランダムに間引く処理を入れても良いが
-            # ここでは情報は多いほうがいいのでそのままにする
+            # 密度制御: 目標密度を超えたらサンプリング
+            # 文脈上重要な後半のトークン情報を優先するために末尾を残す簡易ロジック
+            target_size = int(self.input_size * self.density * max(1, len(token_ids) * 0.5))
+            if len(result) > target_size:
+                result = result[-target_size:]
 
         self.cache[text] = result
+        if len(self.cache) > self.cache_size:
+            self.cache.popitem(last=False)
+            
         return result
 
     def decode(self, sdr: List[int], candidates: List[str]) -> str:
@@ -89,26 +87,18 @@ class SDREncoder:
         best_overlap = -1
         sdr_set = set(sdr)
         
-        # 候補単語とのオーバーラップを計算
-        # ※ decode時はTokenizerを使わず、登録済み単語（candidates）との比較を行うのが現実的
-        # なぜなら、SDRから直接トークン列を復元するのは「重ね合わせ問題」で難しいから。
-        
         for word in candidates:
             target_sdr = self.encode(word)
             overlap = len(sdr_set.intersection(target_sdr))
-            
-            # 正規化: 長い単語（トークンが多い）ほどSDRが密になるため、長さで割るなどの補正も有効だが
-            # ここでは単純なオーバーラップ数で比較
             if overlap > best_overlap:
                 best_overlap = overlap
                 best_word = word
-                
         return best_word
 
 class DynamicLiquidLayer:
     """
-    v47: Dynamic Liquid Layer (Re-tuned)
-    過剰抑制を解除し、適度な発火を促す。
+    v49: Dynamic Liquid Layer (Stabilized)
+    発火制御ロジックを対数スケールのペナルティに修正し、発散を防止。
     """
     def __init__(self, input_size: int, hidden_size: int, decay: float, 
                  density: float = 0.05, input_scale: float = 1.0, 
@@ -117,18 +107,17 @@ class DynamicLiquidLayer:
         self.size = hidden_size
         self.decay = decay
         
-        # スパース接続
+        # Sparse Weights
         self.in_indices: List[np.ndarray] = []
         self.in_weights: List[np.ndarray] = []
         self.rec_indices: List[np.ndarray] = []
         self.rec_weights: List[np.ndarray] = []
         
-        # Init Input Weights (スケールを少し戻す)
+        # Init Input
         for i in range(input_size):
             n = int(hidden_size * density)
             if n > 0:
                 idx = np.random.choice(hidden_size, n, replace=False).astype(np.int32)
-                # 入力を少し強めに設定して初動を確保
                 w = np.random.uniform(-input_scale * 1.2, input_scale * 1.2, n).astype(np.float32)
                 self.in_indices.append(idx)
                 self.in_weights.append(w)
@@ -136,7 +125,7 @@ class DynamicLiquidLayer:
                 self.in_indices.append(np.array([], dtype=np.int32))
                 self.in_weights.append(np.array([], dtype=np.float32))
         
-        # Init Recurrent Weights
+        # Init Recurrent
         rec_density = 0.1
         for i in range(hidden_size):
             n = int(hidden_size * rec_density)
@@ -150,17 +139,16 @@ class DynamicLiquidLayer:
                 self.rec_indices.append(np.array([], dtype=np.int32))
                 self.rec_weights.append(np.array([], dtype=np.float32))
         
-        # State
         self.v = np.zeros(hidden_size, dtype=np.float32)
         self.refractory = np.zeros(hidden_size, dtype=np.float32)
         
-        # Homeostasis (閾値を現実的な値へ緩和)
+        # Base Thresholds
         if decay < 0.5:
-            self.base_thresh = 1.1  # Fast layer
+            self.base_thresh = 1.1
         elif decay < 0.8:
-            self.base_thresh = 1.3  # Medium layer
+            self.base_thresh = 1.3
         else:
-            self.base_thresh = 1.4  # Slow layer
+            self.base_thresh = 1.4
             
         self.dynamic_thresh = np.ones(hidden_size, dtype=np.float32) * self.base_thresh
         
@@ -178,83 +166,76 @@ class DynamicLiquidLayer:
                              learning: bool = False,
                              attention_signal: List[int] = []) -> List[int]:
         
-        # 1. 不応期更新
         self.refractory = np.maximum(0, self.refractory - 1)
-        
-        # 2. 膜電位減衰
         self.v *= self.decay
         
-        # 3. 入力統合
+        # Vectorized Input Integration (簡易版)
         for pre_id in active_inputs:
             if pre_id < len(self.in_indices):
                 targets = self.in_indices[pre_id]
                 ws = self.in_weights[pre_id]
                 if len(targets) > 0: self.v[targets] += ws
         
-        # Recurrent
         for pre_h_id in prev_active_hidden:
             if pre_h_id < len(self.rec_indices):
                 targets = self.rec_indices[pre_h_id]
                 ws = self.rec_weights[pre_h_id]
                 if len(targets) > 0: self.v[targets] += ws
         
-        # Feedback
         if feedback_active:
             for fb_id in feedback_active:
                 if fb_id < len(self.feedback_weights):
                     targets = self.feedback_weights[fb_id]
                     self.v[targets] += self.feedback_scale
 
-        # Attention
         if attention_signal:
             attn_scale = 1.5
             for idx in attention_signal:
                 if idx < self.size:
                     self.v[idx] += attn_scale
         
-        # 4. 発火判定 (Dynamic)
+        # Fire
         ready_mask = (self.v >= self.dynamic_thresh) & (self.refractory <= 0)
         candidates_indices = np.where(ready_mask)[0]
         
         fired_indices = []
-        # Max spike limit (過剰発火防止キャップ)
-        max_spikes = int(self.size * 0.10) # 10%程度に制限
+        max_spikes = int(self.size * 0.10)
         
         if len(candidates_indices) > 0:
             if len(candidates_indices) > max_spikes:
-                # 活性が高すぎる場合は上位のみ通過
                 potentials = self.v[candidates_indices]
                 top_indices = np.argsort(potentials)[-max_spikes:]
                 fired_indices = candidates_indices[top_indices].tolist()
                 
-                # ペナルティ: 閾値を上げて抑制
-                self.dynamic_thresh[fired_indices] += 0.3
+                # 修正: 適応的なペナルティ (対数スケール)
+                excess_ratio = len(candidates_indices) / max_spikes
+                penalty = 0.05 * np.log(excess_ratio)
+                self.dynamic_thresh[fired_indices] += penalty
             else:
                 fired_indices = candidates_indices.tolist()
             
             fired_arr = np.array(fired_indices, dtype=int)
             self.v[fired_arr] = 0.0
             
-            # 不応期 (2.0 - 5.0)
             ref_periods = np.random.uniform(2.0, 5.0, size=len(fired_arr))
             self.refractory[fired_arr] = ref_periods
             
-            # Homeostasis: 抑制
-            self.dynamic_thresh[fired_arr] += 0.10
+            # Homeostasis: 抑制 (マイルドに)
+            self.dynamic_thresh[fired_arr] += 0.03
 
-        # Homeostasis: 興奮 (回復ロジック強化)
+        # Homeostasis: 回復 (適応的)
         not_fired_mask = np.ones(self.size, dtype=bool)
         if fired_indices:
             not_fired_mask[np.array(fired_indices, dtype=int)] = False
         
-        # 発火しなかったら閾値を下げる（前回より少し速く下げる）
-        self.dynamic_thresh[not_fired_mask] -= 0.008
+        current_activity = len(fired_indices) / self.size
+        target_activity = 0.05
+        recovery_rate = 0.005 * (1.0 + (target_activity - current_activity))
         
-        # 下限設定 (これ以上は下がらない = ノイズ過敏防止)
-        min_thresh = 0.5
-        np.clip(self.dynamic_thresh, min_thresh, 5.0, out=self.dynamic_thresh)
+        self.dynamic_thresh[not_fired_mask] -= recovery_rate
+        np.clip(self.dynamic_thresh, 0.3, 5.0, out=self.dynamic_thresh)
         
-        # 5. STDP
+        # STDP (省略なし)
         if learning and fired_indices and prev_active_hidden:
             fired_arr = np.array(fired_indices, dtype=int)
             for pre_id in prev_active_hidden:
@@ -280,7 +261,7 @@ class DynamicLiquidLayer:
             self.dynamic_thresh -= diff * 0.1
 
 class SaraGPT:
-    """v47: Re-tuned SARA-GPT"""
+    """v49: SARA-GPT with Stabilized Core"""
     def __init__(self, sdr_size: int = 1024):
         self.sdr_size = sdr_size
         self.encoder = SDREncoder(sdr_size, density=0.02)
@@ -288,7 +269,6 @@ class SaraGPT:
         self.h_size = 2000
         self.total_hidden = self.h_size * 3
         
-        # Layers (パラメータ調整)
         self.l1 = DynamicLiquidLayer(sdr_size, self.h_size, decay=0.3, density=0.08, 
                                      input_scale=2.0, rec_scale=1.0, feedback_scale=0.3)
         self.l2 = DynamicLiquidLayer(self.h_size, self.h_size, decay=0.6, density=0.08, 
@@ -300,14 +280,12 @@ class SaraGPT:
         self.offsets = [0, self.h_size, self.h_size * 2]
         self.prev_spikes: List[List[int]] = [[], [], []]
         
-        # Attention
         self.attention = SpikeAttention(input_size=self.h_size, hidden_size=500, memory_size=60)
         self.attention_active = True
         
         self.episodic_memory: List[List[str]] = []
         self.max_episodic_size = 150
 
-        # Readout
         self.readout_weights: List[Dict[str, Any]] = []
         for _ in range(sdr_size):
             fan_in = 600
@@ -336,14 +314,14 @@ class SaraGPT:
 
     def save_model(self, filepath: str):
         state = {
-            'version': 'v47',
+            'version': 'v49',
             'sdr_size': self.sdr_size,
             'layers': [{'in_idx': l.in_indices, 'in_w': l.in_weights, 
                         'rec_idx': l.rec_indices, 'rec_w': l.rec_weights, 
                         'dynamic_thresh': l.dynamic_thresh, 'feedback_w': l.feedback_weights} 
                        for l in self.layers],
             'readout_weights': self.readout_weights,
-            'encoder_cache': self.encoder.cache,
+            'encoder_cache': dict(self.encoder.cache), # Ordered dict -> dict
             'attn_w_q': self.attention.w_query,
             'attn_w_k': self.attention.w_key,
             'attn_w_v': self.attention.w_value
@@ -369,7 +347,8 @@ class SaraGPT:
                 target_layer.feedback_weights = layer_data['feedback_w']
 
         self.readout_weights = state['readout_weights']
-        if 'encoder_cache' in state: self.encoder.cache = state['encoder_cache']
+        if 'encoder_cache' in state: 
+            self.encoder.cache = OrderedDict(state['encoder_cache'])
         
         if 'attn_w_q' in state:
             self.attention.w_query = state['attn_w_q']
@@ -382,16 +361,12 @@ class SaraGPT:
     def forward_step(self, input_sdr: List[int], training: bool = False, 
                     force_output: bool = False) -> Tuple[List[int], List[int]]:
         
-        # 1. Forward Pass
         spikes_1 = self.l1.forward_with_feedback(input_sdr, self.prev_spikes[0], 
-                                                 feedback_active=self.prev_spikes[1], 
-                                                 learning=training)
+                                                 feedback_active=self.prev_spikes[1], learning=training)
         
         spikes_2 = self.l2.forward_with_feedback(spikes_1, self.prev_spikes[1], 
-                                                 feedback_active=self.prev_spikes[2], 
-                                                 learning=training)
+                                                 feedback_active=self.prev_spikes[2], learning=training)
         
-        # --- Attention Mechanism ---
         attn_signal = []
         if self.attention_active:
             attn_signal = self.attention.compute(spikes_2)
@@ -399,8 +374,7 @@ class SaraGPT:
                 self.attention.update_memory(spikes_2)
         
         spikes_3 = self.l3.forward_with_feedback(spikes_2, self.prev_spikes[2], 
-                                                 feedback_active=[], 
-                                                 learning=training,
+                                                 feedback_active=[], learning=training,
                                                  attention_signal=attn_signal)
         
         self.prev_spikes = [spikes_1, spikes_2, spikes_3]
@@ -410,7 +384,6 @@ class SaraGPT:
         all_spikes.extend([x + self.offsets[1] for x in spikes_2])
         all_spikes.extend([x + self.offsets[2] for x in spikes_3])
         
-        # 2. Readout Process
         self.readout_v *= self.readout_decay
         self.readout_refractory = np.maximum(0, self.readout_refractory - 1)
         
@@ -429,7 +402,6 @@ class SaraGPT:
                 if np.any(active_mask):
                     self.readout_v[out_idx] += np.sum(weights[active_mask])
         
-        # Fire
         fired_mask = (self.readout_v > self.readout_thresh) & (self.readout_refractory <= 0)
         predicted_sdr = []
         
