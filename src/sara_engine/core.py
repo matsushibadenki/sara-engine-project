@@ -13,10 +13,10 @@ class LiquidLayer:
         self.hidden_size = hidden_size
         self.decay = decay
         
-        self.in_indices = []
-        self.in_weights = []
-        self.rec_indices = []
-        self.rec_weights = []
+        self.in_indices: List[np.ndarray] = []
+        self.in_weights: List[np.ndarray] = []
+        self.rec_indices: List[np.ndarray] = []
+        self.rec_weights: List[np.ndarray] = []
         
         # Input Weights - 改善: より良い初期化
         fan_in = max(1, int(input_size * density))
@@ -130,9 +130,9 @@ class SaraEngine:
         self.total_hidden = sum(r.hidden_size for r in self.reservoirs)
         self.offsets = [0, 1200, 3000, 4800]
         
-        self.w_ho = []
-        self.m_ho = []
-        self.v_ho = []
+        self.w_ho: List[np.ndarray] = []
+        self.m_ho: List[np.ndarray] = []
+        self.v_ho: List[np.ndarray] = []
         
         # 改善: 出力層の初期化
         for _ in range(output_size):
@@ -152,7 +152,8 @@ class SaraEngine:
         self.o_decay = 0.88  # 少し早く減衰
         
         self.layer_activity_counters = [np.zeros(r.hidden_size, dtype=np.float32) for r in self.reservoirs]
-        self.prev_spikes = [[] for _ in self.reservoirs]
+        # 修正: 型ヒント追加
+        self.prev_spikes: List[List[int]] = [[] for _ in self.reservoirs]
         
         # 改善: 学習率スケジューリング用
         self.t = 0  # タイムステップ

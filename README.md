@@ -80,6 +80,38 @@ Golden ratios for MNIST tasks:
 * **Input Scale**: Strong input to Fast layer (1.0), weak input to Slow layer (0.4)
 * **Sleep Pruning**: 5% (recommended to execute every epoch)
 
+## **How to use**  
+  
+To use these new engines, call them as follows:  
+STDP pre-training example:  
+  
+bash```
+from sara_engine import STDPSaraEngine
+
+# Initialize the STDP engine  
+engine = STDPSaraEngine(input_size=784, output_size=10)
+
+# 1. Unsupervised pre-training (no labels required)
+# spike_data_list = [spike_train1, spike_train2, ...]
+engine.pretrain(spike_data_list, epochs=1)
+
+# 2. Supervised fine-tuning 
+for spikes, label in labeled_data:
+    engine.train_step(spikes, label)
+```    
+  
+Example of a hierarchical engine:   
+  
+bash```
+from sara_engine import HierarchicalSaraEngine
+
+# Initialize Deep SNN  
+deep_engine = HierarchicalSaraEngine(input_size=784, output_size=10)
+
+# Learn as usual  
+deep_engine.train_step(spike_train, label)
+```  
+
 ## **License**
 
 MIT License

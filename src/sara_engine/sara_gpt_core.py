@@ -1,15 +1,17 @@
 # src/sara_engine/sara_gpt_core.py
-# SARA-GPT Core Logic (v43: Echo Training & Normalized Weights)
+# SARA-GPT Core Logic (v45: Attention & Dynamic Dynamics)
+# 行列演算なし・CPU特化・Attention機構搭載
 
 import numpy as np
 import hashlib
 import pickle
 import random
-from typing import List, Dict, Tuple, Optional
-from .core import LiquidLayer 
+from typing import List, Dict, Tuple, Optional, Any
+from .spike_attention import SpikeAttention
 
+# --- 共通ユーティリティ ---
 class SDREncoder:
-    """v42: 完全決定論的SDRエンコーダー (変更なし)"""
+    """決定論的SDRエンコーダー"""
     def __init__(self, input_size: int, density: float = 0.02):
         self.input_size = input_size
         self.density = density
@@ -40,8 +42,11 @@ class SDREncoder:
                 best_word = word
         return best_word
 
-class KWtaLiquidLayer(LiquidLayer):
-    """v43: K-WTA Liquid Layer"""
+class DynamicLiquidLayer:
+    """
+    v45: Dynamic Liquid Layer with STDP
+    強制K-WTAを廃止し、ホメオスタシスとSTDPによる自律的な学習を実現
+    """
     def __init__(self, input_size: int, hidden_size: int, decay: float, 
                  density: float = 0.1, input_scale: float = 1.0, 
                  rec_scale: float = 1.0, feedback_scale: float = 0.5):
@@ -49,12 +54,13 @@ class KWtaLiquidLayer(LiquidLayer):
         self.size = hidden_size
         self.decay = decay
         
-        self.in_indices = []
-        self.in_weights = []
-        self.rec_indices = []
-        self.rec_weights = []
+        # スパース接続
+        self.in_indices: List[np.ndarray] = []
+        self.in_weights: List[np.ndarray] = []
+        self.rec_indices: List[np.ndarray] = []
+        self.rec_weights: List[np.ndarray] = []
         
-        # Init weights
+        # Init Input Weights
         for i in range(input_size):
             n = int(hidden_size * density)
             if n > 0:
@@ -66,146 +72,136 @@ class KWtaLiquidLayer(LiquidLayer):
                 self.in_indices.append(np.array([], dtype=np.int32))
                 self.in_weights.append(np.array([], dtype=np.float32))
         
-        rec_density = 0.15
+        # Init Recurrent Weights
+        rec_density = 0.12
         for i in range(hidden_size):
             n = int(hidden_size * rec_density)
             if n > 0:
                 idx = np.random.choice(hidden_size, n, replace=False).astype(np.int32)
-                w = np.random.uniform(-rec_scale, rec_scale, n).astype(np.float32)
+                idx = idx[idx != i] # No self-loop
+                w = np.random.uniform(-rec_scale, rec_scale, len(idx)).astype(np.float32)
                 self.rec_indices.append(idx)
                 self.rec_weights.append(w)
             else:
                 self.rec_indices.append(np.array([], dtype=np.int32))
                 self.rec_weights.append(np.array([], dtype=np.float32))
         
+        # State
         self.v = np.zeros(hidden_size, dtype=np.float32)
         self.refractory = np.zeros(hidden_size, dtype=np.float32)
-        self.dynamic_thresh = np.ones(hidden_size, dtype=np.float32) * 0.5
         
-        self.stp_gains = [np.ones(len(w), dtype=np.float32) for w in self.rec_weights]
-        self.facilitation_rate = 0.1 # 0.25 -> 0.1 (Stabilize)
-        self.max_gain = 2.0 # 3.5 -> 2.0 (Stabilize)
-        self.recovery_rate = 0.05
-        self.target_rate = 0.05 # Target 5% activity
-        self.homeostasis_rate = 0.005
+        # Homeostasis
+        self.base_thresh = 0.8
+        self.dynamic_thresh = np.ones(hidden_size, dtype=np.float32) * self.base_thresh
         
+        # Feedback
         self.feedback_scale = feedback_scale
-        self.feedback_weights = []
+        self.feedback_weights: List[np.ndarray] = []
         rng = np.random.RandomState(42)
         for i in range(hidden_size):
             targets = rng.choice(hidden_size, int(hidden_size * 0.05), replace=False)
             self.feedback_weights.append(targets)
-        
-        self.spike_trace = np.zeros(hidden_size, dtype=np.float32)
-        self.trace_decay = 0.9
-        self.stdp_lr = 0.005
-        self.k_winners = int(hidden_size * 0.05) # Keep sparsity high (5%)
 
     def forward_with_feedback(self, active_inputs: List[int], 
                              prev_active_hidden: List[int], 
                              feedback_active: List[int] = [], 
-                             learning: bool = False) -> List[int]:
+                             learning: bool = False,
+                             attention_signal: List[int] = []) -> List[int]:
         
+        # 1. 不応期更新
         self.refractory = np.maximum(0, self.refractory - 1)
+        
+        # 2. 膜電位減衰
         self.v *= self.decay
         
-        # Input
+        # 3. 入力統合 (Input -> Hidden)
         for pre_id in active_inputs:
             if pre_id < len(self.in_indices):
                 targets = self.in_indices[pre_id]
                 ws = self.in_weights[pre_id]
                 if len(targets) > 0: self.v[targets] += ws
         
-        # Recurrent
+        # Recurrent (Hidden -> Hidden)
         for pre_h_id in prev_active_hidden:
             if pre_h_id < len(self.rec_indices):
                 targets = self.rec_indices[pre_h_id]
                 ws = self.rec_weights[pre_h_id]
-                if pre_h_id < len(self.stp_gains):
-                    gains = self.stp_gains[pre_h_id]
-                    if len(targets) > 0:
-                        self.v[targets] += ws * gains
-                        gains += self.facilitation_rate
-                        np.clip(gains, 1.0, self.max_gain, out=gains)
+                if len(targets) > 0: self.v[targets] += ws
         
         # Feedback
-        if len(feedback_active) > 0:
+        if feedback_active:
             for fb_id in feedback_active:
                 if fb_id < len(self.feedback_weights):
                     targets = self.feedback_weights[fb_id]
                     self.v[targets] += self.feedback_scale
+
+        # Attention Injection
+        if attention_signal:
+            attn_scale = 1.5
+            for idx in attention_signal:
+                if idx < self.size:
+                    self.v[idx] += attn_scale
         
-        # STP Recovery
-        for i in range(len(self.stp_gains)):
-            if len(self.stp_gains[i]) > 0:
-                self.stp_gains[i] += (1.0 - self.stp_gains[i]) * self.recovery_rate
-        
-        # Fire (K-WTA)
-        candidates_mask = (self.v >= self.dynamic_thresh) & (self.refractory <= 0)
-        candidates_indices = np.where(candidates_mask)[0]
+        # 4. 発火判定 (Dynamic)
+        ready_mask = (self.v >= self.dynamic_thresh) & (self.refractory <= 0)
+        candidates_indices = np.where(ready_mask)[0]
         
         fired_indices = []
+        max_spikes = int(self.size * 0.15) # Max 15% activity
+        
         if len(candidates_indices) > 0:
-            if len(candidates_indices) > self.k_winners:
+            if len(candidates_indices) > max_spikes:
+                # Soft Cap
                 potentials = self.v[candidates_indices]
-                top_k_local_indices = np.argsort(potentials)[-self.k_winners:]
-                fired_indices = candidates_indices[top_k_local_indices].tolist()
+                top_indices = np.argsort(potentials)[-max_spikes:]
+                fired_indices = candidates_indices[top_indices].tolist()
             else:
                 fired_indices = candidates_indices.tolist()
             
             fired_arr = np.array(fired_indices, dtype=int)
             self.v[fired_arr] = 0.0
-            self.refractory[fired_arr] = 2.0
-            self.dynamic_thresh[fired_arr] += self.homeostasis_rate * 2.0
-        
-        # Homeostasis
+            
+            # 不応期のランダム化
+            ref_periods = np.random.uniform(2.0, 4.0, size=len(fired_arr))
+            self.refractory[fired_arr] = ref_periods
+            
+            # Homeostasis: 抑制
+            self.dynamic_thresh[fired_arr] += 0.08
+
+        # Homeostasis: 興奮
         not_fired_mask = np.ones(self.size, dtype=bool)
-        if len(fired_indices) > 0:
+        if fired_indices:
             not_fired_mask[np.array(fired_indices, dtype=int)] = False
-        
-        self.dynamic_thresh[not_fired_mask] -= self.homeostasis_rate * self.target_rate
+        self.dynamic_thresh[not_fired_mask] -= 0.002
         np.clip(self.dynamic_thresh, 0.1, 5.0, out=self.dynamic_thresh)
         
-        # STDP
-        if learning and len(fired_indices) > 0:
+        # 5. STDP (Recurrent Learning)
+        if learning and fired_indices and prev_active_hidden:
             fired_arr = np.array(fired_indices, dtype=int)
             for pre_id in prev_active_hidden:
                 if pre_id < len(self.rec_indices):
                     targets = self.rec_indices[pre_id]
-                    weights = self.rec_weights[pre_id]
                     mask = np.isin(targets, fired_arr)
                     if np.any(mask):
-                        weights[mask] += self.stdp_lr
-                        np.clip(weights, -2.0, 2.0, out=weights)
-        
-        # Trace
-        self.spike_trace *= self.trace_decay
-        if len(fired_indices) > 0:
-            self.spike_trace[np.array(fired_indices, dtype=int)] += 1.0
-        
-        return fired_indices
+                        self.rec_weights[pre_id][mask] += 0.015
+                        np.clip(self.rec_weights[pre_id], -2.0, 2.0, out=self.rec_weights[pre_id])
 
-    def prune_synapses(self, threshold: float = 0.01):
-        for i in range(len(self.rec_weights)):
-            weights = self.rec_weights[i]
-            weights[np.abs(weights) < threshold] = 0.0
+        return fired_indices
 
     def reset(self):
         self.v.fill(0)
         self.refractory.fill(0)
-        self.stp_gains = [np.ones(len(w), dtype=np.float32) for w in self.rec_weights]
-        self.spike_trace.fill(0)
+        self.dynamic_thresh.fill(self.base_thresh)
 
     def relax(self, steps=10):
         for _ in range(steps):
             self.v *= self.decay
             self.refractory = np.maximum(0, self.refractory - 1)
-            for i in range(len(self.stp_gains)):
-                if len(self.stp_gains[i]) > 0:
-                    self.stp_gains[i] += (1.0 - self.stp_gains[i]) * 0.01
+            diff = self.dynamic_thresh - self.base_thresh
+            self.dynamic_thresh -= diff * 0.1
 
 class SaraGPT:
-    """v43: Echo Training & Stabilized Readout"""
+    """v45: SARA-GPT with Spike Attention"""
     def __init__(self, sdr_size: int = 1024):
         self.sdr_size = sdr_size
         self.encoder = SDREncoder(sdr_size, density=0.02)
@@ -213,63 +209,68 @@ class SaraGPT:
         self.h_size = 2000
         self.total_hidden = self.h_size * 3
         
-        self.l1 = KWtaLiquidLayer(sdr_size, self.h_size, decay=0.3, density=0.05, 
-                                  input_scale=3.0, rec_scale=1.2, feedback_scale=0.5)
-        self.l2 = KWtaLiquidLayer(self.h_size, self.h_size, decay=0.6, density=0.05, 
-                                  input_scale=2.0, rec_scale=1.5, feedback_scale=0.8)
-        self.l3 = KWtaLiquidLayer(self.h_size, self.h_size, decay=0.95, density=0.05, 
-                                  input_scale=1.5, rec_scale=1.8, feedback_scale=0.0)
+        # Layers
+        self.l1 = DynamicLiquidLayer(sdr_size, self.h_size, decay=0.3, density=0.08, 
+                                     input_scale=2.0, rec_scale=1.1, feedback_scale=0.3)
+        self.l2 = DynamicLiquidLayer(self.h_size, self.h_size, decay=0.6, density=0.08, 
+                                     input_scale=1.5, rec_scale=1.4, feedback_scale=0.5)
+        self.l3 = DynamicLiquidLayer(self.h_size, self.h_size, decay=0.92, density=0.08, 
+                                     input_scale=1.0, rec_scale=1.8, feedback_scale=0.0)
         
         self.layers = [self.l1, self.l2, self.l3]
         self.offsets = [0, self.h_size, self.h_size * 2]
-        self.prev_spikes = [[], [], []]
+        # 修正: 型ヒント追加
+        self.prev_spikes: List[List[int]] = [[], [], []]
         
-        self.episodic_memory = []
+        # Attention Module
+        self.attention = SpikeAttention(input_size=self.h_size, hidden_size=500, memory_size=60)
+        self.attention_active = True
+        
+        # 修正: 型ヒント追加
+        self.episodic_memory: List[List[str]] = []
         self.max_episodic_size = 150
 
-        # Readout: Lower random init
-        self.readout_weights = []
+        # Readout
+        # 修正: 型ヒントを明示して mypy の __iadd__ エラーを回避
+        self.readout_weights: List[Dict[str, Any]] = []
         for _ in range(sdr_size):
             fan_in = 600
             idx = np.random.choice(self.total_hidden, fan_in, replace=False)
-            w = np.random.rand(fan_in).astype(np.float32) * 0.05 # Lower init (0.2 -> 0.05)
+            w = np.random.normal(0, 0.05, fan_in).astype(np.float32)
             self.readout_weights.append({'idx': idx, 'w': w})
         
         self.readout_v = np.zeros(sdr_size, dtype=np.float32)
-        self.readout_decay = 0.90 # Faster decay to avoid accumulation
-        self.readout_thresh = 0.6 # Higher threshold
+        self.readout_decay = 0.85
+        self.readout_thresh = 0.5
         self.readout_refractory = np.zeros(sdr_size, dtype=np.float32)
         
-        self.lr = 0.05 # Lower base LR
+        self.lr = 0.05
 
     def reset_state(self):
-        for layer in self.layers:
-            layer.reset()
+        for layer in self.layers: layer.reset()
+        self.attention.reset()
         self.prev_spikes = [[], [], []]
         self.readout_v.fill(0)
         self.readout_refractory.fill(0)
 
     def relax(self, steps: int = 20):
-        for layer in self.layers:
-            layer.relax(steps)
+        for layer in self.layers: layer.relax(steps)
         self.readout_v *= (self.readout_decay ** steps)
         self.readout_refractory = np.maximum(0, self.readout_refractory - steps)
 
     def save_model(self, filepath: str):
         state = {
-            'version': 'v43',
+            'version': 'v45',
             'sdr_size': self.sdr_size,
-            'layers': [
-                {
-                    'in_idx': l.in_indices, 'in_w': l.in_weights,
-                    'rec_idx': l.rec_indices, 'rec_w': l.rec_weights,
-                    'dynamic_thresh': l.dynamic_thresh,
-                    'feedback_w': l.feedback_weights
-                }
-                for l in self.layers
-            ],
+            'layers': [{'in_idx': l.in_indices, 'in_w': l.in_weights, 
+                        'rec_idx': l.rec_indices, 'rec_w': l.rec_weights, 
+                        'dynamic_thresh': l.dynamic_thresh, 'feedback_w': l.feedback_weights} 
+                       for l in self.layers],
             'readout_weights': self.readout_weights,
-            'encoder_cache': self.encoder.cache
+            'encoder_cache': self.encoder.cache,
+            'attn_w_q': self.attention.w_query,
+            'attn_w_k': self.attention.w_key,
+            'attn_w_v': self.attention.w_value
         }
         with open(filepath, 'wb') as f:
             pickle.dump(state, f)
@@ -286,16 +287,18 @@ class SaraGPT:
             target_layer.in_weights = layer_data['in_w']
             target_layer.rec_indices = layer_data['rec_idx']
             target_layer.rec_weights = layer_data['rec_w']
-            target_layer.stp_gains = [np.ones(len(w), dtype=np.float32) 
-                                     for w in target_layer.rec_weights]
             if 'dynamic_thresh' in layer_data:
                 target_layer.dynamic_thresh = layer_data['dynamic_thresh']
             if 'feedback_w' in layer_data:
                 target_layer.feedback_weights = layer_data['feedback_w']
 
         self.readout_weights = state['readout_weights']
-        if 'encoder_cache' in state:
-            self.encoder.cache = state['encoder_cache']
+        if 'encoder_cache' in state: self.encoder.cache = state['encoder_cache']
+        
+        if 'attn_w_q' in state:
+            self.attention.w_query = state['attn_w_q']
+            self.attention.w_key = state['attn_w_k']
+            self.attention.w_value = state['attn_w_v']
         
         self.reset_state()
         print(f"Model loaded from {filepath}")
@@ -303,47 +306,59 @@ class SaraGPT:
     def forward_step(self, input_sdr: List[int], training: bool = False, 
                     force_output: bool = False) -> Tuple[List[int], List[int]]:
         
+        # 1. Forward Pass
         spikes_1 = self.l1.forward_with_feedback(input_sdr, self.prev_spikes[0], 
                                                  feedback_active=self.prev_spikes[1], 
-                                                 learning=False)
+                                                 learning=training)
+        
         spikes_2 = self.l2.forward_with_feedback(spikes_1, self.prev_spikes[1], 
                                                  feedback_active=self.prev_spikes[2], 
-                                                 learning=False)
+                                                 learning=training)
+        
+        # --- Attention Mechanism ---
+        attn_signal = []
+        if self.attention_active:
+            attn_signal = self.attention.compute(spikes_2)
+            if len(spikes_2) > 0:
+                self.attention.update_memory(spikes_2)
+        
         spikes_3 = self.l3.forward_with_feedback(spikes_2, self.prev_spikes[2], 
                                                  feedback_active=[], 
-                                                 learning=False)
+                                                 learning=training,
+                                                 attention_signal=attn_signal)
         
         self.prev_spikes = [spikes_1, spikes_2, spikes_3]
         
+        # Merge Spikes
         all_spikes = []
         all_spikes.extend(spikes_1)
         all_spikes.extend([x + self.offsets[1] for x in spikes_2])
         all_spikes.extend([x + self.offsets[2] for x in spikes_3])
         
+        # 2. Readout Process
         self.readout_v *= self.readout_decay
         self.readout_refractory = np.maximum(0, self.readout_refractory - 1)
         
-        # Noise (reduced)
         if not training:
-            noise = np.random.normal(0, 0.02, self.sdr_size).astype(np.float32)
+            noise = np.random.normal(0, 0.01, self.sdr_size).astype(np.float32)
             self.readout_v += noise
 
         if len(all_spikes) > 0:
-            all_spikes_set = set(all_spikes)
             for out_idx in range(self.sdr_size):
                 if self.readout_refractory[out_idx] > 0: continue
-                
                 mapping = self.readout_weights[out_idx]
                 indices = mapping['idx']
                 weights = mapping['w']
                 
-                active_mask = np.isin(indices, list(all_spikes_set))
+                # Fast accumulation without dot product
+                active_mask = np.isin(indices, all_spikes)
                 if np.any(active_mask):
                     self.readout_v[out_idx] += np.sum(weights[active_mask])
         
+        # Fire
         fired_mask = (self.readout_v > self.readout_thresh) & (self.readout_refractory <= 0)
-        
         predicted_sdr = []
+        
         if np.any(fired_mask):
             candidates = np.where(fired_mask)[0]
             potentials = self.readout_v[candidates]
@@ -357,7 +372,7 @@ class SaraGPT:
             
             if not training:
                 self.readout_v[predicted_sdr] = 0
-                self.readout_refractory[predicted_sdr] = 3.0 # Increase ref
+                self.readout_refractory[predicted_sdr] = 3.0
         
         if len(predicted_sdr) == 0 and force_output:
             if np.max(self.readout_v) > -999:
@@ -381,8 +396,8 @@ class SaraGPT:
             self.episodic_memory.pop(0)
         
         if online_learning:
-            for _ in range(5):
-                self._learn_tokens(words, reset=False, boost=True)
+            for _ in range(3):
+                self._learn_tokens(words, reset=False, boost=True, stdp=True)
         else:
             for w in words:
                 sdr = self.encoder.encode(w)
@@ -392,9 +407,7 @@ class SaraGPT:
         if not self.episodic_memory: return
         for _ in range(cycles):
             episode = random.choice(self.episodic_memory)
-            self._learn_tokens(episode, reset=True, boost=True)
-        for layer in self.layers:
-            layer.prune_synapses()
+            self._learn_tokens(episode, reset=True, boost=True, stdp=True)
 
     def think(self, length: int = 20, vocabulary: List[str] = [], trigger_text: str = "") -> str:
         self.readout_refractory.fill(0)
@@ -406,12 +419,13 @@ class SaraGPT:
                 self.forward_step(sdr, training=False, force_output=False)
         
         generated = []
-        empty_sdr = []
+        # 修正: 型ヒント追加
+        empty_sdr: List[int] = []
         search_vocab = vocabulary + ["<eos>"] if "<eos>" not in vocabulary else vocabulary
-        recent_window = []
+        # 修正: 型ヒント追加
+        recent_window: List[str] = []
         
         for i in range(length):
-            # v43: Echo Inference is naturally handled here
             predicted_sdr, _ = self.forward_step(empty_sdr, training=False, force_output=True)
             next_word = self.encoder.decode(predicted_sdr, search_vocab)
             
@@ -419,66 +433,50 @@ class SaraGPT:
                 candidates = [w for w in vocabulary if w != "<eos>"]
                 if candidates: next_word = np.random.choice(candidates)
             
-            if len(recent_window) >= 2: recent_window.pop(0)
+            if len(recent_window) >= 3: recent_window.pop(0)
             if next_word in recent_window:
                 candidates = [w for w in vocabulary if w not in recent_window and w != "<eos>"]
                 if candidates: next_word = np.random.choice(candidates[:3])
             
             recent_window.append(next_word)
             
-            if next_word == "" or next_word == "<unk>":
-                if len(vocabulary) > 0:
-                    next_word = np.random.choice(vocabulary)
-                    empty_sdr = self.encoder.encode(next_word)
-                else: break
-            else:
-                empty_sdr = self.encoder.encode(next_word)
-            
+            if next_word == "" or next_word == "<unk>": break
             if next_word == "<eos>": break
+            
             generated.append(next_word)
+            empty_sdr = self.encoder.encode(next_word)
         
         return " ".join(generated)
 
-    def _learn_tokens(self, tokens: List[str], reset: bool = False, boost: bool = False):
-        """v43: Echo Training Implementation"""
+    def _learn_tokens(self, tokens: List[str], reset: bool = False, boost: bool = False, stdp: bool = False):
         if reset: self.reset_state()
         
         sdr_sequence = [self.encoder.encode(w) for w in tokens]
         if tokens[-1] != "<eos>": sdr_sequence.append(self.encoder.encode("<eos>"))
         
-        base_lr = 0.5 if boost else self.lr # Moderate LR
+        base_lr = 0.5 if boost else self.lr
         
         for t in range(len(sdr_sequence) - 1):
             input_sdr = sdr_sequence[t]
             target_sdr = sdr_sequence[t + 1]
             
-            # 1. Stimulate with Input
-            self.forward_step(input_sdr, training=True, force_output=False)
-            
-            # 2. Echo Step (Empty Input) - This state maps to target
-            _, active_spikes = self.forward_step([], training=True, force_output=False)
+            self.forward_step(input_sdr, training=stdp, force_output=False)
+            _, active_spikes = self.forward_step([], training=False, force_output=False)
             
             if len(active_spikes) == 0: continue
             
             target_set = set(target_sdr)
-            active_spikes_set = set(active_spikes)
-            
             for out_idx in range(self.sdr_size):
                 mapping = self.readout_weights[out_idx]
                 indices = mapping['idx']
                 weights = mapping['w']
                 
-                active_mask = np.isin(indices, list(active_spikes_set))
+                active_mask = np.isin(indices, active_spikes)
                 if not np.any(active_mask): continue
                 
+                # 型推論エラー回避のため weights は Any または ndarray として扱われる
                 if out_idx in target_set:
-                    # Positive Update (Controlled)
-                    delta = base_lr * 0.05 # Very small steps
-                    weights[active_mask] += delta
+                    weights[active_mask] += base_lr * 0.08
                 else:
-                    # Negative Update
-                    delta = base_lr * -0.01 
-                    weights[active_mask] += delta
-                
-                # Clip to small range (Normalize)
-                np.clip(weights, 0.0, 1.0, out=weights)
+                    weights[active_mask] += base_lr * -0.02
+                np.clip(weights, -0.5, 1.5, out=weights)

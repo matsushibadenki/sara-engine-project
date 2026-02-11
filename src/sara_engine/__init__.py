@@ -1,9 +1,17 @@
 # src/sara_engine/__init__.py
 # パッケージ初期化ファイル
-# ライブラリのエントリーポイントとしてクラスを公開する
 
 from .core import SaraEngine, LiquidLayer
-# 新しく追加したモジュールをインポート可能にする
 from .sara_gpt_core import SaraGPT, SDREncoder
+from .stdp_layer import STDPSaraEngine, STDPLiquidLayer
+from .hierarchical_engine import HierarchicalSaraEngine
+# 追加: 注意機構
+from .spike_attention import SpikeAttention
 
-__all__ = ["SaraEngine", "LiquidLayer", "SaraGPT", "SDREncoder"]
+__all__ = [
+    "SaraEngine", "LiquidLayer", 
+    "SaraGPT", "SDREncoder",
+    "STDPSaraEngine", "STDPLiquidLayer",
+    "HierarchicalSaraEngine",
+    "SpikeAttention"
+]
