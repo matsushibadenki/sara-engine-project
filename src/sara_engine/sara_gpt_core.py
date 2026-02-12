@@ -1,28 +1,33 @@
-# src/sara_engine/sara_gpt_core.py
-# SARA-GPT Core Logic (v49: Improved Criticality & Stability)
+_FILE_INFO = {
+    "//": "ディレクトリパス: src/sara_engine/sara_gpt_core.py",
+    "//": "タイトル: SARA-GPT コアロジック",
+    "//": "目的: SDRベースのトークンエンコーディングと動的リキッドレイヤーによる自然言語処理コアを提供する。"
+}
 
 import numpy as np
 import hashlib
 import pickle
 import random
+import sys
+import os
 from typing import List, Dict, Tuple, Optional, Any
 from collections import OrderedDict
 from .spike_attention import SpikeAttention
 
+# no-redefエラーを回避しつつ、フォールバックインポートを行う
 try:
     from .tokenizer import SaraTokenizer
 except ImportError:
-    import sys
-    import os
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    from tokenizer import SaraTokenizer
+    from tokenizer import SaraTokenizer  # type: ignore[import-not-found, no-redef]
     
 # --- 共通ユーティリティ ---
 class SDREncoder:
     def __init__(self, input_size: int, density: float = 0.02, use_tokenizer: bool = True, cache_size: int = 10000):
         self.input_size = input_size
         self.density = density
-        self.cache = OrderedDict() # LRUキャッシュに変更
+        # mypyエラー対応のため明示的な型アノテーションを追加
+        self.cache: 'OrderedDict[str, List[int]]' = OrderedDict()
         self.cache_size = cache_size
         
         self.use_tokenizer = use_tokenizer

@@ -1,11 +1,13 @@
-# src/sara_engine/core.py
-# Saraエンジン・コアロジック (Improved Version v82: Precision Landing)
-# L1密度の最大化とソフトな抑制、強力な学習率減衰により、ピーク性能(93%+)を維持・向上させて95%を目指す
+_FILE_INFO = {
+    "//": "ディレクトリパス: src/sara_engine/core.py",
+    "//": "タイトル: SARAエンジン・コアロジック",
+    "//": "目的: エンジンの主要な学習・推論ロジックを提供する。L1密度の最大化とソフトな抑制、強力な学習率減衰を含む。"
+}
 
 import numpy as np
 import random
 import pickle
-from typing import List, Tuple, Dict, Optional, Union
+from typing import List, Tuple, Dict, Optional, Union, Any
 
 class LiquidLayer:
     def __init__(self, input_size: int, hidden_size: int, decay_center: float, input_scale: float, rec_scale: float, density: float = 0.06):
@@ -22,7 +24,6 @@ class LiquidLayer:
         self.rec_weights: List[np.ndarray] = []
         
         # Input Weights
-        # densityは引数で制御
         fan_in = max(1, int(input_size * density))
         w_range_in = input_scale * np.sqrt(2.0 / fan_in)
         
@@ -136,9 +137,10 @@ class SaraEngine:
         self.total_hidden = sum(r.hidden_size for r in self.reservoirs)
         self.offsets = [0, 1000, 2600, 4200]
         
-        self.w_ho = []
-        self.m_ho = []
-        self.v_ho = []
+        # 型アノテーションを追加してmypyの推論を助ける
+        self.w_ho: List[np.ndarray] = []
+        self.m_ho: List[np.ndarray] = []
+        self.v_ho: List[np.ndarray] = []
         
         for _ in range(output_size):
             limit = np.sqrt(2.0 / self.total_hidden)
@@ -154,11 +156,12 @@ class SaraEngine:
         self.beta2 = 0.999
         self.epsilon = 1e-8
         
-        # 修正: 出力減衰を0.95に。記憶をもう少し長く保ち安定させる
+        # 出力減衰を0.95に。記憶をもう少し長く保ち安定させる
         self.o_decay = 0.95
         
         self.layer_activity_counters = [np.zeros(r.hidden_size, dtype=np.float32) for r in self.reservoirs]
-        self.prev_spikes = [[] for _ in self.reservoirs]
+        # 型アノテーションを追加
+        self.prev_spikes: List[List[int]] = [[] for _ in self.reservoirs]
         self.t = 0
 
     def reset_state(self):
@@ -236,8 +239,8 @@ class SaraEngine:
             target_norm = 6.0
             if norm > 0:
                 scale = target_norm / norm
-                if scale > 1.5: scale = 1.5
-                if scale < 0.8: scale = 0.8
+                if scale > 1.5: scale = 1.5 # type: ignore[assignment]
+                if scale < 0.8: scale = 0.8 # type: ignore[assignment]
                 weights *= scale
             
             self.w_ho[o] = weights
@@ -286,14 +289,15 @@ class SaraEngine:
             
             # 正解: 2.4 (High Target)
             if self.o_v[target_label] < 2.4:
-                errors[target_label] = 2.4 - self.o_v[target_label]
+                # mypyのエラー回避のため明示的に assignment を ignore します
+                errors[target_label] = 2.4 - self.o_v[target_label]  # type: ignore[assignment]
             
             # 修正: ソフト・ネガティブ (-0.5)
             # 0.0を超えたものだけを、-0.5まで優しく押し戻す
             # 過剰修正による回路破壊を防ぐ
             for o in range(self.output_size):
                 if o != target_label and self.o_v[o] > 0.0:
-                    errors[o] = -0.5 - self.o_v[o]
+                    errors[o] = -0.5 - self.o_v[o]  # type: ignore[assignment]
             
             for o in range(self.output_size):
                 if abs(errors[o]) > 0.01:
@@ -301,8 +305,9 @@ class SaraEngine:
 
         # Adam Update
         for o in range(self.output_size):
-            self.m_ho[o] = self.beta1 * self.m_ho[o] + (1 - self.beta1) * grad_accumulator[o]
-            self.v_ho[o] = self.beta2 * self.v_ho[o] + (1 - self.beta2) * (grad_accumulator[o] ** 2)
+            # mypyのfloat代入エラーを防ぐため明示的にキャスト
+            self.m_ho[o] = (self.beta1 * self.m_ho[o] + (1 - self.beta1) * grad_accumulator[o]).astype(np.float32)
+            self.v_ho[o] = (self.beta2 * self.v_ho[o] + (1 - self.beta2) * (grad_accumulator[o] ** 2)).astype(np.float32)
             
             m_hat = self.m_ho[o] / (1 - self.beta1 ** min(self.t, 1000))
             v_hat = self.v_ho[o] / (1 - self.beta2 ** min(self.t, 1000))

@@ -1,5 +1,8 @@
-# examples/run_diagnostics.py
-# 診断・デバッグ・テストツール (v2.1: SaraEngine Core v50対応版)
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/run_diagnostics.py",
+    "//": "タイトル: 診断・デバッグ・テストツール",
+    "//": "目的: SARAエンジンの初期化、重み、学習サイクルの健全性を診断・テストする。"
+}
 
 import sys
 import os
@@ -16,7 +19,6 @@ except ImportError:
 setup_path()
 
 try:
-    # 修正: SaraGPTではなく、Coreにある SaraEngine をインポート
     from sara_engine import SaraEngine
 except ImportError:
     print("Error: 'sara_engine' module not found.")
@@ -36,12 +38,11 @@ def run_debug_tool():
     print("-" * 60)
     print(f"Reservoirs: {len(engine.reservoirs)} layers")
     print(f"Total Hidden Neurons: {engine.total_hidden}")
-    print(f"Intermediate Layer Size: {engine.intermediate_size}")
+    # intermediate_sizeは存在しないため削除しました
     
-    # 重みの統計チェック (v50: w_ho ではなく w_io をチェック)
-    # w_io: Intermediate -> Output の重みリスト
-    w_mean = np.mean([np.mean(np.abs(w)) for w in engine.w_io])
-    print(f"Readout (Inter->Out) Weights Mean Abs: {w_mean:.4f}")
+    # 重みの統計チェック (w_ho をチェックするように修正)
+    w_mean = np.mean([np.mean(np.abs(w)) for w in engine.w_ho])
+    print(f"Readout (Hidden->Out) Weights Mean Abs: {w_mean:.4f}")
     if w_mean > 0:
         print("✓ Weights initialized correctly.")
     else:
