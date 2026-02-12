@@ -1,6 +1,6 @@
 # src/sara_engine/core.py
-# Saraエンジン・コアロジック (Improved Version v72: Heterogeneous Integration)
-# ニューロンの時定数に多様性（不均一性）を持たせ、表現力を最大化して95%突破を目指す
+# Saraエンジン・コアロジック (Improved Version v74: Polished Diamond)
+# プルーニングの最小化とマージン最大化（+2.0 vs -1.0）により、堅牢な識別境界を構築し95%突破を目指す
 
 import numpy as np
 import random
@@ -8,21 +8,17 @@ import pickle
 from typing import List, Tuple, Dict, Optional, Union
 
 class LiquidLayer:
-    def __init__(self, input_size: int, hidden_size: int, decay_center: float, input_scale: float, rec_scale: float, density: float = 0.08):
+    def __init__(self, input_size: int, hidden_size: int, decay: float, input_scale: float, rec_scale: float, density: float = 0.06):
         self.input_size = input_size
         self.hidden_size = hidden_size
-        # 修正: 減衰率をスカラではなくベクトルにする（多様性）
-        # 中心値 ±0.05 の範囲でばらつかせる
-        self.decay = np.random.uniform(decay_center - 0.05, decay_center + 0.05, hidden_size).astype(np.float32)
-        # 減衰率が1.0を超えないようにクリップ
-        self.decay = np.clip(self.decay, 0.01, 0.99)
+        self.decay = decay
         
         self.in_indices: List[np.ndarray] = []
         self.in_weights: List[np.ndarray] = []
         self.rec_indices: List[np.ndarray] = []
         self.rec_weights: List[np.ndarray] = []
         
-        # Input Weights
+        # 最適化: 密度0.06 (0.05と0.08の中間)
         fan_in = max(1, int(input_size * density))
         w_range_in = input_scale * np.sqrt(2.0 / fan_in)
         
@@ -56,18 +52,18 @@ class LiquidLayer:
         self.v = np.zeros(hidden_size, dtype=np.float32)
         self.refractory = np.zeros(hidden_size, dtype=np.float32)
         
-        # 閾値設定 (decayの中心値で判定)
-        if decay_center < 0.4:  
+        # 閾値設定 (安定志向)
+        if decay < 0.4:  
             self.base_thresh = 0.65
-            self.target_rate = 0.025
+            self.target_rate = 0.03
             self.refractory_period = 2.5
-        elif decay_center < 0.8:  
+        elif decay < 0.8:  
             self.base_thresh = 0.75
             self.target_rate = 0.03
             self.refractory_period = 2.0
         else:  
             self.base_thresh = 0.85
-            self.target_rate = 0.025
+            self.target_rate = 0.02
             self.refractory_period = 1.5
             
         self.thresh = np.ones(hidden_size, dtype=np.float32) * self.base_thresh
@@ -80,14 +76,12 @@ class LiquidLayer:
         if steps == 0: return
         rate = activity_history / float(steps)
         diff = rate - self.target_rate
-        gain = np.where(np.abs(diff) > 0.08, 0.15, 0.04)
+        gain = np.where(np.abs(diff) > 0.08, 0.1, 0.02)
         self.thresh += gain * diff
         self.thresh = np.clip(self.thresh, self.base_thresh * 0.5, self.base_thresh * 5.0)
 
     def forward(self, active_inputs: List[int], prev_active_hidden: List[int]) -> List[int]:
         self.refractory = np.maximum(0, self.refractory - 1)
-        
-        # 修正: ベクトル乗算による不均一な減衰
         self.v *= self.decay
         
         # Vectorized Input Integration
@@ -124,12 +118,12 @@ class SaraEngine:
         self.input_size = input_size
         self.output_size = output_size
         
-        # 修正: decayをdecay_centerに変更し、不均一性を導入
+        # L1の入力を強化 (1.2 -> 2.0) して初期反応をブースト
         self.reservoirs = [
-            LiquidLayer(input_size, 1000, decay_center=0.25, input_scale=1.2, rec_scale=1.3),
-            LiquidLayer(input_size, 1600, decay_center=0.50, input_scale=1.0, rec_scale=1.6),
-            LiquidLayer(input_size, 1600, decay_center=0.75, input_scale=0.8, rec_scale=1.8),
-            LiquidLayer(input_size, 1000, decay_center=0.92, input_scale=0.6, rec_scale=2.2),
+            LiquidLayer(input_size, 1000, decay=0.25, input_scale=2.0, rec_scale=1.2, density=0.08),
+            LiquidLayer(input_size, 1600, decay=0.50, input_scale=1.5, rec_scale=1.5, density=0.06),
+            LiquidLayer(input_size, 1600, decay=0.75, input_scale=1.0, rec_scale=1.8, density=0.05),
+            LiquidLayer(input_size, 1000, decay=0.92, input_scale=0.8, rec_scale=2.0, density=0.04),
         ]
         
         self.total_hidden = sum(r.hidden_size for r in self.reservoirs)
@@ -148,14 +142,13 @@ class SaraEngine:
             
         self.o_v = np.zeros(output_size, dtype=np.float32)
         
-        # 学習パラメータ (v66の設定に近づける)
         self.lr = 0.002
-        self.beta1 = 0.90 
+        self.beta1 = 0.9
         self.beta2 = 0.999
         self.epsilon = 1e-8
         
-        # 修正: 出力減衰を0.91に戻す（キレ重視）
-        self.o_decay = 0.91
+        # 安定重視の出力減衰
+        self.o_decay = 0.94
         
         self.layer_activity_counters = [np.zeros(r.hidden_size, dtype=np.float32) for r in self.reservoirs]
         self.prev_spikes = [[] for _ in self.reservoirs]
@@ -186,9 +179,16 @@ class SaraEngine:
         self.output_size = state['output_size']
         self.reservoirs = state['reservoirs']
         self.offsets = state['offsets']
-        self.w_ho = state['w_ho']
-        self.m_ho = state['m_ho']
-        self.v_ho = state['v_ho']
+        
+        if 'w_ho_a' in state: # 互換性維持
+            self.w_ho = state['w_ho_a']
+            self.m_ho = [np.zeros_like(w) for w in self.w_ho]
+            self.v_ho = [np.zeros_like(w) for w in self.w_ho]
+        else:
+            self.w_ho = state['w_ho']
+            self.m_ho = state['m_ho']
+            self.v_ho = state['v_ho']
+
         self.lr = state.get('lr', 0.001)
         self.t = state.get('t', 0)
         self.total_hidden = sum(r.hidden_size for r in self.reservoirs)
@@ -198,16 +198,16 @@ class SaraEngine:
         print(f"Model loaded from {filepath}")
 
     def sleep_phase(self, epoch: int = 0, sample_size: int = 1000):
-        """適応的プルーニング (One-time Cleanup)"""
-        # Epoch 2の終了時のみ実行 (v66方式)
+        """適応的プルーニング (One-time, Low-Damage)"""
+        # Epoch 2の終了時のみ実行
         if epoch != 1:
             print("  [Sleep Phase] Skipping pruning (Preserving structure).")
             return
         
-        prune_rate = 0.045
-        if sample_size < 2000: prune_rate = 0.05
+        # 修正: プルーニング率を2.5%に下げて、ダメージを最小限にする
+        prune_rate = 0.025 
         
-        print(f"  [Sleep Phase] Pruning {prune_rate*100:.1f}% (One-time cleanup)...")
+        print(f"  [Sleep Phase] Pruning {prune_rate*100:.1f}% (Conservative)...")
         pruned_total = 0
         total_weights = 0
         
@@ -237,9 +237,8 @@ class SaraEngine:
         self.reset_state()
         self.t += 1
         
-        # 修正: 学習率減衰を緩やかに戻す (0.0005 -> 0.00005)
-        # 不均一性により学習が安定するため、急激に下げなくても良い
-        current_lr = self.lr / (1.0 + 0.00005 * self.t)
+        # 学習率減衰
+        current_lr = self.lr / (1.0 + 0.0005 * self.t)
         
         grad_accumulator = [np.zeros_like(w) for w in self.w_ho]
         
@@ -274,13 +273,15 @@ class SaraEngine:
 
             errors = np.zeros(self.output_size, dtype=np.float32)
             
+            # 修正: マージン最大化 (+2.0)
             if self.o_v[target_label] < 2.0:
                 errors[target_label] = 2.0 - self.o_v[target_label]
             
-            # Rectified Error
+            # 修正: 間違いを強く叩く (-1.0)
+            # これにより「正解(+2.0)」と「不正解(-1.0)」の差（マージン）を広げる
             for o in range(self.output_size):
-                if o != target_label and self.o_v[o] > 0.0:
-                    errors[o] = -0.5 - self.o_v[o]
+                if o != target_label and self.o_v[o] > -1.0:
+                    errors[o] = -1.0 - self.o_v[o]
             
             for o in range(self.output_size):
                 if abs(errors[o]) > 0.01:
