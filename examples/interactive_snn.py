@@ -1,18 +1,15 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/interactive_snn.py",
     "//": "タイトル: 対話型SNNシェル",
-    "//": "目的: 学習済みモデルを使用して、任意のドキュメントに対するQAを行う。"
+    "//": "目的: インタラクティブにSARAのQA機能をテストする。"
 }
 
 import sys
 import os
 import time
-
-
 from sara_engine import StatefulRLMAgent
 
 def type_writer(text, delay=0.02):
-    """タイプライター風出力"""
     for char in text:
         sys.stdout.write(char)
         sys.stdout.flush()
@@ -20,22 +17,16 @@ def type_writer(text, delay=0.02):
     print()
 
 def interactive_shell():
-    print("\033[H\033[J")  # 画面クリア
+    print("\033[H\033[J")
     print("==========================================")
-    print("   SARA Stateful SNN - Interactive Core   ")
+    print("   SARA Stateful SNN - Interactive Shell  ")
     print("==========================================")
     
     model_path = "models/stateful_rl_trained.pkl"
-    if not os.path.exists(model_path):
-        print(f"Error: Model file {model_path} not found.")
-        print("Running with initialized (untrained) weights.")
-        model_path = None # 未学習で起動
-    else:
-        print(f"Loading trained brain from: {model_path}")
-
-    # エージェント初期化
-    agent = StatefulRLMAgent(model_path=model_path)
+    agent = StatefulRLMAgent(model_path=model_path if os.path.exists(model_path) else None)
     print("System Online.\n")
+
+    current_doc = ""
 
     while True:
         print("-" * 40)
@@ -46,51 +37,33 @@ def interactive_shell():
         choice = input("\nSelect Action >> ").strip()
         
         if choice == "1":
-            print("\nEnter the document text (Press Enter twice to finish):")
+            print("\nEnter text (Enter twice to finish):")
             lines = []
             while True:
                 line = input()
-                if line:
-                    lines.append(line)
-                else:
-                    break
-            document = " ".join(lines)
-            if len(document) < 10:
-                print("Document too short, using default example.")
-                document = ("This is a top secret memo. The project code is RED-DRAGON. "
-                            "Do not share this with anyone. End of message.")
-            
-            # ドキュメントをチャンク分割してWorking Memoryの準備をするなどの処理は
-            # solveメソッド内で行われるため、ここでは保持だけする
-            current_doc = document
-            print(f"\nDocument stored ({len(document)} chars).")
+                if not line: break
+                lines.append(line)
+            current_doc = " ".join(lines)
+            print(f"\nDocument stored ({len(current_doc)} chars).")
 
         elif choice == "2":
-            if 'current_doc' not in locals():
-                print("Please set a document first [Option 1].")
-                continue
+            if not current_doc:
+                print("Warning: No document set. Setting default context.")
+                current_doc = "The system version is SARA-0.1.3. The key is BLUE-EYES."
                 
             query = input("Query >> ").strip()
             if not query: continue
             
-            print("\nThinking Process:")
-            # 推論実行（学習はオフ）
+            print("\nThinking...")
             answer = agent.solve(query, current_doc, train_rl=False)
-            
-            print(f"\n>>> SARA's Answer: {answer}")
-            
-            # 答えの解説（SNNが見つけた根拠）
-            if answer:
-                type_writer(f"Confidence: High (Found in state EXTRACT)")
-            else:
-                type_writer("Confidence: Low (Could not extract definite answer)")
+            print(f"\n>>> SARA: {answer}")
 
         elif choice == "3":
-            print("Shutting down.")
+            print("Shutdown.")
             break
         
         else:
-            print("Invalid selection.")
+            print("Invalid input.")
 
 if __name__ == "__main__":
     interactive_shell()

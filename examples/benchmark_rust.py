@@ -1,23 +1,19 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/benchmark_rust.py",
     "//": "タイトル: Rust vs Python ベンチマーク",
-    "//": "目的: 計算コアの速度比較を行う。"
+    "//": "目的: インストールされたsara-engineの計算速度を計測する。"
 }
 
-import sys
-import os
 import time
-import numpy as np
-
-from sara_engine.sara_gpt_core import DynamicLiquidLayer
+from sara_engine import DynamicLiquidLayer
 
 def run_benchmark():
-    print("=== Rust vs Python Benchmark ===")
+    print("=== SARA Engine: Rust vs Python Benchmark ===")
     
-    # 強制的にPythonモードで計測したい場合はソースコードの一時変更が必要だが、
-    # ここでは現在のモード（Rustが入っていればRust）の速度を測る。
+    # パッケージからレイヤーを初期化
+    # Rust実装が利用可能な場合は自動的に使用される
+    layer = DynamicLiquidLayer(input_size=1024, hidden_size=2000, decay=0.5, density=0.05)
     
-    layer = DynamicLiquidLayer(1024, 2000, 0.5, 0.05)
     mode = "Rust" if layer.use_rust else "Python"
     print(f"Running in {mode} mode.")
     
@@ -25,19 +21,18 @@ def run_benchmark():
     start_time = time.time()
     
     print(f"Executing {steps} steps...")
-    input_spikes = list(range(10)) # Dummy input
+    input_spikes = list(range(10)) 
     prev_spikes = []
     
     for i in range(steps):
-        # 入力を少し変える
         if i % 10 == 0:
             input_spikes = [(x + 1) % 1024 for x in input_spikes]
             
+        # 順伝播
         spikes = layer.forward_with_feedback(input_spikes, prev_spikes)
         prev_spikes = spikes
         
-    end_time = time.time()
-    duration = end_time - start_time
+    duration = time.time() - start_time
     fps = steps / duration
     
     print(f"\nResult ({mode}):")
@@ -45,8 +40,9 @@ def run_benchmark():
     print(f"  Speed: {fps:.2f} steps/sec")
     
     if mode == "Rust":
-        print("\nExpectation: Python mode handles ~50-100 steps/sec.")
-        print("Rust mode should be significantly faster (1000+ steps/sec).")
+        print("\nOptimization Status: Native Acceleration Active.")
+    else:
+        print("\nOptimization Status: Using Python Fallback.")
 
 if __name__ == "__main__":
     run_benchmark()
