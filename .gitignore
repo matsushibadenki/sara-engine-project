@@ -4,6 +4,7 @@ __pycache__/
 *.so
 .venv/
 .env
+.DS_Store
 
 # Rust
 target/
