@@ -97,3 +97,6 @@ examples/data/
 
 # Logs
 *.log
+
+# 作業領域
+workspace/
