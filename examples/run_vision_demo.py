@@ -60,7 +60,8 @@ def run_vision_demo():
             input_scale=1.5,
             rec_scale=0.8,
             feedback_scale=0.3,
-            use_rust=False
+            use_rust=False,
+            target_rate=0.05 # [Fix] 目標発火率を設定
         )
         
     # 4. 見る (Processing)

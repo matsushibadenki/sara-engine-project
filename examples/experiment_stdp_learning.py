@@ -28,7 +28,8 @@ def run_learning_experiment():
             input_scale=0.8,  # [Tuning] 初期入力を弱める (Default: 1.0~2.0)
             rec_scale=layer.rec_scale,
             feedback_scale=layer.feedback_scale,
-            use_rust=False
+            use_rust=False,
+            target_rate=0.05 # [Fix] 目標発火率を設定
         )
     
     save_dir = "workspace/stdp_learning_logs"

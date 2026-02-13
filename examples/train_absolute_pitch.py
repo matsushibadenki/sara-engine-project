@@ -44,7 +44,8 @@ def train_absolute_pitch():
             input_scale=1.2,
             rec_scale=0.8,
             feedback_scale=0.2,
-            use_rust=False
+            use_rust=False,
+            target_rate=0.05 # [Fix] 目標発火率を設定
         )
     
     # 3. トレーニング設定

@@ -29,11 +29,12 @@ def run_visualization():
             input_scale=layer.input_scale,
             rec_scale=layer.rec_scale,
             feedback_scale=layer.feedback_scale,
-            use_rust=False
+            use_rust=False,
+            target_rate=0.05 # [Fix] 目標発火率を設定
         )
     
     # 可視化ツールの初期化
-    viz = SaraVisualizer(save_dir="stdp_logs")
+    viz = SaraVisualizer(save_dir="workspace/stdp_logs")
     
     # データの準備
     text = "hello sara artificial intelligence is fascinating"

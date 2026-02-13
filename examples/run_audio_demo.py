@@ -46,7 +46,8 @@ def run_audio_demo():
             input_scale=1.5,
             rec_scale=layer.rec_scale,
             feedback_scale=layer.feedback_scale,
-            use_rust=False
+            use_rust=False,
+            target_rate=0.05 # [Fix] 目標発火率を設定
         )
 
     # 4. シミュレーション実行
