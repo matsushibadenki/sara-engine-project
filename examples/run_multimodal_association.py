@@ -139,7 +139,7 @@ def run_multimodal_experiment():
     print(f"  -> Result: {'SUCCESS' if diff_b > 0 else 'FAIL'} (Diff: {diff_b})")
     
     # グラフ保存
-    save_dir = "multimodal_logs"
+    save_dir = "workspace/multimodal_logs"
     os.makedirs(save_dir, exist_ok=True)
     labels = ['Stim: Circle', 'Stim: Cross']
     low_scores = [recall_score_low, recall_score_low_2]
