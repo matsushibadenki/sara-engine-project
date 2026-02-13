@@ -3,7 +3,6 @@ import os
 import sys
 import time
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 from sara_engine.sara_gpt_core import SaraGPT
 from sara_engine.rlm import SaraRecursiveAgent

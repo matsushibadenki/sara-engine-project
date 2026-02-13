@@ -1,0 +1,18 @@
+[package]
+name = "sara_rust_core"
+version = "0.1.2"
+edition = "2021"
+
+# バイナリとしてではなく、ライブラリとしてビルドする設定
+[lib]
+name = "sara_rust_core"
+crate-type = ["cdylib"]
+path = "src/sara_engine/lib.rs"
+
+[dependencies]
+pyo3 = { version = "0.20.0", features = ["extension-module"] }
+rand = "0.8.5"
+sha2 = "0.10.8"
+hex = "0.4.3"
+serde = { version = "1.0", features = ["derive"] }
+bincode = "1.3"

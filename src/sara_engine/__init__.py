@@ -1,17 +1,9 @@
-# src/sara_engine/__init__.py
-# パッケージ初期化ファイル
+__version__ = "0.1.3"
 
-from .core import SaraEngine, LiquidLayer
-from .sara_gpt_core import SaraGPT, SDREncoder
-from .stdp_layer import STDPSaraEngine, STDPLiquidLayer
-from .hierarchical_engine import HierarchicalSaraEngine
-# 追加: 注意機構
-from .spike_attention import SpikeAttention
+from .models.gpt import SaraGPT
+from .models.rlm import StatefulRLMAgent
+from .memory.sdr import SDREncoder
+from .memory.ltm import SparseMemoryStore
+from .core.layers import DynamicLiquidLayer
 
-__all__ = [
-    "SaraEngine", "LiquidLayer", 
-    "SaraGPT", "SDREncoder",
-    "STDPSaraEngine", "STDPLiquidLayer",
-    "HierarchicalSaraEngine",
-    "SpikeAttention"
-]
+__all__ = ["SaraGPT", "StatefulRLMAgent", "SDREncoder", "SparseMemoryStore", "DynamicLiquidLayer"]
