@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/transformer.py",
-    "//": "タイトル: 高精度整数演算型 Spike Transformer (Veto修正版)",
-    "//": "目的: 桁溢れによる自己ループを防ぐため、完全な自己抑制(Veto)を導入し遷移を成功させる。"
+    "//": "タイトル: 高精度整数演算型 Spike Transformer (Veto・出力帯域修正版)",
+    "//": "目的: 桁溢れによる自己ループを防ぐためのVetoに加え、文字(5%)や位置(10%)などの複数コンポーネントを同時に出力できるよう、出力発火数の上限(k_o)を拡張し正常な状態遷移を成功させる。"
 }
 
 import json
@@ -113,7 +113,8 @@ class IntPlasticSpikeFFN:
                 v_o[i] = 0
                 
             fired_o = np.where(v_o >= self.thresh_o)[0].tolist()
-            k_o = max(1, int(self.d_model * 0.05))
+            # 修正: 文字(5%)と位置(10%)などのコンポーネントが欠損せずすべて出力されるよう上限帯域を20%に拡張
+            k_o = max(1, int(self.d_model * 0.2))
             if len(fired_o) > k_o:
                 fired_o = np.argsort(v_o)[-k_o:].tolist()
                 
