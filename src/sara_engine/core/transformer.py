@@ -1,9 +1,10 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/transformer.py",
-    "//": "タイトル: 恒常性統合・遷移特化型 Spike Transformer",
-    "//": "目的: STDPの暴走を防ぐシナプス恒常性と厳格な不応期を導入し、S->A->R->A の連鎖を正確に学習・想起する。"
+    "//": "タイトル: 高精度整数演算型 Spike Transformer (Veto修正版)",
+    "//": "目的: 桁溢れによる自己ループを防ぐため、完全な自己抑制(Veto)を導入し遷移を成功させる。"
 }
 
+import json
 import numpy as np
 from typing import List, Dict
 from .attention import SpikeAttention
@@ -24,134 +25,122 @@ class SpikePositionalEncoding:
             return self.pos_spikes[pos]
         return self.pos_spikes[-1]
 
-class PlasticSpikeFFN:
+class IntPlasticSpikeFFN:
     """
-    STDP + シナプス恒常性 (Synaptic Scaling) + 厳格な不応期を備えたFFN。
+    10ビット精度の固定小数点ベース・リザバーFFN。
+    SCALE = 1024 (ビットシフト >> 10) を用いる。
     """
-    def __init__(self, d_model: int, d_ff: int, learning_rate: float = 0.1):
+    SCALE = 1024  
+    SHIFT = 10
+    
+    def __init__(self, d_model: int, d_ff: int, learning_rate: float = 0.5):
         self.d_model = d_model
         self.d_ff = d_ff
-        self.lr = learning_rate
         
-        # 接続辞書 [pre] -> {post: weight}
-        self.w_up: List[Dict[int, float]] = [{} for _ in range(d_model)]
-        self.w_down: List[Dict[int, float]] = [{} for _ in range(d_ff)]
-        self._init_sparse_weights()
+        self.lr_int = int(learning_rate * self.SCALE)
+        self.ltd_int = int(learning_rate * 0.25 * self.SCALE)
+        self.max_w = 5 * self.SCALE
+        self.thresh_h = int(0.5 * self.SCALE)
+        self.thresh_o = int(0.2 * self.SCALE)
         
-        # トレース（1ステップ前の状態を保持）
-        self.trace_pre = np.zeros(d_model)
+        rng = np.random.RandomState(42)
+        self.w_up: List[Dict[int, int]] = [{} for _ in range(d_model)]
+        self.w_ctx: List[Dict[int, int]] = [{} for _ in range(d_model)]
         
-        # 厳格な不応期カウンタ (発火直後のニューロンを完全に沈黙させる)
-        self.refractory_o = np.zeros(d_model)
+        for i in range(d_model):
+            for t in rng.choice(d_ff, max(1, int(d_ff * 0.15)), replace=False):
+                self.w_up[i][t] = int(rng.uniform(0.5, 1.0) * self.SCALE)
+            for t in rng.choice(d_ff, max(1, int(d_ff * 0.15)), replace=False):
+                self.w_ctx[i][t] = int(rng.uniform(0.2, 0.6) * self.SCALE)
+                
+        self.w_down: List[Dict[int, int]] = [{} for _ in range(d_ff)]
+        self.trace_pre = np.zeros(d_model, dtype=np.int32)
+        self.fired_h_prev: List[int] = []
 
-    def _init_sparse_weights(self):
-        rng = np.random.RandomState()
+    def get_hidden_state(self, valid_in: List[int]) -> List[int]:
+        v_h = np.zeros(self.d_ff, dtype=np.int32)
+        
+        for i in valid_in:
+            for tgt, w in self.w_up[i].items():
+                v_h[tgt] += w
+                
         for i in range(self.d_model):
-            targets = rng.choice(self.d_ff, max(1, int(self.d_ff * 0.1)), replace=False)
-            for t in targets:
-                self.w_up[i][t] = rng.uniform(0.1, 0.5)
-        for i in range(self.d_ff):
-            targets = rng.choice(self.d_model, max(1, int(self.d_model * 0.1)), replace=False)
-            for t in targets:
-                self.w_down[i][t] = rng.uniform(0.1, 0.5)
+            if self.trace_pre[i] > 0:
+                for tgt, w in self.w_ctx[i].items():
+                    v_h[tgt] += (w * self.trace_pre[i]) >> self.SHIFT
+                    
+        fired_h = np.where(v_h >= self.thresh_h)[0].tolist()
+        k_h = max(1, int(self.d_ff * 0.05))
+        if len(fired_h) > k_h:
+            fired_h = np.argsort(v_h)[-k_h:].tolist()
+        return fired_h
 
     def compute(self, input_spikes: List[int], learning: bool = False) -> List[int]:
         valid_in = [i for i in input_spikes if i < self.d_model]
-        
-        # 不応期のカウントダウン
-        self.refractory_o = np.maximum(0, self.refractory_o - 1)
+        fired_h = self.get_hidden_state(valid_in)
         
         if learning:
-            # --- 学習フェーズ (Teacher Forcing) ---
-            # 隠れ層の発火（入力と過去のトレースから）
-            v_h = np.zeros(self.d_ff)
+            if self.fired_h_prev:
+                for h in self.fired_h_prev:
+                    for tgt in valid_in:
+                        self.w_down[h][tgt] = self.w_down[h].get(tgt, 0) + self.lr_int
+                        if self.w_down[h][tgt] > self.max_w:
+                            self.w_down[h][tgt] = self.max_w
+                            
+                    for tgt in list(self.w_down[h].keys()):
+                        if tgt not in valid_in:
+                            self.w_down[h][tgt] -= self.ltd_int
+                            if self.w_down[h][tgt] < 0:
+                                self.w_down[h][tgt] = 0
+
+            self.fired_h_prev = fired_h
+            
+            self.trace_pre >>= 1
             for i in valid_in:
-                for tgt, w in self.w_up[i].items():
-                    v_h[tgt] += w * 2.0
-            for i in range(self.d_model):
-                if self.trace_pre[i] > 0:
-                    for tgt, w in self.w_up[i].items():
-                        v_h[tgt] += w
-
-            fired_h = np.where(v_h >= 1.0)[0].tolist()
-            k_h = max(1, int(self.d_ff * 0.05))
-            if len(fired_h) > k_h:
-                fired_h = np.argsort(v_h)[-k_h:].tolist()
+                self.trace_pre[i] += self.SCALE
                 
-            # 出力層は教師データ(valid_in)で発火
-            fired_o = valid_in.copy()
-
-            # STDP と シナプス恒常性 (Synaptic Scaling)
-            # 重みの合計が一定になるように正規化し、特定シナプスの暴走を防ぐ
-            for h in fired_h:
-                sum_w_up = sum(self.w_up[pre].get(h, 0) for pre in range(self.d_model))
-                for pre in range(self.d_model):
-                    if self.trace_pre[pre] > 0 and h in self.w_up[pre]:
-                        # LTP (強化)
-                        self.w_up[pre][h] += self.lr
-                    elif h in self.w_up[pre]:
-                        # LTD (減衰) + 恒常性維持
-                        self.w_up[pre][h] -= self.lr * 0.1 * (sum_w_up / 5.0)
-                    if h in self.w_up[pre]:
-                        self.w_up[pre][h] = np.clip(self.w_up[pre][h], 0.0, 3.0)
-                        
-            for o in fired_o:
-                sum_w_down = sum(self.w_down[h].get(o, 0) for h in fired_h)
-                for h in fired_h:
-                    if o in self.w_down[h]:
-                        self.w_down[h][o] += self.lr
-                    else:
-                        if o in self.w_down[h]:
-                            self.w_down[h][o] -= self.lr * 0.1 * (sum_w_down / 5.0)
-                    if o in self.w_down[h]:
-                        self.w_down[h][o] = np.clip(self.w_down[h][o], 0.0, 3.0)
-
-            # トレース更新
-            self.trace_pre.fill(0)
-            for i in valid_in:
-                self.trace_pre[i] = 1.0
-                
-            return fired_o
+            return valid_in
 
         else: 
-            # --- 推論・生成フェーズ ---
-            v_h = np.zeros(self.d_ff)
-            for i in valid_in:
-                for tgt, w in self.w_up[i].items():
-                    v_h[tgt] += w
-                    
-            fired_h = np.where(v_h >= 0.8)[0].tolist() 
-            k_h = max(1, int(self.d_ff * 0.05))
-            if len(fired_h) > k_h:
-                fired_h = np.argsort(v_h)[-k_h:].tolist()
-                
-            v_o = np.zeros(self.d_model)
+            v_o = np.zeros(self.d_model, dtype=np.int32)
             for h in fired_h:
                 for tgt, w in self.w_down[h].items():
-                    # 厳格な不応期: 直前に発火したニューロンや現在入力されている文字は発火させない
-                    if self.refractory_o[tgt] <= 0 and tgt not in valid_in:
-                        v_o[tgt] += w
+                    v_o[tgt] += w
                     
-            fired_o = np.where(v_o >= 0.8)[0].tolist()
+            # --- 厳格な自己抑制 (Absolute Veto) ---
+            # 減算ではなく、現在の入力スパイクを完全に0にして出力を阻止する
+            for i in valid_in:
+                v_o[i] = 0
+                
+            fired_o = np.where(v_o >= self.thresh_o)[0].tolist()
             k_o = max(1, int(self.d_model * 0.05))
             if len(fired_o) > k_o:
                 fired_o = np.argsort(v_o)[-k_o:].tolist()
-            
-            # 発火したニューロンを不応期に入れる (2ステップ休む)
-            if fired_o:
-                self.refractory_o[fired_o] = 2
+                
+            self.fired_h_prev = fired_h
+            self.trace_pre >>= 1
+            for i in valid_in:
+                self.trace_pre[i] += self.SCALE
                 
             return fired_o
 
     def reset(self):
         self.trace_pre.fill(0)
-        self.refractory_o.fill(0)
+        self.fired_h_prev = []
+
+    def get_state(self) -> dict:
+        return {
+            "w_down": [{str(k): int(v) for k, v in layer.items()} for layer in self.w_down]
+        }
+
+    def set_state(self, state: dict):
+        self.w_down = [{int(k): int(v) for k, v in layer.items()} for layer in state["w_down"]]
 
 class PlasticTransformerBlock:
     def __init__(self, d_model: int, num_heads: int, memory_size: int = 50):
         self.d_model = d_model
         self.attention = SpikeAttention(d_model, d_model, memory_size=memory_size, num_heads=num_heads)
-        self.ffn = PlasticSpikeFFN(d_model, d_model * 4)
+        self.ffn = IntPlasticSpikeFFN(d_model, d_model * 4)
         self.pos_encoder = SpikePositionalEncoding(d_model)
 
     def compute(self, input_spikes: List[int], pos: int, learning: bool = False) -> List[int]:
@@ -173,3 +162,38 @@ class PlasticTransformerBlock:
     def reset(self):
         self.attention.reset()
         self.ffn.reset()
+
+    def fit(self, sequence_spikes: List[List[int]], epochs: int = 200, verbose: bool = True):
+        if verbose:
+            print(f"Training started for {epochs} epochs (Fixed-Point 10-bit Mode)...")
+        for epoch in range(epochs):
+            self.reset()
+            for pos, spikes in enumerate(sequence_spikes):
+                self.compute(spikes, pos=pos, learning=True)
+        if verbose:
+            print("Training finished.")
+
+    def predict(self, initial_spikes: List[int], steps: int = 3) -> List[List[int]]:
+        self.reset()
+        current_spikes = initial_spikes
+        generated = []
+        for t in range(1, steps + 1):
+            next_spikes = self.generate_next(current_spikes, pos=t)
+            generated.append(next_spikes)
+            current_spikes = next_spikes
+        return generated
+
+    def save(self, filepath: str):
+        state = {
+            "d_model": self.d_model,
+            "ffn_state": self.ffn.get_state()
+        }
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(state, f, indent=4)
+
+    def load(self, filepath: str):
+        with open(filepath, 'r', encoding='utf-8') as f:
+            state = json.load(f)
+        if state["d_model"] != self.d_model:
+            raise ValueError(f"d_model mismatch: expected {self.d_model}, got {state['d_model']}")
+        self.ffn.set_state(state["ffn_state"])
