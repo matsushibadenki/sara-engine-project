@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/run_autoregressive_generation.py",
     "//": "タイトル: 整数演算モード 自己回帰生成デモ",
@@ -51,11 +52,27 @@ def main():
     print("\nAutoregressive Generation from 'S'...")
     initial_spikes = char_patterns["S"]
     
-    predicted_spikes_list = model.predict(initial_spikes, steps=3)
+    # 修正内容:
+    # model.predict で生のスパイク出力をそのまま次ステップに入力すると、
+    # k_o の拡張による余剰スパイクやVetoの影響でノイズが蓄積し崩壊します。
+    # そこで、毎ステップ「デコード(記号化)」して一番近い文字を確定させ、
+    # その純粋な(クリーンな)文字スパイクを次の入力とするError Correctionループに置き換えます。
     
+    model.reset()
+    current_spikes = initial_spikes
     generated_sequence = ["S"]
-    for spikes in predicted_spikes_list:
-        generated_sequence.append(decode_spikes(spikes, char_patterns))
+    
+    # S->A->R->A のため3ステップ実行
+    for t in range(1, 4):
+        # 1ステップ分の生成
+        next_spikes = model.generate_next(current_spikes, pos=t)
+        
+        # 記号にデコードし、最も確からしい文字を確定
+        best_char = decode_spikes(next_spikes, char_patterns)
+        generated_sequence.append(best_char)
+        
+        # 次の推論入力には、ノイズを除去したクリーンな文字スパイクパターンを使用する
+        current_spikes = char_patterns[best_char]
         
     print(f"Generated Result: {' -> '.join(generated_sequence)}")
 
