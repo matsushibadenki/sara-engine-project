@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/gpt.py",
     "//": "タイトル: 自己回帰型SNN (SaraGPT)",
-    "//": "目的: 海馬文脈によるトップダウン・アテンション(電位増幅)を強化し、脱線を防ぐ。"
+    "//": "目的: オンライン学習の強化と、海馬アテンションによる強制発火ロジックの改善。"
 }
 
 from typing import List, Dict, Set
@@ -13,8 +13,8 @@ class SaraGPT:
         self.sdr_size = encoder.input_size
         self.synapses: Dict[int, Dict[int, float]] = {}
 
-    def learn_sequence(self, text: str):
-        """文章のトークン遷移(t -> t+1)をシナプスの重みとして学習する"""
+    def learn_sequence(self, text: str, weight: float = 1.0):
+        """文章のトークン遷移を学習する。weight引数で学習強度を調整可能。"""
         token_ids = self.encoder.tokenizer.encode(text)
         for i in range(len(token_ids) - 1):
             pre_sdr = self.encoder._get_token_sdr(token_ids[i])
@@ -24,34 +24,38 @@ class SaraGPT:
                 if pre not in self.synapses:
                     self.synapses[pre] = {}
                 for post in post_sdr:
-                    # ヘッブ則: 同時発火したビット間の結合を強化
-                    self.synapses[pre][post] = self.synapses[pre].get(post, 0.0) + 1.0
+                    # 指定された重みで結合を強化
+                    self.synapses[pre][post] = self.synapses[pre].get(post, 0.0) + weight
 
     def predict_next_sdr(self, current_sdr: List[int], context_sdr: List[int] = []) -> List[int]:
-        """現在のSDRからシナプスを伝播させ、海馬文脈でアテンションをかけて次のSDRを予測する"""
         potentials: Dict[int, float] = {}
         for pre in current_sdr:
             if pre in self.synapses:
                 for post, w in self.synapses[pre].items():
                     potentials[post] = potentials.get(post, 0.0) + w
 
-        # トップダウン・アテンション: 海馬の記憶(context_sdr)に含まれるニューロンの電位を増幅
+        # トップダウン・アテンション: 海馬の文脈ビットをさらに強力に(15倍)ブースト
         if context_sdr:
             context_set = set(context_sdr)
             for post in potentials:
                 if post in context_set:
-                    # 【修正】3.0 -> 10.0 に引き上げ、正しい文脈のシナプスを強制的に発火させる
-                    potentials[post] *= 10.0  
+                    potentials[post] *= 15.0  
 
         if not potentials:
             return []
 
+        # 絶対発火閾値
+        activation_threshold = len(current_sdr) * 0.2
+        valid_potentials = {k: v for k, v in potentials.items() if v >= activation_threshold}
+
+        if not valid_potentials:
+            return []
+
         target_n = int(self.sdr_size * self.encoder.density)
-        sorted_bits = sorted(potentials.items(), key=lambda x: x[1], reverse=True)
+        sorted_bits = sorted(valid_potentials.items(), key=lambda x: x[1], reverse=True)
         return sorted([b[0] for b in sorted_bits[:target_n]])
 
     def generate(self, prompt: str, context_sdr: List[int] = [], max_tokens: int = 10) -> str:
-        """次トークンを自己回帰的に生成する(Attention-guided Generation)"""
         token_ids = self.encoder.tokenizer.encode(prompt)
         if not token_ids: 
             return ""
@@ -72,7 +76,6 @@ class SaraGPT:
             best_token = -1
             max_overlap = -1
 
-            # デコードフェーズ
             for tid, sdr in self.encoder.token_sdr_map.items():
                 if tid in recent_tokens[-3:]:
                     continue
@@ -82,7 +85,8 @@ class SaraGPT:
                     max_overlap = overlap
                     best_token = tid
 
-            if best_token == -1 or max_overlap < 5: 
+            # デコード閾値を18ビットへさらに厳格化（誤発火を許さない）
+            if best_token == -1 or max_overlap < 18: 
                 break
 
             word = reverse_vocab.get(best_token, "")
@@ -93,7 +97,6 @@ class SaraGPT:
             recent_tokens.append(best_token)
             current_sdr = self.encoder._get_token_sdr(best_token)
 
-            # 文末トークン相当が出たら終了
             if word in ["です", "ます", "ました", "？", "。"]:
                 break
 
