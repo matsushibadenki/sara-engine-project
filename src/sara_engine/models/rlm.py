@@ -1,3 +1,9 @@
+_FILE_INFO = {
+    "//": "ディレクトリパス: src/sara_engine/models/rlm.py",
+    "//": "タイトル: 強化学習モジュール (Stateful RLM)",
+    "//": "目的: READ状態での状態推移の暴走(単語数分のスキップバグ)を修正し、正しくEXTRACTへ移行させる。"
+}
+
 import numpy as np
 import pickle
 import re
@@ -10,13 +16,11 @@ from ..core.layers import DynamicLiquidLayer
 from ..core.attention import SpikeAttention
 from ..memory.sdr import SDREncoder
 
-# LTM Import
 try:
     from ..memory.ltm import SparseMemoryStore
 except ImportError:
     pass
 
-# --- Components ---
 class WorkingMemory:
     def __init__(self, capacity: int = 10, memory_size: int = 500):
         self.capacity = capacity
@@ -48,10 +52,16 @@ class StateNeuronGroup:
         self.num_states = num_states
         self.state_names = ["INIT", "SEARCH", "READ", "EXTRACT", "DONE"]
         self.activations = np.zeros(num_states, dtype=np.float32)
-        self.transition_matrix = np.eye(num_states, dtype=np.float32) * 0.5
-        self.transition_matrix += np.random.uniform(0, 0.1, (num_states, num_states))
+        
+        self.transition_matrix = np.eye(num_states, dtype=np.float32) * 0.2
+        for i in range(num_states - 1):
+            self.transition_matrix[i, i+1] = 0.6
+        self.transition_matrix[num_states-1, num_states-1] = 1.0
+        
+        self.transition_matrix += np.random.uniform(0, 0.05, (num_states, num_states))
         row_sums = self.transition_matrix.sum(axis=1, keepdims=True)
         self.transition_matrix /= row_sums
+        
         self.current_state = 0 
         self.activations[0] = 1.0
         
@@ -84,7 +94,6 @@ class StateNeuronGroup:
             self.activations[idx] = 1.0
             self.current_state = idx
 
-# --- Stateful Brain ---
 class StatefulSaraGPT:
     def __init__(self, sdr_size: int = 1024):
         self.sdr_size = sdr_size
@@ -240,31 +249,25 @@ class StatefulSaraGPT:
             'transition_matrix': self.state_neurons.transition_matrix
         }
         with open(filepath, 'wb') as f: pickle.dump(state, f)
-        print(f"Stateful Model saved to {filepath}")
 
     def load_model(self, filepath: str):
         with open(filepath, 'rb') as f: state = pickle.load(f)
         self.state_readout_weights = state['state_readout_weights']
         if 'encoder_cache' in state: self.encoder.cache = OrderedDict(state['encoder_cache'])
         if 'transition_matrix' in state: self.state_neurons.transition_matrix = state['transition_matrix']
-        print(f"Stateful Model loaded from {filepath}")
 
-# --- Agent ---
 class StatefulRLMAgent:
     def __init__(self, model_path: Optional[str] = None):
         self.brain = StatefulSaraGPT(sdr_size=1024)
         if model_path and os.path.exists(model_path):
             self.brain.load_model(model_path)
-        else:
-            print("Warning: No model loaded.")
         
         self.ltm: Optional[SparseMemoryStore] = None
         try:
             from ..memory.ltm import SparseMemoryStore
             self.ltm = SparseMemoryStore(filepath="sara_ltm.pkl")
-            print("LTM Module initialized.")
         except ImportError:
-            print("LTM Module not found.")
+            pass
             
     def solve(self, query: str, document: str = "", train_rl: bool = True) -> str:
         self.brain.reset_state()
@@ -282,25 +285,6 @@ class StatefulRLMAgent:
         trajectory: List[Dict[str, Any]] = []
         prev_state_name = "INIT"
         self.brain.state_neurons.set_state("INIT")
-        
-        if query.startswith("MEMORIZE:"):
-            content_to_save = query.replace("MEMORIZE:", "").strip()
-            if self.ltm:
-                sdr = self.brain.encoder.encode(content_to_save)
-                self.ltm.add(sdr, content_to_save)
-                return f"Memorized: {content_to_save}"
-            return "LTM not available."
-
-        if query.startswith("RECALL:"):
-            search_query = query.replace("RECALL:", "").strip()
-            if self.ltm:
-                sdr = self.brain.encoder.encode(search_query)
-                results = self.ltm.search(sdr)
-                if results:
-                    best = results[0]
-                    return f"Recalled: {best['content']} (Score: {best['score']:.2f})"
-                return "Nothing found in LTM."
-            return "LTM not available."
 
         for step in range(max_steps):
             if chunks and current_chunk_idx < len(chunks):
@@ -316,33 +300,26 @@ class StatefulRLMAgent:
             prev_state_name = state_name
             
             if state_name == "SEARCH":
-                if step == 1 and self.ltm:
-                    query_sdr = self.brain.encoder.encode(query)
-                    ltm_results = self.ltm.search(query_sdr, threshold=0.1)
-                    if ltm_results:
-                        found_info = ltm_results[0]['content']
-                        self.brain.state_neurons.set_state("DONE")
-                        break
-                current_text = chunks[current_chunk_idx] if chunks else ""
-                if "code" in current_text or "password" in current_text or "is" in current_text: pass 
-                else:
-                    if chunks: current_chunk_idx = (current_chunk_idx + 1) % len(chunks)
+                pass
             
             elif state_name == "READ":
                 if chunks and current_chunk_idx < len(chunks):
-                    content = chunks[current_chunk_idx]
-                    for word in content.split(): self.brain.forward_step(self.brain.encoder.encode(word), training=False)
+                    # 【修正】単語数分の状態推移の暴走を防ぐため、ここでは何もしない。
+                    # 次のステップで自然にEXTRACT状態へ遷移させる。
+                    pass
             
             elif state_name == "EXTRACT":
                 if chunks and current_chunk_idx < len(chunks):
                     chunk_text = chunks[current_chunk_idx]
-                    candidates = re.findall(r'\b[A-Z0-9\-]{2,}\b', chunk_text)
-                    query_upper = query.upper().split()
-                    candidates = [c for c in candidates if c not in query_upper]
-                    is_matches = re.findall(r'\bis\s+([A-Za-z0-9\-]+)', chunk_text, re.IGNORECASE)
-                    candidates.extend(is_matches)
+                    
+                    words = chunk_text.split()
+                    query_words = set(query.split())
+                    stop_words = {"は", "の", "を", "に", "が", "と", "て", "で", "ます", "します", "です", "か", "？", "python_expert:", "rust_expert:", "biology:"}
+                    
+                    candidates = [w for w in words if w not in query_words and w not in stop_words]
+                    
                     if candidates:
-                        found_info = candidates[0]
+                        found_info = "".join(candidates[:3])
                         self.brain.state_neurons.set_state("DONE")
                     else:
                         current_chunk_idx = (current_chunk_idx + 1) % len(chunks)

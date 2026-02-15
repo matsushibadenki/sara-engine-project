@@ -7,7 +7,7 @@ name = "sara_engine"
 version = "0.1.4"
 description = "A biologically plausible, lightweight Spiking Neural Network engine (CPU-only, No-BP)."
 authors = [
-  { name="Your Name", email="your.email@example.com" },
+    { name = "Your Name", email = "your.email@example.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -15,14 +15,14 @@ classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
-    "numpy",
+    "numpy<2.0.0"
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/yourusername/sara_engine"
+Homepage = "https://github.com/yourusername/sara_engine"
 
 [tool.maturin]
 python-source = "src"

@@ -1,16 +1,17 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/test_transformers_snn.py",
     "//": "タイトル: SNN Transformer 結合テスト",
-    "//": "目的: sys.pathの優先順位を修正し、ModuleNotFoundErrorを解決したSNNアーキテクチャの動作確認テスト。"
+    "//": "目的: 仮想環境の古いパッケージとの競合を避け、確実に追加モジュールをテストする。"
 }
 
 import os
 import sys
 import numpy as np
 
-# srcディレクトリへの絶対パスを取得し、sys.pathの先頭に挿入することでローカルファイルを最優先にする
+# 何よりも先にローカルの src ディレクトリを sys.path の先頭に挿入する
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
-sys.path.insert(0, src_path)
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
 
 from sara_engine.core.transformer import PlasticTransformerBlock
 from sara_engine.core.normalization import SpikeIntrinsicPlasticity

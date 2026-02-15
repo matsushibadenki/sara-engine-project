@@ -1,53 +1,68 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/run_agentic_chat.py",
-    "//": "タイトル: 自律型エージェントの対話デモ",
-    "//": "目的: SaraAgentが文脈を自動判定し、破滅的忘却を防ぎながら学習・応答することを確認する。"
+    "//": "タイトル: 自律型エージェント(PFC+Hippocampus+RLM)の対話デモ",
+    "//": "目的: SaraAgentが文脈を自動判定し、記憶の検索からRLMによる抽出までを一貫して行うことを確認する。"
 }
 
 import os
 import sys
 
+# プロジェクトルート付近のsrcディレクトリをパスに追加
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 from sara_engine.agent.sara_agent import SaraAgent
 
 def run_demo():
-    print("=== Sara Agent 起動中 (生物由来・省エネアーキテクチャ) ===\n")
+    print("=== Sara Agent 起動中 (PFC + Hippocampus + RLM 統合アーキテクチャ) ===\n")
+    
+    # 既存の記憶ファイルをクリアしてクリーンな状態でテスト
+    if os.path.exists("sara_agent_ltm.pkl"):
+        os.remove("sara_agent_ltm.pkl")
+    if os.path.exists("sara_vocab.json"):
+        os.remove("sara_vocab.json")
+        
     agent = SaraAgent()
     
     # --- 1. 学習フェーズ (Teaching) ---
     print("--- [学習フェーズ] ---")
     
-    # Pythonに関する知識を入力
-    msg1 = "python_expert: リスト内包表記を使うとPythonのコードは簡潔に書けます。"
-    print(f"ユーザー: {msg1}")
-    # 練度を上げるため3回学習させる
-    for _ in range(3):
-        res1 = agent.chat(msg1, teaching_mode=True)
-    print(f"Agent: {res1}\n")
+    messages = [
+        "python_expert: リスト 内包 表記 を 使う と Python の コード は 簡潔 に 書け ます",
+        "rust_expert: Rust の 所有 権 システム は メモリ 安全 性 を 保証 します",
+        "biology: ミトコンドリア は 細胞 の エネルギー を 作り ます"
+    ]
     
-    # Rustに関する知識を入力（文脈が自動で切り替わるかテスト）
-    msg2 = "rust_expert: Rustの所有権システムはメモリ安全性を保証します。"
-    print(f"ユーザー: {msg2}")
-    for _ in range(3):
-        res2 = agent.chat(msg2, teaching_mode=True)
-    print(f"Agent: {res2}\n")
+    for msg in messages:
+        print(f"ユーザー(教示): {msg}")
+        # 確実に定着させるために2回経験させる
+        agent.chat(msg, teaching_mode=True)
+        res = agent.chat(msg, teaching_mode=True)
+        print(f"Agent: {res}\n")
 
-    # --- 2. 想起フェーズ (Recall) ---
-    print("--- [想起フェーズ] ---")
+    # --- 2. 睡眠フェーズ (Consolidation) ---
+    print("--- [睡眠フェーズ] ---")
+    print(agent.sleep(consolidation_epochs=3))
+    print("\n")
+
+    # --- 3. 想起・推論フェーズ (Recall & RLM) ---
+    print("--- [想起・推論フェーズ (ICL + RLM)] ---")
     
-    # キーワードを少し変えて（ノイズを含めて）質問してみる
-    q1 = "python_expert: リスト内包表記について教えて。"
-    print(f"ユーザー: {q1}")
-    print(f"Agent: {agent.chat(q1, teaching_mode=False)}\n")
+    questions = [
+        "Python の コード を 簡潔 に 書く には ？",
+        "メモリ 安全 性 は どう やって 守る の ？",
+        "細胞 の エネルギー は 何 が 作る ？"
+    ]
     
-    q2 = "rust_expert: メモリの安全性はどうやって守るの？"
-    print(f"ユーザー: {q2}")
-    print(f"Agent: {agent.chat(q2, teaching_mode=False)}\n")
-    
-    q3 = "biology: ミトコンドリアの役割は？"
-    print(f"ユーザー: {q3}")
-    print(f"Agent: {agent.chat(q3, teaching_mode=False)}\n")
+    for q in questions:
+        print(f"ユーザー(質問): {q}")
+        res = agent.chat(q, teaching_mode=False)
+        print(f"Agent:\n{res}\n")
+        
+    # クリーンアップ
+    if os.path.exists("sara_agent_ltm.pkl"):
+        os.remove("sara_agent_ltm.pkl")
+    if os.path.exists("sara_vocab.json"):
+        os.remove("sara_vocab.json")
 
 if __name__ == "__main__":
     run_demo()
