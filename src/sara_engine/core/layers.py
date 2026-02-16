@@ -1,10 +1,11 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/layers.py",
-    "//": "タイトル: Dynamic Liquid Layer (Homeostasis Core)",
-    "//": "目的: 移動平均を用いた堅牢なホメオスタシス機能を実装。"
-}
+# パス: src/sara_engine/core/layers.py
+# タイトル: Dynamic Liquid Layer (Homeostasis Core)
+# 目的: Numpyを完全に排除し、純粋なイベント駆動とスパース接続による圧倒的な省エネルギー化と生物学的妥当性を実現。
+# {
+#     "//": "行列演算を廃止し、辞書型を用いた疎結合（Sparse）ネットワークに完全移行。"
+# }
 
-import numpy as np
+import random
 from typing import List, Optional, Tuple, Any
 
 try:
@@ -39,67 +40,45 @@ class DynamicLiquidLayer:
         else:
             self.use_rust = RUST_AVAILABLE
             
-        # 型アノテーションは __init__ 内で1度だけ宣言する
-        self.in_indices: List[np.ndarray]
-        self.in_weights: List[np.ndarray]
-        self.rec_indices: List[np.ndarray]
-        self.rec_weights: List[np.ndarray]
-        
         if self.use_rust:
             self.core = sara_rust_core.RustLiquidLayer(input_size, hidden_size, decay, density, feedback_scale)
-            self.in_indices = []
-            self.in_weights = []
-            self.rec_indices = []
-            self.rec_weights = []
-            self.v = np.zeros(hidden_size, dtype=np.float32)
-            self.refractory = np.zeros(hidden_size, dtype=np.float32)
-            self.dynamic_thresh = np.ones(hidden_size, dtype=np.float32)
-            self.trace = np.zeros(hidden_size, dtype=np.float32)
-            self.input_trace = np.zeros(input_size, dtype=np.float32)
-            self.activity_ema = np.zeros(hidden_size, dtype=np.float32)
+            self.v = [0.0] * hidden_size
+            self.dynamic_thresh = [1.0] * hidden_size
         else:
-            self.in_indices = []
-            self.in_weights = []
-            self.rec_indices = []
-            self.rec_weights = []
-            
+            # 純粋なPython辞書によるスパース表現（行列演算を完全排除）
+            # in_weights[pre_id] = {post_id: weight} の形式をとる
+            self.in_weights = [{} for _ in range(input_size)]
             for i in range(input_size):
                 n = int(hidden_size * density)
                 if n > 0:
-                    idx = np.random.choice(hidden_size, n, replace=False).astype(np.int32)
-                    w = np.random.uniform(-input_scale * 1.2, input_scale * 1.2, n).astype(np.float32)
-                    self.in_indices.append(idx)
-                    self.in_weights.append(w)
-                else:
-                    self.in_indices.append(np.array([], dtype=np.int32))
-                    self.in_weights.append(np.array([], dtype=np.float32))
+                    targets = random.sample(range(hidden_size), n)
+                    for t in targets:
+                        self.in_weights[i][t] = random.uniform(-input_scale * 1.2, input_scale * 1.2)
             
+            self.rec_weights = [{} for _ in range(hidden_size)]
             rec_density = 0.1
             for i in range(hidden_size):
                 n = int(hidden_size * rec_density)
                 if n > 0:
-                    idx = np.random.choice(hidden_size, n, replace=False).astype(np.int32)
-                    idx = idx[idx != i]
-                    w = np.random.uniform(-rec_scale, rec_scale, len(idx)).astype(np.float32)
-                    self.rec_indices.append(idx)
-                    self.rec_weights.append(w)
-                else:
-                    self.rec_indices.append(np.array([], dtype=np.int32))
-                    self.rec_weights.append(np.array([], dtype=np.float32))
+                    candidates = [x for x in range(hidden_size) if x != i]
+                    if n > len(candidates):
+                        n = len(candidates)
+                    targets = random.sample(candidates, n)
+                    for t in targets:
+                        self.rec_weights[i][t] = random.uniform(-rec_scale, rec_scale)
             
-            self.v = np.zeros(hidden_size, dtype=np.float32)
-            self.refractory = np.zeros(hidden_size, dtype=np.float32)
+            self.v = [0.0] * hidden_size
+            self.refractory = [0.0] * hidden_size
             self.base_thresh = 1.0
-            self.dynamic_thresh = np.ones(hidden_size, dtype=np.float32) * self.base_thresh
+            self.dynamic_thresh = [self.base_thresh] * hidden_size
             
-            self.activity_ema = np.ones(hidden_size, dtype=np.float32) * target_rate
-            self.trace = np.zeros(hidden_size, dtype=np.float32)
-            self.input_trace = np.zeros(input_size, dtype=np.float32)
+            self.activity_ema = [target_rate] * hidden_size
+            self.trace = [0.0] * hidden_size
+            self.input_trace = [0.0] * input_size
             
             self.feedback_weights = []
-            rng = np.random.RandomState(42)
             for i in range(hidden_size):
-                targets = rng.choice(hidden_size, int(hidden_size * 0.05), replace=False)
+                targets = random.sample(range(hidden_size), max(1, int(hidden_size * 0.05)))
                 self.feedback_weights.append(targets)
 
     def forward_with_feedback(self, active_inputs: List[int], 
@@ -113,84 +92,91 @@ class DynamicLiquidLayer:
         else:
             return self._forward_python(active_inputs, prev_active_hidden, feedback_active, learning, attention_signal)
 
-    def _forward_python(self, active_inputs, prev_active_hidden, feedback_active, learning, attention_signal):
-        self.refractory = np.maximum(0, self.refractory - 1)
-        self.v *= self.decay
-        self.trace *= 0.95
-        self.input_trace *= 0.95
-        
-        if active_inputs:
-            self.input_trace[active_inputs] += 1.0
-
-        for pre_id in active_inputs:
-            if pre_id < len(self.in_indices):
-                targets = self.in_indices[pre_id]
-                ws = self.in_weights[pre_id]
-                if len(targets) > 0: self.v[targets] += ws
-        
+    def _forward_python(self, active_inputs: List[int], prev_active_hidden: List[int], feedback_active: List[int], learning: bool, attention_signal: List[int]) -> List[int]:
+        # イベント駆動で不要なループを大幅に削減
+        for i in range(self.size):
+            if self.refractory[i] > 0:
+                self.refractory[i] -= 1.0
+            self.v[i] *= self.decay
+            self.trace[i] *= 0.95
+            
+        for i in range(self.input_size):
+            self.input_trace[i] *= 0.95
+            
+        for idx in active_inputs:
+            if idx < self.input_size:
+                self.input_trace[idx] += 1.0
+                # 発火した入力の結線のみを更新（O(1)〜O(K)演算）
+                for target_id, w in self.in_weights[idx].items():
+                    self.v[target_id] += w
+                
         for pre_h_id in prev_active_hidden:
-            if pre_h_id < len(self.rec_indices):
-                targets = self.rec_indices[pre_h_id]
-                ws = self.rec_weights[pre_h_id]
-                if len(targets) > 0: self.v[targets] += ws
-        
-        if feedback_active:
-            for fb_id in feedback_active:
-                if fb_id < len(self.feedback_weights):
-                    targets = self.feedback_weights[fb_id]
-                    self.v[targets] += self.feedback_scale
+            if pre_h_id < self.size:
+                for target_id, w in self.rec_weights[pre_h_id].items():
+                    self.v[target_id] += w
+                
+        for fb_id in feedback_active:
+            if fb_id < len(self.feedback_weights):
+                for target_id in self.feedback_weights[fb_id]:
+                    self.v[target_id] += self.feedback_scale
 
         if attention_signal:
             attn_scale = 1.5
             for idx in attention_signal:
-                if idx < self.size: self.v[idx] += attn_scale
+                if idx < self.size:
+                    self.v[idx] += attn_scale
         
-        ready_mask = (self.v >= self.dynamic_thresh) & (self.refractory <= 0)
-        fired_indices = np.where(ready_mask)[0].tolist()
-        
-        fired_arr = np.array(fired_indices, dtype=int)
-        
+        fired_indices = []
+        for i in range(self.size):
+            if self.v[i] >= self.dynamic_thresh[i] and self.refractory[i] <= 0:
+                fired_indices.append(i)
+                
+        # Homeostasis (ホメオスタシス)
         ema_decay = 0.05
-        current_activity = np.zeros(self.size, dtype=np.float32)
-        if fired_indices:
-            current_activity[fired_arr] = 1.0
-        
-        self.activity_ema = (1 - ema_decay) * self.activity_ema + ema_decay * current_activity
-        
         homeo_rate = 0.02
-        diff = self.activity_ema - self.target_rate
-        self.dynamic_thresh += homeo_rate * diff
-        
-        if fired_indices:
-            self.v[fired_arr] = 0.0
-            self.refractory[fired_arr] = np.random.uniform(2.0, 5.0, size=len(fired_arr))
-            self.trace[fired_arr] += 1.0
+        for i in range(self.size):
+            current_act = 1.0 if i in fired_indices else 0.0
+            self.activity_ema[i] = (1 - ema_decay) * self.activity_ema[i] + ema_decay * current_act
+            
+            diff = self.activity_ema[i] - self.target_rate
+            self.dynamic_thresh[i] += homeo_rate * diff
+            
+            if self.dynamic_thresh[i] < 0.1: self.dynamic_thresh[i] = 0.1
+            if self.dynamic_thresh[i] > 5.0: self.dynamic_thresh[i] = 5.0
 
-        np.clip(self.dynamic_thresh, 0.1, 5.0, out=self.dynamic_thresh)
-        
+        for idx in fired_indices:
+            self.v[idx] = 0.0
+            self.refractory[idx] = random.uniform(2.0, 5.0)
+            self.trace[idx] += 1.0
+
         if learning and fired_indices:
+            fired_set = set(fired_indices)
             for pre_id in prev_active_hidden:
-                if pre_id < len(self.rec_indices):
-                    targets = self.rec_indices[pre_id]
-                    ws = self.rec_weights[pre_id]
-                    ws -= 0.002 
-                    mask = np.isin(targets, fired_arr)
-                    if np.any(mask):
-                        ws[mask] += 0.03
-                        np.clip(ws, -2.0, 2.0, out=ws)
+                if pre_id < self.size:
+                    for target_id in list(self.rec_weights[pre_id].keys()):
+                        self.rec_weights[pre_id][target_id] -= 0.002
+                        if target_id in fired_set:
+                            self.rec_weights[pre_id][target_id] += 0.03
+                        
+                        # 重みのクリッピング
+                        if self.rec_weights[pre_id][target_id] < -2.0:
+                            self.rec_weights[pre_id][target_id] = -2.0
+                        elif self.rec_weights[pre_id][target_id] > 2.0:
+                            self.rec_weights[pre_id][target_id] = 2.0
             
         return fired_indices
 
-    def get_state(self) -> Tuple[np.ndarray, np.ndarray]:
-        return self.v.copy(), self.dynamic_thresh.copy()
+    def get_state(self) -> Tuple[List[float], List[float]]:
+        # NumPy配列を完全に排除しているため、Listで返却します
+        return list(self.v), list(self.dynamic_thresh)
 
     def reset(self):
         if self.use_rust:
             self.core.reset()
         else:
-            self.v.fill(0)
-            self.refractory.fill(0)
-            self.trace.fill(0)
-            self.input_trace.fill(0)
-            self.dynamic_thresh.fill(self.base_thresh)
-            self.activity_ema.fill(self.target_rate)
+            self.v = [0.0] * self.size
+            self.refractory = [0.0] * self.size
+            self.trace = [0.0] * self.size
+            self.input_trace = [0.0] * self.input_size
+            self.dynamic_thresh = [self.base_thresh] * self.size
+            self.activity_ema = [self.target_rate] * self.size
