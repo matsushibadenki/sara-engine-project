@@ -1,71 +1,81 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: examples/demo_snn_learning.py",
-    "//": "タイトル: スパイキングニューラルネットワーク学習デモ",
-    "//": "目的: リファクタリングされたCorticalColumnとSpikeAttentionを用いた、SDRベースのSNNコア機能の動作確認。Attentionの時系列処理バグを修正。"
-}
+# パス: examples/demo_snn_learning.py
+# タイトル: SARA-Engine SNN学習・永続化デモ
+# 目的: 学習したシナプス構造をJSONとして保存し、知識の再利用を可能にする。
 
+import sys
+import os
+import time
 import random
-from sara_engine.core.cortex import CorticalColumn
-from sara_engine.core.attention import SpikeAttention
+import json
 
-def generate_random_sdr(size: int, density: float = 0.05) -> list[int]:
-    """スパースな発火表現(SDR)を生成する"""
-    target_len = int(size * density)
-    return sorted(random.sample(range(size), target_len))
+# プロジェクトルートをパスに追加
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-def main():
-    print("=== SNN Core 学習デモンストレーション ===")
+from src.sara_engine.learning.stdp import STDPLayer
+from src.sara_engine.core.layers import DynamicLiquidLayer
+
+def save_brain_state(stdp_layer, filename="sara_vocab.json"):
+    """学習したシナプス接続を保存する"""
+    state = {
+        "synapses": [dict((int(k), float(v)) for k, v in syn.items()) for syn in stdp_layer.synapses],
+        "metadata": {
+            "num_inputs": stdp_layer.num_inputs,
+            "num_outputs": stdp_layer.num_outputs,
+            "timestamp": time.time()
+        }
+    }
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=4, ensure_ascii=False)
+    print(f"\n[記憶完了] 学習済みデータを {filename} に保存しました。")
+
+def run_snn_learning_demo():
+    print("="*50)
+    print("SARA-Engine: Learning & Knowledge Persistence")
+    print("="*50)
+
+    num_inputs = 20
+    num_outputs = 5
+    epochs = 1000
     
-    input_size = 1024
-    hidden_size = 2048
-    seq_length = 5
-    compartment = "general"
+    liquid_layer = DynamicLiquidLayer(
+        input_size=num_inputs, 
+        hidden_size=20, 
+        decay=0.85, 
+        target_rate=0.02,
+        use_rust=False
+    )
     
-    print("SNNコンポーネントを初期化中...")
-    try:
-        cortex_column = CorticalColumn(
-            input_size=input_size, 
-            hidden_size_per_comp=hidden_size, 
-            compartment_names=[compartment]
+    stdp_layer = STDPLayer(num_inputs=num_inputs, num_outputs=num_outputs)
+    stdp_layer.A_minus = 0.08
+    stdp_layer.prune_threshold = 0.05
+
+    pattern_a = [1 if i < 4 else 0 for i in range(num_inputs)]
+    pattern_b = [1 if i > 16 else 0 for i in range(num_inputs)]
+
+    print(f"学習開始...")
+    start_time = time.time()
+
+    for epoch in range(epochs):
+        current_pattern = pattern_a if random.random() < 0.5 else pattern_b
+        
+        liquid_fired = liquid_layer.forward_with_feedback(
+            active_inputs=[i for i, v in enumerate(current_pattern) if v == 1],
+            prev_active_hidden=[]
         )
-        attention = SpikeAttention(input_size=hidden_size, hidden_size=500, memory_size=60)
-    except ImportError as e:
-        print(f"モジュールの読み込みに失敗しました: {e}")
-        return
+        
+        if liquid_fired:
+            stdp_input = [1 if i in liquid_fired else 0 for i in range(num_inputs)]
+            stdp_layer.process_step(stdp_input, reward=1.2)
+
+    end_time = time.time()
     
-    print("\n[順伝播(潜在連鎖)とアテンションの計算]")
-    prev_hidden = []
+    # 学習結果の保存
+    save_brain_state(stdp_layer)
     
-    for t in range(seq_length):
-        # SDRとしてランダムな入力スパイク列を生成
-        current_input = generate_random_sdr(input_size)
-        
-        # CorticalColumnのforward_latent_chainを実行 (内部でSTDP学習が走る)
-        active_hidden = cortex_column.forward_latent_chain(
-            active_inputs=current_input, 
-            prev_active_hidden=prev_hidden, 
-            current_context=compartment, 
-            learning=True, 
-            reward_signal=1.0
-        )
-        
-        # 修正箇所: ループ内で毎ステップAttentionを計算し、シーケンス履歴を構築する
-        # (内部でupdate_memory相当の処理が行われ、過去の文脈とのOverlapが計算される)
-        attn_signal = attention.compute(active_hidden)
-        
-        prev_hidden = active_hidden
-        
-        print(f"Step {t+1}:")
-        print(f"  - 皮質発火ニューロン数 = {len(active_hidden)}")
-        print(f"  - Attentionシグナル生成数 = {len(attn_signal)}")
-    
-    print("\n[皮質カラムの膜電位・閾値状態 (スナップショット)]")
-    print("※発火直後のニューロンは電位がリセットされるため、アクティブ(v>0)が少なくなるのは正常な挙動です。")
-    states = cortex_column.get_compartment_states()
-    for comp, state in states.items():
-        print(f"コンパートメント '{comp}': 待機中ニューロン(v>0)={state['active_neurons']}, 平均閾値={state['avg_threshold']:.4f}")
-        
-    print("\nSNNデモが完了しました。")
+    print("="*50)
+    print(f"完了 | 所要時間: {end_time - start_time:.4f}s")
+    print(f"最終シナプス密度: {(sum(len(s) for s in stdp_layer.synapses) / (num_inputs * num_outputs)) * 100:.1f}%")
+    print("="*50)
 
 if __name__ == "__main__":
-    main()
+    run_snn_learning_demo()
