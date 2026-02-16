@@ -1,6 +1,8 @@
-# examples/demo_agent_chat.py
-# 統合チャットエージェントデモ
-# このスクリプトは、SARAエージェントを使用した対話、自律的な思考、ツールの使用などの機能を統合したデモです。
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_agent_chat.py",
+    "//": "タイトル: 統合チャットエージェントデモ",
+    "//": "目的: SARAエージェントを使用した対話、自律的な思考などの機能を統合したデモ。最新のchatメソッドに適合させる。"
+}
 
 import os
 import time
@@ -32,8 +34,8 @@ def main():
             print("SARA is thinking...")
             start_time = time.time()
             
-            # エージェントからの応答を生成
-            response = agent.generate_response(user_input)
+            # generate_response から 最新の chat に変更
+            response = agent.chat(user_input, teaching_mode=False)
             
             end_time = time.time()
             print(f"\nSARA: {response}")

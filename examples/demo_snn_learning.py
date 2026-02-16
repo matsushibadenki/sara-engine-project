@@ -1,58 +1,70 @@
-# examples/demo_snn_learning.py
-# スパイキングニューラルネットワーク学習デモ
-# STDP (Spike-Timing-Dependent Plasticity) を用いた学習や、スパイキングアテンション機構など、SARAエンジンのSNNコア機能の動作を確認します。
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_snn_learning.py",
+    "//": "タイトル: スパイキングニューラルネットワーク学習デモ",
+    "//": "目的: リファクタリングされたCorticalColumnとSpikeAttentionを用いた、SDRベースのSNNコア機能の動作確認。Attentionの時系列処理バグを修正。"
+}
 
-import numpy as np
-from sara_engine.core.cortex import Cortex
-from sara_engine.core.spike_attention import SpikeAttention
-from sara_engine.learning.stdp import STDP
+import random
+from sara_engine.core.cortex import CorticalColumn
+from sara_engine.core.attention import SpikeAttention
+
+def generate_random_sdr(size: int, density: float = 0.05) -> list[int]:
+    """スパースな発火表現(SDR)を生成する"""
+    target_len = int(size * density)
+    return sorted(random.sample(range(size), target_len))
 
 def main():
     print("=== SNN Core 学習デモンストレーション ===")
     
-    input_size = 64
-    hidden_size = 128
-    seq_length = 10
+    input_size = 1024
+    hidden_size = 2048
+    seq_length = 5
+    compartment = "general"
     
-    # コンポーネントの初期化
     print("SNNコンポーネントを初期化中...")
-    cortex_layer = Cortex(input_dim=input_size, hidden_dim=hidden_size)
-    attention = SpikeAttention(dim=hidden_size, num_heads=4)
-    stdp_learner = STDP(learning_rate=0.01)
+    try:
+        cortex_column = CorticalColumn(
+            input_size=input_size, 
+            hidden_size_per_comp=hidden_size, 
+            compartment_names=[compartment]
+        )
+        attention = SpikeAttention(input_size=hidden_size, hidden_size=500, memory_size=60)
+    except ImportError as e:
+        print(f"モジュールの読み込みに失敗しました: {e}")
+        return
     
-    # ダミーのスパイク入力列（バッチサイズ1, シーケンス長, 特徴量次元）
-    # 0か1のスパイクラスタ
-    spike_inputs = np.random.choice([0, 1], size=(1, seq_length, input_size), p=[0.8, 0.2])
+    print("\n[順伝播(潜在連鎖)とアテンションの計算]")
+    prev_hidden = []
     
-    print("\n[順伝播とアテンションの計算]")
-    # Cortexレイヤーの処理
-    cortex_outputs = []
     for t in range(seq_length):
-        current_input = spike_inputs[:, t, :]
-        out = cortex_layer.forward(current_input)
-        cortex_outputs.append(out)
+        # SDRとしてランダムな入力スパイク列を生成
+        current_input = generate_random_sdr(input_size)
+        
+        # CorticalColumnのforward_latent_chainを実行 (内部でSTDP学習が走る)
+        active_hidden = cortex_column.forward_latent_chain(
+            active_inputs=current_input, 
+            prev_active_hidden=prev_hidden, 
+            current_context=compartment, 
+            learning=True, 
+            reward_signal=1.0
+        )
+        
+        # 修正箇所: ループ内で毎ステップAttentionを計算し、シーケンス履歴を構築する
+        # (内部でupdate_memory相当の処理が行われ、過去の文脈とのOverlapが計算される)
+        attn_signal = attention.compute(active_hidden)
+        
+        prev_hidden = active_hidden
+        
+        print(f"Step {t+1}:")
+        print(f"  - 皮質発火ニューロン数 = {len(active_hidden)}")
+        print(f"  - Attentionシグナル生成数 = {len(attn_signal)}")
     
-    cortex_outputs = np.stack(cortex_outputs, axis=1)
-    print(f"Cortex出力形状: {cortex_outputs.shape}")
-    
-    # スパイキングアテンションの適用
-    attended_features, attention_weights = attention.forward(cortex_outputs)
-    print(f"Attention適用後の形状: {attended_features.shape}")
-    
-    print("\n[STDPによる重みの更新]")
-    print("シナプス前スパイクとシナプス後スパイクのタイミングに基づきSTDP学習を行います...")
-    
-    # 疑似的なプレ・ポストスパイク列を使用してSTDPをテスト
-    pre_spikes = np.random.choice([0, 1], size=(100, input_size), p=[0.9, 0.1])
-    post_spikes = np.random.choice([0, 1], size=(100, hidden_size), p=[0.9, 0.1])
-    
-    initial_weights = cortex_layer.get_weights()
-    updated_weights = stdp_learner.apply(initial_weights, pre_spikes, post_spikes)
-    
-    # 重みの変化量を計算
-    weight_change = np.mean(np.abs(updated_weights - initial_weights))
-    print(f"STDPによる平均重み変化量: {weight_change:.6f}")
-    
+    print("\n[皮質カラムの膜電位・閾値状態 (スナップショット)]")
+    print("※発火直後のニューロンは電位がリセットされるため、アクティブ(v>0)が少なくなるのは正常な挙動です。")
+    states = cortex_column.get_compartment_states()
+    for comp, state in states.items():
+        print(f"コンパートメント '{comp}': 待機中ニューロン(v>0)={state['active_neurons']}, 平均閾値={state['avg_threshold']:.4f}")
+        
     print("\nSNNデモが完了しました。")
 
 if __name__ == "__main__":

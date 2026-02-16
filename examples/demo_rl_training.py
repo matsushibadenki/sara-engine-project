@@ -1,59 +1,44 @@
-# examples/demo_rl_training.py
-# 強化学習（RL）モジュールの学習デモ
-# 状態空間モデルと強化学習を組み合わせたRLM (Reinforcement Learning Model) の基本的な学習ループを回すデモです。
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_rl_training.py",
+    "//": "タイトル: 強化学習（RL）モジュールの学習デモ",
+    "//": "目的: StatefulRLMAgentを用いた文章からの情報抽出と自律的状態遷移の学習デモ"
+}
 
-import numpy as np
-from sara_engine.models.rlm import RLM
-
-def create_dummy_env():
-    # 非常に単純なダミー環境の状態と報酬を返す関数
-    state = np.random.randn(32)
-    reward = np.random.choice([-1.0, 0.0, 1.0])
-    done = np.random.rand() > 0.9
-    return state, reward, done
+from sara_engine.models.rlm import StatefulRLMAgent
 
 def main():
     print("=== RLM 強化学習デモンストレーション ===")
     
-    state_dim = 32
-    action_dim = 4
-    num_episodes = 5
-    max_steps = 20
-    
-    print("RLMエージェントを初期化中...")
-    agent = RLM(state_dim=state_dim, action_dim=action_dim)
-    
+    print("Stateful RLM エージェントを初期化中...")
+    try:
+        agent = StatefulRLMAgent()
+    except ImportError as e:
+        print(f"モジュールの読み込みに失敗しました: {e}")
+        return
+        
     print("\n学習ループを開始します...")
+    
+    # ダミーの文書とクエリ
+    document = "Pythonのリスト内包表記は、簡潔なコードを書くのに非常に便利です。また、Rustはメモリ安全性を保証します。"
+    queries = ["Python コード 簡潔", "Rust メモリ"]
+    
+    num_episodes = 5
     
     for episode in range(num_episodes):
         print(f"\n--- Episode {episode + 1} ---")
+        query = queries[episode % len(queries)]
+        print(f"Query: {query}")
         
-        # 環境の初期状態
-        state, _, _ = create_dummy_env()
-        total_reward = 0
+        # solveメソッド内部で、エージェントは自律的に状態遷移(READ/EXTRACT等)を行い、
+        # train_rl=True により報酬に基づいたSTDP的な重み更新が実行されます
+        found_info = agent.solve(query=query, document=document, train_rl=True)
         
-        for step in range(max_steps):
-            # 行動の選択
-            action = agent.select_action(state)
+        if found_info:
+            print(f"  抽出結果: {found_info}")
+        else:
+            print("  情報の抽出に失敗しました (DONE状態到達)。")
             
-            # 環境のステップ進行
-            next_state, reward, done = create_dummy_env()
-            total_reward += reward
-            
-            # 経験の保存と学習
-            agent.store_transition(state, action, reward, next_state, done)
-            agent.learn()
-            
-            state = next_state
-            
-            if step % 5 == 0:
-                print(f"  Step {step}: Action={action}, Reward={reward:.1f}")
-                
-            if done:
-                print(f"  エピソード終了 (Doneフラグ到達). 完了ステップ: {step + 1}")
-                break
-                
-        print(f"Episode {episode + 1} 獲得報酬合計: {total_reward:.1f}")
+        print(f"Episode {episode + 1} 完了")
 
     print("\n強化学習デモが完了しました。")
 
