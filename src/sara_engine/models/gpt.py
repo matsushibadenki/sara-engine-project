@@ -1,16 +1,15 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/gpt.py",
     "//": "タイトル: 自己回帰型SNN (SaraGPT)",
-    "//": "目的: 生成停止条件の柔軟化（<eos>自動学習）と、Top-kサンプリング・反復ペナルティによるデコード精度の向上。"
+    "//": "目的: 行列演算を用いずに、SNNの膜電位の揺らぎ（Stochastic Firing）を模倣した確率的デコーディング（Temperature, Top-K, Top-Pサンプリング）を実装する。"
 }
 
 import random
 import math
-from typing import List, Dict, Set, Optional
-from ..memory.sdr import SDREncoder
+from typing import List, Dict, Set, Optional, Tuple
 
 class SaraGPT:
-    def __init__(self, encoder: SDREncoder):
+    def __init__(self, encoder):
         self.encoder = encoder
         self.sdr_size = encoder.input_size
         # シナプス結合: {pre_synaptic_bit: {post_synaptic_bit: weight}}
@@ -23,10 +22,8 @@ class SaraGPT:
         """
         token_ids = self.encoder.tokenizer.encode(text)
         
-        # 明示的に<eos>を学習データに追加（終了状態の学習）
         eos_id = self.encoder.tokenizer.vocab.get("<eos>")
         if eos_id is not None:
-            # すでに末尾にある場合を除き追加
             if not token_ids or token_ids[-1] != eos_id:
                 token_ids.append(eos_id)
 
@@ -38,56 +35,114 @@ class SaraGPT:
                 if pre not in self.synapses:
                     self.synapses[pre] = {}
                 for post in post_sdr:
-                    # 指定された重みで結合を強化（ヘブ則的学習）
+                    # ヘブ則的学習: 前シナプスと後シナプスが連続して発火した場合に結合を強化
                     self.synapses[pre][post] = self.synapses[pre].get(post, 0.0) + weight
 
-    def predict_next_sdr(self, current_sdr: List[int], context_sdr: List[int] = []) -> List[int]:
-        """現在のSDRと文脈SDRから、次に発火すべきSDR（予測ビット群）を生成する"""
+    def predict_next_sdr(self, current_sdr: List[int], context_sdr: List[int] = [], temperature: float = 1.0) -> List[int]:
+        """
+        確率的発火モデル (Stochastic Leaky Integrate-and-Fire) の模倣。
+        現在のSDRと文脈から次に発火すべきニューロン群を予測する。
+        温度パラメータ(temperature)により、膜電位に微小なノイズ（揺らぎ）を注入し、生成の多様性を生み出す。
+        """
         potentials: Dict[int, float] = {}
         
-        # 1. ボトムアップ入力（直前の単語からの遷移）
+        # 1. ボトムアップ入力の積算
         for pre in current_sdr:
             if pre in self.synapses:
                 for post, w in self.synapses[pre].items():
                     potentials[post] = potentials.get(post, 0.0) + w
 
-        # 2. トップダウン・アテンション（海馬・短期記憶からのバイアス）
-        # 文脈SDRに含まれるビットが予測候補にあれば、その電位を強力にブーストする
+        if not potentials:
+            return []
+
+        # 2. トップダウン・アテンションの適用
         if context_sdr:
             context_set = set(context_sdr)
             for post in potentials:
                 if post in context_set:
-                    # 文脈との一致は非常に強いヒントになるため係数を大きく設定
                     potentials[post] *= 15.0  
 
-        if not potentials:
-            return []
+        # 3. 確率的発火 (Stochastic Firing) のためのノイズ注入
+        # 温度が0に近い場合は決定論的、高い場合はランダム性が増す
+        if temperature > 0.0:
+            noise_scale = temperature * 0.5 # ノイズの強さを調整
+            for post in potentials:
+                # 標準正規分布近似のノイズを注入 (ガウス分布の代用として一様分布から生成)
+                noise = random.uniform(-noise_scale, noise_scale)
+                potentials[post] += potentials[post] * noise
 
-        # 3. 発火閾値によるノイズ除去
-        # 入力ビット数に比例した閾値を設定
-        activation_threshold = len(current_sdr) * 0.2
+        # 4. 発火閾値によるフィルタリング
+        activation_threshold = len(current_sdr) * 0.1
         valid_potentials = {k: v for k, v in potentials.items() if v >= activation_threshold}
 
         if not valid_potentials:
             return []
 
-        # 4. 膜電位の高い順にk-WTA (k-Winner-Take-All)
+        # 5. k-Winner-Take-All (ノイズを含んだ電位での上位抽出)
         target_n = int(self.sdr_size * self.encoder.density)
         sorted_bits = sorted(valid_potentials.items(), key=lambda x: x[1], reverse=True)
         
         return sorted([b[0] for b in sorted_bits[:target_n]])
 
+    def _sample_top_k_top_p(self, candidates: List[Tuple[int, float]], top_k: int, top_p: float, temperature: float) -> Optional[int]:
+        """
+        行列演算やSoftmaxを用いない、標準ライブラリによる Top-K & Top-P (Nucleus) サンプリング。
+        """
+        if not candidates:
+            return None
+
+        # 1. Temperatureによるスコアの調整 (ボルツマン分布の近似)
+        # score = exp(score / temperature) の代わりに、オーバーフローを防ぐため相対的な重み付けを行う
+        adjusted_candidates = []
+        max_score = candidates[0][1] # 既にソート済み前提
+        
+        for tid, score in candidates:
+            # ソフトマックスの代替として、最大スコアとの差に基づく指数関数を利用
+            try:
+                weight = math.exp((score - max_score) / temperature)
+            except OverflowError:
+                weight = 0.0
+            adjusted_candidates.append((tid, weight))
+
+        # 2. Top-K フィルタリング
+        if top_k > 0:
+            adjusted_candidates = adjusted_candidates[:top_k]
+
+        # 3. Top-P (Nucleus) フィルタリング
+        if top_p < 1.0:
+            total_weight = sum(w for _, w in adjusted_candidates)
+            cumulative_prob = 0.0
+            filtered_candidates = []
+            
+            for tid, weight in adjusted_candidates:
+                prob = weight / total_weight if total_weight > 0 else 0
+                cumulative_prob += prob
+                filtered_candidates.append((tid, weight))
+                if cumulative_prob >= top_p:
+                    break
+            adjusted_candidates = filtered_candidates
+
+        # 4. 重み付きランダムサンプリング
+        if not adjusted_candidates:
+            return candidates[0][0]
+
+        tids = [c[0] for c in adjusted_candidates]
+        weights = [c[1] for c in adjusted_candidates]
+        
+        try:
+            chosen_tid = random.choices(tids, weights=weights, k=1)[0]
+            return chosen_tid
+        except ValueError:
+            return tids[0]
+
     def generate(self, prompt: str, context_sdr: List[int] = [], 
-                 max_tokens: int = 20, 
-                 temperature: float = 1.0, 
-                 top_k: int = 5,
+                 max_tokens: int = 50, 
+                 temperature: float = 0.8, 
+                 top_k: int = 40,
+                 top_p: float = 0.9,
                  repetition_penalty: float = 1.2) -> str:
         """
-        柔軟なデコード戦略を用いた文章生成
-        Args:
-            temperature: 1.0より大きいとランダム性が増し、小さいと決定的になる
-            top_k: スコア上位k個の候補からサンプリング
-            repetition_penalty: 既出の単語のスコアを割り引く係数（1.0で無効）
+        SNNの確率的振る舞いを模倣したデコーディング。
         """
         token_ids = self.encoder.tokenizer.encode(prompt)
         if not token_ids: 
@@ -97,39 +152,35 @@ class SaraGPT:
         current_sdr = self.encoder._get_token_sdr(current_token)
         generated_words = []
         
-        # 逆引き辞書の準備
         reverse_vocab = {v: k for k, v in self.encoder.tokenizer.vocab.items()}
         eos_id = self.encoder.tokenizer.vocab.get("<eos>", -1)
         unk_id = self.encoder.tokenizer.vocab.get("<unk>", -1)
         
-        # 生成履歴（反復ペナルティ用）
         recent_tokens = [current_token]
         if len(token_ids) > 1:
-            recent_tokens.extend(token_ids[-3:]) # プロンプトの最後の方も履歴に含める
+            recent_tokens.extend(token_ids[-3:])
 
         for _ in range(max_tokens):
-            # 次のSDRを予測
-            next_sdr = self.predict_next_sdr(current_sdr, context_sdr)
+            # 温度パラメータを渡して、微小なノイズを含んだ予測SDRを生成
+            next_sdr = self.predict_next_sdr(current_sdr, context_sdr, temperature=temperature)
             if not next_sdr: 
                 break
 
             next_set = set(next_sdr)
             candidates = []
 
-            # 全語彙に対して重複度（スコア）を計算
-            # ※本来は重いが、語彙数数千程度ならリアルタイム動作可能
+            # 語彙全体のSDRと予測SDRのOverlap（重なり）を計算
             for tid, sdr in self.encoder.token_sdr_map.items():
-                if tid == unk_id: continue # <unk>は生成しない
+                if tid == unk_id: continue
                 
-                # SDRの重なり（Overlap）をスコアとする
                 overlap = len(next_set.intersection(sdr))
                 
-                # 足切り: ほとんど重なりがないものは無視（高速化）
-                if overlap < 5: continue
+                # 最低限のスパイクの一致（閾値）を要求
+                if overlap < 3: continue
                 
                 score = float(overlap)
                 
-                # 反復ペナルティの適用
+                # 反復ペナルティ: 最近生成した単語のスコアを割り引く
                 if tid in recent_tokens:
                     score /= repetition_penalty
                 
@@ -138,32 +189,20 @@ class SaraGPT:
             if not candidates:
                 break
 
-            # Top-k フィルタリング
+            # スコア順にソート
             candidates.sort(key=lambda x: x[1], reverse=True)
-            top_candidates = candidates[:top_k]
 
-            # サンプリングによるトークン決定
+            # 温度が極端に低い場合はGreedy Search
             if temperature < 0.1:
-                # 温度が非常に低い場合はGreedy（スコア最大のもの）
-                best_token = top_candidates[0][0]
-                best_score = top_candidates[0][1]
+                best_token = candidates[0][0]
             else:
-                # 重み付きランダムサンプリング
-                # スコアを温度で調整: weight = score ^ (1/T)
-                weights = [c[1] ** (1.0 / temperature) for c in top_candidates]
-                try:
-                    chosen_pair = random.choices(top_candidates, weights=weights, k=1)[0]
-                    best_token = chosen_pair[0]
-                    best_score = chosen_pair[1]
-                except ValueError:
-                    break
+                # Top-K & Top-P サンプリングの実行
+                best_token = self._sample_top_k_top_p(candidates, top_k, top_p, temperature)
 
-            # 最終的な品質チェック（SDRの再現度が低すぎる場合は生成停止）
-            # 閾値はビット数依存だが、ここでは経験則として設定
-            if best_score < 10: 
+            if best_token is None:
                 break
 
-            # 停止トークン判定
+            # 停止トークン
             if best_token == eos_id:
                 break
 
@@ -173,16 +212,10 @@ class SaraGPT:
                 
             generated_words.append(word)
             
-            # 履歴更新
             recent_tokens.append(best_token)
-            if len(recent_tokens) > 10: # 履歴が長くなりすぎないように維持
+            if len(recent_tokens) > 10: 
                 recent_tokens.pop(0)
                 
             current_sdr = self.encoder._get_token_sdr(best_token)
-
-            # 補助的な停止条件（ハードコードは最小限にし、基本は<eos>に任せる）
-            # ただし、学習不足時の無限ループ防止として句点での強制終了はオプションとして残す設計もアリ
-            if word == "。" and len(generated_words) > 10:
-                pass # ここでは強制停止せず、<eos>の予測を待つ（またはmax_tokensで停止）
 
         return "".join(generated_words)
