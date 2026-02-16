@@ -5,7 +5,7 @@ _FILE_INFO = {
 }
 
 import math
-from typing import List, Any
+from typing import List, Any, Tuple
 
 class STDPPretrainer:
     """
@@ -50,7 +50,7 @@ class STDPPretrainer:
             token_ids.append(eos_id)
             
         # 発火履歴バッファ: [(時刻t, SDRのリスト)]
-        spike_history = []
+        spike_history: List[Tuple[int, List[int]]] = []
         
         for t, tid in enumerate(token_ids):
             # 現在の時刻 t で発火したニューロン群（Post-synaptic）
@@ -63,8 +63,6 @@ class STDPPretrainer:
                     continue
                 
                 # 1. LTP (Long-Term Potentiation: 長期増強)
-                # 過去の発火(Pre) -> 現在の発火(Post) の順序で発火したため、因果関係があるとみなし結合を強化する。
-                # 時間差(dt)が小さいほど強く強化される。
                 dw_plus = self.a_plus * math.exp(-dt / self.tau)
                 
                 for pre in past_sdr:
@@ -73,12 +71,9 @@ class STDPPretrainer:
                     for post in current_sdr:
                         current_w = model.synapses[pre].get(post, 0.0)
                         new_w = current_w + dw_plus
-                        # 重みの発散を防ぐためのクリッピング（Homeostasis）
                         model.synapses[pre][post] = min(new_w, self.w_max)
                         
                 # 2. LTD (Long-Term Depression: 長期抑圧)
-                # 逆方向の結合（現在の発火(Pre) -> 過去の発火(Post)）は、時間的な因果律に反するため結合を弱める。
-                # これにより、「Aの後にBが来る」ことは学習するが、「Bの後にAが来る」という誤った予測を防ぐ。
                 dw_minus = self.a_minus * math.exp(-dt / self.tau)
                 
                 for pre in current_sdr:
@@ -87,7 +82,6 @@ class STDPPretrainer:
                             if post in model.synapses[pre]:
                                 current_w = model.synapses[pre][post]
                                 new_w = current_w - dw_minus
-                                # シナプス重みは0以下にはならないようクリップ
                                 if new_w <= 0.0:
                                     del model.synapses[pre][post]
                                 else:

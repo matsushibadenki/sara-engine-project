@@ -16,8 +16,7 @@ try:
     from ..utils.tokenizer import SaraTokenizer
 except ImportError:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-    from utils.tokenizer import SaraTokenizer
-
+    from utils.tokenizer import SaraTokenizer  # type: ignore[import-not-found, no-redef]
 
 class SemanticNetwork:
     """
@@ -73,7 +72,6 @@ class SemanticNetwork:
         self.semantic_sdrs = {k: sorted(list(v)) for k, v in current_sdrs.items()}
         return self.semantic_sdrs
 
-
 class SDREncoder:
     """
     テキストからSDRへのエンコードを行うクラス。
@@ -91,13 +89,11 @@ class SDREncoder:
         if self.use_tokenizer:
             self.tokenizer = SaraTokenizer()
 
-        # VSAにおける役割(Role)ごとの巡回シフト量
-        # SDRサイズの適当な割合でシフトさせ、それぞれの役割を直交空間に配置する
         self.role_offsets = {
-            "SUBJECT": 0,                      # 主語はシフトなし
-            "OBJECT": int(input_size * 0.25),  # 目的語は1/4シフト
-            "VERB": int(input_size * 0.50),    # 述語は1/2シフト
-            "MODIFIER": int(input_size * 0.75),# 修飾語は3/4シフト
+            "SUBJECT": 0,                      
+            "OBJECT": int(input_size * 0.25),  
+            "VERB": int(input_size * 0.50),    
+            "MODIFIER": int(input_size * 0.75),
             "DEFAULT": 0
         }
 
@@ -137,7 +133,6 @@ class SDREncoder:
         return sdr
 
     def _determine_roles_by_ids(self, token_ids: List[int]) -> List[str]:
-        """トークンの並びと助詞のIDから簡易的な文法的役割(Role)を推定する"""
         roles = ["DEFAULT"] * len(token_ids)
         if not self.use_tokenizer:
             return roles
@@ -151,7 +146,6 @@ class SDREncoder:
         verb_ids = {self.tokenizer.vocab.get(w, -1) for w in ["持って", "住んで", "渡し", "好き", "です", "います", "ました", "食べ"]}
         
         for i, tid in enumerate(token_ids):
-            # 次の助詞を見て現在の単語の役割を決定
             if i + 1 < len(token_ids):
                 next_tid = token_ids[i+1]
                 if next_tid in [wa_id, ga_id]:
@@ -161,14 +155,12 @@ class SDREncoder:
                 elif next_tid in [no_id]:
                     roles[i] = "MODIFIER"
                     
-            # 自身が動詞リストに含まれていればVERB
             if tid in verb_ids:
                 roles[i] = "VERB"
                 
         return roles
 
     def encode(self, text: str) -> List[int]:
-        """文字列をSDR(オンビットのインデックスリスト)に変換"""
         if self.use_tokenizer:
             token_ids = self.tokenizer.encode(text)
             roles = self._determine_roles_by_ids(token_ids) if self.apply_vsa else ["DEFAULT"] * len(token_ids)
@@ -177,7 +169,6 @@ class SDREncoder:
             for tid, role in zip(token_ids, roles):
                 base_sdr = self._get_token_sdr(tid)
                 
-                # VSAのRole Binding (役割に応じた巡回シフト)
                 offset = self.role_offsets.get(role, 0)
                 if offset > 0:
                     shifted_sdr = [(idx + offset) % self.input_size for idx in base_sdr]

@@ -1,5 +1,5 @@
 _FILE_INFO = {
-    "//": "ディレクトリパス: examples/test_transformers_snn.py",
+    "//": "ディレクトリパス: examples/run_transformer_snn.py",
     "//": "タイトル: SNN Transformer 結合テスト",
     "//": "目的: sys.pathの優先順位を修正し、ModuleNotFoundErrorを解決したSNNアーキテクチャの動作確認テスト。"
 }
@@ -8,20 +8,19 @@ import os
 import sys
 import numpy as np
 
-# srcディレクトリへの絶対パスを取得し、sys.pathの先頭に挿入することでローカルファイルを最優先にする
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 sys.path.insert(0, src_path)
 
 from sara_engine.core.transformer import PlasticTransformerBlock
 from sara_engine.core.normalization import SpikeIntrinsicPlasticity
 from sara_engine.core.dropout import SpikeDropout
-from sara_engine.utils.visualizer import SNNVisualizer
+from sara_engine.utils.visualizer import SaraVisualizer
 
 def run_test():
     workspace_dir = os.path.join(os.path.dirname(__file__), "..", "workspace")
     os.makedirs(workspace_dir, exist_ok=True)
     
-    viz = SNNVisualizer(workspace_dir=workspace_dir)
+    viz = SaraVisualizer(save_dir=workspace_dir)
     
     d_model = 128
     num_heads = 4

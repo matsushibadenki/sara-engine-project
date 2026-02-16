@@ -7,39 +7,31 @@ _FILE_INFO = {
 import random
 from typing import List, Dict, Set
 
-# Rust Core Import Check
 try:
-    from .. import sara_rust_core
+    from .. import sara_rust_core  # type: ignore
     RUST_AVAILABLE = True
 except ImportError:
     try:
-        import sara_rust_core
+        import sara_rust_core  # type: ignore
         RUST_AVAILABLE = True
     except ImportError:
         RUST_AVAILABLE = False
 
 
 class SpikeAttention:
-    """
-    Spike-based Multi-Head Attention Mechanism.
-    行列演算を使わず、スパイクの一致度（Overlap）と時間減衰を伴う加算で重要度を判定する。
-    """
     def __init__(self, input_size: int, hidden_size: int, memory_size: int = 50, num_heads: int = 4):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.memory_size = memory_size
         self.num_heads = num_heads
         
-        # 【修正】新しく実装した加算型AttentionアルゴリズムはまだRustコアに反映されていないため、
-        # 強制的にPython版（新アルゴリズム）を使用するようにします。
         self.use_rust = False 
         
         if self.use_rust:
             self.core = sara_rust_core.RustSpikeAttention(input_size, hidden_size, num_heads, memory_size)
         else:
-            # Python fallback implementation
-            self.memory_keys: List[List[Set[int]]] = [] # [time][head] -> set of key spikes
-            self.memory_values: List[List[List[int]]] = [] # [time][head] -> list of value spikes
+            self.memory_keys: List[List[Set[int]]] = [] 
+            self.memory_values: List[List[List[int]]] = [] 
             
             self.w_query: List[List[int]] = [] 
             self._init_sparse_weights(self.w_query, input_size, hidden_size)
@@ -51,19 +43,12 @@ class SpikeAttention:
             self._init_sparse_weights(self.w_value, input_size, hidden_size)
 
     def _init_sparse_weights(self, weight_list: List[List[int]], dim_in: int, dim_out: int, density: float = 0.05):
-        """
-        ランダムな疎結合（Sparse Connections）を初期化する。
-        numpyを使わず、標準ライブラリのrandomを用いて行列演算を回避する。
-        """
         for _ in range(dim_in):
             num_targets = max(1, int(dim_out * density))
             targets = random.sample(range(dim_out), num_targets)
             weight_list.append(sorted(targets))
 
     def _project(self, input_spikes: List[int], weights: List[List[int]]) -> List[int]:
-        """
-        入力スパイクを疎結合ウェイトを通してQ, K, Vの空間に発火（射影）させる。
-        """
         if not input_spikes: return []
         
         potentials: Dict[int, int] = {}
@@ -74,13 +59,11 @@ class SpikeAttention:
         
         if not potentials: return []
         
-        # 動的閾値（平均膜電位を基準とする）によりノイズを除去
         mean_p = sum(potentials.values()) / len(potentials)
-        threshold = max(2.0, mean_p) # 最低でも2スパイク以上のシナプス入力を要求
+        threshold = max(2.0, mean_p) 
         
         out_spikes = [n for n, p in potentials.items() if p >= threshold]
         
-        # 発火数が多すぎる場合はWinner-Take-Allで上位を抽出（SDRのスパース性を維持）
         target_k = max(1, int(self.hidden_size * 0.1))
         if len(out_spikes) > target_k:
             sorted_neurons = sorted(potentials.items(), key=lambda x: x[1], reverse=True)
@@ -89,22 +72,16 @@ class SpikeAttention:
         return out_spikes
 
     def compute(self, query_spikes: List[int]) -> List[int]:
-        """
-        Queryスパイクに基づいてMemoryから関連情報を取得する。
-        """
         if self.use_rust:
             return self.core.compute(query_spikes)
         else:
             return self._compute_python(query_spikes)
 
     def _compute_python(self, query_spikes: List[int]) -> List[int]:
-        # 1. Project
         q_full = self._project(query_spikes, self.w_query)
         k_full = self._project(query_spikes, self.w_key)
         v_full = self._project(query_spikes, self.w_value)
         
-        # 2. Split Heads (ブロック分割による部分空間の割り当て)
-        # 空間を均等に分割し、各Headが独立した特徴を捉えられるようにする
         q_heads: List[Set[int]] = [set() for _ in range(self.num_heads)]
         k_heads: List[Set[int]] = [set() for _ in range(self.num_heads)]
         v_heads: List[List[int]] = [[] for _ in range(self.num_heads)]
@@ -115,7 +92,6 @@ class SpikeAttention:
         for idx in k_full: k_heads[min(idx // head_dim, self.num_heads - 1)].add(idx)
         for idx in v_full: v_heads[min(idx // head_dim, self.num_heads - 1)].append(idx)
         
-        # 3. Store in Memory
         self.memory_keys.append(k_heads)
         self.memory_values.append(v_heads)
         if len(self.memory_keys) > self.memory_size:
@@ -124,7 +100,6 @@ class SpikeAttention:
             
         if len(self.memory_keys) < 2: return []
 
-        # 4. Spike-based Attention (Overlap & Potential Addition)
         v_potentials: Dict[int, float] = {}
         current_time = len(self.memory_keys) - 1
         
@@ -136,30 +111,24 @@ class SpikeAttention:
                 k_set = past_keys_heads[h]
                 if not k_set: continue
                 
-                # スパイクの重なり(Overlap)を類似度スコアとして利用（行列積によるQuery-Key演算の代替）
                 overlap = len(q_set.intersection(k_set))
                 
                 if overlap > 0:
-                    # 時間減衰（Time Decay）: 新しい記憶ほど強く、古い記憶ほど少しずつ影響力を弱める
                     age = current_time - t
                     decay = 0.98 ** age
                     score = overlap * decay
                     
-                    # 該当する時刻のValueスパイクの膜電位に加算（Softmaxによる重み付けの代替）
                     for v_idx in self.memory_values[t][h]:
                         v_potentials[v_idx] = v_potentials.get(v_idx, 0.0) + score
                         
         if not v_potentials:
             return []
 
-        # 5. Output Generation (WTA / Thresholding across all heads)
         avg_v = sum(v_potentials.values()) / len(v_potentials)
-        # ノイズ除去のための閾値設定
         v_threshold = max(1.0, avg_v * 1.1) 
         
         context_spikes = [v for v, p in v_potentials.items() if p >= v_threshold]
         
-        # 出力のSDRのスパース性を維持
         target_density = max(1, int(self.hidden_size * 0.05))
         if len(context_spikes) > target_density:
             sorted_v = sorted(v_potentials.items(), key=lambda x: x[1], reverse=True)
@@ -171,7 +140,6 @@ class SpikeAttention:
         pass
 
     def reset(self):
-        """記憶バッファのリセット"""
         if self.use_rust:
             self.core.reset()
         else:

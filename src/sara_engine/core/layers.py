@@ -5,29 +5,24 @@ _FILE_INFO = {
 }
 
 import numpy as np
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Any
 
-# Rust Core Import Check
 try:
-    from .. import sara_rust_core
+    from .. import sara_rust_core  # type: ignore
     RUST_AVAILABLE = True
 except ImportError:
     try:
-        import sara_rust_core
+        import sara_rust_core  # type: ignore
         RUST_AVAILABLE = True
     except ImportError:
         RUST_AVAILABLE = False
 
 class DynamicLiquidLayer:
-    """
-    Hybrid Layer with Robust Homeostasis.
-    ニューロン自身が目標発火率(target_rate)を維持するように閾値を自動調整します。
-    """
     def __init__(self, input_size: int, hidden_size: int, decay: float, 
                  density: float = 0.05, input_scale: float = 1.0, 
                  rec_scale: float = 0.8, feedback_scale: float = 0.5,
                  use_rust: Optional[bool] = None,
-                 target_rate: float = 0.05): # [New] 目標発火率 (5%)
+                 target_rate: float = 0.05):
         
         self.size = hidden_size
         self.input_size = input_size
@@ -43,11 +38,15 @@ class DynamicLiquidLayer:
             self.use_rust = use_rust
         else:
             self.use_rust = RUST_AVAILABLE
+            
+        # 型アノテーションは __init__ 内で1度だけ宣言する
+        self.in_indices: List[np.ndarray]
+        self.in_weights: List[np.ndarray]
+        self.rec_indices: List[np.ndarray]
+        self.rec_weights: List[np.ndarray]
         
         if self.use_rust:
-            # Rust実装の初期化
             self.core = sara_rust_core.RustLiquidLayer(input_size, hidden_size, decay, density, feedback_scale)
-            # 互換性用ダミー
             self.in_indices = []
             self.in_weights = []
             self.rec_indices = []
@@ -59,13 +58,11 @@ class DynamicLiquidLayer:
             self.input_trace = np.zeros(input_size, dtype=np.float32)
             self.activity_ema = np.zeros(hidden_size, dtype=np.float32)
         else:
-            # Python実装
             self.in_indices = []
             self.in_weights = []
             self.rec_indices = []
             self.rec_weights = []
             
-            # Init Input Weights
             for i in range(input_size):
                 n = int(hidden_size * density)
                 if n > 0:
@@ -77,7 +74,6 @@ class DynamicLiquidLayer:
                     self.in_indices.append(np.array([], dtype=np.int32))
                     self.in_weights.append(np.array([], dtype=np.float32))
             
-            # Init Recurrent Weights
             rec_density = 0.1
             for i in range(hidden_size):
                 n = int(hidden_size * rec_density)
@@ -93,14 +89,10 @@ class DynamicLiquidLayer:
             
             self.v = np.zeros(hidden_size, dtype=np.float32)
             self.refractory = np.zeros(hidden_size, dtype=np.float32)
-            self.base_thresh = 1.0 # 基準閾値
+            self.base_thresh = 1.0
             self.dynamic_thresh = np.ones(hidden_size, dtype=np.float32) * self.base_thresh
             
-            # [New] Activity Moving Average (活動履歴)
-            # 初期値は目標値にしておく（最初から暴走しないように）
             self.activity_ema = np.ones(hidden_size, dtype=np.float32) * target_rate
-            
-            # STDP Traces
             self.trace = np.zeros(hidden_size, dtype=np.float32)
             self.input_trace = np.zeros(input_size, dtype=np.float32)
             
@@ -122,7 +114,6 @@ class DynamicLiquidLayer:
             return self._forward_python(active_inputs, prev_active_hidden, feedback_active, learning, attention_signal)
 
     def _forward_python(self, active_inputs, prev_active_hidden, feedback_active, learning, attention_signal):
-        # 1. Decay & Refractory
         self.refractory = np.maximum(0, self.refractory - 1)
         self.v *= self.decay
         self.trace *= 0.95
@@ -131,8 +122,6 @@ class DynamicLiquidLayer:
         if active_inputs:
             self.input_trace[active_inputs] += 1.0
 
-        # 2. Integration (Input + Recurrent + Feedback + Attention)
-        # (処理速度優先のため、ループ展開は維持)
         for pre_id in active_inputs:
             if pre_id < len(self.in_indices):
                 targets = self.in_indices[pre_id]
@@ -156,54 +145,38 @@ class DynamicLiquidLayer:
             for idx in attention_signal:
                 if idx < self.size: self.v[idx] += attn_scale
         
-        # 3. Fire Condition
         ready_mask = (self.v >= self.dynamic_thresh) & (self.refractory <= 0)
         fired_indices = np.where(ready_mask)[0].tolist()
         
-        # 4. Post-Fire Updates
         fired_arr = np.array(fired_indices, dtype=int)
         
-        # [New] Homeostasis: Exponential Moving Average Update
-        # 発火したニューロンは 1.0、しなかったニューロンは 0.0 を混ぜる
-        ema_decay = 0.05 # 時定数 (ゆっくり追従)
+        ema_decay = 0.05
         current_activity = np.zeros(self.size, dtype=np.float32)
         if fired_indices:
             current_activity[fired_arr] = 1.0
         
         self.activity_ema = (1 - ema_decay) * self.activity_ema + ema_decay * current_activity
         
-        # [New] Threshold Adaptation based on Error
-        # 活動しすぎ (ema > target) -> 閾値を上げる (+)
-        # 活動しなさすぎ (ema < target) -> 閾値を下げる (-)
-        homeo_rate = 0.02 # 調整スピード
+        homeo_rate = 0.02
         diff = self.activity_ema - self.target_rate
         self.dynamic_thresh += homeo_rate * diff
         
-        # Reset & Refractory
         if fired_indices:
             self.v[fired_arr] = 0.0
-            # 不応期をランダムにして同期発火を防ぐ
             self.refractory[fired_arr] = np.random.uniform(2.0, 5.0, size=len(fired_arr))
             self.trace[fired_arr] += 1.0
 
-        # 安全装置: 閾値が極端にならないようにクリップ
         np.clip(self.dynamic_thresh, 0.1, 5.0, out=self.dynamic_thresh)
         
-        # 5. STDP Learning
         if learning and fired_indices:
-            # Recurrent Weights Only for now
             for pre_id in prev_active_hidden:
                 if pre_id < len(self.rec_indices):
                     targets = self.rec_indices[pre_id]
                     ws = self.rec_weights[pre_id]
-                    
-                    # LTD: Pre発火 -> Post不発 (一律減衰)
                     ws -= 0.002 
-                    
-                    # LTP: Pre発火 -> Post発火 (強化)
                     mask = np.isin(targets, fired_arr)
                     if np.any(mask):
-                        ws[mask] += 0.03 # LTD分を上回る強化
+                        ws[mask] += 0.03
                         np.clip(ws, -2.0, 2.0, out=ws)
             
         return fired_indices

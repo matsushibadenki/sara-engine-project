@@ -244,7 +244,7 @@ class StatefulSaraGPT:
             'version': 'stateful_v2_rl',
             'sdr_size': self.sdr_size,
             'state_readout_weights': self.state_readout_weights,
-            'encoder_cache': dict(self.encoder.cache),
+            'encoder_cache': dict(self.encoder.token_sdr_map),
             'attn_w_q': self.attention.w_query, 'attn_w_k': self.attention.w_key, 'attn_w_v': self.attention.w_value,
             'transition_matrix': self.state_neurons.transition_matrix
         }
@@ -253,7 +253,7 @@ class StatefulSaraGPT:
     def load_model(self, filepath: str):
         with open(filepath, 'rb') as f: state = pickle.load(f)
         self.state_readout_weights = state['state_readout_weights']
-        if 'encoder_cache' in state: self.encoder.cache = OrderedDict(state['encoder_cache'])
+        if 'encoder_cache' in state: self.encoder.token_sdr_map = dict(state['encoder_cache'])
         if 'transition_matrix' in state: self.state_neurons.transition_matrix = state['transition_matrix']
 
 class StatefulRLMAgent:
@@ -304,8 +304,6 @@ class StatefulRLMAgent:
             
             elif state_name == "READ":
                 if chunks and current_chunk_idx < len(chunks):
-                    # 【修正】単語数分の状態推移の暴走を防ぐため、ここでは何もしない。
-                    # 次のステップで自然にEXTRACT状態へ遷移させる。
                     pass
             
             elif state_name == "EXTRACT":

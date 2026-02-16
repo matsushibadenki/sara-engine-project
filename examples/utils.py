@@ -9,9 +9,6 @@ import sys
 import numpy as np
 
 def img_to_poisson(img_flat, time_steps=60, rate_scale=0.5):
-    """
-    画像をポアソンスパイク列に変換する（レートコーディング）
-    """
     img_flat = np.maximum(0, img_flat)
     max_val = np.max(img_flat)
     if max_val > 1e-6:
@@ -27,9 +24,6 @@ def img_to_poisson(img_flat, time_steps=60, rate_scale=0.5):
     return spike_train
 
 def text_to_spikes(text, vocab_map, steps_per_char=3, echo_steps=10):
-    """
-    テキストをスパイク列に変換する
-    """
     spike_train = []
     for char in text:
         if char in vocab_map:
@@ -45,12 +39,9 @@ def text_to_spikes(text, vocab_map, steps_per_char=3, echo_steps=10):
     return spike_train
 
 def load_mnist_data(data_dir='./data'):
-    """
-    MNISTデータをロードする（torchvisionが必要）
-    """
     try:
-        import torch
-        from torchvision import datasets, transforms
+        import torch  # type: ignore
+        from torchvision import datasets, transforms  # type: ignore
         
         transform = transforms.Compose([
             transforms.ToTensor(),

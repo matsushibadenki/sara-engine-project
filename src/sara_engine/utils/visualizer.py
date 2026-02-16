@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/utils/visualizer.py",
     "//": "タイトル: SARA可視化ツールキット",
-    "//": "目的: スパイク、膜電位、アテンションの可視化機能を提供するユーティリティ。"
+    "//": "目的: スパイク、膜電位、アテンション、および物理状態(NeuroFEM)の可視化機能を提供するユーティリティ。"
 }
 
 import numpy as np
@@ -98,3 +98,24 @@ class SaraVisualizer:
         plt.savefig(path)
         plt.close()
         print(f"[Viz] Saved attention heatmap to {path}")
+
+    def plot_neurofem_heatmap(self, grid_state: List[float], grid_size: int, title: str = "NeuroFEM 2D Heat Diffusion", filename: str = "neurofem_heatmap.png"):
+        """
+        NeuroFEMの2次元グリッド状態(物理的な分布)をヒートマップ画像として出力します。
+        """
+        if len(grid_state) != grid_size * grid_size:
+            print(f"[Viz] Error: grid_state size ({len(grid_state)}) does not match grid_size^2 ({grid_size * grid_size})")
+            return
+            
+        # 1次元配列を2次元に変換
+        grid_data = np.array(grid_state).reshape((grid_size, grid_size))
+        
+        plt.figure(figsize=(8, 6))
+        plt.imshow(grid_data, cmap='hot', interpolation='nearest')
+        plt.colorbar(label='Membrane Potential (Temperature Equivalent)')
+        plt.title(title)
+        
+        path = f"{self.save_dir}/{filename}"
+        plt.savefig(path)
+        plt.close()
+        print(f"[Viz] Saved NeuroFEM heatmap to {path}")

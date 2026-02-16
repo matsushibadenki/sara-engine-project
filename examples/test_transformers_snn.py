@@ -8,7 +8,6 @@ import os
 import sys
 import numpy as np
 
-# 何よりも先にローカルの src ディレクトリを sys.path の先頭に挿入する
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
@@ -16,13 +15,13 @@ if src_path not in sys.path:
 from sara_engine.core.transformer import PlasticTransformerBlock
 from sara_engine.core.normalization import SpikeIntrinsicPlasticity
 from sara_engine.core.dropout import SpikeDropout
-from sara_engine.utils.visualizer import SNNVisualizer
+from sara_engine.utils.visualizer import SaraVisualizer
 
 def run_test():
     workspace_dir = os.path.join(os.path.dirname(__file__), "..", "workspace")
     os.makedirs(workspace_dir, exist_ok=True)
     
-    viz = SNNVisualizer(workspace_dir=workspace_dir)
+    viz = SaraVisualizer(save_dir=workspace_dir)
     
     d_model = 128
     num_heads = 4
