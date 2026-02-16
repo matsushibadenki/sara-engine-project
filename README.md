@@ -6,7 +6,7 @@ It completely eliminates the "backpropagation (BP)" and "matrix operations" that
 
 It operates on CPU only, without using any GPU.
 
-Current Version: **v0.1.4**
+Current Version: **v0.1.5**
 
 ## Features
 

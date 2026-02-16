@@ -1,38 +1,38 @@
 About Tools  
   
-### 1. 診断・テストツールの確認
+### 1. Checking Diagnostic & Test Tools
 
-`mode` 引数（`debug` または `test`）が必要です。
+The `mode` argument (`debug` or `test`) is required.
 
 ```bash
-# デバッグモード（エンジンの内部状態チェック）
+# Debug mode (check internal state of engine)
 python examples/run_diagnostics.py debug
 
-# 学習テストモード（簡単な単語ペアの学習確認）
+# Learning test mode (verify learning of simple word pairs)
 python examples/run_diagnostics.py test
 
 ```
 
-### 2. 分類タスクの確認
+### 2. Checking Classification Tasks
 
-`task` 引数（`text` または `mnist`）が必要です。
+The `task` argument (`text` or `mnist`) is required.
 
 ```bash
-# テキスト分類（すぐに終わります）
+# Text classification (completes quickly)
 python examples/run_classifier.py text
 
-# MNIST画像分類（データダウンロードが発生します。時間がなければ省略可）
+# MNIST image classification (data download will occur. Skip if time is limited)
 python examples/run_classifier.py mnist --epochs 1 --samples 100
 python examples/run_classifier.py mnist --epochs 5 --samples 1000
 ```
 
-### 3. チャットの確認（完了済み）
+### 3. Checking Chat (Completed)
 
 ```bash
-# 学習開始
+# Start training
 python examples/run_chat.py --train 
   
-# チャット開始
+# Start chat
 python examples/run_chat.py
 ```
 ---

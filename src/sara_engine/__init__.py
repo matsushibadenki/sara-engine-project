@@ -4,7 +4,7 @@ _FILE_INFO = {
     "//": "目的: ImageSpikeEncoderのエクスポート追加。"
 }
 
-__version__ = "0.1.7"
+__version__ = "0.1.5"
 
 from .models.gpt import SaraGPT
 from .models.rlm import StatefulRLMAgent

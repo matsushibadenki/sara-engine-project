@@ -1,60 +1,60 @@
 ### ROADMAP  
 
-### ポリシー  
-・pypiライブラリとして作成する  
-・省エネルギーを目指す  
-・誤差逆伝播法を使わない  
-・行列演算を使わない  
-・GPUを使わない  
-・生物由来の設計を優先する  
+### Policy  
+・Create as a PyPI library  
+・Aim for energy efficiency  
+・Do not use backpropagation  
+・Do not use matrix operations  
+・Do not use GPU  
+・Prioritize biologically-inspired design  
 
-### 作業ポリシー  
-・Transformersに存在する機能のSNN版の作成を優先する  
+### Work Policy  
+・Prioritize creating SNN versions of features that exist in Transformers  
     
-### 1. ニューロモーフィック・デバッグ & 可視化ツール
+### 1. Neuromorphic Debugging & Visualization Tools
 
-SNNは「なぜその判断に至ったか」がスパイクの連鎖として現れるため、ブラックボックス化を避けるための可視化が重要です。
+In SNNs, "why a particular decision was made" manifests as a chain of spikes, making visualization crucial to avoid black-box behavior.
 
-* **スパイク・ラスタープロットのリアルタイム生成**:
-全層のニューロンの発火タイミングを時間軸で表示し、リザーバ内での「情報の響き（Echo）」を視覚化する機能。
-* **アテンション・ヒートマップ**:
-`SpikeAttention` がどの過去のスパイクパターンに強く反応（Overlap）しているかを動的に可視化するツール。
-* **膜電位分布の統計分析**:
-各層のニューロンの膜電位（）が閾値に対してどのように分布しているかをヒストグラムで表示し、不発火や発火しすぎ（Spike Storm）を診断する機能。
+* **Real-time Spike Raster Plot Generation**:
+A feature to display the firing timing of neurons across all layers on a time axis, visualizing the "Echo of information" within the reservoir.
+* **Attention Heatmap**:
+A tool to dynamically visualize which past spike patterns the `SpikeAttention` strongly responds to (Overlap).
+* **Membrane Potential Distribution Statistical Analysis**:
+A feature to display histograms showing how the membrane potential of neurons in each layer is distributed relative to the threshold, diagnosing non-firing or excessive firing (Spike Storm).
 
-### 2. 生物学的学習則の拡充（アルゴリズムの深化）
+### 2. Enhancement of Biological Learning Rules (Algorithm Deepening)
 
-現在は出力層の教師あり学習がメインですが、中間層の「自己組織化」を強めることで、ラベルなしデータからの特徴抽出能力を向上させます。
+Currently, supervised learning in the output layer is primary, but strengthening "self-organization" in hidden layers will improve feature extraction capability from unlabeled data.
 
-* **STDP（スパイクタイミング依存可塑性）の正式統合**:
-ロードマップにあるSTDPを標準レイヤーとして実装し、入力データのみで「頻出パターン」を自動的に学習する機能。
-* **内在的可塑性（Intrinsic Plasticity）**:
-発火頻度が低すぎるニューロンの閾値を下げ、高すぎるニューロンの閾値を上げることで、ネットワーク全体の活動効率を自動最適化するホメオスタシス機能。
-* **異種時定数の自動割り当て（Heterogeneous Time-constants）**:
-検証結果で有効性が確認された「時定数の個体差」を、層の役割に応じて自動的に分布させる機能。
+* **Formal Integration of STDP (Spike-Timing-Dependent Plasticity)**:
+Implement STDP from the roadmap as a standard layer, enabling automatic learning of "frequent patterns" from input data alone.
+* **Intrinsic Plasticity**:
+A homeostasis feature that automatically optimizes network-wide activity efficiency by lowering the threshold of neurons with too-low firing rates and raising the threshold of neurons with too-high firing rates.
+* **Automatic Assignment of Heterogeneous Time-constants**:
+A feature to automatically distribute "individual differences in time constants," whose effectiveness has been confirmed in validation results, according to the role of each layer.
 
-### 3. エッジ・マルチモーダル対応
+### 3. Edge & Multimodal Support
 
-GPU不要・低消費電力という強みを活かすための機能です。
+Features to leverage the strengths of GPU-free and low power consumption.
 
-* **イベント駆動型データローダー**:
-DVS（動的視覚センサー）や音声波形などの時系列データを、直接スパイク列に変換（Rate/Temporal Coding）するための標準ユーティリティ。
-* **量子化・整数演算モード**:
-膜電位計算を浮動小数点（f32）ではなく固定小数点（int8/int16）で行うオプション。これにより、より安価なマイクロコンピュータ（ESP32やARM Cortex-Mシリーズ）への移植を容易にします。
-* **マルチモーダル・リザーバ**:
-視覚SDRと音声SDRを一つのリザーバ内で混合・統合し、クロスモーダルな連想（音を聞いて画像を想起するなど）を可能にするアーキテクチャ。
+* **Event-driven Data Loader**:
+Standard utilities for directly converting time-series data such as DVS (Dynamic Vision Sensor) or audio waveforms into spike trains (Rate/Temporal Coding).
+* **Quantization & Integer Arithmetic Mode**:
+An option to perform membrane potential calculations using fixed-point (int8/int16) instead of floating-point (f32). This facilitates porting to more affordable microcomputers (ESP32, ARM Cortex-M series).
+* **Multimodal Reservoir**:
+An architecture that mixes and integrates visual SDR and audio SDR within a single reservoir, enabling cross-modal associations (such as recalling images from hearing sounds).
 
-### 4. 開発エクスペリエンス（DX）の向上
+### 4. Developer Experience (DX) Improvement
 
-PyTorchやTensorFlowに慣れたユーザーを呼び込むためのインターフェース整備です。
+Interface improvements to attract users familiar with PyTorch and TensorFlow.
 
-* **Scikit-learn / PyTorch ライクなAPI**:
-`model.fit(X, y)` や `model.predict(X)` といった標準的なメソッド名への統一。
-* **モデルの重みと構造のJSON/YAML書き出し**:
-`pickle` だけでなく、他言語（CやRust単体）から読み込みやすい形式でのエクスポート機能。
-* **事前学習済みモデル・動物園（Model Zoo）**:
-特定のドメイン（日本語テキスト、波形解析、センサー異常検知）に特化した、学習済みのリザーバ重みの提供。
+* **Scikit-learn / PyTorch-like API**:
+Unification to standard method names such as `model.fit(X, y)` and `model.predict(X)`.
+* **JSON/YAML Export of Model Weights and Structure**:
+Export functionality in formats that are easy to load from other languages (standalone C or Rust), not just `pickle`.
+* **Pre-trained Model Zoo**:
+Provision of trained reservoir weights specialized for specific domains (Japanese text, waveform analysis, sensor anomaly detection).
 
-### 優先的な実装の推奨
+### Recommended Priority for Implementation
 
-まずは、**「1. 可視化ツール」**の実装を推奨します。SNNの挙動が可視化されることで、ユーザー（開発者）は「どの層で情報が消えているか」「どこで異常発火しているか」を容易に把握できるようになり、ライブラリの定着率が高まるためです。
+First, implementation of **"1. Visualization Tools"** is recommended. By visualizing SNN behavior, users (developers) can easily understand "where information is being lost in which layer" and "where abnormal firing is occurring," which will increase the library's adoption rate.
