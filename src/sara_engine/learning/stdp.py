@@ -1,95 +1,91 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/learning/stdp.py",
-    "//": "タイトル: STDP (Spike-Timing-Dependent Plasticity) による事前学習",
-    "//": "目的: 誤差逆伝播法や行列演算を用いず、SNNの生物学的学習則(STDP)を用いて教師なしで言語の共起関係や文法構造を事前学習する。"
-}
+# パス: src/sara_engine/learning/stdp.py
+# タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー
+# 目的: 厳格なシナプス・スケーリングと競合学習を組み合わせ、入力パターンを明確に分化・自己組織化させる。
+# {
+#     "//": "行列演算・誤差逆伝播を完全排除。勝者ニューロンに対する即時的な重み正規化を強制。"
+# }
+import random
 
-import math
-from typing import List, Any, Tuple
-
-class STDPPretrainer:
-    """
-    STDP (Spike-Timing-Dependent Plasticity) を用いた教師なし自己回帰学習モジュール。
-    スパイクの発火タイミングの前後関係に基づいてシナプス重み（SaraGPTのsynapses）を更新する。
-    行列演算や誤差逆伝播法は一切使用せず、純粋な局所的アップデートのみで文脈の因果関係を獲得する。
-    """
-    def __init__(self, window_size: int = 4, a_plus: float = 1.0, a_minus: float = 0.5, tau: float = 2.0, w_max: float = 15.0):
-        """
-        Args:
-            window_size: 過去何ステップ前までの発火をSTDPの対象とするか（時間窓）
-            a_plus: LTP（長期増強）の最大変化量
-            a_minus: LTD（長期抑圧）の最大変化量
-            tau: 時間減衰の時定数（ステップ数が離れるほど効果が薄れる）
-            w_max: シナプス重みの上限（Homeostasis: 発散防止）
-        """
-        self.window_size = window_size
-        self.a_plus = a_plus
-        self.a_minus = a_minus
-        self.tau = tau
-        self.w_max = w_max
-
-    def pretrain(self, model: Any, corpus: List[str]):
-        """
-        大量のコーパスを与えて教師なし事前学習を実行する。
-        model は SaraGPT クラスのインスタンスを想定。
-        """
-        for i, text in enumerate(corpus):
-            self._train_sequence(model, text)
-
-    def _train_sequence(self, model: Any, text: str):
-        """
-        1つの文章（シーケンス）に対してSTDP則を適用し、シナプス結合を更新する。
-        """
-        token_ids = model.encoder.tokenizer.encode(text)
-        if not token_ids:
-            return
-
-        # 終了状態の学習のために <eos> を付与
-        eos_id = model.encoder.tokenizer.vocab.get("<eos>")
-        if eos_id is not None and token_ids[-1] != eos_id:
-            token_ids.append(eos_id)
-            
-        # 発火履歴バッファ: [(時刻t, SDRのリスト)]
-        spike_history: List[Tuple[int, List[int]]] = []
+class STDPLayer:
+    def __init__(self, num_inputs: int, num_outputs: int, threshold: float = 2.0):
+        self.num_inputs = num_inputs
+        self.num_outputs = num_outputs
         
-        for t, tid in enumerate(token_ids):
-            # 現在の時刻 t で発火したニューロン群（Post-synaptic）
-            current_sdr = model.encoder._get_token_sdr(tid)
+        # 行列演算を使わず、2次元リストでシナプス結合荷重を管理
+        self.weights = [[random.uniform(0.1, 0.5) for _ in range(num_outputs)] for _ in range(num_inputs)]
+        
+        self.A_plus = 0.15   # 強化（LTP）の学習率
+        self.A_minus = 0.05  # 抑圧（LTD）の学習率
+        
+        self.potentials = [0.0] * num_outputs
+        self.leak_rate = 0.9
+
+        # Intrinsic Plasticity（適応型閾値）のパラメータ
+        self.base_threshold = threshold
+        self.thresholds = [threshold] * num_outputs
+        self.theta_plus = 0.5   # 発火時の閾値上昇（疲労）
+        self.theta_decay = 0.05 # 基準値へ戻る自然減衰
+        
+        # 厳格なシナプス・スケーリングの目標値
+        # 1つのニューロンが持てる重みの総和を制限し、一部の入力のみに特化させる
+        self.target_weight_sum = 2.5
+
+    def process_step(self, input_spikes: list[int]) -> tuple[list[int], list[float]]:
+        output_spikes = [0] * self.num_outputs
+        
+        # 1. 膜電位の計算と発火判定
+        max_pot = -1.0
+        winner_idx = -1
+        
+        for j in range(self.num_outputs):
+            self.potentials[j] *= self.leak_rate
+            for i in range(self.num_inputs):
+                if input_spikes[i] == 1:
+                    self.potentials[j] += self.weights[i][j]
+                    
+            if self.potentials[j] >= self.thresholds[j] and self.potentials[j] > max_pot:
+                max_pot = self.potentials[j]
+                winner_idx = j
+                
+        # 2. 強力なWinner-Take-All
+        if winner_idx != -1:
+            output_spikes[winner_idx] = 1
+            self.potentials[winner_idx] = 0.0
             
-            # 過去の時間窓内の発火履歴との間でSTDPを計算
-            for past_t, past_sdr in spike_history:
-                dt = t - past_t
-                if dt > self.window_size:
-                    continue
-                
-                # 1. LTP (Long-Term Potentiation: 長期増強)
-                dw_plus = self.a_plus * math.exp(-dt / self.tau)
-                
-                for pre in past_sdr:
-                    if pre not in model.synapses:
-                        model.synapses[pre] = {}
-                    for post in current_sdr:
-                        current_w = model.synapses[pre].get(post, 0.0)
-                        new_w = current_w + dw_plus
-                        model.synapses[pre][post] = min(new_w, self.w_max)
+            # Intrinsic Plasticity: 勝者の閾値を上げて連続的な独占を防ぐ
+            self.thresholds[winner_idx] += self.theta_plus
+            
+            # 敗者の側抑制
+            for j in range(self.num_outputs):
+                if j != winner_idx:
+                    self.potentials[j] = -1.0
+
+        # 3. 適応型閾値の減衰
+        for j in range(self.num_outputs):
+            self.thresholds[j] += (self.base_threshold - self.thresholds[j]) * self.theta_decay
+
+        # 4. 競合学習に基づく厳格なシナプス更新
+        for j in range(self.num_outputs):
+            # 発火した「勝者ニューロン」のみがシナプスを更新する
+            if output_spikes[j] == 1:
+                for i in range(self.num_inputs):
+                    if input_spikes[i] == 1:
+                        self.weights[i][j] += self.A_plus
+                    else:
+                        self.weights[i][j] -= self.A_minus
                         
-                # 2. LTD (Long-Term Depression: 長期抑圧)
-                dw_minus = self.a_minus * math.exp(-dt / self.tau)
-                
-                for pre in current_sdr:
-                    if pre in model.synapses:
-                        for post in past_sdr:
-                            if post in model.synapses[pre]:
-                                current_w = model.synapses[pre][post]
-                                new_w = current_w - dw_minus
-                                if new_w <= 0.0:
-                                    del model.synapses[pre][post]
-                                else:
-                                    model.synapses[pre][post] = new_w
-                                    
-            # 現在の発火を履歴に追加
-            spike_history.append((t, current_sdr))
-            
-            # バッファが時間窓を超えたら古い記憶を捨てる
-            if len(spike_history) > self.window_size:
-                spike_history.pop(0)
+                # 厳格なSynaptic Scaling（重みの総量規制）
+                # 緩やかな調整ではなく、直接総量を目標値に合わせる
+                current_sum = sum(self.weights[i][j] for i in range(self.num_inputs))
+                if current_sum > 0:
+                    scale_factor = self.target_weight_sum / current_sum
+                    for i in range(self.num_inputs):
+                        self.weights[i][j] *= scale_factor
+                        
+                        # 最終的な結合荷重のクリッピング
+                        if self.weights[i][j] > 1.0:
+                            self.weights[i][j] = 1.0
+                        elif self.weights[i][j] < 0.0:
+                            self.weights[i][j] = 0.0
+
+        return output_spikes, list(self.potentials)
