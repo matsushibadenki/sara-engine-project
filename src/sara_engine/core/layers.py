@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/layers.py",
     "//": "タイトル: Dynamic Liquid Layer (Homeostasis Core)",
-    "//": "目的: Rust拡張が利用可能な場合は高速なRust実装を使い、ない場合は純粋なPythonリストのみでLiquid State Machineを実行する。"
+    "//": "目的: Rust拡張が利用可能な場合は高速なRust実装を使い、ない場合は純粋なPythonリストのみでLiquid State Machineを実行する。ヘルスチェック用の状態取得メソッドなどを追加。"
 }
 
 import random
@@ -17,6 +17,7 @@ except ImportError:
         RUST_AVAILABLE = True
     except ImportError:
         RUST_AVAILABLE = False
+
 
 class DynamicLiquidLayer:
     def __init__(self, input_size: int, hidden_size: int, decay: float, 
@@ -82,6 +83,23 @@ class DynamicLiquidLayer:
             for _ in range(hidden_size): # フィードバック入力サイズと仮定
                 n = int(hidden_size * 0.05)
                 self.feedback_map.append(random.sample(range(hidden_size), n))
+
+    def get_state(self) -> Tuple[List[float], List[float]]:
+        """現在の膜電位と動的閾値の状態を取得する"""
+        if self.use_rust:
+            if hasattr(self.core, 'get_state'):
+                return self.core.get_state()
+            return [], []
+        return self.v, self.dynamic_thresh
+
+    def forward_with_feedback(self, active_inputs: List[int], prev_active_hidden: List[int], 
+                              feedback_active: List[int] = []) -> List[int]:
+        """フィードバック付きでforwardを実行するエイリアス"""
+        return self.forward(
+            active_inputs=active_inputs, 
+            prev_active_hidden=prev_active_hidden, 
+            feedback_active=feedback_active
+        )
 
     def forward(self, active_inputs: List[int], prev_active_hidden: List[int], 
                 feedback_active: List[int] = [], attention_signal: List[int] = [],

@@ -6,6 +6,9 @@ This document describes the tools and commands used for testing and verifying th
 
 The following commands are used to verify the functionality of the SARA Engine. Ensure you are in the project root directory before running these commands.
 
+### **0\. health_check**  
+python scripts/health_check.py  
+  
 ### **1\. Unit Tests (pytest)**
 
 Run the full test suite or specific modules using pytest.
