@@ -16,7 +16,7 @@ from sara_engine.utils.tokenizer import SaraTokenizer
 
 def run_evaluation():
     test_ltm_file = "test_eval_ltm.pkl"
-    vocab_file = "sara_vocab.json"
+    vocab_file = "workspace/sara_vocab.json"
     
     for f in [test_ltm_file, vocab_file]:
         if os.path.exists(f):

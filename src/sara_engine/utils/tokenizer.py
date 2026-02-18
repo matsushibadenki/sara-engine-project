@@ -15,7 +15,7 @@ except ImportError:
     _HAS_JANOME = False
 
 class SaraTokenizer:
-    def __init__(self, vocab_size: int = 2000, model_path: str = "sara_vocab.json"):
+    def __init__(self, vocab_size: int = 2000, model_path: str = "workspace/sara_vocab.json"):
         self.vocab_size = vocab_size
         self.model_path = model_path
         self.vocab: Dict[str, int] = {}

@@ -9,7 +9,7 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.sara_engine.learning.stdp import STDPLayer
 
-def load_brain_state(filename="sara_vocab.json"):
+def load_brain_state(filename="workspace/sara_vocab.json"):
     if not os.path.exists(filename):
         print(f"エラー: {filename} が見つかりません。")
         return None

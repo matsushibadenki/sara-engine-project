@@ -29,7 +29,7 @@ class SaraAgent:
             hidden_size_per_comp=hidden_size, 
             compartment_names=compartments
         )
-        self.brain = CorticoHippocampalSystem(cortex=self.cortex, ltm_filepath="sara_multimodal_ltm.pkl", max_working_memory_size=15)
+        self.brain = CorticoHippocampalSystem(cortex=self.cortex, ltm_filepath="models/sara_multimodal_ltm.pkl", max_working_memory_size=15)
         
         self.gpt = SaraGPT(self.encoder)
         self.vision = ImageSpikeEncoder(output_size=input_size)
@@ -52,7 +52,7 @@ class SaraAgent:
             "ミトコンドリア は 細胞 の エネルギー を 作り ます",
             "リンゴ は 赤く て 美味しい 果物 です"
         ]
-        if not os.path.exists("sara_vocab.json"):
+        if not os.path.exists("workspace/sara_vocab.json"):
             self.encoder.tokenizer.train(corpus)
         self.encoder.train_semantic_network(corpus, window_size=3, epochs=2)
         
