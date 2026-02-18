@@ -1,8 +1,7 @@
-# SARA Engine: NeuroFEM Extension
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/neurofem.py",
     "//": "タイトル: ニューロモルフィック有限要素法 (NeuroFEM) レイヤー",
-    "//": "目的: 行列演算や誤差逆伝播法を用いずに、SNNのスパイク伝播によって物理的変形や熱伝導などの偏微分方程式(PDE)を解く。FEMのメッシュノードをニューロンに、剛性行列をスパースなシナプス結合にマッピングする。"
+    "//": "目的: 行列演算や誤差逆伝播法を用いずに、SNNのスパイク伝播によって物理シミュレーションを行う。"
 }
 
 from typing import List, Dict
@@ -18,27 +17,21 @@ class NeuroFEMLayer:
         self.decay = decay
         
         # 膜電位（物理量：温度、変位などの近似値の蓄積）
-        self.v = [0.0 for _ in range(num_nodes)]
+        self.v: List[float] = [0.0] * num_nodes
+        self.biases: List[float] = [0.0] * num_nodes
         
         # スパースなシナプス結合（FEMにおける剛性行列の代わり）
         # 形式: { 自身のノードID: { 隣接ノードID: 伝達重み, ... }, ... }
         self.synapses: Dict[int, Dict[int, float]] = {i: {} for i in range(num_nodes)}
-        
-        # 外部からの定常的な入力（物理的な外力や境界条件）
-        self.biases = [0.0 for _ in range(num_nodes)]
-
-    def add_connection(self, node_i: int, node_j: int, weight: float) -> None:
+    
+    def add_connection(self, node_a: int, node_b: int, weight: float) -> None:
         """
-        メッシュ上の隣接するノード間にシナプス結合（剛性・熱伝達率）を設定する。
+        メッシュのエッジ（要素間の結合）を追加する。
+        双方向の結合として定義し、作用・反作用を表現する。
         """
-        if node_i not in self.synapses:
-            self.synapses[node_i] = {}
-        if node_j not in self.synapses:
-            self.synapses[node_j] = {}
-            
-        # 物理シミュレーションのため通常は対称的な相互作用を持つ
-        self.synapses[node_i][node_j] = weight
-        self.synapses[node_j][node_i] = weight
+        if 0 <= node_a < self.num_nodes and 0 <= node_b < self.num_nodes:
+            self.synapses[node_a][node_b] = weight
+            self.synapses[node_b][node_a] = weight
 
     def set_boundary_condition(self, node_id: int, bias_value: float) -> None:
         """
@@ -63,27 +56,26 @@ class NeuroFEMLayer:
                 self.v[node_id] += 1.0
                 
         # 2. 発火判定と隣接ノードへのエネルギー（スパイク）伝播
+        # 注: 同期的な更新を行うため、加算分は一時バッファに貯めるか、即時反映かを決める必要がある。
+        # ここでは単純なLIFモデルとして即時反映させつつ、連鎖発火を防ぐためループ順序依存を受け入れる
+        # （より厳密にするならダブルバッファリングが必要だが、軽量化のためこのままとする）
+        
+        # まず発火するノードを特定
+        current_step_fired = []
         for i in range(self.num_nodes):
             if self.v[i] >= self.threshold:
-                fired_indices.append(i)
-                # 発火したニューロンの電位をリセット
-                self.v[i] -= self.threshold 
-                
-                # 行列計算を使わず、スパース結合の辞書を辿って直接隣接ニューロンの電位を更新
-                for neighbor, weight in self.synapses[i].items():
-                    self.v[neighbor] += weight
-                    
-        return fired_indices
+                current_step_fired.append(i)
+                self.v[i] -= self.threshold # リセット
         
-    def get_steady_state(self) -> List[float]:
-        """
-        各ノードの現在の膜電位を取得する。
-        十分な回数 forward_step を回した後のこの値が、FEMシミュレーションの近似解となる。
-        """
-        return self.v.copy()
-
-    def reset_state(self) -> None:
-        """
-        シミュレーション状態を初期化する。結合構造や境界条件は保持される。
-        """
-        self.v = [0.0 for _ in range(self.num_nodes)]
+        # 発火による伝播処理
+        for src_node in current_step_fired:
+            fired_indices.append(src_node)
+            # 隣接ノードへ重みを加算
+            for target_node, weight in self.synapses[src_node].items():
+                self.v[target_node] += weight
+                
+        return fired_indices
+    
+    def get_state(self) -> List[float]:
+        """現在の全ノードの物理量（膜電位）をリストで返す"""
+        return list(self.v)

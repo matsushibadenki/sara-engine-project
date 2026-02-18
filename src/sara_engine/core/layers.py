@@ -1,13 +1,13 @@
-# パス: src/sara_engine/core/layers.py
-# タイトル: Dynamic Liquid Layer (Homeostasis Core)
-# 目的: Numpyを完全に排除し、純粋なイベント駆動とスパース接続による圧倒的な省エネルギー化と生物学的妥当性を実現。
-# {
-#     "//": "行列演算を廃止し、辞書型を用いた疎結合（Sparse）ネットワークに完全移行。"
-# }
+_FILE_INFO = {
+    "//": "ディレクトリパス: src/sara_engine/core/layers.py",
+    "//": "タイトル: Dynamic Liquid Layer (Homeostasis Core)",
+    "//": "目的: Rust拡張が利用可能な場合は高速なRust実装を使い、ない場合は純粋なPythonリストのみでLiquid State Machineを実行する。"
+}
 
 import random
-from typing import List, Optional, Tuple, Any
+from typing import List, Optional, Tuple, Dict
 
+# Rust拡張のインポート試行
 try:
     from .. import sara_rust_core  # type: ignore
     RUST_AVAILABLE = True
@@ -27,7 +27,6 @@ class DynamicLiquidLayer:
         
         self.size = hidden_size
         self.input_size = input_size
-        
         self.decay = decay
         self.density = density
         self.input_scale = input_scale
@@ -35,149 +34,149 @@ class DynamicLiquidLayer:
         self.feedback_scale = feedback_scale
         self.target_rate = target_rate
         
-        if use_rust is not None:
-            self.use_rust = use_rust
-        else:
+        # Rust使用の自動判定
+        if use_rust is None:
             self.use_rust = RUST_AVAILABLE
-            
-        if self.use_rust:
-            self.core = sara_rust_core.RustLiquidLayer(input_size, hidden_size, decay, density, feedback_scale)
-            self.v = [0.0] * hidden_size
-            self.dynamic_thresh = [1.0] * hidden_size
         else:
-            # 純粋なPython辞書によるスパース表現（行列演算を完全排除）
-            self.in_weights = [{} for _ in range(input_size)]
-            for i in range(input_size):
-                n = int(hidden_size * density)
-                if n > 0:
-                    targets = random.sample(range(hidden_size), n)
-                    for t in targets:
-                        self.in_weights[i][t] = random.uniform(-input_scale * 1.2, input_scale * 1.2)
-            
-            self.rec_weights = [{} for _ in range(hidden_size)]
-            rec_density = 0.1
-            for i in range(hidden_size):
-                n = int(hidden_size * rec_density)
-                if n > 0:
-                    candidates = [x for x in range(hidden_size) if x != i]
-                    if n > len(candidates):
-                        n = len(candidates)
-                    targets = random.sample(candidates, n)
-                    for t in targets:
-                        self.rec_weights[i][t] = random.uniform(-rec_scale, rec_scale)
-            
+            self.use_rust = use_rust and RUST_AVAILABLE
+
+        if self.use_rust:
+            # Rust実装の初期化（すべての重みと状態はRust側で管理される）
+            self.core = sara_rust_core.RustLiquidLayer(
+                input_size, hidden_size, decay, density, feedback_scale
+            )
+            print("DynamicLiquidLayer: Rust core initialized.")
+        else:
+            # Python実装（辞書型疎結合）
+            print("DynamicLiquidLayer: Python fallback mode.")
             self.v = [0.0] * hidden_size
             self.refractory = [0.0] * hidden_size
-            self.base_thresh = 1.0
-            self.dynamic_thresh = [self.base_thresh] * hidden_size
+            self.dynamic_thresh = [1.0] * hidden_size
+            self.trace = [0.0] * hidden_size  # STDP用トレース
             
-            self.activity_ema = [target_rate] * hidden_size
-            self.trace = [0.0] * hidden_size
-            self.input_trace = [0.0] * input_size
+            # 入力重み: 辞書のリスト [input_idx] -> {hidden_idx: weight, ...}
+            self.in_weights: List[Dict[int, float]] = [{} for _ in range(input_size)]
+            for i in range(input_size):
+                # 密度に基づいて接続先をランダム選択
+                n_connect = int(hidden_size * density)
+                if n_connect > 0:
+                    targets = random.sample(range(hidden_size), n_connect)
+                    for t in targets:
+                        self.in_weights[i][t] = random.uniform(-input_scale, input_scale)
             
-            self.feedback_weights = []
+            # 再帰重み: 辞書のリスト [hidden_idx] -> {hidden_idx: weight, ...}
+            self.rec_weights: List[Dict[int, float]] = [{} for _ in range(hidden_size)]
+            rec_density = 0.1
             for i in range(hidden_size):
-                targets = random.sample(range(hidden_size), max(1, int(hidden_size * 0.05)))
-                self.feedback_weights.append(targets)
+                n_connect = int(hidden_size * rec_density)
+                if n_connect > 0:
+                    # 自分自身への結合は避ける
+                    candidates = [x for x in range(hidden_size) if x != i]
+                    if len(candidates) >= n_connect:
+                        targets = random.sample(candidates, n_connect)
+                        for t in targets:
+                            self.rec_weights[i][t] = random.uniform(-rec_scale, rec_scale)
 
-    def forward_with_feedback(self, active_inputs: List[int], 
-                             prev_active_hidden: List[int], 
-                             feedback_active: List[int] = [], 
-                             learning: bool = False,
-                             attention_signal: List[int] = []) -> List[int]:
+            # フィードバック結合（ランダム）
+            self.feedback_map: List[List[int]] = []
+            for _ in range(hidden_size): # フィードバック入力サイズと仮定
+                n = int(hidden_size * 0.05)
+                self.feedback_map.append(random.sample(range(hidden_size), n))
+
+    def forward(self, active_inputs: List[int], prev_active_hidden: List[int], 
+                feedback_active: List[int] = [], attention_signal: List[int] = [],
+                learning: bool = False) -> List[int]:
         
         if self.use_rust:
-            # Rust側でもホメオスタシスが更新される必要があるが、現在はPython側の修正に注力
-            return self.core.forward(active_inputs, prev_active_hidden, feedback_active, attention_signal, learning)
-        else:
-            return self._forward_python(active_inputs, prev_active_hidden, feedback_active, learning, attention_signal)
+            # Rust側へは単純な整数のリストを渡すだけでよい
+            return self.core.forward(
+                active_inputs, prev_active_hidden, feedback_active, attention_signal, learning
+            )
+        
+        # --- Python純粋実装 ---
 
-    def _forward_python(self, active_inputs: List[int], prev_active_hidden: List[int], feedback_active: List[int], learning: bool, attention_signal: List[int]) -> List[int]:
-        # 1. 状態の更新（減衰と不応期）
+        # 1. 減衰と不応期の更新
         for i in range(self.size):
-            if self.refractory[i] > 0:
-                self.refractory[i] -= 1.0
             self.v[i] *= self.decay
-            self.trace[i] *= 0.95
-            
-        for i in range(self.input_size):
-            self.input_trace[i] *= 0.95
-            
-        # 2. 入力・再帰・フィードバックによる電位上昇
-        for idx in active_inputs:
-            if idx < self.input_size:
-                self.input_trace[idx] += 1.0
-                for target_id, w in self.in_weights[idx].items():
-                    self.v[target_id] += w
-                
-        for pre_h_id in prev_active_hidden:
-            if pre_h_id < self.size:
-                for target_id, w in self.rec_weights[pre_h_id].items():
-                    self.v[target_id] += w
-                
-        for fb_id in feedback_active:
-            if fb_id < len(self.feedback_weights):
-                for target_id in self.feedback_weights[fb_id]:
-                    self.v[target_id] += self.feedback_scale
+            if self.refractory[i] > 0.0:
+                self.refractory[i] -= 1.0
+            self.trace[i] *= 0.95 # トレースの減衰
 
-        if attention_signal:
-            attn_scale = 1.5
-            for idx in attention_signal:
-                if idx < self.size:
-                    self.v[idx] += attn_scale
+        # 2. 入力スパイクの統合 (疎結合なのでO(k)で高速)
+        for inp_idx in active_inputs:
+            if inp_idx < len(self.in_weights):
+                for target, weight in self.in_weights[inp_idx].items():
+                    self.v[target] += weight
+
+        # 3. 再帰スパイクの統合
+        for hid_idx in prev_active_hidden:
+            if hid_idx < len(self.rec_weights):
+                for target, weight in self.rec_weights[hid_idx].items():
+                    self.v[target] += weight
         
-        # 3. 発火判定
+        # 4. フィードバックとAttention信号
+        for fb_idx in feedback_active:
+            if fb_idx < len(self.feedback_map):
+                for target in self.feedback_map[fb_idx]:
+                    self.v[target] += self.feedback_scale
+        
+        for att_idx in attention_signal:
+            if att_idx < self.size:
+                self.v[att_idx] += 1.5 # 強い興奮
+
+        # 5. 発火判定 (Winner-Take-All的な抑制と動的閾値)
         fired_indices = []
-        for i in range(self.size):
-            # 不応期でないかつ閾値を超えた場合に発火
-            if self.v[i] >= self.dynamic_thresh[i] and self.refractory[i] <= 0:
-                fired_indices.append(i)
-                
-        # 4. Homeostasis (ホメオスタシス): 閾値の動的調整
-        # ヘルスチェックで検知されるよう、更新率を少し強化
-        ema_decay = 0.1  # 0.05 -> 0.1 (反応速度を向上)
-        homeo_rate = 0.05 # 0.02 -> 0.05 (閾値の変化量を大きく)
+        candidates = []
         
-        fired_set = set(fired_indices)
         for i in range(self.size):
-            current_act = 1.0 if i in fired_set else 0.0
-            # 活動率の指数移動平均を更新
-            self.activity_ema[i] = (1 - ema_decay) * self.activity_ema[i] + ema_decay * current_act
+            if self.v[i] >= self.dynamic_thresh[i] and self.refractory[i] <= 0:
+                candidates.append(i)
+        
+        # 発火数制限 (Homeostasisの一環)
+        max_spikes = int(self.size * 0.15)
+        if len(candidates) > max_spikes:
+            # 電位が高い順にソートして上位のみ発火
+            candidates.sort(key=lambda x: self.v[x], reverse=True)
+            fired_indices = candidates[:max_spikes]
+        else:
+            fired_indices = candidates
             
-            # ターゲット発火率との差分に基づいて閾値を調整
-            diff = self.activity_ema[i] - self.target_rate
-            self.dynamic_thresh[i] += homeo_rate * diff
+        fired_set = set(fired_indices)
+
+        # 6. 発火後の処理 (リセット、不応期、閾値調整)
+        for i in range(self.size):
+            if i in fired_set:
+                self.v[i] = 0.0
+                self.refractory[i] = random.uniform(2.0, 5.0)
+                self.trace[i] += 1.0
+                # 発火したので閾値を上げる
+                self.dynamic_thresh[i] += 0.05
+            else:
+                # 発火しなかったので閾値を下げる（忘却）
+                self.dynamic_thresh[i] += (self.target_rate - 0.05) * 0.01
             
-            # 閾値のクリッピング（発火不能や暴走を防止）
-            if self.dynamic_thresh[i] < 0.2: self.dynamic_thresh[i] = 0.2
+            # 閾値クリッピング
+            if self.dynamic_thresh[i] < 0.5: self.dynamic_thresh[i] = 0.5
             if self.dynamic_thresh[i] > 5.0: self.dynamic_thresh[i] = 5.0
 
-        # 5. 後処理（リセットと学習）
-        for idx in fired_indices:
-            self.v[idx] = 0.0
-            # 不応期を少し短く調整してホメオスタシスが働きやすくする
-            self.refractory[idx] = random.uniform(1.0, 3.0) 
-            self.trace[idx] += 1.0
-
-        if learning and fired_indices:
+        # 7. STDP (Spike-Timing Dependent Plasticity) - 学習
+        if learning and prev_active_hidden:
             for pre_id in prev_active_hidden:
-                if pre_id < self.size:
-                    for target_id in list(self.rec_weights[pre_id].keys()):
-                        # LTD: 基本的な減衰
-                        self.rec_weights[pre_id][target_id] -= 0.002
-                        # LTP: 同時発火による強化
+                if pre_id < len(self.rec_weights):
+                    # 既存の接続のみ更新
+                    for target_id in self.rec_weights[pre_id].keys():
                         if target_id in fired_set:
-                            self.rec_weights[pre_id][target_id] += 0.03
-                        
-                        if self.rec_weights[pre_id][target_id] < -2.0:
-                            self.rec_weights[pre_id][target_id] = -2.0
-                        elif self.rec_weights[pre_id][target_id] > 2.0:
-                            self.rec_weights[pre_id][target_id] = 2.0
-            
-        return fired_indices
+                            # LTP (Long-Term Potentiation): 前→後 の順で発火
+                            self.rec_weights[pre_id][target_id] += 0.02
+                            if self.rec_weights[pre_id][target_id] > 2.0:
+                                self.rec_weights[pre_id][target_id] = 2.0
+                        else:
+                            # LTD (Long-Term Depression): 前のみ発火
+                            self.rec_weights[pre_id][target_id] -= 0.005
+                            if self.rec_weights[pre_id][target_id] < -2.0:
+                                self.rec_weights[pre_id][target_id] = -2.0
 
-    def get_state(self) -> Tuple[List[float], List[float]]:
-        return list(self.v), list(self.dynamic_thresh)
+        return fired_indices
 
     def reset(self):
         if self.use_rust:
@@ -185,7 +184,5 @@ class DynamicLiquidLayer:
         else:
             self.v = [0.0] * self.size
             self.refractory = [0.0] * self.size
+            self.dynamic_thresh = [1.0] * self.size
             self.trace = [0.0] * self.size
-            self.input_trace = [0.0] * self.input_size
-            self.dynamic_thresh = [self.base_thresh] * self.size
-            self.activity_ema = [self.target_rate] * self.size
