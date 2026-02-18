@@ -1,60 +1,54 @@
-### ROADMAP  
+# **SARA Engine Roadmap**
 
-### Policy  
-・Create as a PyPI library  
-・Aim for energy efficiency  
-・Do not use backpropagation  
-・Do not use matrix operations  
-・Do not use GPU  
-・Prioritize biologically-inspired design  
+This roadmap outlines the development path for the SARA (Spiking Advanced Reasoning Agent) Engine. The focus is on evolving from a basic SNN framework to a fully cognitive, Transformer-equivalent Spiking Neural Network architecture, complying with the "No-GPU / First Principles" policy.
 
-### Work Policy  
-・Prioritize creating SNN versions of features that exist in Transformers  
-    
-### 1. Neuromorphic Debugging & Visualization Tools
+## **1\. Spiking Transformer Architecture (The "SNN-LLM" Core)**
 
-In SNNs, "why a particular decision was made" manifests as a chain of spikes, making visualization crucial to avoid black-box behavior.
+To realize functionality equivalent to Transformers using Spiking Neural Networks without relying on matrix multiplication-heavy backpropagation.
 
-* **Real-time Spike Raster Plot Generation**:
-A feature to display the firing timing of neurons across all layers on a time axis, visualizing the "Echo of information" within the reservoir.
-* **Attention Heatmap**:
-A tool to dynamically visualize which past spike patterns the `SpikeAttention` strongly responds to (Overlap).
-* **Membrane Potential Distribution Statistical Analysis**:
-A feature to display histograms showing how the membrane potential of neurons in each layer is distributed relative to the threshold, diagnosing non-firing or excessive firing (Spike Storm).
+* \[ \] **Spiking Multi-Head Self-Attention**  
+  * Implement attention mechanisms using temporal spike logic (e.g., spike timing coincidence) rather than dot-product matrices.  
+  * Develop "Query", "Key", and "Value" equivalents using neuron populations.  
+* \[ \] **Spiking Softmax / Winner-Take-All (WTA)**  
+  * Implement lateral inhibition circuits to approximate Softmax normalization for attention weights.  
+* \[ \] **Temporal Positional Encoding**  
+  * Develop time-based encoding (Phase Coding or Time-to-First-Spike) to represent token positions in sequences.  
+* \[ \] **Spiking Residual Connections**  
+  * Implement skip connections via direct membrane potential injection to support deep network architectures.  
+* \[ \] **Spiking Layer Normalization**  
+  * Implement homeostatic plasticity (dynamic threshold adaptation) to normalize layer activity without statistical normalization.  
+* \[ \] **Token-to-Spike Embeddings**  
+  * Optimize methods for converting semantic tokens into sparse distributed representations (SDR) or spike trains.
 
-### 2. Enhancement of Biological Learning Rules (Algorithm Deepening)
+## **2\. Advanced Learning & Plasticity**
 
-Currently, supervised learning in the output layer is primary, but strengthening "self-organization" in hidden layers will improve feature extraction capability from unlabeled data.
+Moving beyond basic STDP to support complex, deep architectures.
 
-* **Formal Integration of STDP (Spike-Timing-Dependent Plasticity)**:
-Implement STDP from the roadmap as a standard layer, enabling automatic learning of "frequent patterns" from input data alone.
-* **Intrinsic Plasticity**:
-A homeostasis feature that automatically optimizes network-wide activity efficiency by lowering the threshold of neurons with too-low firing rates and raising the threshold of neurons with too-high firing rates.
-* **Automatic Assignment of Heterogeneous Time-constants**:
-A feature to automatically distribute "individual differences in time constants," whose effectiveness has been confirmed in validation results, according to the role of each layer.
+* \[ \] **Reward-Modulated STDP (R-STDP)**  
+  * Integrate global dopamine-like reward signals to modulate local STDP updates for reinforcement learning tasks.  
+* \[ \] **Structural Plasticity (Synaptic Rewiring)**  
+  * Implement dynamic creation and pruning of synapses based on correlation and usage, allowing the network topology to evolve.  
+* \[ \] **Surrogate Gradient Learning (Rust Backend)**  
+  * Implement gradient approximations in the Rust core to enable supervision for deep SNNs while keeping the Python interface clean and bio-inspired.  
+* \[ \] **Homeostatic Regulation**  
+  * Global activity regulation mechanisms to prevent "epileptic" runaway excitation in large networks.
 
-### 3. Edge & Multimodal Support
+## **3\. Cognitive Architecture & Global Workspace**
 
-Features to leverage the strengths of GPU-free and low power consumption.
+* \[ \] **Thalamo-Cortical Loops (Gating)**  
+  * Implement a central routing system (Thalamus) to control information flow between cortex regions (Visual, Audio, Memory).  
+* \[ \] **Working Memory (Attractor Networks)**  
+  * Implement sustained firing circuits (recurrent excitation) to hold context over long timeframes, replacing the "Context Window" of Transformers.  
+* \[ \] **Metacognition & Monitoring**  
+  * Circuits that monitor the "energy" (spike rate) and "confidence" (entropy) of the system to trigger curiosity or doubt.
 
-* **Event-driven Data Loader**:
-Standard utilities for directly converting time-series data such as DVS (Dynamic Vision Sensor) or audio waveforms into spike trains (Rate/Temporal Coding).
-* **Quantization & Integer Arithmetic Mode**:
-An option to perform membrane potential calculations using fixed-point (int8/int16) instead of floating-point (f32). This facilitates porting to more affordable microcomputers (ESP32, ARM Cortex-M series).
-* **Multimodal Reservoir**:
-An architecture that mixes and integrates visual SDR and audio SDR within a single reservoir, enabling cross-modal associations (such as recalling images from hearing sounds).
+## **4\. Performance & Rust Core Optimization**
 
-### 4. Developer Experience (DX) Improvement
+* \[ \] **Parallel Spike Propagation**  
+  * Further optimize the Rust backend to handle millions of neurons on CPU using multi-threading.  
+* \[ \] **Sparse Matrix Optimization**  
+  * Optimize memory usage for massive synaptic connectivity using Sparse Distributed Representations (SDR) at the Rust level.  
+* \[ \] **Serialization & State Management**  
+  * Efficient saving/loading of full brain states (membrane potentials \+ weights) for pausing and resuming "consciousness".
 
-Interface improvements to attract users familiar with PyTorch and TensorFlow.
-
-* **Scikit-learn / PyTorch-like API**:
-Unification to standard method names such as `model.fit(X, y)` and `model.predict(X)`.
-* **JSON/YAML Export of Model Weights and Structure**:
-Export functionality in formats that are easy to load from other languages (standalone C or Rust), not just `pickle`.
-* **Pre-trained Model Zoo**:
-Provision of trained reservoir weights specialized for specific domains (Japanese text, waveform analysis, sensor anomaly detection).
-
-### Recommended Priority for Implementation
-
-First, implementation of **"1. Visualization Tools"** is recommended. By visualizing SNN behavior, users (developers) can easily understand "where information is being lost in which layer" and "where abnormal firing is occurring," which will increase the library's adoption rate.
+*Note: Completed features (Basic NeuroFEM, Basic STDP, Hippocampal Memory, standard RL, and Python-Rust bridging) have been archived from this list.*

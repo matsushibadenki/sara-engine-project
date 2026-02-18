@@ -9,3 +9,7 @@
 
 ### Work Policy  
 ・Prioritize creating SNN versions of features that exist in Transformers
+
+### The Goal  
+・Set ACC target at 95%  
+・Implemented using python and rust together for high-speed calculation
