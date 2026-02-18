@@ -93,12 +93,15 @@ class DynamicLiquidLayer:
         return self.v, self.dynamic_thresh
 
     def forward_with_feedback(self, active_inputs: List[int], prev_active_hidden: List[int], 
-                              feedback_active: List[int] = []) -> List[int]:
+                              feedback_active: List[int] = [], attention_signal: List[int] = [],
+                              learning: bool = False) -> List[int]:
         """フィードバック付きでforwardを実行するエイリアス"""
         return self.forward(
             active_inputs=active_inputs, 
             prev_active_hidden=prev_active_hidden, 
-            feedback_active=feedback_active
+            feedback_active=feedback_active,
+            attention_signal=attention_signal,
+            learning=learning
         )
 
     def forward(self, active_inputs: List[int], prev_active_hidden: List[int], 

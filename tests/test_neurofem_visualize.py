@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: tests/test_neurofem_visualize.py",
     "//": "タイトル: NeuroFEM 2D熱拡散の可視化テスト",
-    "//": "目的: NeuroFEMの計算結果をMatplotlibを用いてヒートマップ画像として出力し、ロードマップの『可視化ツールの拡充』に貢献する。"
+    "//": "目的: NeuroFEMの計算結果をMatplotlibを用いてヒートマップ画像として出力し、ロードマップの『可視化ツールの拡充』に貢献する。出力先ディレクトリが存在しない場合の自動作成処理を追加。"
 }
 
 import sys
@@ -57,6 +57,10 @@ def test_visualize_2d_heat():
     
     # 画像として保存 (testsディレクトリ内)
     output_path = os.path.join(os.path.dirname(__file__), 'workspace/neurofem_heatmap.png')
+    
+    # 【追加】ディレクトリが存在しない場合は作成する
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
     plt.savefig(output_path)
     plt.close()
     

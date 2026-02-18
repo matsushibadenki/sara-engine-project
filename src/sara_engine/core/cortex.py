@@ -1,11 +1,11 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/cortex.py",
     "//": "タイトル: 大脳皮質 (Cortex)",
-    "//": "目的: DynamicLiquidLayerのラッパーとして、生物学的なパラメータ管理を行う。"
+    "//": "目的: DynamicLiquidLayerのラッパーとして、生物学的なパラメータ管理とコンパートメント化されたカラム構造を提供する。"
 }
 
 import random
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 class CortexLayer:
     """
@@ -30,7 +30,7 @@ class CortexLayer:
             decay = 0.9
             density = 0.05
             
-        # 内部状態（簡易実装：実体はLayers.pyのものを使う想定だが、ここでは単体でも動くようにパラメータ保持）
+        # 内部状態
         self.decay = decay
         self.density = density
         self.v: List[float] = [0.0] * hidden_size
@@ -44,14 +44,10 @@ class CortexLayer:
         fired_indices = []
         
         # 単純な入力統合（重みなし、接続チェックなしの簡易モデル）
-        # ※本来はLayers.pyを使うべきだが、Cortexとして独立している場合のロジック
-        input_set = set(input_indices)
-        
         for i in range(self.hidden_size):
             self.v[i] *= self.decay
             
-            # ランダムな接続をシミュレート（実際は固定すべきだが、ここでは軽量化のため確率的処理）
-            # 入力スパイク数に応じて確率的に電位上昇
+            # ランダムな接続をシミュレート
             hits = 0
             for _ in range(len(input_indices)):
                 if random.random() < self.density:
@@ -75,3 +71,50 @@ class CortexLayer:
                 self.dynamic_thresh[i] = self.base_thresh
 
         return fired_indices
+
+
+class CorticalColumn:
+    """
+    複数のコンパートメント（サブネットワーク）を持ち、コンテキストに応じて
+    発火経路を切り替える大脳皮質カラムのモデル。
+    破滅的忘却を防ぐためのモジュール化された構造を持つ。
+    """
+    def __init__(self, input_size: int, hidden_size_per_comp: int, compartment_names: List[str], target_rate: float = 0.05):
+        self.input_size = input_size
+        self.hidden_size_per_comp = hidden_size_per_comp
+        self.compartments: Dict[str, CortexLayer] = {}
+        
+        for name in compartment_names:
+            # 各コンパートメントに独立したCortexLayerを割り当てる
+            layer = CortexLayer(input_size=input_size, hidden_size=hidden_size_per_comp)
+            layer.target_rate = target_rate
+            self.compartments[name] = layer
+            
+    def forward_latent_chain(self, active_inputs: List[int], prev_active_hidden: List[int], 
+                             current_context: str, learning: bool = False, 
+                             reward_signal: float = 0.0) -> List[int]:
+        """
+        指定されたコンテキストのコンパートメントのみを駆動し、発火連鎖をシミュレートする。
+        他のコンテキストは完全に遮断されるため、干渉（破滅的忘却）を防ぐ。
+        """
+        if current_context not in self.compartments:
+            return []
+            
+        target_layer = self.compartments[current_context]
+        
+        # 本来はSTDPや報酬信号による学習のロジックが含まれるが、ここではフォワードパスのみ実行
+        fired_indices = target_layer.forward(active_inputs)
+        
+        return fired_indices
+        
+    def get_compartment_states(self) -> Dict[str, Dict[str, int]]:
+        """
+        各コンパートメントの現在の状態（膜電位が0より大きい残存ニューロン数）を取得する。
+        """
+        states = {}
+        for name, layer in self.compartments.items():
+            active_count = sum(1 for v in layer.v if v > 0.0)
+            states[name] = {
+                "active_neurons": active_count
+            }
+        return states

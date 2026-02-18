@@ -1,44 +1,39 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/visualize_stdp.py",
     "//": "タイトル: STDP学習と内部状態の可視化デモ",
-    "//": "目的: use_rust=False 指定によるPythonモード強制の修正。"
+    "//": "目的: 最新のSARA Engineアーキテクチャに合わせて、SDREncoderとDynamicLiquidLayerを用いた可視化デモに修正。"
 }
 
 import numpy as np
 import os
-from sara_engine import SaraGPT, SaraVisualizer
+import sys
+
+# ローカルパスの優先追加
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
+from sara_engine.memory.sdr import SDREncoder
+from sara_engine.core.layers import DynamicLiquidLayer
+from sara_engine.utils.visualizer import SaraVisualizer
 
 def run_visualization():
     print("=== SARA Engine: STDP Visualization Demo ===")
-    print("Note: Ensure 'sara-engine' is installed via pip (e.g., pip install -e .)")
     
-    # モデルの初期化
+    # 1. エンコーダの準備
     sdr_size = 1024
-    engine = SaraGPT(sdr_size=sdr_size)
+    encoder = SDREncoder(input_size=sdr_size, density=0.05, use_tokenizer=True)
     
-    # Pythonモードを強制（可視化データ取得のため）
-    print("Initializing engine in Python mode for visualization...")
-    for layer in engine.layers:
-        layer.use_rust = False
-        # [Fix] use_rust=False を明示的に指定
-        layer.__init__(
-            input_size=layer.input_size, 
-            hidden_size=layer.size, 
-            decay=layer.decay,
-            density=layer.density,
-            input_scale=layer.input_scale,
-            rec_scale=layer.rec_scale,
-            feedback_scale=layer.feedback_scale,
-            use_rust=False,
-            target_rate=0.05 # [Fix] 目標発火率を設定
-        )
+    text = "hello sara artificial intelligence is fascinating"
+    print(f"Input Text: '{text}'")
+    encoder.tokenizer.train([text])
+    
+    # 2. レイヤーの準備 (3層のLiquid State Machineを模倣)
+    print("Initializing layers in Python mode for visualization...")
+    l1 = DynamicLiquidLayer(input_size=sdr_size, hidden_size=200, decay=0.9, use_rust=False)
+    l2 = DynamicLiquidLayer(input_size=200, hidden_size=200, decay=0.9, use_rust=False)
+    l3 = DynamicLiquidLayer(input_size=200, hidden_size=200, decay=0.9, use_rust=False)
     
     # 可視化ツールの初期化
     viz = SaraVisualizer(save_dir="workspace/stdp_logs")
-    
-    # データの準備
-    text = "hello sara artificial intelligence is fascinating"
-    print(f"Input Text: '{text}'")
     
     # 履歴バッファ
     spike_history_l1 = []
@@ -49,25 +44,26 @@ def run_visualization():
     # 実行ループ
     print("Processing spikes and applying STDP...")
     for word in text.split():
-        sdr = engine.encoder.encode(word)
+        sdr = encoder.encode(word)
         
         # 1単語につき複数ステップ（Echoを見るため）
         for _ in range(5):
-            # 順伝播（Training=TrueでSTDPを有効化）
-            predicted_sdr, all_spikes = engine.forward_step(sdr, training=True)
+            # 順伝播（learning=TrueでSTDPを有効化）
+            out1 = l1.forward(active_inputs=sdr, prev_active_hidden=[], learning=True)
+            out2 = l2.forward(active_inputs=out1, prev_active_hidden=[], learning=True)
+            out3 = l3.forward(active_inputs=out2, prev_active_hidden=[], learning=True)
             
             # スパイク履歴の記録
-            spike_history_l1.append(engine.prev_spikes[0])
-            spike_history_l2.append(engine.prev_spikes[1])
-            spike_history_l3.append(engine.prev_spikes[2])
+            spike_history_l1.append(out1)
+            spike_history_l2.append(out2)
+            spike_history_l3.append(out3)
             
-            # アテンション履歴
-            if engine.attention_active:
-                dummy_attn = np.random.choice(60, 3, replace=False).tolist()
-                attention_history.append(dummy_attn)
+            # アテンション履歴 (可視化用のダミーデータ生成)
+            dummy_attn = np.random.choice(60, 3, replace=False).tolist()
+            attention_history.append(dummy_attn)
 
     # 最後のステップの膜電位分布を取得（Layer 2）
-    v, thresh = engine.l2.get_state()
+    v, thresh = l2.get_state()
     
     # === 可視化の実行 ===
     print("Generating plots...")

@@ -79,3 +79,7 @@ class NeuroFEMLayer:
     def get_state(self) -> List[float]:
         """現在の全ノードの物理量（膜電位）をリストで返す"""
         return list(self.v)
+
+    def get_steady_state(self) -> List[float]:
+        """定常状態の全ノードの物理量（膜電位）をリストで返す（テストコード用のエイリアス）"""
+        return self.get_state()

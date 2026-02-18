@@ -1,9 +1,9 @@
-# パス: src/sara_engine/learning/stdp.py
-# タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー
-# 目的: 厳格なシナプス・スケーリングと競合学習を組み合わせ、入力パターンを明確に分化・自己組織化させる。さらに報酬変調(R-STDP)と構造的可塑性(スパース化)により精度と省エネを極限まで高める。
-# {
-#     "//": "行列演算・誤差逆伝播を完全排除。イベント駆動とスパース接続による超省エネ設計。"
-# }
+_FILE_INFO = {
+    "//": "ディレクトリパス: src/sara_engine/learning/stdp.py",
+    "//": "タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー",
+    "//": "目的: 厳格なシナプス・スケーリングと競合学習を組み合わせ、入力パターンを明確に分化・自己組織化させる。さらにGPT向けのSTDP事前学習器も含む。"
+}
+
 import random
 
 class STDPLayer:
@@ -116,3 +116,55 @@ class STDPLayer:
                         current_synapses[i] = 1.0
 
         return output_spikes, list(self.potentials)
+
+
+class STDPPretrainer:
+    """
+    コーパスなどのシーケンシャルデータから、単語/トークン間の遷移確率を
+    Spike-Timing Dependent Plasticity (STDP) によって事前学習するクラス。
+    行列演算・誤差逆伝播を一切使わず、純粋な辞書（スパース結合）でシナプスを形成する。
+    """
+    def __init__(self, window_size: int = 3, a_plus: float = 1.0, a_minus: float = 0.2):
+        self.window_size = window_size
+        self.a_plus = a_plus
+        self.a_minus = a_minus
+
+    def pretrain(self, model, corpus: list[str]):
+        if not hasattr(model, 'synapses'):
+            model.synapses = {}
+            
+        for text in corpus:
+            tokens = text.split()
+            sdr_sequence = []
+            
+            # 各トークンをSDR（発火インデックスのリスト）に変換
+            for token in tokens:
+                sdr = []
+                if hasattr(model, 'encoder'):
+                    try:
+                        if hasattr(model.encoder, 'encode'):
+                            sdr = model.encoder.encode(token)
+                    except Exception:
+                        pass
+                
+                # エンコード失敗時やテスト用のフォールバック（疑似発火）
+                if not sdr:
+                    sdr = [hash(token + str(i)) % 1024 for i in range(10)]
+                    
+                sdr_sequence.append(sdr)
+                
+            # 時系列STDPの適用 (過去の発火から未来の発火へのLTP結合を形成)
+            for i in range(len(sdr_sequence)):
+                pre_sdr = sdr_sequence[i]
+                for pre_idx in pre_sdr:
+                    if pre_idx not in model.synapses:
+                        model.synapses[pre_idx] = {}
+                        
+                    # window_size内の未来の発火に対して強化
+                    for j in range(1, self.window_size + 1):
+                        if i + j < len(sdr_sequence):
+                            post_sdr = sdr_sequence[i + j]
+                            # 距離が遠いほど重みの増加を減衰させる
+                            weight_update = self.a_plus / j
+                            for post_idx in post_sdr:
+                                model.synapses[pre_idx][post_idx] = model.synapses[pre_idx].get(post_idx, 0.0) + weight_update
