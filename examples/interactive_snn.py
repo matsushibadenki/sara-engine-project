@@ -1,13 +1,19 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: examples/interactive_snn.py",
-    "//": "タイトル: 対話型SNNシェル",
-    "//": "目的: インタラクティブにSARAのQA機能をテストする。"
-}
+# [配置するディレクトリのパス]: examples/interactive_snn.py
+# [ファイルの日本語タイトル]: 対話型SNNシェル
+# [ファイルの目的や内容]:
+# インタラクティブにSARAのQA機能をテストする。
+# 仮想環境(site-packages)の古いモジュールを読み込まないよう、
+# sys.pathの先頭にローカルパスを追加し、最新のソースから確実にインポートする。
 
 import sys
 import os
 import time
-from sara_engine import StatefulRLMAgent
+
+# プロジェクトルートをパスの先頭(0番目)に追加し、ローカルのsrcを確実に優先させる
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# src配下から明示的にインポートするように修正
+from src.sara_engine.models.rlm import StatefulRLMAgent
 
 def type_writer(text, delay=0.02):
     for char in text:

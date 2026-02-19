@@ -1,10 +1,14 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: examples/demo_rl_training.py",
-    "//": "タイトル: 強化学習（RL）モジュールの学習デモ",
-    "//": "目的: StatefulRLMAgentを用いた文章からの情報抽出と自律的状態遷移の学習デモ"
-}
+# 配置するディレクトリのパス: examples/demo_rl_training.py
+# ファイルの日本語タイトル: 強化学習（RL）モジュールの学習デモ
+# ファイルの目的や内容: 仮想環境(site-packages)の古いモジュールではなく、ローカルの最新モジュールを読み込むようにパス追加の修正を行ったデモスクリプト。
 
-from sara_engine.models.rlm import StatefulRLMAgent
+import sys
+import os
+
+# プロジェクトルートをパスに追加し、ローカルのsrcを参照させる
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.sara_engine.models.rlm import StatefulRLMAgent
 
 def main():
     print("=== RLM 強化学習デモンストレーション ===")

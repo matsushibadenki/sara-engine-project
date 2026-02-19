@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_mnist_snn.py",
     "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (TTFS完全スパース修正版)",
-    "//": "目的: TTFS（Time-To-First-Spike）コーディングのバグを修正し、ピクセルごとの単一発火を保証する。スパース化に伴うリザーバーの減衰を防ぐため、入力スケールと密度を再調整する。"
+    "//": "目的: TTFSコーディングのバグ修正に加え、DynamicLiquidLayerの正しいインポートパス(layers.py)を反映してエラーを解消する。"
 }
 
 import sys
@@ -15,7 +15,8 @@ import random
 # プロジェクトルートをパスに追加
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.sara_engine.core.cortex import DynamicLiquidLayer
+# 修正箇所: 正しい実装元である layers モジュールからインポートするように変更
+from src.sara_engine.core.layers import DynamicLiquidLayer
 from src.sara_engine.models.readout_layer import ReadoutLayer
 
 def download_mnist(filename, source_url):

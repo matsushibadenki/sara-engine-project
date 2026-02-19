@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/cortex.py",
     "//": "タイトル: 大脳皮質 (Cortex)",
-    "//": "目的: DynamicLiquidLayerのラッパーとして、生物学的なパラメータ管理とコンパートメント化されたカラム構造を提供する。"
+    "//": "目的: CorticalColumnに欠落していた短期記憶リセット(reset_short_term_memory)メソッドを追加し、AttributeErrorを解消する。"
 }
 
 import random
@@ -72,6 +72,10 @@ class CortexLayer:
 
         return fired_indices
 
+    def reset_state(self):
+        """短期的な膜電位状態をリセットする"""
+        self.v = [0.0] * self.hidden_size
+
 
 class CorticalColumn:
     """
@@ -106,6 +110,13 @@ class CorticalColumn:
         fired_indices = target_layer.forward(active_inputs)
         
         return fired_indices
+
+    def reset_short_term_memory(self):
+        """
+        全コンパートメントの短期的な膜電位状態をクリアし、エラーを回避する。
+        """
+        for layer in self.compartments.values():
+            layer.reset_state()
         
     def get_compartment_states(self) -> Dict[str, Dict[str, int]]:
         """

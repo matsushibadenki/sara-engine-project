@@ -1,11 +1,18 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/benchmark_rust.py",
     "//": "タイトル: Rust vs Python ベンチマーク",
-    "//": "目的: インストールされたsara-engineの計算速度を計測する。"
+    "//": "目的: インストールされたsara-engineの計算速度を計測する。仮想環境の古いパッケージを回避し、ローカルの最新のソースコードから読み込むようにパスとインポートを修正する。"
 }
 
 import time
-from sara_engine import DynamicLiquidLayer
+import sys
+import os
+
+# プロジェクトルートをパスの先頭に追加し、site-packagesの古いモジュールより優先させる
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# src配下から明示的にインポートするように修正
+from src.sara_engine.core.layers import DynamicLiquidLayer
 
 def run_benchmark():
     print("=== SARA Engine: Rust vs Python Benchmark ===")
