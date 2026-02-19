@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_mnist_snn.py",
-    "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (TTFS完全スパース修正版)",
-    "//": "目的: TTFSコーディングのバグ修正に加え、DynamicLiquidLayerの正しいインポートパス(layers.py)を反映してエラーを解消する。"
+    "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (高精度・高速化チューニング版)",
+    "//": "目的: TTFSの最適化、マルチスケール層の簡略化により速度を向上させ、精度95%到達を目指す。"
 }
 
 import sys
@@ -12,10 +12,8 @@ import urllib.request
 import gzip
 import random
 
-# プロジェクトルートをパスに追加
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# 修正箇所: 正しい実装元である layers モジュールからインポートするように変更
 from src.sara_engine.core.layers import DynamicLiquidLayer
 from src.sara_engine.models.readout_layer import ReadoutLayer
 
@@ -68,31 +66,33 @@ def prepare_mnist_dataset():
 
 def run_mnist_snn():
     print("="*60)
-    print("SARA-Engine: MNIST Classification (TTFS & Multi-Scale)")
+    print("SARA-Engine: MNIST Classification (Optimized TTFS & Multi-Scale)")
     print("="*60)
 
     train_images, train_labels, test_images, test_labels = prepare_mnist_dataset()
     
     num_inputs = 784
-    hidden_per_layer = 1000
+    # 高速化と精度確保のため、層の数を減らし幅を広げる
+    hidden_per_layer = 1500 
     num_classes = 10
-    epochs = 3
+    epochs = 4 # 学習機会を増やし精度を向上
     
     train_samples_to_use = len(train_images)
     test_samples_to_use = len(test_images)
 
     print("\n[Network] マルチスケール・ネットワークを構築中...")
     
-    decays = [0.60, 0.80, 0.95]
+    # 3層から2層へ変更し計算コストを削減
+    decays = [0.75, 0.95]
     liquid_layers = []
     for d in decays:
         liquid_layers.append(DynamicLiquidLayer(
             input_size=num_inputs, 
             hidden_size=hidden_per_layer, 
             decay=d, 
-            target_rate=0.04,
-            density=0.15,      # 入力スパイク激減を補うため結合密度を上昇
-            input_scale=5.0,   # 単一スパイクのエネルギーを大幅に強化
+            target_rate=0.05,
+            density=0.20,      # 発火経路を増やしスパースすぎないようにする
+            input_scale=6.0,   # 入力スパイク強度を強化
             use_rust=False
         ))
     
@@ -101,7 +101,7 @@ def run_mnist_snn():
     readout_layer = ReadoutLayer(
         input_size=total_hidden, 
         output_size=num_classes,
-        learning_rate=0.005
+        learning_rate=0.008 # 初期の学習率を上げて収束を早める
     )
 
     print(f"\n[Train] 学習開始 (データ数: {train_samples_to_use}件 x {epochs}エポック)...")
@@ -121,7 +121,7 @@ def run_mnist_snn():
                 readout_layer.v[o][idx] = 0.0
         
         if epoch > 0:
-            readout_layer.lr *= 0.7  
+            readout_layer.lr *= 0.6  # 減衰を強め、後半の微調整を安定させる
             
         for i in range(train_samples_to_use):
             image = train_images_shuffled[i]
@@ -131,22 +131,25 @@ def run_mnist_snn():
                 l.v = [0.0] * l.size
                 l.refractory = [0.0] * l.size
                 for j in range(l.size):
-                    if l.dynamic_thresh[j] > 4.0:
-                        l.dynamic_thresh[j] = 4.0
+                    if l.dynamic_thresh[j] > 4.5: # 閾値の上限を緩和
+                        l.dynamic_thresh[j] = 4.5
             
             accumulated_fired = set()
             prev_fired = [[] for _ in range(len(liquid_layers))]
             
-            thresholds = [192, 128, 64, 16]
-            has_fired_inputs = set() # 修正ポイント：発火済みピクセルを記録するセット
+            # 時間ステップを3段階に減らし高速化、コントラストの高いピクセルを重視
+            thresholds = [200, 128, 64] 
+            has_fired_inputs = set() 
             
             for step, thresh in enumerate(thresholds):
-                # 修正ポイント：まだ発火していないピクセルのみを抽出（TTFSコーディングの厳密化）
                 active_inputs = [
                     idx for idx, pixel in enumerate(image) 
                     if pixel > thresh and idx not in has_fired_inputs
                 ]
-                has_fired_inputs.update(active_inputs) # 発火リストに登録
+                if not active_inputs:
+                    continue
+                    
+                has_fired_inputs.update(active_inputs)
                 
                 offset = 0
                 for l_idx, l in enumerate(liquid_layers):
@@ -167,7 +170,7 @@ def run_mnist_snn():
     print(f"学習完了 | 所要時間: {time.time() - start_time:.2f}秒")
 
     print("\n[Sleep] 睡眠フェーズ開始 (ノイズシナプスの枝刈り)...")
-    print(readout_layer.sleep_phase(prune_rate=0.01))
+    print(readout_layer.sleep_phase(prune_rate=0.03))
 
     print(f"\n[Test] 推論テスト開始 (テストデータ数: {test_samples_to_use}件)...")
     correct_count = 0
@@ -184,14 +187,17 @@ def run_mnist_snn():
         accumulated_fired = set()
         prev_fired = [[] for _ in range(len(liquid_layers))]
         
-        thresholds = [192, 128, 64, 16]
-        has_fired_inputs = set() # テスト時も同様に修正
+        thresholds = [200, 128, 64]
+        has_fired_inputs = set()
         
         for step, thresh in enumerate(thresholds):
             active_inputs = [
                 idx for idx, pixel in enumerate(image) 
                 if pixel > thresh and idx not in has_fired_inputs
             ]
+            if not active_inputs:
+                continue
+                
             has_fired_inputs.update(active_inputs)
             
             offset = 0
