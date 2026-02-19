@@ -238,6 +238,83 @@ impl RustLiquidLayer {
         }
     }
 
+    /// Rust側で局所受容野を高速に構築する
+    pub fn apply_spatial_receptive_fields(&mut self, width: usize, height: usize, patch_sizes: Vec<usize>) {
+        let mut rng = rand::thread_rng();
+        let num_inputs = width * height;
+        
+        let mut new_in_indices: Vec<Vec<usize>> = vec![Vec::new(); num_inputs];
+        let mut new_in_weights: Vec<Vec<f32>> = vec![Vec::new(); num_inputs];
+
+        for hidden_idx in 0..self.size {
+            let cx = rng.gen_range(0..width) as i32;
+            let cy = rng.gen_range(0..height) as i32;
+            
+            let patch_size = if !patch_sizes.is_empty() {
+                *patch_sizes.choose(&mut rng).unwrap() as i32
+            } else {
+                3
+            };
+            let half_p = patch_size / 2;
+            
+            let pattern_type = rng.gen_range(0..7);
+            
+            for dy in -half_p..=half_p {
+                for dx in -half_p..=half_p {
+                    let x = cx + dx;
+                    let y = cy + dy;
+                    
+                    if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
+                        let inp_idx = (y * width as i32 + x) as usize;
+                        
+                        let mut w: f32 = match pattern_type {
+                            0 => rng.gen_range(-4.0..4.0), // random
+                            1 => { // center_on
+                                let dist = dx*dx + dy*dy;
+                                let limit = (half_p as f32 * 0.6).powi(2);
+                                if (dist as f32) <= limit { 6.0 } else { -3.0 }
+                            },
+                            2 => { // center_off
+                                let dist = dx*dx + dy*dy;
+                                let limit = (half_p as f32 * 0.6).powi(2);
+                                if (dist as f32) <= limit { -6.0 } else { 3.0 }
+                            },
+                            3 => if dy < 0 { 6.0 } else { -6.0 }, // edge_h
+                            4 => if dx < 0 { 6.0 } else { -6.0 }, // edge_v
+                            5 => if dx > dy { 6.0 } else { -6.0 }, // edge_d1
+                            6 => if dx > -dy { 6.0 } else { -6.0 }, // edge_d2
+                            _ => 0.0,
+                        };
+                        
+                        w += rng.gen_range(-0.8..0.8);
+                        w *= 1.5;
+                        
+                        new_in_indices[inp_idx].push(hidden_idx);
+                        new_in_weights[inp_idx].push(w);
+                    }
+                }
+            }
+        }
+        
+        self.in_indices = new_in_indices;
+        self.in_weights = new_in_weights;
+    }
+
+    /// 各サンプル学習前に、動的閾値（Homeostasis）の記憶は保持しつつ、電位と不応期だけをリセットする
+    pub fn reset_potentials(&mut self) {
+        for x in &mut self.v { *x = 0.0; }
+        for x in &mut self.refractory { *x = 0.0; }
+        // 安全のため、極端に上がった動的閾値のみクリッピング
+        for x in &mut self.dynamic_thresh { 
+            if *x > 5.0 { *x = 5.0; }
+        }
+    }
+
+    /// 現在の状態をPythonへ渡す
+    pub fn get_state(&self) -> (Vec<f32>, Vec<f32>) {
+        (self.v.clone(), self.dynamic_thresh.clone())
+    }
+
     fn forward(
         &mut self, 
         active_inputs: Vec<usize>, 

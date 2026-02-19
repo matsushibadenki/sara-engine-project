@@ -1,11 +1,12 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/readout_layer.py",
-    "//": "タイトル: Adam最適化機能付き読み出し層 (時空間特徴対応版)",
-    "//": "目的: 時間と空間の特徴を分離して受け取り、マージンロスを最適化して95%以上の精度を達成する。"
+    "//": "タイトル: Adam最適化機能付き読み出し層 (時空間・永続化対応版)",
+    "//": "目的: 時間と空間の特徴を分離して受け取り、学習済みモデルの重みと状態をJSONで高速に保存・復元できるようにする。"
 }
 
 import math
 import random
+import json
 from typing import List, Dict
 
 class ReadoutLayer:
@@ -25,7 +26,6 @@ class ReadoutLayer:
         
         limit = math.sqrt(3.0 / max(1, input_size))
         for o in range(output_size):
-            # 高速化のため random.sample を使用して初期のスパース結合を生成
             n_init = int(input_size * 0.15)
             for i in random.sample(range(input_size), n_init):
                 self.weights[o][i] = random.uniform(-limit, limit)
@@ -37,7 +37,6 @@ class ReadoutLayer:
         if not active_hidden_indices:
             return potentials
 
-        # 発火数に対してロバストにするため、平方根に比例したスケーリングを採用
         scale_factor = 10.0 / (math.sqrt(len(active_hidden_indices)) + 1.0)
         
         for o in range(self.output_size):
@@ -52,7 +51,6 @@ class ReadoutLayer:
         if max_p > -999.0:
             mean_p = sum(potentials) / self.output_size
             for o in range(self.output_size):
-                # コントラスト強化
                 potentials[o] -= 0.15 * mean_p
                 if potentials[o] < -10.0: potentials[o] = -10.0
                 if potentials[o] > 10.0: potentials[o] = 10.0
@@ -64,12 +62,11 @@ class ReadoutLayer:
             return
             
         self.t += 1
-        current_lr = self.lr / (1.0 + 0.0002 * self.t) # 減衰をさらに緩やかに
+        current_lr = self.lr / (1.0 + 0.0002 * self.t)
         
         potentials = self.predict(active_hidden_indices)
         errors = [0.0] * self.output_size
         
-        # 強いマージンロス (Target: 4.0, Non-Target: -1.5)
         if potentials[target_label] < 4.0:
             errors[target_label] = 4.0 - potentials[target_label]
             
@@ -139,7 +136,7 @@ class ReadoutLayer:
                 if idx in self.v[o]: del self.v[o][idx]
                 
             norm = math.sqrt(sq_sum)
-            target_norm = 10.0 # スケールを最適化
+            target_norm = 10.0
             if norm > 0:
                 scale = target_norm / norm
                 if scale > 2.0: scale = 2.0
@@ -149,3 +146,31 @@ class ReadoutLayer:
                     w_o[idx] *= scale
                     
         return f"[Sleep Phase] {pruned_total}個の不要なシナプス結合を枝刈りし、スケーリングを完了しました。（全結合数: {total_weights}）"
+
+    def save_model(self, filepath: str):
+        """モデルの重みと状態をJSONファイルに保存する"""
+        data = {
+            "input_size": self.input_size,
+            "output_size": self.output_size,
+            "lr": self.lr,
+            "t": self.t,
+            "weights": [{str(k): v for k, v in w.items()} for w in self.weights],
+            "m": [{str(k): v for k, v in m_dict.items()} for m_dict in self.m],
+            "v": [{str(k): v for k, v in v_dict.items()} for v_dict in self.v]
+        }
+        with open(filepath, 'w') as f:
+            json.dump(data, f)
+        print(f"[Model] {filepath} にモデルを保存しました。")
+
+    def load_model(self, filepath: str):
+        """JSONファイルからモデルの重みと状態を読み込む"""
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        self.input_size = data["input_size"]
+        self.output_size = data["output_size"]
+        self.lr = data["lr"]
+        self.t = data["t"]
+        self.weights = [{int(k): v for k, v in w.items()} for w in data["weights"]]
+        self.m = [{int(k): v for k, v in m_dict.items()} for m_dict in data["m"]]
+        self.v = [{int(k): v for k, v in v_dict.items()} for v_dict in data["v"]]
+        print(f"[Model] {filepath} からモデルを読み込みました。")

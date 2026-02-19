@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_mnist_snn.py",
-    "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (時空間コーディング・95%突破版)",
-    "//": "目的: TTFSの各時間ステップを空間次元に展開(Temporal-to-Spatial)し、受容野を強化することで、逆伝播なしで精度95%を超える。"
+    "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (Rustコア対応・時空間コーディング版)",
+    "//": "目的: 時間と空間をエンコードしつつ、局所受容野の構築および膜電位の制御をRustコアに完全委譲し、計算速度と極めて高い精度を両立する。"
 }
 
 import sys
@@ -67,9 +67,14 @@ def prepare_mnist_dataset():
 
 def apply_spatial_receptive_fields(layer, width, height, patch_sizes):
     """
-    視覚野（V1）の構造を模倣。斜め方向（Diagonal）のエッジ抽出も追加し表現力を強化。
+    視覚野（V1）の構造を模倣。Rustコアが有効な場合はネイティブ処理に委譲。
     """
-    print(f"  -> 局所受容野（Spatial Receptive Fields）を構築中... (層サイズ: {layer.size})")
+    if layer.use_rust and hasattr(layer.core, 'apply_spatial_receptive_fields'):
+        print(f"  -> 局所受容野（Spatial Receptive Fields）をRustコア内に構築中... (層サイズ: {layer.size})")
+        layer.core.apply_spatial_receptive_fields(width, height, patch_sizes)
+        return
+
+    print(f"  -> 局所受容野（Spatial Receptive Fields）をPythonで構築中... (層サイズ: {layer.size})")
     layer.in_weights = [{} for _ in range(width * height)]
     
     patterns = ['random', 'center_on', 'center_off', 'edge_h', 'edge_v', 'edge_d1', 'edge_d2']
@@ -106,12 +111,12 @@ def apply_spatial_receptive_fields(layer, width, height, patch_sizes):
                     elif pattern_type == 'edge_d2':
                         w = 6.0 if dx > -dy else -6.0
                         
-                    w += random.uniform(-0.8, 0.8) # ノイズを少し増やして汎化
+                    w += random.uniform(-0.8, 0.8) 
                     layer.in_weights[inp_idx][hidden_idx] = w * 1.5
 
 def run_mnist_snn():
     print("="*60)
-    print("SARA-Engine: MNIST Classification (Temporal-Spatial & SRF)")
+    print("SARA-Engine: MNIST Classification (Temporal-Spatial & Rust SRF)")
     print("="*60)
 
     train_images, train_labels, test_images, test_labels = prepare_mnist_dataset()
@@ -125,7 +130,6 @@ def run_mnist_snn():
 
     print("\n[Network] 生物学的マルチスケール・ネットワークを構築中...")
     
-    # 特徴抽出能力を高めるため、ニューロン数を少し増加 (合計5000)
     layer_configs = [
         {"size": 3000, "decay": 0.80, "patch_sizes": [3, 5, 7]},
         {"size": 2000, "decay": 0.95, "patch_sizes": [9, 13, 17]} 
@@ -133,26 +137,21 @@ def run_mnist_snn():
     
     liquid_layers = []
     for cfg in layer_configs:
+        # use_rust=False を削除し、Rust拡張がインストールされていれば自動利用
         layer = DynamicLiquidLayer(
             input_size=num_inputs, 
             hidden_size=cfg["size"], 
             decay=cfg["decay"], 
             target_rate=0.06,
             density=0.0,
-            input_scale=0.0,
-            use_rust=False
+            input_scale=0.0
         )
         apply_spatial_receptive_fields(layer, 28, 28, cfg["patch_sizes"])
         liquid_layers.append(layer)
     
     total_hidden = sum(cfg["size"] for cfg in layer_configs)
     
-    # 時間ステップ（3段階へ戻し、時間情報を確保）
     thresholds = [200, 128, 64]
-    
-    # Temporal-to-Spatial Encoding:
-    # 時間ステップごとの発火を別々の入力次元（Phase）として扱う。
-    # これにより線形分離器が「早く発火したのか、遅く発火したのか」を区別できるようになる。
     temporal_spatial_size = total_hidden * len(thresholds)
     
     readout_layer = ReadoutLayer(
@@ -184,10 +183,14 @@ def run_mnist_snn():
             image = train_images_shuffled[i]
             target_label = train_labels_shuffled[i]
             
+            # 各サンプルの開始前に電位をリセット
             for l in liquid_layers:
-                l.v = [0.0] * l.size
-                l.refractory = [0.0] * l.size
-                l.dynamic_thresh = [5.0 if t > 5.0 else t for t in l.dynamic_thresh] # 上限を5.0へ緩和
+                if l.use_rust and hasattr(l.core, 'reset_potentials'):
+                    l.core.reset_potentials()
+                else:
+                    l.v = [0.0] * l.size
+                    l.refractory = [0.0] * l.size
+                    l.dynamic_thresh = [5.0 if t > 5.0 else t for t in l.dynamic_thresh]
             
             accumulated_fired = set()
             prev_fired = [[] for _ in range(len(liquid_layers))]
@@ -204,7 +207,7 @@ def run_mnist_snn():
                 has_fired_inputs.update(active_inputs)
                 
                 offset = 0
-                time_offset = step * total_hidden # タイムステップによる空間IDのシフト
+                time_offset = step * total_hidden 
                 
                 for l_idx, l in enumerate(liquid_layers):
                     fired_hidden = l.forward_with_feedback(
@@ -213,7 +216,6 @@ def run_mnist_snn():
                     )
                     prev_fired[l_idx] = fired_hidden
                     
-                    # 時間情報（Phase）を空間IDに変換して保存
                     accumulated_fired.update([f + offset + time_offset for f in fired_hidden])
                     offset += l.size
                 
@@ -237,8 +239,11 @@ def run_mnist_snn():
         true_label = test_labels[i]
         
         for l in liquid_layers:
-            l.v = [0.0] * l.size
-            l.refractory = [0.0] * l.size
+            if l.use_rust and hasattr(l.core, 'reset_potentials'):
+                l.core.reset_potentials()
+            else:
+                l.v = [0.0] * l.size
+                l.refractory = [0.0] * l.size
             
         accumulated_fired = set()
         prev_fired = [[] for _ in range(len(liquid_layers))]

@@ -37,6 +37,7 @@ Run these Python scripts to see the engine in action.
 | **interactive demo** (interactive demo) | python examples/interactive\_demo.py |
 | **knowledge recall** (knowledge recall) | python examples/test\_knowledge\_recall.py |
 | **utils** (utils) | python examples/utils.py |
+| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
 
 ### **3\. Utilities & Diagnostics**
 
