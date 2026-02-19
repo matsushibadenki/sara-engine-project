@@ -1,6 +1,6 @@
 [package]
 name = "sara_rust_core"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 
 # バイナリとしてではなく、ライブラリとしてビルドする設定
