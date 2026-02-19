@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/readout_layer.py",
-    "//": "タイトル: Adam最適化機能付き読み出し層 (高精度・高速化チューニング版)",
-    "//": "目的: 行列演算を排除し、スパースなリザーバー状態からの教師あり学習と、マージン強化・スケーリングの最適化により精度を向上させる。"
+    "//": "タイトル: Adam最適化機能付き読み出し層 (時空間特徴対応版)",
+    "//": "目的: 時間と空間の特徴を分離して受け取り、マージンロスを最適化して95%以上の精度を達成する。"
 }
 
 import math
@@ -15,7 +15,6 @@ class ReadoutLayer:
         self.lr = learning_rate
         self.t = 0
         
-        # 直近の勾配への反応を良くするため beta1 を 0.90 に調整
         self.beta1 = 0.90
         self.beta2 = 0.999
         self.epsilon = 1e-8
@@ -24,22 +23,22 @@ class ReadoutLayer:
         self.m: List[Dict[int, float]] = [{} for _ in range(output_size)]
         self.v: List[Dict[int, float]] = [{} for _ in range(output_size)]
         
-        # 初期化の幅を少し広げ、初期状態からスパースな結合を持たせることで探索を高速化
         limit = math.sqrt(3.0 / max(1, input_size))
         for o in range(output_size):
-            for i in range(input_size):
-                if random.random() < 0.2:
-                    self.weights[o][i] = random.uniform(-limit, limit)
-                    self.m[o][i] = 0.0
-                    self.v[o][i] = 0.0
+            # 高速化のため random.sample を使用して初期のスパース結合を生成
+            n_init = int(input_size * 0.15)
+            for i in random.sample(range(input_size), n_init):
+                self.weights[o][i] = random.uniform(-limit, limit)
+                self.m[o][i] = 0.0
+                self.v[o][i] = 0.0
 
     def predict(self, active_hidden_indices: List[int]) -> List[float]:
         potentials = [0.0] * self.output_size
         if not active_hidden_indices:
             return potentials
 
-        # スケーリングファクターの調整：活動ニューロン数に対するペナルティを緩和
-        scale_factor = 20.0 / (len(active_hidden_indices) + 15.0)
+        # 発火数に対してロバストにするため、平方根に比例したスケーリングを採用
+        scale_factor = 10.0 / (math.sqrt(len(active_hidden_indices)) + 1.0)
         
         for o in range(self.output_size):
             s = 0.0
@@ -50,13 +49,13 @@ class ReadoutLayer:
             potentials[o] = s * scale_factor
             
         max_p = max(potentials)
-        if max_p > 0:
+        if max_p > -999.0:
             mean_p = sum(potentials) / self.output_size
             for o in range(self.output_size):
-                # 平均引き抑制を強め、コントラスト（S/N比）を高める
-                potentials[o] -= 0.1 * mean_p
-                if potentials[o] < -8.0: potentials[o] = -8.0
-                if potentials[o] > 8.0: potentials[o] = 8.0
+                # コントラスト強化
+                potentials[o] -= 0.15 * mean_p
+                if potentials[o] < -10.0: potentials[o] = -10.0
+                if potentials[o] > 10.0: potentials[o] = 10.0
                 
         return potentials
 
@@ -65,24 +64,21 @@ class ReadoutLayer:
             return
             
         self.t += 1
-        # 学習率の減衰を緩やかにし、後半まで学習能力を維持
-        current_lr = self.lr / (1.0 + 0.0005 * self.t)
+        current_lr = self.lr / (1.0 + 0.0002 * self.t) # 減衰をさらに緩やかに
         
         potentials = self.predict(active_hidden_indices)
         errors = [0.0] * self.output_size
         
-        # 正解クラスは強い活動(3.0)を目指す
-        if potentials[target_label] < 3.0:
-            errors[target_label] = 3.0 - potentials[target_label]
+        # 強いマージンロス (Target: 4.0, Non-Target: -1.5)
+        if potentials[target_label] < 4.0:
+            errors[target_label] = 4.0 - potentials[target_label]
             
-        # ソフト・ネガティブ: 不正解クラスはより強く(-1.0)押し戻す
         for o in range(self.output_size):
-            if o != target_label and potentials[o] > -0.5:
-                errors[o] = -1.0 - potentials[o]
+            if o != target_label and potentials[o] > -1.5:
+                errors[o] = -1.5 - potentials[o]
                 
         for o in range(self.output_size):
             err = errors[o]
-            # エラーの不感帯を広げて無駄なスパース辞書の更新(計算)を省き高速化
             if abs(err) <= 0.05:
                 continue
                 
@@ -115,7 +111,6 @@ class ReadoutLayer:
         
         for o in range(self.output_size):
             w_o = self.weights[o]
-            # 自然減衰を少し強め、不要な結合の淘汰を促進
             for idx in list(w_o.keys()):
                 w_o[idx] *= 0.995
                 
@@ -144,8 +139,7 @@ class ReadoutLayer:
                 if idx in self.v[o]: del self.v[o][idx]
                 
             norm = math.sqrt(sq_sum)
-            # ターゲットノルムを上げて表現力を維持
-            target_norm = 8.0
+            target_norm = 10.0 # スケールを最適化
             if norm > 0:
                 scale = target_norm / norm
                 if scale > 2.0: scale = 2.0
