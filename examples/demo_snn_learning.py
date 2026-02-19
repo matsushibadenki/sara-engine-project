@@ -1,8 +1,8 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: examples/demo_snn_learning.py",
-    "//": "タイトル: SARA-Engine SNN学習・睡眠・永続化デモ",
-    "//": "目的: ホメオスタシスによる過剰な抑制（閾値上昇）をリセットし、推論時に安定して発火・予測させる。"
-}
+# [配置するディレクトリのパス]: examples/demo_snn_learning.py
+# [ファイルの日本語タイトル]: SARA-Engine SNN学習・睡眠・永続化デモ
+# [ファイルの目的や内容]:
+# ホメオスタシスによる過剰な抑制（閾値上昇）をリセットし、推論時に安定して発火・予測させる。
+# インポートエラーの解消と、インデントエラー(スペース/タブ混在)を厳密な4スペースで修正。
 
 import sys
 import os
@@ -10,10 +10,11 @@ import time
 import random
 import json
 
-# プロジェクトルートをパスに追加
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# プロジェクトルートをパスの先頭に追加し、ローカルのsrcを確実に優先させる
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.sara_engine.core.cortex import DynamicLiquidLayer
+# cortexではなくlayersから正しくインポートするように修正
+from src.sara_engine.core.layers import DynamicLiquidLayer
 from src.sara_engine.models.readout_layer import ReadoutLayer
 
 def save_brain_state(readout_layer, filename="sara_readout_state.json"):
@@ -106,8 +107,7 @@ def run_snn_learning_demo():
     # 4. 推論テスト
     print("\n--- 推論テスト ---")
     
-    # 【重要修正】: 学習によって上がりきった発火閾値(dynamic_thresh)や活動履歴を完全にリセットし、
-    # 学習初期と同じクリーンな状態でテストを行えるようにする。
+    # 【重要修正】: 学習によって上がりきった発火閾値や活動履歴をリセット
     liquid_layer.reset()
     
     for name, pattern, true_label in [("Pattern A", pattern_a, 0), ("Pattern B", pattern_b, 1)]:

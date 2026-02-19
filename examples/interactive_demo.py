@@ -1,11 +1,17 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/interactive_demo.py",
     "//": "タイトル: SARA Engine 統合デモ",
-    "//": "目的: sara-engineを使用して記憶とQA機能を試す。"
+    "//": "目的: 仮想環境の古いパッケージを回避し、ローカルの最新のソースコードから正しく読み込むようにパスとインポートを修正する。"
 }
 
 import os
-from sara_engine import StatefulRLMAgent
+import sys
+
+# プロジェクトルートをパスの先頭に追加し、site-packagesより優先させる
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# src配下から明示的にインポートするように修正
+from src.sara_engine.models.rlm import StatefulRLMAgent
 
 def run_demo():
     print("=== SARA Engine Interactive Demo ===")
@@ -14,7 +20,7 @@ def run_demo():
     os.makedirs("models", exist_ok=True)
     model_path = "models/stateful_rl_trained.pkl"
     
-    # エージェントの初期化（インストールされたパッケージを使用）
+    # エージェントの初期化（ローカルの最新コードを使用）
     agent = StatefulRLMAgent(model_path=model_path if os.path.exists(model_path) else None)
     
     print("\n[Step 1] Long Term Memory Test")

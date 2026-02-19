@@ -32,6 +32,11 @@ Run these Python scripts to see the engine in action.
 | **Multimodal Memory** (Vision & Audio association) | python examples/demo\_multimodal\_memory.py |
 | **STDP Visualization** (Visualizing weight updates) | python examples/visualize\_stdp.py |
 | **Rust Benchmark** (Performance comparison) | python examples/benchmark\_rust.py |
+| **rust snn** (no numpy) | python examples/demo_rust\_snn\_no\_numpy.py |
+| **snn learning** (snn learning) | python examples/demo\_snn\_learning.py |
+| **interactive demo** (interactive demo) | python examples/interactive\_demo.py |
+| **knowledge recall** (knowledge recall) | python examples/test\_knowledge\_recall.py |
+| **utils** (utils) | python examples/utils.py |
 
 ### **3\. Utilities & Diagnostics**
 
