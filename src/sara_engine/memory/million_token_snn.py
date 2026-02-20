@@ -1,7 +1,7 @@
-{
+_FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/memory/million_token_snn.py",
-    "//": "タイトル: 100万トークン対応イベント駆動型SNNメモリ(連想範囲制限版)",
-    "//": "目的: 推論時の探索の深さを制限(depth > 1で打ち切り)し、助詞を介した別エピソードへの混線を防ぎ、純粋な直感連想を実現する。"
+    "//": "タイトル: 100万トークン対応イベント駆動型SNNメモリ - ハブペナルティ最適化版",
+    "//": "目的: ハブノード（助詞など）のペナルティを適切に緩和し、意味のある直感連想が伝播できるようにする。"
 }
 
 import math
@@ -118,7 +118,6 @@ class DynamicSNNMemory:
                 while event_queue:
                     current_id, stimulus, depth = event_queue.popleft()
                     
-                    # 混線を防ぐため、探索の深さを1に制限(直接結びついている単語のみ)
                     if depth > 1:
                         continue
 
@@ -133,8 +132,9 @@ class DynamicSNNMemory:
                         fan_out = len(self.synapses[current_id])
                         hub_penalty = 1.0
                         
-                        if fan_out > 4:
-                            hub_penalty = 4.0 / fan_out
+                        # ハブペナルティを緩和し、重要なキーワードへの波及を許す
+                        if fan_out > 5:
+                            hub_penalty = 5.0 / fan_out
 
                         for target_id, weight in self.synapses[current_id].items():
                             adjusted_weight = weight * hub_penalty

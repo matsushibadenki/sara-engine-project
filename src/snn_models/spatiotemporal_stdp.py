@@ -1,7 +1,7 @@
-_FILE_INFO = {
+{
     "//": "ディレクトリパス: src/snn_models/spatiotemporal_stdp.py",
     "//": "タイトル: 階層的・再帰的SNN向け 全層STDP学習モジュール",
-    "//": "目的: NeuroFEMからの熱変動を感覚野と皮質野を通して学習する。Rust拡張が利用可能な場合は高速なRust実装を使い、ない場合は純粋なPythonリストのみで実行する。"
+    "//": "目的: NeuroFEMからの熱変動を感覚野と皮質野を通して学習する。mypyの相対インポートエラーを解決するため、絶対インポートを利用する。"
 }
 
 import math
@@ -9,7 +9,7 @@ import random
 from typing import List, Optional
 
 try:
-    from .. import sara_rust_core  # type: ignore
+    from sara_engine import sara_rust_core  # type: ignore
     RUST_AVAILABLE = True
 except ImportError:
     try:

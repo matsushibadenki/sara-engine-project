@@ -1,8 +1,10 @@
+"""
 {
     "//": "ディレクトリパス: src/sara_engine/agent/sara_agent.py",
-    "//": "タイトル: 統合マルチモーダル・エージェント (Sara Agent) - 全コンテキスト並列検索版",
-    "//": "目的: 推論時のPFCルーティングのブレを吸収するため、全コンテキストで並列に潜在表現を生成して海馬を検索し、記憶のヒット率を飛躍的に向上させる。"
+    "//": "タイトル: 統合マルチモーダル・エージェント (Sara Agent) - PFC干渉抑制版",
+    "//": "目的: 前頭前野（PFC）の認知制御を模倣し、確実なエピソード記憶が想起された場合は、ノイズとなる意味記憶（直感連想）の干渉を抑制してハルシネーションを防ぐ。"
 }
+"""
 
 import os
 import random
@@ -275,18 +277,12 @@ class SaraAgent:
             search_sdr = set(input_sdr)
             if associated_sdr:
                 search_sdr.update(associated_sdr)
-                
-            if history_context_sdr:
-                search_sample = random.sample(history_context_sdr, int(len(history_context_sdr) * 0.2))
-                search_sdr.update(search_sample)
             
-            # コンテキストのブレを吸収するため、全コンパートメントで海馬を検索する
             all_results = []
             for comp in self.prefrontal.compartments:
                 res = self.brain.in_context_inference(current_sensory_sdr=list(search_sdr), context=comp)
                 all_results.extend(res)
             
-            # 最もスコアの高い記憶を採用する
             if all_results:
                 all_results.sort(key=lambda x: x['score'], reverse=True)
                 best_memory = all_results[0]['content']
@@ -295,9 +291,12 @@ class SaraAgent:
             
             memory_context = ""
             if best_memory != "なし":
-                memory_context += best_memory
-            if associated_text:
-                memory_context += " " + associated_text
+                # 前頭前野(PFC)による意味記憶の干渉抑制
+                # 海馬から確かなエピソード事実が検索できた場合、SNNの直感連想（ノイズ）を遮断し、事実に集中させる
+                memory_context = best_memory
+            elif associated_text:
+                # 記憶が見つからない場合のみ、直感連想のキーワードを頼りにする
+                memory_context = associated_text
                 
             if memory_context.strip():
                 original_vsa = self.encoder.apply_vsa
@@ -306,26 +305,38 @@ class SaraAgent:
                 self.encoder.apply_vsa = original_vsa
                 
                 generation_context_sdr = set(memory_sdr)
-                if history_context_sdr:
-                    generation_context_sdr.update(history_context_sdr)
+                
+                if best_memory != "なし":
+                    # ハブノード（「は」など）での脱線を防ぐため、シード軌道を先頭の3語に強化する
+                    seed_words = best_memory.split()[:3]
+                    seed_prompt = "".join(seed_words)
+                    prompt_for_gpt = " ".join(seed_words)
+                elif associated_text:
+                    seed_prompt = associated_text.split()[0]
+                    prompt_for_gpt = seed_prompt
+                else:
+                    seed_prompt = user_text[-1]
+                    prompt_for_gpt = user_text
                 
                 generated_text = self.gpt.generate(
-                    prompt=user_text, 
+                    prompt=prompt_for_gpt, 
                     context_sdr=list(generation_context_sdr), 
-                    max_tokens=20
+                    max_tokens=15,
+                    temperature=0.1
                 )
+                
+                final_generated_text = seed_prompt + generated_text
             else:
-                generated_text = "関連する明確なエピソード記憶が海馬に見つかりませんでした。"
+                final_generated_text = "関連する明確なエピソード記憶が海馬に見つかりませんでした。"
 
-            response_text = generated_text
             full_response = f"[PFC: {context}]\n"
             full_response += f" >> 海馬記憶: {best_memory}\n"
             if associated_text:
                 full_response += f" >> SNN直感連想: {associated_text}\n"
-            full_response += f" >> SNN-GPT生成: {response_text}"
+            full_response += f" >> SNN-GPT生成: {final_generated_text}"
             
-            response_sdr = self.encoder.encode(response_text)
-            self._update_history("system", response_text, response_sdr)
+            response_sdr = self.encoder.encode(final_generated_text)
+            self._update_history("system", final_generated_text, response_sdr)
             
             return full_response
 

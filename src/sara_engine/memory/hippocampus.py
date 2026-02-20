@@ -1,7 +1,7 @@
-{
+_FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/memory/hippocampus.py",
     "//": "タイトル: 皮質-海馬 連動メモリシステム (Cortico-Hippocampal System)",
-    "//": "目的: CorticalColumn(皮質)とLTM(海馬)を統合し、検索クエリを記憶時の潜在表現(cortical_t2)に揃えることで、検索精度(Recall)を極大化する。"
+    "//": "目的: 嗅内皮質からの貫通線維(Perforant Path)を模倣し、皮質表現と生入力SDRのハイブリッドで海馬の検索精度(Recall)を極大化する。"
 }
 
 from typing import List, Dict, Any, Set, Deque
@@ -23,10 +23,14 @@ class CorticoHippocampalSystem:
         cortical_t1 = self.cortex.forward_latent_chain(sensory_sdr, [], current_context=context, learning=learning)
         cortical_t2 = self.cortex.forward_latent_chain([], cortical_t1, current_context=context, learning=learning)
         
-        self.ltm.add(sdr=cortical_t2, content=content, memory_type=context)
-        self.working_memory.append(cortical_t2)
+        # 生物学的な貫通線維(Perforant Path)を模倣し、皮質表現(t2)と生の感覚SDRをブレンドする
+        # これにより、皮質の学習が未熟でも単語レベルの直接的な重なりで確実に記憶できる
+        hippocampal_input = list(set(cortical_t2) | set(sensory_sdr))
         
-        return cortical_t2
+        self.ltm.add(sdr=hippocampal_input, content=content, memory_type=context)
+        self.working_memory.append(hippocampal_input)
+        
+        return hippocampal_input
 
     def recall_with_pattern_completion(self, partial_sensory_sdr: List[int], context: str) -> List[Dict[str, Any]]:
         self.cortex.reset_short_term_memory()
@@ -34,28 +38,26 @@ class CorticoHippocampalSystem:
         cortical_t1 = self.cortex.forward_latent_chain(partial_sensory_sdr, [], current_context=context, learning=False)
         cortical_t2 = self.cortex.forward_latent_chain([], cortical_t1, current_context=context, learning=False)
         
-        return self.ltm.search(query_sdr=cortical_t2, top_k=3, threshold=0.1)
+        hippocampal_query = list(set(cortical_t2) | set(partial_sensory_sdr))
+        return self.ltm.search(query_sdr=hippocampal_query, top_k=3, threshold=0.1)
 
     def in_context_inference(self, current_sensory_sdr: List[int], context: str) -> List[Dict[str, Any]]:
         self.cortex.reset_short_term_memory()
         
-        # 検索キーを生の入力ではなく、記憶時と完全に同じ皮質の潜在表現(t2)に変換する
         cortical_t1 = self.cortex.forward_latent_chain(current_sensory_sdr, [], current_context=context, learning=False)
         cortical_t2 = self.cortex.forward_latent_chain([], cortical_t1, current_context=context, learning=False)
         
-        query_set = set(cortical_t2)
+        # 検索時もハイブリッドクエリを構築
+        query_set = set(cortical_t2) | set(current_sensory_sdr)
         
-        # 短期的な文脈(ワーキングメモリ)をノイズにならない程度(10%)に軽くマージする
         if self.working_memory:
             recent_wm = self.working_memory[-1]
             sample_size = int(len(recent_wm) * 0.1)
             if sample_size > 0:
                 query_set.update(random.sample(recent_wm, min(sample_size, len(recent_wm))))
                 
-        # 記憶時と同じSDR空間で検索を実行
         final_results = self.ltm.search(query_sdr=list(query_set), top_k=3, threshold=0.01)
         
-        # Recency Bias (直近の記憶を優遇)
         if final_results:
             latest_time = max([res['timestamp'] for res in final_results])
             for res in final_results:

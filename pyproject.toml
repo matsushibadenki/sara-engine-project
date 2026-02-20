@@ -26,3 +26,11 @@ Homepage = "https://github.com/yourusername/sara_engine"
 [tool.maturin]
 python-source = "src"
 module-name = "sara_engine.sara_rust_core"
+
+[tool.mypy]
+# モジュール解決の起点を src に設定
+mypy_path = "src"
+# 暗黙的な名前空間パッケージを許可しない設定
+explicit_package_bases = true
+# 相対インポートやパッケージ解決の厳格化
+namespace_packages = true
