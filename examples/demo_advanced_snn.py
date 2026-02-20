@@ -1,8 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: examples/demo_advanced_snn.py",
-    "//": "タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / STDP事前学習・限界突破版)",
-    "//": "目的: 乗法型STDPによる特徴野の教師なし事前学習（Phase1）と、Readoutの教師あり学習（Phase2）を組み合わせ、90%の壁を突破する。"
-}
+# ディレクトリパス: examples/demo_advanced_snn.py
+# タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / STDP事前学習・進捗表示改良版)
+# 目的: 乗法型STDPによる教師なし学習の進捗を詳細に表示し、動作状況を可視化する。
 
 import sys
 import os
@@ -118,16 +116,18 @@ def run_advanced_snn():
     start_time = time.time()
     
     # ---------------------------------------------------------
-    # Phase 1: 教師なし STDP 事前学習 (視覚野の成熟)
+    # Phase 1: 教師なし STDP 事前学習
     # ---------------------------------------------------------
     print("\n[Phase 1] 局所受容野の教師なしSTDP事前学習を開始 (1エポック)...")
-    print("  -> ネットワークが自動的に服や靴の特徴構造を抽出・先鋭化します。")
+    print("  -> 1,000件ごとに進捗を表示します。")
     
     combined = list(zip(train_images, train_labels))
     random.shuffle(combined)
-    train_images_shuffled, _ = zip(*combined) # ラベルは使わない
+    train_images_shuffled, _ = zip(*combined)
     
     phase1_start = time.time()
+    last_check_time = phase1_start
+    
     for i in range(len(train_images)):
         image = normalize_image(train_images_shuffled[i])
         
@@ -147,23 +147,24 @@ def run_advanced_snn():
             
             for l_idx, l in enumerate(liquid_layers):
                 if l.use_rust and hasattr(l.core, 'forward'):
-                    # Rustコアを直接呼び出し、学習フラグ(is_learning=True)を明示的にONにする
                     fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], True)
                 else:
                     fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
                 prev_fired[l_idx] = fired_h
                 
-        if (i + 1) % 15000 == 0: 
-            print(f"  Processed {i + 1}/{len(train_images)} samples (STDP)...")
+        if (i + 1) % 1000 == 0: 
+            now = time.time()
+            speed = 1000 / (now - last_check_time)
+            print(f"  Processed {i + 1}/{len(train_images)} samples (STDP) | Speed: {speed:.1f} samples/sec")
+            last_check_time = now
             
     print(f"  -> Phase 1 所要時間: {time.time() - phase1_start:.2f}秒")
 
     # ---------------------------------------------------------
-    # Phase 2: 教師あり Readout 学習 (概念の紐付け)
+    # Phase 2: 教師あり Readout 学習
     # ---------------------------------------------------------
     epochs = 4
-    print(f"\n[Phase 2] Readout層の教師あり学習を開始 (データ数: {len(train_images)}件 x {epochs}エポック)...")
-    print("  -> 安定した特徴野を元に、線形分類器を収束させます (STDPは凍結)。")
+    print(f"\n[Phase 2] Readout層の教師あり学習を開始 (エポック数: {epochs})...")
     
     for epoch in range(epochs):
         print(f"\n--- Epoch {epoch + 1}/{epochs} ---")
@@ -175,6 +176,7 @@ def run_advanced_snn():
         if epoch > 0: readout_layer.lr *= 0.7  
             
         epoch_start_time = time.time()
+        last_check_time = epoch_start_time
         for i in range(len(train_images)):
             image = normalize_image(train_images_shuffled[i])
             target_label = train_labels_shuffled[i]
@@ -198,7 +200,6 @@ def run_advanced_snn():
                 offset = num_inputs
                 for l_idx, l in enumerate(liquid_layers):
                     if l.use_rust and hasattr(l.core, 'forward'):
-                        # Phase 2: 特徴野を固定(is_learning=False)して推論のみ行う
                         fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], False)
                     else:
                         fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
@@ -209,8 +210,11 @@ def run_advanced_snn():
             if accumulated_fired:
                 readout_layer.train_step(list(accumulated_fired), target_label)
                 
-            if (i + 1) % 15000 == 0: 
-                print(f"  Processed {i + 1}/{len(train_images)} samples...")
+            if (i + 1) % 5000 == 0: 
+                now = time.time()
+                speed = 5000 / (now - last_check_time)
+                print(f"  Processed {i + 1}/{len(train_images)} samples | Speed: {speed:.1f} samples/sec")
+                last_check_time = now
         
         print(f"  -> エポック所要時間: {time.time() - epoch_start_time:.2f}秒")
         if epoch < epochs - 1: print("  " + readout_layer.sleep_phase(prune_rate=0.005))
@@ -264,7 +268,7 @@ def run_advanced_snn():
             if predicted == true_label:
                 correct_count += 1
                 
-        if (i + 1) % 2000 == 0:
+        if (i + 1) % 1000 == 0:
             print(f"  Tested {i + 1} | Current Accuracy: {(correct_count / (i + 1)) * 100:.1f}%")
 
     final_accuracy = (correct_count / len(test_images)) * 100

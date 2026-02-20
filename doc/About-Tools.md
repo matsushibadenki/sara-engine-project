@@ -13,11 +13,12 @@ Run the full test suite or specific modules using pytest.
 | Description | Command |
 | :---- | :---- |
 | **Run All Tests** | pytest |
-| **NeuroFEM Tests** (Core & Integration) | pytest tests/test\_neurofem.py tests/test\_neurofem\_2d.py tests/test\_neurofem\_integration.py |
+| **NeuroFEM Tests** (Core & Integration) | pytest tests/test\_neurofem.py tests/test\_neurofem\_2d.py tests/test\_neurofem\_integration.py tests/test\_neurofem\_visualize.py |
 | **SNN & STDP Tests** | pytest tests/test\_spatiotemporal\_stdp.py tests/test\_event\_driven\_snn.py |
 | **Memory & Hippocampus Tests** | pytest tests/test\_hippocampal\_system.py tests/test\_crossmodal\_association.py |
 | **New Features Tests** | pytest tests/test\_new\_features.py |
 | **Visualization Tests** | pytest tests/test\_neurofem\_visualize.py |
+| **Million Token Snn** | pytest test\_million\_token\_snn.py |
 
 ### **2\. Demos & Examples**
 
@@ -37,6 +38,11 @@ Run these Python scripts to see the engine in action.
 | **interactive demo** (interactive demo) | python examples/interactive\_demo.py |
 | **knowledge recall** (knowledge recall) | python examples/test\_knowledge\_recall.py |
 | **utils** (utils) | python examples/utils.py |
+| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
+
+| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
+| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
+| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
 | **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
 
 ### **3\. Utilities & Diagnostics**
