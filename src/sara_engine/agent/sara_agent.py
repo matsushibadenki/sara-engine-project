@@ -1,7 +1,7 @@
 {
     "//": "ディレクトリパス: src/sara_engine/agent/sara_agent.py",
-    "//": "タイトル: 統合マルチモーダル・エージェント (Sara Agent) - 100万トークン対応版",
-    "//": "目的: 動的語彙学習に加え、DynamicSNNMemoryを統合。海馬検索失敗時もSNNの直感連想を機能させ、入力文全体からエピソードを想起できるよう修正。"
+    "//": "タイトル: 統合マルチモーダル・エージェント (Sara Agent) - 全コンテキスト並列検索版",
+    "//": "目的: 推論時のPFCルーティングのブレを吸収するため、全コンテキストで並列に潜在表現を生成して海馬を検索し、記憶のヒット率を飛躍的に向上させる。"
 }
 
 import os
@@ -36,10 +36,8 @@ class SaraAgent:
         self.vision = ImageSpikeEncoder(output_size=input_size)
         self.audio = AudioSpikeEncoder(output_size=input_size)
         
-        # --- 100万トークン対応・エピソード記憶 (STDP連想グラフ) ---
         self.episodic_snn = DynamicSNNMemory(vocab_size=100000, sdr_size=3)
         
-        # --- 会話履歴（短期記憶）バッファ ---
         self.dialogue_history: List[Dict[str, Any]] = []
         self.max_history_turns = 5
 
@@ -70,9 +68,6 @@ class SaraAgent:
         self.encoder.apply_vsa = original_vsa
 
     def _generate_stable_sdr(self, text: str) -> List[int]:
-        """
-        決定論的かつ形態素的な意味を持つSDRを生成する。
-        """
         hex_digest = hashlib.md5(text.encode('utf-8')).hexdigest()
         word_seed = int(hex_digest, 16)
         
@@ -101,7 +96,6 @@ class SaraAgent:
             return sorted(rng.sample(range(n), target_w))
 
     def _register_dynamic_vocab(self, text: str):
-        """動的語彙登録の強化版：Janome対応 + Stable SDR生成"""
         if not (hasattr(self.encoder, 'tokenizer') and hasattr(self.encoder.tokenizer, 'vocab')):
             return
             
@@ -126,7 +120,6 @@ class SaraAgent:
                     self.encoder.token_sdr_map[tid] = self._generate_stable_sdr(word)
 
     def _text_to_ids(self, text: str) -> List[int]:
-        """テキストをトークンIDのリストに変換（SNNへの入力用）"""
         if not hasattr(self.encoder, 'tokenizer'):
             return []
         
@@ -140,7 +133,6 @@ class SaraAgent:
         return ids
 
     def _ids_to_text(self, ids: List[int]) -> str:
-        """トークンIDのリストをテキストに復元"""
         if not hasattr(self.encoder, 'tokenizer'):
             return ""
         
@@ -196,9 +188,8 @@ class SaraAgent:
     def chat(self, user_text: str, teaching_mode: bool = False) -> str:
         self._register_dynamic_vocab(user_text)
         
-        # --- 100万トークン対応SNNにエピソードとして学習させる (O(1)でグラフに圧縮) ---
         user_ids = self._text_to_ids(user_text)
-        if user_ids:
+        if user_ids and teaching_mode:
             self.episodic_snn.process_sequence(user_ids, is_training=True)
         
         original_vsa = self.encoder.apply_vsa
@@ -210,7 +201,6 @@ class SaraAgent:
         self._update_history("user", user_text, input_sdr)
         history_context_sdr = self._get_history_context_sdr()
 
-        # --- PFCルーティング ---
         routing_sdr = set(pfc_input_sdr)
         if history_context_sdr:
             routing_sample = random.sample(history_context_sdr, int(len(history_context_sdr) * 0.1))
@@ -237,7 +227,6 @@ class SaraAgent:
                     best_score = adjusted_score
                     best_comp = comp
             context = best_comp
-        # -----------------------
         
         if teaching_mode:
             if ":" in user_text:
@@ -272,29 +261,48 @@ class SaraAgent:
             return response_text
             
         else:
+            associated_text = ""
+            associated_sdr = []
+            if user_ids:
+                associated_ids = self.episodic_snn.process_sequence(user_ids, is_training=False)
+                associated_text = self._ids_to_text(associated_ids)
+                if associated_text:
+                    original_vsa = self.encoder.apply_vsa
+                    self.encoder.apply_vsa = False
+                    associated_sdr = self.encoder.encode(associated_text)
+                    self.encoder.apply_vsa = original_vsa
+
             search_sdr = set(input_sdr)
+            if associated_sdr:
+                search_sdr.update(associated_sdr)
+                
             if history_context_sdr:
                 search_sample = random.sample(history_context_sdr, int(len(history_context_sdr) * 0.2))
                 search_sdr.update(search_sample)
             
-            icl_results = self.brain.in_context_inference(current_sensory_sdr=list(search_sdr), context=context)
-            valid_results = [res for res in icl_results if res.get('type') == context]
+            # コンテキストのブレを吸収するため、全コンパートメントで海馬を検索する
+            all_results = []
+            for comp in self.prefrontal.compartments:
+                res = self.brain.in_context_inference(current_sensory_sdr=list(search_sdr), context=comp)
+                all_results.extend(res)
             
-            # 早期リターンを廃止し、海馬の検索結果の有無に関わらずSNNの連想を実行する
-            best_memory = valid_results[0]['content'] if valid_results else "なし"
+            # 最もスコアの高い記憶を採用する
+            if all_results:
+                all_results.sort(key=lambda x: x['score'], reverse=True)
+                best_memory = all_results[0]['content']
+            else:
+                best_memory = "なし"
             
-            # --- 100万トークンメモリからの直感的な連想（文脈の引き出し） ---
-            associated_text = ""
-            if user_ids:
-                # 質問の末尾だけでなく、入力されたトークン全体を順番にSNNに流し込み、
-                # 途中のキーワードから無意識的に連想された情報をすべて拾う
-                associated_ids = self.episodic_snn.process_sequence(user_ids, is_training=False)
-                associated_text = self._ids_to_text(associated_ids)
-            
+            memory_context = ""
             if best_memory != "なし":
+                memory_context += best_memory
+            if associated_text:
+                memory_context += " " + associated_text
+                
+            if memory_context.strip():
                 original_vsa = self.encoder.apply_vsa
                 self.encoder.apply_vsa = False
-                memory_sdr = self.encoder.encode(best_memory)
+                memory_sdr = self.encoder.encode(memory_context.strip())
                 self.encoder.apply_vsa = original_vsa
                 
                 generation_context_sdr = set(memory_sdr)
@@ -316,11 +324,6 @@ class SaraAgent:
                 full_response += f" >> SNN直感連想: {associated_text}\n"
             full_response += f" >> SNN-GPT生成: {response_text}"
             
-            # システムの応答もSNNに学習させる
-            response_ids = self._text_to_ids(response_text)
-            if response_ids:
-                self.episodic_snn.process_sequence(response_ids, is_training=True)
-
             response_sdr = self.encoder.encode(response_text)
             self._update_history("system", response_text, response_sdr)
             

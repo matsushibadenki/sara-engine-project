@@ -1,7 +1,7 @@
-_FILE_INFO = {
+{
     "//": "ディレクトリパス: src/sara_engine/memory/hippocampus.py",
     "//": "タイトル: 皮質-海馬 連動メモリシステム (Cortico-Hippocampal System)",
-    "//": "目的: CorticalColumn(皮質)とLTM(海馬)を統合し、大規模文脈内学習(ICL)における時間的推論(Recency BiasとLatent Chain)を実現する。"
+    "//": "目的: CorticalColumn(皮質)とLTM(海馬)を統合し、検索クエリを記憶時の潜在表現(cortical_t2)に揃えることで、検索精度(Recall)を極大化する。"
 }
 
 from typing import List, Dict, Any, Set, Deque
@@ -39,34 +39,23 @@ class CorticoHippocampalSystem:
     def in_context_inference(self, current_sensory_sdr: List[int], context: str) -> List[Dict[str, Any]]:
         self.cortex.reset_short_term_memory()
         
-        initial_recall = self.ltm.search(query_sdr=current_sensory_sdr, top_k=1, threshold=0.05)
-        anchor_sdr = initial_recall[0]['sdr'] if initial_recall and 'sdr' in initial_recall[0] else []
+        # 検索キーを生の入力ではなく、記憶時と完全に同じ皮質の潜在表現(t2)に変換する
+        cortical_t1 = self.cortex.forward_latent_chain(current_sensory_sdr, [], current_context=context, learning=False)
+        cortical_t2 = self.cortex.forward_latent_chain([], cortical_t1, current_context=context, learning=False)
         
-        macro_context_set: Set[int] = set(current_sensory_sdr)
-        if anchor_sdr:
-            macro_context_set.update(anchor_sdr)
-            
-        wm_list = list(self.working_memory)
-        total_items = len(wm_list)
-        for i, past_sdr in enumerate(wm_list):
-            keep_prob = (i + 1) / (total_items + 1e-5) 
-            for bit in past_sdr:
-                if random.random() <= keep_prob:
-                    macro_context_set.add(bit)
-                    
-        macro_context_sdr = list(macro_context_set)
+        query_set = set(cortical_t2)
         
-        cortical_out = self.cortex.forward_latent_chain(
-            active_inputs=macro_context_sdr, 
-            prev_active_hidden=anchor_sdr, 
-            current_context=context, 
-            learning=False
-        )
+        # 短期的な文脈(ワーキングメモリ)をノイズにならない程度(10%)に軽くマージする
+        if self.working_memory:
+            recent_wm = self.working_memory[-1]
+            sample_size = int(len(recent_wm) * 0.1)
+            if sample_size > 0:
+                query_set.update(random.sample(recent_wm, min(sample_size, len(recent_wm))))
+                
+        # 記憶時と同じSDR空間で検索を実行
+        final_results = self.ltm.search(query_sdr=list(query_set), top_k=3, threshold=0.01)
         
-        self.working_memory.append(cortical_out)
-        
-        final_results = self.ltm.search(query_sdr=cortical_out, top_k=5, threshold=0.01)
-        
+        # Recency Bias (直近の記憶を優遇)
         if final_results:
             latest_time = max([res['timestamp'] for res in final_results])
             for res in final_results:
@@ -76,7 +65,7 @@ class CorticoHippocampalSystem:
                 
             final_results.sort(key=lambda x: x['score'], reverse=True)
             
-        return final_results[:3]
+        return final_results
 
     def consolidate_memories(self, context: str, replay_count: int = 5):
         if not self.ltm.memories:

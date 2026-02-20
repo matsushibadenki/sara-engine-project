@@ -1,20 +1,14 @@
-# path: src/sara_engine/memory/million_token_snn.py
-# title: 100万トークン対応イベント駆動型SNNメモリ(ハブ抑制・長距離結合版)
-"""
 {
-    "//": "目的: 助詞などの高頻度単語が引き起こすスパイク発散（ハブ問題）をシナプススケーリングによって抑制し、時間窓の拡大による直接結合で正確な連想を実現する。"
+    "//": "ディレクトリパス: src/sara_engine/memory/million_token_snn.py",
+    "//": "タイトル: 100万トークン対応イベント駆動型SNNメモリ(連想範囲制限版)",
+    "//": "目的: 推論時の探索の深さを制限(depth > 1で打ち切り)し、助詞を介した別エピソードへの混線を防ぎ、純粋な直感連想を実現する。"
 }
-"""
 
 import math
 from collections import defaultdict, deque
 import time
 
 class LIFNeuron:
-    """
-    多様な時定数（減衰率）を持つ漏れ積分発火（LIF）ニューロン。
-    遅延評価（Lazy Evaluation）を用いて、毎ステップのループ計算を排除。
-    """
     def __init__(self, neuron_id: int, is_slow: bool = False):
         self.id = neuron_id
         self.v = 0.0
@@ -24,7 +18,6 @@ class LIFNeuron:
         self.last_update_time = 0.0
 
     def update_and_get_voltage(self, current_time: float) -> float:
-        """現在の時刻に基づく膜電位の遅延評価"""
         if self.v > 0:
             dt = current_time - self.last_update_time
             if dt > 0:
@@ -35,7 +28,6 @@ class LIFNeuron:
         return self.v
 
     def add_stimulus(self, amount: float, current_time: float) -> bool:
-        """刺激を受け取り、閾値を超えれば発火(True)を返す"""
         self.update_and_get_voltage(current_time)
         self.v += amount
         if self.v >= self.threshold:
@@ -44,11 +36,7 @@ class LIFNeuron:
             return True
         return False
 
-
 class DynamicSNNMemory:
-    """
-    行列演算・誤差逆伝播を使用しない完全イベント駆動型のSNN。
-    """
     def __init__(self, vocab_size: int, sdr_size: int = 5):
         self.vocab_size = vocab_size
         self.sdr_size = sdr_size
@@ -59,10 +47,9 @@ class DynamicSNNMemory:
         
         self.recent_spikes = deque()
         
-        # STDPのパラメータ
         self.tau_plus = 2.0
         self.tau_minus = 3.0
-        self.a_plus = 1.5  # 1回の学習で強固な記憶を作るために学習率を高めに設定
+        self.a_plus = 1.5
         self.a_minus = 0.2
         self.max_weight = 5.0
 
@@ -88,7 +75,6 @@ class DynamicSNNMemory:
 
     def _apply_stdp(self, pre_id: int, post_id: int, pre_time: float, post_time: float):
         dt = post_time - pre_time
-        # 時間窓を <= 3.0 に広げ、助詞を飛び越えて名詞同士が直接結合できるようにする
         if 0 < dt <= 3.0:
             dw = self.a_plus * math.exp(-dt / self.tau_plus)
             self.synapses[pre_id][post_id] = min(self.max_weight, self.synapses[pre_id][post_id] + dw)
@@ -100,6 +86,9 @@ class DynamicSNNMemory:
         output_tokens = []
         
         if is_training:
+            self.current_time += 5.0
+            self.recent_spikes.clear()
+            
             for token_id in sequence:
                 self.current_time += 1.0
                 active_neurons = self._encode_token(token_id)
@@ -122,34 +111,34 @@ class DynamicSNNMemory:
             spiked_in_this_step = {}
             
             for token_id in sequence:
-                self.current_time += 1.0
                 active_neurons = self._encode_token(token_id)
                 event_queue = deque([(n_id, 2.0, 0) for n_id in active_neurons])
+                local_v = defaultdict(float)
 
                 while event_queue:
                     current_id, stimulus, depth = event_queue.popleft()
                     
-                    # 探索の深さは2に抑え、遠すぎるノイズを拾わないようにする
-                    if depth > 2:
+                    # 混線を防ぐため、探索の深さを1に制限(直接結びついている単語のみ)
+                    if depth > 1:
                         continue
 
-                    neuron = self._get_or_create_neuron(current_id)
+                    local_v[current_id] += stimulus
                     
-                    if neuron.add_stimulus(stimulus, self.current_time):
+                    if local_v[current_id] >= 1.0:
+                        local_v[current_id] = 0.0 
+                        
                         if current_id not in spiked_in_this_step or depth < spiked_in_this_step[current_id]:
                             spiked_in_this_step[current_id] = depth
 
-                        # シナプススケーリング（ハブ抑制）の適用
-                        # 結合先が多すぎるニューロン（助詞などの高頻度単語）からの信号伝達を大きく減衰させる
                         fan_out = len(self.synapses[current_id])
                         hub_penalty = 1.0
-                        if fan_out > 5:
-                            hub_penalty = 5.0 / fan_out
+                        
+                        if fan_out > 4:
+                            hub_penalty = 4.0 / fan_out
 
                         for target_id, weight in self.synapses[current_id].items():
                             adjusted_weight = weight * hub_penalty
-                            # 減衰後の刺激が閾値(0.5)を超える強い結合（名詞の直接結合）だけを伝播させる
-                            if adjusted_weight > 0.5:
+                            if adjusted_weight > 0.3:
                                 event_queue.append((target_id, adjusted_weight, depth + 1))
 
             if spiked_in_this_step:
