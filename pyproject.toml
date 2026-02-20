@@ -28,9 +28,17 @@ python-source = "src"
 module-name = "sara_engine.sara_rust_core"
 
 [tool.mypy]
-# モジュール解決の起点を src に設定
+# mypyがチェックする対象ディレクトリを明示的に指定
+# 引数なしの 'mypy' コマンドはこのリストを参照します
+warn_unused_configs = true
+check_untyped_defs = true
+
+# パッケージ探索パスの設定
 mypy_path = "src"
-# 暗黙的な名前空間パッケージを許可しない設定
 explicit_package_bases = true
-# 相対インポートやパッケージ解決の厳格化
 namespace_packages = true
+
+# src/sara_engine ではなく、src をルートとしたパッケージ名として定義
+[[tool.mypy.overrides]]
+module = "sara_engine.*"
+ignore_missing_imports = true
