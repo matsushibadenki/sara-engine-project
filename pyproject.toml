@@ -1,10 +1,14 @@
+# ディレクトリパス: pyproject.toml
+# ファイルの日本語タイトル: プロジェクト設定ファイル
+# ファイルの目的や内容: mypyの重複ソース解決エラーおよび引数競合エラーの解消。
+
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
 name = "sara_engine"
-version = "0.1.6"
+version = "0.1.7"
 description = "A biologically plausible, lightweight Spiking Neural Network engine (CPU-only, No-BP)."
 authors = [
     { name = "Your Name", email = "your.email@example.com" }
@@ -28,17 +32,23 @@ python-source = "src"
 module-name = "sara_engine.sara_rust_core"
 
 [tool.mypy]
-# mypyがチェックする対象ディレクトリを明示的に指定
-# 引数なしの 'mypy' コマンドはこのリストを参照します
-warn_unused_configs = true
-check_untyped_defs = true
-
-# パッケージ探索パスの設定
+# 1. パス解決の設定
+# mypy_path に "src" を指定することで、mypy は src/sara_engine を
+# "sara_engine" パッケージとして正しく解決できるようになります。
 mypy_path = "src"
 explicit_package_bases = true
 namespace_packages = true
 
-# src/sara_engine ではなく、src をルートとしたパッケージ名として定義
+# 2. チェック対象の設定
+# packages でモジュール名ベースの指定をすることで、
+# ファイルパスの二重解決（src.sara_engine vs sara_engine）を防ぎます。
+# tests, examples をチェックする場合は: mypy tests/ examples/
+packages = ["sara_engine"]
+
+# 基本設定
+warn_unused_configs = true
+check_untyped_defs = true
+
 [[tool.mypy.overrides]]
 module = "sara_engine.*"
 ignore_missing_imports = true
