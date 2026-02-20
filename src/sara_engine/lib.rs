@@ -3,28 +3,20 @@ use rand::prelude::*;
 use std::collections::{HashSet, VecDeque};
 use std::cmp::Ordering;
 
-/// スパイクベースのAttention（Transformerの代替）
-/// 行列演算を使わず、SDR（スパース分散表現）の共通集合サイズで類似度を計算する。
 #[pyclass]
 struct RustSpikeAttention {
-    _input_size: usize, // [Fix] 未使用変数の警告抑制
+    _input_size: usize,
     hidden_size: usize,
     num_heads: usize,
     memory_size: usize,
-    
-    // Projections
     w_query: Vec<Vec<usize>>,
     w_key: Vec<Vec<usize>>,
     w_value: Vec<Vec<usize>>,
-    
-    // Key-Value Memory
     memory_keys: VecDeque<Vec<Vec<usize>>>,
     memory_values: VecDeque<Vec<Vec<usize>>>,
 }
 
-// 内部ヘルパーメソッド
 impl RustSpikeAttention {
-    /// スパース射影 (Winner-Take-All)
     fn project(&self, input_spikes: Vec<usize>, mapping: &Vec<Vec<usize>>, sparsity: usize) -> Vec<usize> {
         let mut potentials = vec![0; self.hidden_size];
         let mut active_any = false;
@@ -40,11 +32,8 @@ impl RustSpikeAttention {
             }
         }
 
-        if !active_any {
-            return Vec::new();
-        }
+        if !active_any { return Vec::new(); }
 
-        // Top-K selection
         let mut candidates: Vec<(usize, i32)> = potentials.into_iter()
             .enumerate()
             .filter(|&(_, v)| v > 0)
@@ -64,8 +53,6 @@ impl RustSpikeAttention {
     #[new]
     fn new(input_size: usize, hidden_size: usize, num_heads: usize, memory_size: usize) -> Self {
         let mut rng = rand::thread_rng();
-        
-        // スパースな射影重みを初期化
         let mut init_projection = |size_in: usize, size_out: usize| -> Vec<Vec<usize>> {
             let mut weights = Vec::with_capacity(size_in);
             for _ in 0..size_in {
@@ -90,14 +77,11 @@ impl RustSpikeAttention {
         }
     }
 
-    /// Attention機構のメイン計算 (Multi-Head)
     fn compute(&mut self, input_spikes: Vec<usize>) -> Vec<usize> {
-        // 1. Current StepのQ, K, Vを生成
         let q_full = self.project(input_spikes.clone(), &self.w_query, self.hidden_size / 2);
         let k_full = self.project(input_spikes.clone(), &self.w_key, self.hidden_size / 2);
         let v_full = self.project(input_spikes.clone(), &self.w_value, self.hidden_size / 2);
 
-        // 各ヘッドごとに分割
         let mut q_heads = vec![Vec::new(); self.num_heads];
         let mut k_heads = vec![Vec::new(); self.num_heads];
         let mut v_heads = vec![Vec::new(); self.num_heads];
@@ -106,7 +90,6 @@ impl RustSpikeAttention {
         for &idx in &k_full { k_heads[idx % self.num_heads].push(idx); }
         for &idx in &v_full { v_heads[idx % self.num_heads].push(idx); }
 
-        // メモリに保存
         if self.memory_keys.len() >= self.memory_size {
             self.memory_keys.pop_front();
             self.memory_values.pop_front();
@@ -114,11 +97,8 @@ impl RustSpikeAttention {
         self.memory_keys.push_back(k_heads.clone());
         self.memory_values.push_back(v_heads);
 
-        if self.memory_keys.len() < 2 {
-            return Vec::new();
-        }
+        if self.memory_keys.len() < 2 { return Vec::new(); }
 
-        // 2. Attention Score Calculation (Intersection)
         let mut context_spikes = HashSet::new();
 
         for h in 0..self.num_heads {
@@ -130,18 +110,14 @@ impl RustSpikeAttention {
             for (t, past_keys) in self.memory_keys.iter().enumerate() {
                 let k_vec = &past_keys[h];
                 let overlap = k_vec.iter().filter(|&k| q_vec.contains(k)).count();
-                if overlap > 0 {
-                    scores.push((t, overlap));
-                }
+                if overlap > 0 { scores.push((t, overlap)); }
             }
 
             scores.sort_unstable_by(|a, b| b.1.cmp(&a.1));
             
             for (t, _) in scores.iter().take(3) {
                 if let Some(values) = self.memory_values.get(*t) {
-                    for &v in &values[h] {
-                        context_spikes.insert(v);
-                    }
+                    for &v in &values[h] { context_spikes.insert(v); }
                 }
             }
         }
@@ -157,7 +133,6 @@ impl RustSpikeAttention {
     }
 }
 
-/// Rust版 Dynamic Liquid Layer (Feature: Homeostasis / LayerNorm equivalent)
 #[pyclass]
 struct RustLiquidLayer {
     size: usize,
@@ -166,19 +141,13 @@ struct RustLiquidLayer {
     refractory: Vec<f32>,
     dynamic_thresh: Vec<f32>,
     base_thresh: f32,
-    
-    // Weights
     in_indices: Vec<Vec<usize>>,
     in_weights: Vec<Vec<f32>>,
     rec_indices: Vec<Vec<usize>>,
     rec_weights: Vec<Vec<f32>>,
-    
-    // Feedback weights
     feedback_weights: Vec<Vec<usize>>,
     feedback_scale: f32,
-    
-    // Homeostasis (Spike Layer Norm)
-    activity_ma: Vec<f32>, // Moving Average of Activity
+    activity_ma: Vec<f32>,
 }
 
 #[pymethods]
@@ -238,79 +207,55 @@ impl RustLiquidLayer {
         }
     }
 
-    /// Rust側で局所受容野を高速に構築する
     pub fn apply_spatial_receptive_fields(&mut self, width: usize, height: usize, patch_sizes: Vec<usize>) {
         let mut rng = rand::thread_rng();
         let num_inputs = width * height;
-        
         let mut new_in_indices: Vec<Vec<usize>> = vec![Vec::new(); num_inputs];
         let mut new_in_weights: Vec<Vec<f32>> = vec![Vec::new(); num_inputs];
 
         for hidden_idx in 0..self.size {
             let cx = rng.gen_range(0..width) as i32;
             let cy = rng.gen_range(0..height) as i32;
-            
-            let patch_size = if !patch_sizes.is_empty() {
-                *patch_sizes.choose(&mut rng).unwrap() as i32
-            } else {
-                3
-            };
+            let patch_size = if !patch_sizes.is_empty() { *patch_sizes.choose(&mut rng).unwrap() as i32 } else { 3 };
             let half_p = patch_size / 2;
-            
             let pattern_type = rng.gen_range(0..7);
             
             for dy in -half_p..=half_p {
                 for dx in -half_p..=half_p {
                     let x = cx + dx;
                     let y = cy + dy;
-                    
                     if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
                         let inp_idx = (y * width as i32 + x) as usize;
-                        
                         let mut w: f32 = match pattern_type {
-                            0 => rng.gen_range(-4.0..4.0), // random
-                            1 => { // center_on
-                                let dist = dx*dx + dy*dy;
-                                let limit = (half_p as f32 * 0.6).powi(2);
-                                if (dist as f32) <= limit { 6.0 } else { -3.0 }
-                            },
-                            2 => { // center_off
-                                let dist = dx*dx + dy*dy;
-                                let limit = (half_p as f32 * 0.6).powi(2);
-                                if (dist as f32) <= limit { -6.0 } else { 3.0 }
-                            },
-                            3 => if dy < 0 { 6.0 } else { -6.0 }, // edge_h
-                            4 => if dx < 0 { 6.0 } else { -6.0 }, // edge_v
-                            5 => if dx > dy { 6.0 } else { -6.0 }, // edge_d1
-                            6 => if dx > -dy { 6.0 } else { -6.0 }, // edge_d2
+                            0 => rng.gen_range(-4.0..4.0),
+                            1 => if dx*dx + dy*dy <= (half_p as f32 * 0.6).powi(2) as i32 { 6.0 } else { -3.0 },
+                            2 => if dx*dx + dy*dy <= (half_p as f32 * 0.6).powi(2) as i32 { -6.0 } else { 3.0 },
+                            3 => if dy < 0 { 6.0 } else { -6.0 },
+                            4 => if dx < 0 { 6.0 } else { -6.0 },
+                            5 => if dx > dy { 6.0 } else { -6.0 },
+                            6 => if dx > -dy { 6.0 } else { -6.0 },
                             _ => 0.0,
                         };
-                        
                         w += rng.gen_range(-0.8..0.8);
                         w *= 1.5;
-                        
                         new_in_indices[inp_idx].push(hidden_idx);
                         new_in_weights[inp_idx].push(w);
                     }
                 }
             }
         }
-        
         self.in_indices = new_in_indices;
         self.in_weights = new_in_weights;
     }
 
-    /// 各サンプル学習前に、動的閾値（Homeostasis）の記憶は保持しつつ、電位と不応期だけをリセットする
     pub fn reset_potentials(&mut self) {
         for x in &mut self.v { *x = 0.0; }
         for x in &mut self.refractory { *x = 0.0; }
-        // 安全のため、極端に上がった動的閾値のみクリッピング
         for x in &mut self.dynamic_thresh { 
             if *x > 5.0 { *x = 5.0; }
         }
     }
 
-    /// 現在の状態をPythonへ渡す
     pub fn get_state(&self) -> (Vec<f32>, Vec<f32>) {
         (self.v.clone(), self.dynamic_thresh.clone())
     }
@@ -324,15 +269,11 @@ impl RustLiquidLayer {
         learning: bool
     ) -> Vec<usize> {
         
-        // 1. Decay & Refractory
         for i in 0..self.size {
             self.v[i] *= self.decay;
-            if self.refractory[i] > 0.0 {
-                self.refractory[i] -= 1.0;
-            }
+            if self.refractory[i] > 0.0 { self.refractory[i] -= 1.0; }
         }
 
-        // 2. Integration
         for &pre_id in &active_inputs {
             if pre_id < self.in_indices.len() {
                 for (&tgt, &w) in self.in_indices[pre_id].iter().zip(self.in_weights[pre_id].iter()) {
@@ -356,12 +297,9 @@ impl RustLiquidLayer {
         }
         let attn_scale = 1.5;
         for &idx in &attention_signal {
-            if idx < self.size {
-                self.v[idx] += attn_scale;
-            }
+            if idx < self.size { self.v[idx] += attn_scale; }
         }
 
-        // 3. Fire & Homeostasis
         let mut candidates = Vec::new();
         for i in 0..self.size {
             if self.v[i] >= self.dynamic_thresh[i] && self.refractory[i] <= 0.0 {
@@ -379,13 +317,11 @@ impl RustLiquidLayer {
             fired_indices = candidates;
         }
 
-        // 4. Update State & Homeostasis
         let mut rng = rand::thread_rng();
         let fired_set: HashSet<usize> = fired_indices.iter().cloned().collect();
 
         for i in 0..self.size {
             let is_fired = fired_set.contains(&i);
-            
             if is_fired {
                 self.v[i] = 0.0;
                 self.refractory[i] = rng.gen_range(2.0..5.0);
@@ -393,28 +329,53 @@ impl RustLiquidLayer {
             } else {
                 self.activity_ma[i] = 0.95 * self.activity_ma[i];
             }
-
-            // Adaptive Threshold (Layer Norm Logic)
             let diff = self.activity_ma[i] - 0.05;
             self.dynamic_thresh[i] += diff * 0.1;
-
             if self.dynamic_thresh[i] < 0.3 { self.dynamic_thresh[i] = 0.3; }
             if self.dynamic_thresh[i] > 5.0 { self.dynamic_thresh[i] = 5.0; }
         }
 
-        // 5. STDP
-        if learning && !fired_indices.is_empty() && !prev_active_hidden.is_empty() {
-            for &pre_id in &prev_active_hidden {
-                if pre_id < self.rec_indices.len() {
-                    let targets = &self.rec_indices[pre_id];
-                    for i in 0..targets.len() {
-                        let tgt = targets[i];
+        // ==========================================
+        // 5. STDP (Spike-Timing-Dependent Plasticity)
+        // ==========================================
+        if learning && !fired_indices.is_empty() {
+            // (A) 入力フィルターの乗法型STDP (Multiplicative STDP)
+            if !active_inputs.is_empty() {
+                let active_set: HashSet<usize> = active_inputs.iter().cloned().collect();
+                for pre_id in 0..self.in_indices.len() {
+                    let is_pre_active = active_set.contains(&pre_id);
+                    for i in 0..self.in_indices[pre_id].len() {
+                        let tgt = self.in_indices[pre_id][i];
                         if fired_set.contains(&tgt) {
-                             self.rec_weights[pre_id][i] += 0.02;
-                             if self.rec_weights[pre_id][i] > 2.0 { self.rec_weights[pre_id][i] = 2.0; }
-                        } else {
-                             self.rec_weights[pre_id][i] -= 0.001;
-                             if self.rec_weights[pre_id][i] < -2.0 { self.rec_weights[pre_id][i] = -2.0; }
+                            let mut w = self.in_weights[pre_id][i];
+                            if is_pre_active {
+                                w *= 1.05; // LTP: 発火が一致した場合、現在の役割(興奮/抑制)を増幅
+                            } else {
+                                w *= 0.95; // LTD: 使われなかった場合は0に近づける(忘却)
+                            }
+                            // 暴走を防ぐクリッピング
+                            if w > 10.0 { w = 10.0; }
+                            if w < -10.0 { w = -10.0; }
+                            self.in_weights[pre_id][i] = w;
+                        }
+                    }
+                }
+            }
+
+            // (B) 隠れ層間のSTDP
+            if !prev_active_hidden.is_empty() {
+                for &pre_id in &prev_active_hidden {
+                    if pre_id < self.rec_indices.len() {
+                        let targets = &self.rec_indices[pre_id];
+                        for i in 0..targets.len() {
+                            let tgt = targets[i];
+                            if fired_set.contains(&tgt) {
+                                 self.rec_weights[pre_id][i] += 0.02;
+                                 if self.rec_weights[pre_id][i] > 2.0 { self.rec_weights[pre_id][i] = 2.0; }
+                            } else {
+                                 self.rec_weights[pre_id][i] -= 0.001;
+                                 if self.rec_weights[pre_id][i] < -2.0 { self.rec_weights[pre_id][i] = -2.0; }
+                            }
                         }
                     }
                 }

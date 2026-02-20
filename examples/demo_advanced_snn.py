@@ -1,3 +1,9 @@
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_advanced_snn.py",
+    "//": "タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / STDP事前学習・限界突破版)",
+    "//": "目的: 乗法型STDPによる特徴野の教師なし事前学習（Phase1）と、Readoutの教師あり学習（Phase2）を組み合わせ、90%の壁を突破する。"
+}
+
 import sys
 import os
 import time
@@ -5,12 +11,6 @@ import struct
 import urllib.request
 import gzip
 import random
-
-_FILE_INFO = {
-    "//": "ディレクトリパス: examples/demo_advanced_snn.py",
-    "//": "タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / 高解像度TTFS・90%限界突破版)",
-    "//": "目的: TTFSのステップ数を5段階に高解像度化し、3層のマルチスケール受容野とスキップ結合を組み合わせることで、誤差逆伝播法なしで精度90%到達を目指す。"
-}
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -24,7 +24,6 @@ def download_data(filename, source_url, data_dir="data"):
     if not os.path.exists(filepath):
         print(f"[Data] ダウンロード中: {filename} ...")
         urllib.request.urlretrieve(source_url, filepath)
-        print(f"[Data] ダウンロード完了: {filename}")
     return filepath
 
 def load_images(filepath):
@@ -45,12 +44,10 @@ def load_labels(filepath):
         return [int(b) for b in data]
 
 def prepare_dataset(dataset_name="mnist"):
-    if dataset_name == "mnist":
-        base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
-    elif dataset_name == "fashion_mnist":
+    if dataset_name == "fashion_mnist":
         base_url = "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
     else:
-        raise ValueError("Unknown dataset")
+        base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
 
     files = {
         "train_img": (f"{dataset_name}_train-images.gz", base_url + "train-images-idx3-ubyte.gz"),
@@ -69,59 +66,34 @@ def prepare_dataset(dataset_name="mnist"):
     
     return train_images, train_labels, test_images, test_labels
 
+def normalize_image(image):
+    max_p = max(image)
+    if max_p == 0: return image
+    scale = 255.0 / max_p
+    return [int(p * scale) for p in image]
+
 def apply_spatial_receptive_fields(layer, width, height, patch_sizes):
     if layer.use_rust and hasattr(layer.core, 'apply_spatial_receptive_fields'):
         layer.core.apply_spatial_receptive_fields(width, height, patch_sizes)
-        return
-
-    layer.in_weights = [{} for _ in range(width * height)]
-    patterns = ['random', 'center_on', 'center_off', 'edge_h', 'edge_v', 'edge_d1', 'edge_d2']
-    
-    for hidden_idx in range(layer.size):
-        cx = random.randint(0, width - 1)
-        cy = random.randint(0, height - 1)
-        patch_size = random.choice(patch_sizes)
-        half_p = patch_size // 2
-        pattern_type = random.choice(patterns)
-        
-        for dy in range(-half_p, half_p + 1):
-            for dx in range(-half_p, half_p + 1):
-                x = cx + dx
-                y = cy + dy
-                if 0 <= x < width and 0 <= y < height:
-                    inp_idx = y * width + x
-                    w = 0.0
-                    if pattern_type == 'random': w = random.uniform(-4.0, 4.0)
-                    elif pattern_type == 'center_on': w = 6.0 if dx*dx + dy*dy <= (half_p*0.6)**2 else -3.0
-                    elif pattern_type == 'center_off': w = -6.0 if dx*dx + dy*dy <= (half_p*0.6)**2 else 3.0
-                    elif pattern_type == 'edge_h': w = 6.0 if dy < 0 else -6.0
-                    elif pattern_type == 'edge_v': w = 6.0 if dx < 0 else -6.0
-                    elif pattern_type == 'edge_d1': w = 6.0 if dx > dy else -6.0
-                    elif pattern_type == 'edge_d2': w = 6.0 if dx > -dy else -6.0
-                        
-                    w += random.uniform(-0.8, 0.8) 
-                    layer.in_weights[inp_idx][hidden_idx] = w * 1.5
 
 def run_advanced_snn():
     print("="*65)
-    print("SARA-Engine: Advanced SNN (High-Res TTFS / Limit Break)")
+    print("SARA-Engine: Advanced SNN (2-Phase STDP Learning)")
     print("="*65)
 
     DATASET_NAME = "fashion_mnist"
-    SAVE_MODEL_PATH = f"sara_{DATASET_NAME}_model_batch_v3.json"
+    SAVE_MODEL_PATH = f"sara_{DATASET_NAME}_model_stdp.json"
 
     train_images, train_labels, test_images, test_labels = prepare_dataset(DATASET_NAME)
     
     num_inputs = 784
     num_classes = 10
     
-    print("\n[Network] 3層マルチスケール型 生物学的ネットワーク(Rust)を構築中...")
+    print("\n[Network] 適応型 生物学的ネットワーク(Rust)を構築中...")
     
-    # 微細・中間・大局の3層構造で多様な特徴を抽出
     layer_configs = [
-        {"size": 3000, "decay": 0.80, "patch_sizes": [3, 5, 7]},
-        {"size": 2500, "decay": 0.88, "patch_sizes": [9, 11, 13]},
-        {"size": 2500, "decay": 0.95, "patch_sizes": [15, 17, 21]} 
+        {"size": 3000, "decay": 0.82, "patch_sizes": [3, 5, 7, 9]},
+        {"size": 2000, "decay": 0.95, "patch_sizes": [9, 13, 17, 21]} 
     ]
     
     liquid_layers = []
@@ -134,21 +106,64 @@ def run_advanced_snn():
         liquid_layers.append(layer)
     
     total_hidden = sum(cfg["size"] for cfg in layer_configs)
-    
-    # TTFSの解像度を5段階に引き上げ、中間階調の情報を保持
-    thresholds = [212, 170, 128, 86, 44]
-    
+    thresholds = [200, 140, 80]
     temporal_spatial_size = (num_inputs + total_hidden) * len(thresholds)
     
     readout_layer = ReadoutLayer(
         input_size=temporal_spatial_size, 
         output_size=num_classes,
-        learning_rate=0.003 # 次元が増大したため初期学習率を下げて安定させる
+        learning_rate=0.005 
     )
 
     start_time = time.time()
-    epochs = 6 
-    print(f"\n[Train] 高解像度バッチ学習を開始します (データ数: {len(train_images)}件 x {epochs}エポック)...")
+    
+    # ---------------------------------------------------------
+    # Phase 1: 教師なし STDP 事前学習 (視覚野の成熟)
+    # ---------------------------------------------------------
+    print("\n[Phase 1] 局所受容野の教師なしSTDP事前学習を開始 (1エポック)...")
+    print("  -> ネットワークが自動的に服や靴の特徴構造を抽出・先鋭化します。")
+    
+    combined = list(zip(train_images, train_labels))
+    random.shuffle(combined)
+    train_images_shuffled, _ = zip(*combined) # ラベルは使わない
+    
+    phase1_start = time.time()
+    for i in range(len(train_images)):
+        image = normalize_image(train_images_shuffled[i])
+        
+        for l in liquid_layers:
+            if l.use_rust and hasattr(l.core, 'reset_potentials'): 
+                l.core.reset_potentials()
+            else: 
+                l.v, l.refractory = [0.0]*l.size, [0.0]*l.size
+        
+        prev_fired = [[] for _ in range(len(liquid_layers))]
+        has_fired_inputs = set()
+        
+        for step, thresh in enumerate(thresholds):
+            active_inputs = [idx for idx, p in enumerate(image) if p > thresh and idx not in has_fired_inputs]
+            if not active_inputs: continue
+            has_fired_inputs.update(active_inputs)
+            
+            for l_idx, l in enumerate(liquid_layers):
+                if l.use_rust and hasattr(l.core, 'forward'):
+                    # Rustコアを直接呼び出し、学習フラグ(is_learning=True)を明示的にONにする
+                    fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], True)
+                else:
+                    fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
+                prev_fired[l_idx] = fired_h
+                
+        if (i + 1) % 15000 == 0: 
+            print(f"  Processed {i + 1}/{len(train_images)} samples (STDP)...")
+            
+    print(f"  -> Phase 1 所要時間: {time.time() - phase1_start:.2f}秒")
+
+    # ---------------------------------------------------------
+    # Phase 2: 教師あり Readout 学習 (概念の紐付け)
+    # ---------------------------------------------------------
+    epochs = 4
+    print(f"\n[Phase 2] Readout層の教師あり学習を開始 (データ数: {len(train_images)}件 x {epochs}エポック)...")
+    print("  -> 安定した特徴野を元に、線形分類器を収束させます (STDPは凍結)。")
     
     for epoch in range(epochs):
         print(f"\n--- Epoch {epoch + 1}/{epochs} ---")
@@ -157,19 +172,16 @@ def run_advanced_snn():
         random.shuffle(combined)
         train_images_shuffled, train_labels_shuffled = zip(*combined)
         
-        # 学習率の減衰を少し緩やかにし、終盤まで学習能力を維持
-        if epoch > 0: 
-            readout_layer.lr *= 0.8  
+        if epoch > 0: readout_layer.lr *= 0.7  
             
         epoch_start_time = time.time()
         for i in range(len(train_images)):
-            image, target_label = train_images_shuffled[i], train_labels_shuffled[i]
+            image = normalize_image(train_images_shuffled[i])
+            target_label = train_labels_shuffled[i]
             
             for l in liquid_layers:
-                if l.use_rust and hasattr(l.core, 'reset_potentials'): 
-                    l.core.reset_potentials()
-                else: 
-                    l.v, l.refractory = [0.0]*l.size, [0.0]*l.size
+                if l.use_rust and hasattr(l.core, 'reset_potentials'): l.core.reset_potentials()
+                else: l.v, l.refractory = [0.0]*l.size, [0.0]*l.size
             
             accumulated_fired = set()
             prev_fired = [[] for _ in range(len(liquid_layers))]
@@ -185,7 +197,11 @@ def run_advanced_snn():
                 
                 offset = num_inputs
                 for l_idx, l in enumerate(liquid_layers):
-                    fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
+                    if l.use_rust and hasattr(l.core, 'forward'):
+                        # Phase 2: 特徴野を固定(is_learning=False)して推論のみ行う
+                        fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], False)
+                    else:
+                        fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
                     prev_fired[l_idx] = fired_h
                     accumulated_fired.update([f + offset + time_offset for f in fired_h])
                     offset += l.size
@@ -197,9 +213,7 @@ def run_advanced_snn():
                 print(f"  Processed {i + 1}/{len(train_images)} samples...")
         
         print(f"  -> エポック所要時間: {time.time() - epoch_start_time:.2f}秒")
-        
-        if epoch < epochs - 1:
-            print("  " + readout_layer.sleep_phase(prune_rate=0.002))
+        if epoch < epochs - 1: print("  " + readout_layer.sleep_phase(prune_rate=0.005))
 
     print(f"\n全学習完了 | 総所要時間: {time.time() - start_time:.2f}秒")
     print(readout_layer.sleep_phase(prune_rate=0.02))
@@ -215,7 +229,7 @@ def run_advanced_snn():
     test_start_time = time.time()
     
     for i in range(len(test_images)):
-        image = test_images[i]
+        image = normalize_image(test_images[i])
         true_label = test_labels[i]
         
         for l in liquid_layers:
@@ -236,7 +250,10 @@ def run_advanced_snn():
             
             offset = num_inputs
             for l_idx, l in enumerate(liquid_layers):
-                fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
+                if l.use_rust and hasattr(l.core, 'forward'):
+                    fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], False)
+                else:
+                    fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
                 prev_fired[l_idx] = fired_h
                 accumulated_fired.update([f + offset + time_offset for f in fired_h])
                 offset += l.size
