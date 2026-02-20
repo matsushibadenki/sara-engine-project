@@ -1,75 +1,80 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/spike_attention.py",
-    "//": "タイトル: Spike-based Attention (Standalone)",
-    "//": "目的: 行列演算や誤差逆伝播を使用せず、スパイクの同時発火（Coincidence）と時間的減衰を用いてAttentionを行う単体モジュール。"
-}
+# filepath: src/sara_engine/core/spike_attention.py
+# title: スパイク自己注意機構
+# description: スパイクのタイミング一致(coincidence)を利用し、行列演算を排したAttention機構。WTA(Winner-Take-All)でSoftmaxを代替する。
 
-import math
-from typing import List, Tuple
+import random
 
-class SpikeAttention:
-    def __init__(self, decay_rate: float = 0.9, threshold: float = 1.0):
-        self.decay_rate = decay_rate
-        self.threshold = threshold
-        # メモリ（過去の発火履歴）を保持: List[List[int]] (各ステップのスパイクベクトル)
-        # 注意: ここでの入力はインデックスリストではなく、0/1のリストを想定している古いIFの場合があるが、
-        # プロジェクト全体の方針に合わせてインデックスリスト(SDR)を扱うように調整する。
-        # ただし、既存コードとの互換性のため、呼び出し元が0/1配列を渡してくるならそれに対応する必要がある。
-        # ここでは「インデックスのリスト」を扱うモダンなSARA形式とする。
-        self.history_keys: List[List[int]] = [] # 各ステップの発火インデックスリスト
-        self.history_values: List[List[int]] = []
-
-    def process_step(self, query_spikes: List[int], key_spikes: List[int], value_spikes: List[int]) -> Tuple[List[int], List[float]]:
-        """
-        1タイムステップにおけるスパイクの処理。
-        Args:
-            query_spikes: 発火したニューロンのインデックスリスト
-            key_spikes: 発火したニューロンのインデックスリスト
-            value_spikes: 発火したニューロンのインデックスリスト
-        """
-        self.history_keys.append(key_spikes)
-        self.history_values.append(value_spikes)
+class SpikingSelfAttention:
+    def __init__(self, sdr_size, num_heads=4):
+        self.sdr_size = sdr_size
+        self.num_heads = num_heads
         
-        seq_length = len(self.history_keys)
+        # Sparse synaptic connections instead of dense matrices
+        self.W_q = [{} for _ in range(sdr_size)]
+        self.W_k = [{} for _ in range(sdr_size)]
+        self.W_v = [{} for _ in range(sdr_size)]
         
-        output_spikes: List[int] = []
-        attention_scores: List[float] = [0.0] * seq_length # 可視化用のスコア
+        self._init_sparse_weights(self.W_q)
+        self._init_sparse_weights(self.W_k)
+        self._init_sparse_weights(self.W_v)
+        
+        self.spike_history_k = [] 
+        self.spike_history_v = [] 
 
-        # クエリが空の場合はスキップ（省エネ）
-        if not query_spikes:
-            return [], attention_scores
+    def _init_sparse_weights(self, weights, density=0.05):
+        # Initialize with sparse random connections
+        for i in range(self.sdr_size):
+            num_connections = int(self.sdr_size * density)
+            targets = random.sample(range(self.sdr_size), num_connections)
+            for t in targets:
+                weights[i][t] = random.uniform(0.1, 0.5)
 
-        q_set = set(query_spikes)
+    def _propagate(self, active_inputs, weights):
+        potentials = [0.0] * self.sdr_size
+        for pre_id in active_inputs:
+            for post_id, w in weights[pre_id].items():
+                potentials[post_id] += w
+        
+        # Generate spikes (threshold = 1.0)
+        spikes = [i for i, p in enumerate(potentials) if p > 1.0]
+        return spikes
 
-        # 過去のKeyと現在のQueryの重なり合い（Overlap）を計算
-        for t in range(seq_length):
-            past_keys = self.history_keys[t]
-            # 集合積のサイズ
-            overlap_count = 0
-            for k in past_keys:
-                if k in q_set:
-                    overlap_count += 1
+    def _spike_coincidence(self, spikes_a, set_b):
+        # Spike timing coincidence (replaces dot product)
+        overlap = 0
+        for s in spikes_a:
+            if s in set_b:
+                overlap += 1
+        return overlap
+
+    def forward(self, current_spikes):
+        # 1. Generate Query, Key, Value spikes
+        q_spikes = self._propagate(current_spikes, self.W_q)
+        k_spikes = self._propagate(current_spikes, self.W_k)
+        v_spikes = self._propagate(current_spikes, self.W_v)
+        
+        self.spike_history_k.append(set(k_spikes))
+        self.spike_history_v.append(v_spikes)
+        
+        # 2. Compute coincidence scores
+        coincidence_scores = []
+        for past_k in self.spike_history_k:
+            score = self._spike_coincidence(q_spikes, past_k)
+            coincidence_scores.append(score)
             
-            # 時間的減衰
-            time_diff = seq_length - 1 - t
-            decay = self.decay_rate ** time_diff
-            score = overlap_count * decay
-            attention_scores[t] = score
-
-        # 最もスコアの高い過去のタイミング（Winner-Take-All）
-        max_score = 0.0
-        best_t = -1
-        for t in range(seq_length):
-            if attention_scores[t] > max_score:
-                max_score = attention_scores[t]
-                best_t = t
-
-        # 閾値を超えた場合に、その時点のValueを出力
-        if max_score >= self.threshold and best_t != -1:
-            output_spikes = self.history_values[best_t]
-
-        return output_spikes, attention_scores
-
-    def reset(self):
-        self.history_keys = []
-        self.history_values = []
+        if not coincidence_scores:
+            return []
+            
+        # 3. Spiking Softmax / Winner-Take-All (WTA)
+        max_score = max(coincidence_scores)
+        winners = [i for i, score in enumerate(coincidence_scores) if score >= max_score - 1 and score > 0]
+        
+        # 4. Weighted sum of Values using membrane accumulation
+        output_potentials = [0.0] * self.sdr_size
+        for w_idx in winners:
+            for v_spike in self.spike_history_v[w_idx]:
+                output_potentials[v_spike] += 1.0
+                
+        # Generate final attention spikes
+        attended_spikes = [i for i, p in enumerate(output_potentials) if p > len(winners) * 0.5]
+        return attended_spikes

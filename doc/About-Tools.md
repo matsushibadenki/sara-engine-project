@@ -39,12 +39,9 @@ Run these Python scripts to see the engine in action.
 | **knowledge recall** (knowledge recall) | python examples/test\_knowledge\_recall.py |
 | **utils** (utils) | python examples/utils.py |
 | **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
-
-| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
-| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
-| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
-| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
-
+| **snn_llm** (snn_llm) | python examples/demo\_snn\_llm.py |
+| **crossmodal recall ** (crossmodal recall) | python examples/demo\_crossmodal\_recall.py |
+  
 ### **3\. Utilities & Diagnostics**
 
 | Description | Command |
