@@ -266,7 +266,8 @@ impl RustLiquidLayer {
         prev_active_hidden: Vec<usize>,
         feedback_active: Vec<usize>,
         attention_signal: Vec<usize>,
-        learning: bool
+        learning: bool,
+        reward: f32
     ) -> Vec<usize> {
         
         for i in 0..self.size {
@@ -336,10 +337,10 @@ impl RustLiquidLayer {
         }
 
         // ==========================================
-        // 5. STDP (Spike-Timing-Dependent Plasticity)
+        // 5. Reward-Modulated STDP (R-STDP)
         // ==========================================
         if learning && !fired_indices.is_empty() {
-            // (A) 入力フィルターの乗法型STDP (Multiplicative STDP)
+            // (A) 入力フィルターの乗法型 R-STDP
             if !active_inputs.is_empty() {
                 let active_set: HashSet<usize> = active_inputs.iter().cloned().collect();
                 for pre_id in 0..self.in_indices.len() {
@@ -349,9 +350,11 @@ impl RustLiquidLayer {
                         if fired_set.contains(&tgt) {
                             let mut w = self.in_weights[pre_id][i];
                             if is_pre_active {
-                                w *= 1.05; // LTP: 発火が一致した場合、現在の役割(興奮/抑制)を増幅
+                                // LTPに報酬を適用。報酬がマイナスなら罰(LTD)へ反転
+                                w *= 1.0 + (0.05 * reward);
                             } else {
-                                w *= 0.95; // LTD: 使われなかった場合は0に近づける(忘却)
+                                // LTDに報酬を適用。報酬がマイナスなら強化(LTP)へ反転
+                                w *= 1.0 - (0.05 * reward);
                             }
                             // 暴走を防ぐクリッピング
                             if w > 10.0 { w = 10.0; }
@@ -362,7 +365,7 @@ impl RustLiquidLayer {
                 }
             }
 
-            // (B) 隠れ層間のSTDP
+            // (B) 隠れ層間の R-STDP
             if !prev_active_hidden.is_empty() {
                 for &pre_id in &prev_active_hidden {
                     if pre_id < self.rec_indices.len() {
@@ -370,10 +373,10 @@ impl RustLiquidLayer {
                         for i in 0..targets.len() {
                             let tgt = targets[i];
                             if fired_set.contains(&tgt) {
-                                 self.rec_weights[pre_id][i] += 0.02;
+                                 self.rec_weights[pre_id][i] += 0.02 * reward;
                                  if self.rec_weights[pre_id][i] > 2.0 { self.rec_weights[pre_id][i] = 2.0; }
                             } else {
-                                 self.rec_weights[pre_id][i] -= 0.001;
+                                 self.rec_weights[pre_id][i] -= 0.001 * reward;
                                  if self.rec_weights[pre_id][i] < -2.0 { self.rec_weights[pre_id][i] = -2.0; }
                             }
                         }

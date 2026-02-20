@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/memory/million_token_snn.py",
-    "//": "タイトル: 100万トークン対応イベント駆動型SNNメモリ - ハブペナルティ最適化版",
-    "//": "目的: ハブノード（助詞など）のペナルティを適切に緩和し、意味のある直感連想が伝播できるようにする。"
+    "//": "タイトル: 100万トークン対応イベント駆動型SNNメモリ - 高速・高精度化版",
+    "//": "目的: STDP学習時にシナプス刈り込みとホメオスタシスを適用し、ネットワークのスパース性を維持して学習速度と連想精度を飛躍的に高める。"
 }
 
 import math
@@ -44,7 +44,7 @@ class DynamicSNNMemory:
         self.current_time = 0.0
         
         self.neurons: Dict[int, LIFNeuron] = {}
-        self.synapses: DefaultDict[int, DefaultDict[int, float]] = defaultdict(lambda: defaultdict(float))
+        self.synapses: DefaultDict[int, Dict[int, float]] = defaultdict(dict)
         
         self.recent_spikes: Deque[Tuple[int, float]] = deque()
         
@@ -76,12 +76,35 @@ class DynamicSNNMemory:
 
     def _apply_stdp(self, pre_id: int, post_id: int, pre_time: float, post_time: float):
         dt = post_time - pre_time
+        current_w = self.synapses[pre_id].get(post_id, 0.0)
+        
         if 0 < dt <= 3.0:
             dw = self.a_plus * math.exp(-dt / self.tau_plus)
-            self.synapses[pre_id][post_id] = min(self.max_weight, self.synapses[pre_id][post_id] + dw)
+            self.synapses[pre_id][post_id] = min(self.max_weight, current_w + dw)
         elif -3.0 <= dt < 0:
             dw = -self.a_minus * math.exp(dt / self.tau_minus)
-            self.synapses[pre_id][post_id] = max(0.0, self.synapses[pre_id][post_id] + dw)
+            new_w = current_w + dw
+            # 結合が弱くなりすぎた場合は物理的に削除（枝刈り）
+            if new_w <= 0.05:
+                if post_id in self.synapses[pre_id]:
+                    del self.synapses[pre_id][post_id]
+            else:
+                self.synapses[pre_id][post_id] = new_w
+
+        # 生物学的恒常性 (Homeostasis) によるハブニューロンの正規化
+        if pre_id in self.synapses and len(self.synapses[pre_id]) > 0:
+            total_weight = sum(self.synapses[pre_id].values())
+            capacity_limit = 15.0  # ニューロンのシナプス総負荷上限
+            
+            if total_weight > capacity_limit:
+                decay = capacity_limit / total_weight
+                pruned_dict = {}
+                for tgt_id, w in self.synapses[pre_id].items():
+                    decayed_w = w * decay
+                    # 減衰後にノイズ閾値を下回ったものは破棄
+                    if decayed_w > 0.05:
+                        pruned_dict[tgt_id] = decayed_w
+                self.synapses[pre_id] = pruned_dict
 
     def process_sequence(self, sequence: List[int], is_training: bool = True) -> List[int]:
         output_tokens = []
@@ -130,14 +153,14 @@ class DynamicSNNMemory:
                         if current_id not in spiked_in_this_step or depth < spiked_in_this_step[current_id]:
                             spiked_in_this_step[current_id] = depth
 
-                        fan_out = len(self.synapses[current_id])
+                        # 枝刈りによって既に無駄な結合は排除されているため推論ループが超高速化
+                        fan_out = len(self.synapses.get(current_id, {}))
                         hub_penalty = 1.0
                         
-                        # ハブペナルティを緩和し、重要なキーワードへの波及を許す
                         if fan_out > 5:
                             hub_penalty = 5.0 / fan_out
 
-                        for target_id, weight in self.synapses[current_id].items():
+                        for target_id, weight in self.synapses.get(current_id, {}).items():
                             adjusted_weight = weight * hub_penalty
                             if adjusted_weight > 0.3:
                                 event_queue.append((target_id, adjusted_weight, depth + 1))

@@ -1,8 +1,8 @@
 """
 {
     "//": "ディレクトリパス: src/sara_engine/agent/sara_agent.py",
-    "//": "タイトル: 統合マルチモーダル・エージェント (Sara Agent) - PFC干渉抑制版",
-    "//": "目的: 前頭前野（PFC）の認知制御を模倣し、確実なエピソード記憶が想起された場合は、ノイズとなる意味記憶（直感連想）の干渉を抑制してハルシネーションを防ぐ。"
+    "//": "タイトル: 統合マルチモーダル・エージェント (Sara Agent) - クロスモーダル完全分離版",
+    "//": "目的: PFCの検索ルーティングにおいて、視覚概念の抽出時に会話ノイズを完全に除外するトップダウン制御を追加し、正確な2段階連想を実現する。"
 }
 """
 
@@ -211,10 +211,78 @@ class SaraAgent:
 
         self._update_history("system", f"[視覚情報: {label}]", bound_sdr)
 
+        # 視覚コンテキスト(vision)に限定して記憶する
         self.brain.experience_and_memorize(
             bound_sdr, content=f"[視覚入力: {label}]", context="vision", learning=True
         )
         return f"[視覚野] 画像を解析し、『{label}』の概念と結合しました。"
+
+    def recognize_image(self, image_features: List[float], question: str = "") -> str:
+        """
+        視覚情報（画像特徴量）から関連する記憶（テキスト/概念）を想起するクロスモーダル推論。
+        """
+        vision_sdr = self.vision.encode(image_features)
+        search_sdr = set(vision_sdr)
+        
+        if question:
+            self._register_dynamic_vocab(question)
+            text_sdr = self.encoder.encode(question)
+            self._update_history("user", f"[画像入力] {question}", text_sdr)
+        else:
+            self._update_history("user", "[画像入力のみ]", vision_sdr)
+
+        # 1. 視覚コンテキスト(vision)のみから検索する
+        all_results = self.brain.in_context_inference(
+            current_sensory_sdr=list(search_sdr), context="vision"
+        )
+
+        # 【PFCの厳格な認知制御】
+        # 会話履歴の引きずり等でテキストエピソードがvisionコンテキストに混入していた場合でも、
+        # 第一段階では純粋な視覚バインディング記憶（[視覚入力: ...]）のみを確実に抽出する
+        vision_memories = [res for res in all_results if "[視覚入力:" in res["content"]]
+
+        if vision_memories:
+            vision_memories.sort(key=lambda x: x["score"], reverse=True)
+            best_memory = vision_memories[0]
+            
+            # 閾値を0.15に設定し、無関係なノイズ画像の誤検知を防止
+            if best_memory["score"] > 0.15:
+                memory_content = best_memory["content"]
+                
+                final_response = f"[PFC: vision (Cross-Modal)]\n"
+                final_response += f" >> 視覚記憶からの直接想起: {memory_content}"
+                
+                # "[視覚入力: 愛犬のポチ]" から "愛犬のポチ" を抽出
+                concept_text = memory_content.replace("[視覚入力: ", "").replace("]", "").strip()
+                
+                original_vsa = self.encoder.apply_vsa
+                self.encoder.apply_vsa = False
+                concept_sdr = self.encoder.encode(concept_text)
+                self.encoder.apply_vsa = original_vsa
+                
+                # 2. 抽出した概念を使って、他のコンテキスト(vision以外)からエピソードを検索
+                assoc_results = []
+                for comp in self.prefrontal.compartments:
+                    if comp != "vision":
+                        assoc_results.extend(self.brain.in_context_inference(concept_sdr, context=comp))
+                    
+                if assoc_results:
+                    assoc_results.sort(key=lambda x: x["score"], reverse=True)
+                    for assoc in assoc_results:
+                        assoc_memory = assoc["content"]
+                        # 視覚入力タグがない、純粋なエピソードを選ぶ
+                        if "視覚入力" not in assoc_memory:
+                            final_response += f"\n >> クロスモーダル連想エピソード: {assoc_memory}"
+                            break
+
+                response_sdr = self.encoder.encode(final_response)
+                self._update_history("system", final_response, response_sdr)
+                return final_response
+
+        fallback_msg = "この画像に関連する明確な記憶は見つかりませんでした。"
+        response_sdr = self.encoder.encode(fallback_msg)
+        self._update_history("system", fallback_msg, response_sdr)
+        return f"[PFC: vision (Cross-Modal)]\n >> 視覚野: {fallback_msg}"
 
     def chat(self, user_text: str, teaching_mode: bool = False) -> str:
         self._register_dynamic_vocab(user_text)
@@ -334,11 +402,8 @@ class SaraAgent:
 
             memory_context = ""
             if best_memory != "なし":
-                # 前頭前野(PFC)による意味記憶の干渉抑制
-                # 海馬から確かなエピソード事実が検索できた場合、SNNの直感連想（ノイズ）を遮断し、事実に集中させる
                 memory_context = best_memory
             elif associated_text:
-                # 記憶が見つからない場合のみ、直感連想のキーワードを頼りにする
                 memory_context = associated_text
 
             if memory_context.strip():
@@ -350,25 +415,22 @@ class SaraAgent:
                 generation_context_sdr = set(memory_sdr)
 
                 if best_memory != "なし":
-                    # ハブノード（「は」など）での脱線を防ぐため、シード軌道を先頭の3語に強化する
-                    seed_words = best_memory.split()[:3]
-                    seed_prompt = "".join(seed_words)
-                    prompt_for_gpt = " ".join(seed_words)
-                elif associated_text:
-                    seed_prompt = associated_text.split()[0]
-                    prompt_for_gpt = seed_prompt
+                    final_generated_text = best_memory.replace(" ", "")
                 else:
-                    seed_prompt = user_text[-1]
-                    prompt_for_gpt = user_text
+                    if associated_text:
+                        seed_prompt = associated_text.split()[0]
+                        prompt_for_gpt = seed_prompt
+                    else:
+                        seed_prompt = user_text[-1]
+                        prompt_for_gpt = user_text
 
-                generated_text = self.gpt.generate(
-                    prompt=prompt_for_gpt,
-                    context_sdr=list(generation_context_sdr),
-                    max_tokens=15,
-                    temperature=0.1,
-                )
-
-                final_generated_text = seed_prompt + generated_text
+                    generated_text = self.gpt.generate(
+                        prompt=prompt_for_gpt,
+                        context_sdr=list(generation_context_sdr),
+                        max_tokens=15,
+                        temperature=0.1,
+                    )
+                    final_generated_text = seed_prompt + generated_text
             else:
                 final_generated_text = (
                     "関連する明確なエピソード記憶が海馬に見つかりませんでした。"

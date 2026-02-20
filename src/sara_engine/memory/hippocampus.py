@@ -1,21 +1,27 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/memory/hippocampus.py",
     "//": "タイトル: 皮質-海馬 連動メモリシステム (Cortico-Hippocampal System)",
-    "//": "目的: 嗅内皮質からの貫通線維(Perforant Path)を模倣し、皮質表現と生入力SDRのハイブリッドで海馬の検索精度(Recall)を極大化する。"
+    "//": "目的: 嗅内皮質からの貫通線維を模倣し、皮質表現と生入力SDRのハイブリッドで検索精度を極大化。過度な数式ハックを排し、皮質(Cortex)が持つ自然な時間バイアスを尊重する。"
 }
 
 from typing import List, Dict, Any, Set, Deque
 from collections import deque
 import random
-from ..core.cortex import CorticalColumn
-from .ltm import SparseMemoryStore
+import time
+
+from sara_engine.core.cortex import CorticalColumn
+from sara_engine.memory.ltm import SparseMemoryStore
+from snn_models.spatiotemporal_stdp import SpatioTemporalSNN
 
 class CorticoHippocampalSystem:
-    def __init__(self, cortex: CorticalColumn, ltm_filepath: str = "sara_integrated_ltm.pkl", max_working_memory_size: int = 15):
+    def __init__(self, cortex: CorticalColumn, ltm_filepath: str = "sara_integrated_ltm.pkl", max_working_memory_size: int = 15, snn_input_size: int = 2000):
         self.cortex = cortex
         self.ltm = SparseMemoryStore(filepath=ltm_filepath)
         self.ltm.clear() 
         self.working_memory: Deque[List[int]] = deque(maxlen=max_working_memory_size)
+        
+        self.snn_input_size = snn_input_size
+        self.st_snn = SpatioTemporalSNN(n_in=snn_input_size, n_sensory=200, n_cortex=100)
 
     def experience_and_memorize(self, sensory_sdr: List[int], content: str, context: str, learning: bool = True) -> List[int]:
         self.cortex.reset_short_term_memory()
@@ -23,12 +29,18 @@ class CorticoHippocampalSystem:
         cortical_t1 = self.cortex.forward_latent_chain(sensory_sdr, [], current_context=context, learning=learning)
         cortical_t2 = self.cortex.forward_latent_chain([], cortical_t1, current_context=context, learning=learning)
         
-        # 生物学的な貫通線維(Perforant Path)を模倣し、皮質表現(t2)と生の感覚SDRをブレンドする
-        # これにより、皮質の学習が未熟でも単語レベルの直接的な重なりで確実に記憶できる
         hippocampal_input = list(set(cortical_t2) | set(sensory_sdr))
         
         self.ltm.add(sdr=hippocampal_input, content=content, memory_type=context)
         self.working_memory.append(hippocampal_input)
+        
+        if learning:
+            heat_data = [0.0] * self.snn_input_size
+            for idx in sensory_sdr:
+                if idx < self.snn_input_size:
+                    heat_data[idx] = 1.0
+            
+            self.st_snn.step(heat_data)
         
         return hippocampal_input
 
@@ -47,27 +59,28 @@ class CorticoHippocampalSystem:
         cortical_t1 = self.cortex.forward_latent_chain(current_sensory_sdr, [], current_context=context, learning=False)
         cortical_t2 = self.cortex.forward_latent_chain([], cortical_t1, current_context=context, learning=False)
         
-        # 検索時もハイブリッドクエリを構築
+        # クエリの汚染（WMからのランダムなノイズ混入）を完全に削除し、純粋な関連度を計算する
         query_set = set(cortical_t2) | set(current_sensory_sdr)
         
-        if self.working_memory:
-            recent_wm = self.working_memory[-1]
-            sample_size = int(len(recent_wm) * 0.1)
-            if sample_size > 0:
-                query_set.update(random.sample(recent_wm, min(sample_size, len(recent_wm))))
-                
-        final_results = self.ltm.search(query_sdr=list(query_set), top_k=3, threshold=0.01)
+        final_results = self.ltm.search(query_sdr=list(query_set), top_k=5, threshold=0.01)
         
         if final_results:
-            latest_time = max([res['timestamp'] for res in final_results])
+            # LTM内のすべての記憶のタイムスタンプを取得してソート（順位づけ用）
+            all_timestamps = sorted([m['timestamp'] for m in self.ltm.memories])
+            
             for res in final_results:
-                time_diff = latest_time - res['timestamp']
-                recency_bonus = 1.0 + (0.5 / (1.0 + time_diff))
+                # Rank-based Recency: ミリ秒の差を無視し「何番目に新しいか」で評価
+                rank = all_timestamps.index(res['timestamp'])
+                rank_ratio = rank / max(1, len(all_timestamps) - 1) # 0.0 ~ 1.0
+                
+                # ベーススコア（Cortexによる自然な意味的・時間的バイアス）を最優先する
+                # 同スコア帯（競合する事実）でのみ順位が覆る程度の微小なボーナス（最大+10%）にとどめる
+                recency_bonus = 1.0 + (rank_ratio * 0.1)
                 res['score'] = res['score'] * recency_bonus
                 
             final_results.sort(key=lambda x: x['score'], reverse=True)
             
-        return final_results
+        return final_results[:3]
 
     def consolidate_memories(self, context: str, replay_count: int = 5):
         if not self.ltm.memories:
@@ -77,12 +90,15 @@ class CorticoHippocampalSystem:
         if not target_memories:
             target_memories = self.ltm.memories
             
-        replay_samples = random.choices(target_memories, k=min(replay_count, len(target_memories)))
+        target_memories.sort(key=lambda x: x['timestamp'])
+        
+        replay_samples = target_memories[-replay_count:] if len(target_memories) > replay_count else target_memories
         
         for mem in replay_samples:
             self.cortex.reset_short_term_memory()
             replay_sdr = mem['sdr']
             
+            # リプレイによってCortexの結合重みが更新され、最新の事実が検索時に自然とバイアスされる
             cortical_t1 = self.cortex.forward_latent_chain(
                 active_inputs=replay_sdr, 
                 prev_active_hidden=[], 
@@ -97,3 +113,9 @@ class CorticoHippocampalSystem:
                 learning=True,
                 reward_signal=0.6
             )
+            
+            heat_data = [0.0] * self.snn_input_size
+            for idx in replay_sdr:
+                if idx < self.snn_input_size:
+                    heat_data[idx] = 1.0
+            self.st_snn.step(heat_data)

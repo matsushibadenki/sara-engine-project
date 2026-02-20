@@ -1,7 +1,7 @@
 FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/gpt.py",
-    "//": "タイトル: 自己回帰型SNN (SaraGPT) - 復帰抑制(IoR)導入版",
-    "//": "目的: エピソードの無限ループを防ぐため、一度発火した概念のアテンションを減衰させるInhibition of Returnを実装し、自然な停止(EOS)を促す。"
+    "//": "タイトル: 自己回帰型SNN (SaraGPT) - シナプス刈り込み・恒常性可塑性導入版",
+    "//": "目的: 生物学的なシナプス刈り込み(Pruning)と恒常性可塑性(Homeostasis)を導入し、テキスト学習の精度向上と推論の省エネルギー・高速化を実現する。"
 }
 
 import random
@@ -29,8 +29,24 @@ class SaraGPT:
             for pre in pre_sdr:
                 if pre not in self.synapses:
                     self.synapses[pre] = {}
+                
+                # 生物学的シナプス形成 (LTP)
                 for post in post_sdr:
                     self.synapses[pre][post] = self.synapses[pre].get(post, 0.0) + weight
+
+                # 恒常性可塑性 (Homeostasis) と シナプス刈り込み (Pruning) による高速・高精度化
+                total_weight = sum(self.synapses[pre].values())
+                capacity_limit = 50.0  # 1ニューロンあたりのシナプス重み総量の限界 (生物学的制約)
+                
+                if total_weight > capacity_limit:
+                    decay_rate = capacity_limit / total_weight
+                    pruned_synapses = {}
+                    for post_id, w in self.synapses[pre].items():
+                        decayed_w = w * decay_rate
+                        # 0.05未満の弱い結合は忘却 (枝刈り) し、推論空間を狭めて高速化
+                        if decayed_w >= 0.05:
+                            pruned_synapses[post_id] = decayed_w
+                    self.synapses[pre] = pruned_synapses
 
     def predict_next_sdr(self, current_sdr: List[int], context_sdr: List[int] = [], temperature: float = 1.0) -> List[int]:
         potentials: Dict[int, float] = {}
@@ -143,7 +159,6 @@ class SaraGPT:
             recent_tokens = recent_tokens[-10:]
 
         for _ in range(max_tokens):
-            # 動的に消費されていくcontext_setを用いて次を予測
             next_sdr = self.predict_next_sdr(current_sdr, list(context_set), temperature=temperature)
             if not next_sdr: 
                 break
@@ -198,7 +213,6 @@ class SaraGPT:
             
             # 【復帰抑制: Inhibition of Return】
             # 新たに生成された単語の概念をワーキングメモリのアテンションから消費する
-            # これにより、目標の言葉をすべて言い終えるとアテンションが空になり、自然に<eos>へ向かう
             context_set -= set(current_sdr)
 
         return "".join(generated_words)

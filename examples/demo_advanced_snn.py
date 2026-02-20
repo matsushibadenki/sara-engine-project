@@ -1,6 +1,8 @@
-# ディレクトリパス: examples/demo_advanced_snn.py
-# タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / STDP事前学習・進捗表示改良版)
-# 目的: 乗法型STDPによる教師なし学習の進捗を詳細に表示し、動作状況を可視化する。
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_advanced_snn.py",
+    "//": "タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / R-STDP対応版)",
+    "//": "目的: RustコアのR-STDP拡張に対応するため、forward呼び出し時に不足していた reward 引数を追加し実行エラーを解消する。"
+}
 
 import sys
 import os
@@ -147,7 +149,8 @@ def run_advanced_snn():
             
             for l_idx, l in enumerate(liquid_layers):
                 if l.use_rust and hasattr(l.core, 'forward'):
-                    fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], True)
+                    # Rustコア呼び出しに reward=1.0 を追加 (教師なしLTPとして機能)
+                    fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], True, 1.0)
                 else:
                     fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
                 prev_fired[l_idx] = fired_h
@@ -200,7 +203,8 @@ def run_advanced_snn():
                 offset = num_inputs
                 for l_idx, l in enumerate(liquid_layers):
                     if l.use_rust and hasattr(l.core, 'forward'):
-                        fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], False)
+                        # Phase 2はSTDP凍結のため learning=False, reward=1.0 とする
+                        fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], False, 1.0)
                     else:
                         fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
                     prev_fired[l_idx] = fired_h
@@ -255,7 +259,8 @@ def run_advanced_snn():
             offset = num_inputs
             for l_idx, l in enumerate(liquid_layers):
                 if l.use_rust and hasattr(l.core, 'forward'):
-                    fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], False)
+                    # テスト時もSTDP凍結のため learning=False, reward=1.0
+                    fired_h = l.core.forward(active_inputs, prev_fired[l_idx], [], [], False, 1.0)
                 else:
                     fired_h = l.forward_with_feedback(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
                 prev_fired[l_idx] = fired_h

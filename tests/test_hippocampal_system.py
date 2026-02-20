@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: tests/test_hippocampal_system.py",
-    "//": "タイトル: 皮質-海馬システム VSA(役割バインディング)統合評価スクリプト",
-    "//": "目的: VSAの巡回シフトによる役割バインディングを組み込み、文構造に依存したICL推論を検証する。"
+    "//": "タイトル: 皮質-海馬システム統合評価および時間軸記憶定着テスト",
+    "//": "目的: VSAの役割バインディングの検証に加え、新しく実装されたSpatioTemporal STDPによる時間軸を伴うエピソード記憶の定着をテストする。"
 }
 
 import os
@@ -34,10 +34,12 @@ def run_evaluation():
         "リンゴ は 果物 の 一種 です",           
         "太郎 は それ を 大切 に 持って います", 
         "リンゴ は 今 誰 が 持って います か ？",
-        # VSAテスト用の新しいコーパス
         "花子 は リンゴ を 食べ ました",
         "太郎 は バナナ を 食べ ました",
-        "誰 が リンゴ を 食べ ました か ？"
+        "誰 が リンゴ を 食べ ました か ？",
+        "A社 の CEO は B氏 です",
+        "A社 の CEO が C氏 に 変わり ました",
+        "現在 の CEO は 誰 です か ？"
     ]
     tokenizer = SaraTokenizer(vocab_size=2000, model_path=vocab_file)
     tokenizer.train(corpus)
@@ -55,39 +57,41 @@ def run_evaluation():
         compartment_names=["Task_ICL"]
     )
     
+    # 新しく追加された snn_input_size をエンコーダの input_size(2048) と一致させる
     system = CorticoHippocampalSystem(
         cortex=cortex, 
         ltm_filepath=test_ltm_file, 
-        max_working_memory_size=10
+        max_working_memory_size=10,
+        snn_input_size=2048
     )
 
     # ---------------------------------------------------------
-    # テスト2: 大規模文脈内学習 (In-Context Learning) VSA構造ベース
+    # テスト1: 大規模文脈内学習 (In-Context Learning) VSA構造ベース
     # ---------------------------------------------------------
-    print("--- [テスト2] 大規模文脈内学習(ICL) - VSA構造的推論の評価 ---")
+    print("--- [テスト1] 大規模文脈内学習(ICL) - VSA構造的推論の評価 ---")
     
     system.cortex.reset_short_term_memory()
     system.working_memory.clear()
     system.ltm.clear()
 
     # VSAの効果を明確にするための前提文脈
-    contexts = [
-        "リンゴ は 果物 の 一種 です",         # リンゴ = 主語(SUBJECT)
-        "花子 は リンゴ を 食べ ました",       # リンゴ = 目的語(OBJECT)
-        "太郎 は バナナ を 食べ ました"        # リンゴなし、構造は同じ
+    contexts_vsa = [
+        "リンゴ は 果物 の 一種 です",         
+        "花子 は リンゴ を 食べ ました",       
+        "太郎 は バナナ を 食べ ました"        
     ]
     
     print("前提文脈をワーキングメモリに注入中...")
-    for ctx in contexts:
+    for ctx in contexts_vsa:
         sdr_ctx = encoder.encode(ctx)
         system.experience_and_memorize(sensory_sdr=sdr_ctx, content=ctx, context="Task_ICL", learning=False)
 
     # クエリ: リンゴが目的語(OBJECT)として使われている質問
-    query = "誰 が リンゴ を 食べ ました か ？"
-    query_sdr = encoder.encode(query)
-    print(f"\nクエリ: '{query}'")
+    query_vsa = "誰 が リンゴ を 食べ ました か ？"
+    query_sdr_vsa = encoder.encode(query_vsa)
+    print(f"\nクエリ: '{query_vsa}'")
     
-    icl_results = system.in_context_inference(current_sensory_sdr=query_sdr, context="Task_ICL")
+    icl_results = system.in_context_inference(current_sensory_sdr=query_sdr_vsa, context="Task_ICL")
     
     print("【ICL推論結果（VSA役割バインディングとマクロ文脈によって引き出された関連記憶）】")
     if icl_results:
@@ -96,6 +100,47 @@ def run_evaluation():
     else:
         print(" 関連する記憶が見つかりませんでした。")
         
+    # ---------------------------------------------------------
+    # テスト2: STDPと時間軸を伴うエピソード記憶の定着 (Consolidation)
+    # ---------------------------------------------------------
+    print("\n--- [テスト2] STDPと時間軸を伴うエピソード記憶の定着 ---")
+    
+    system.cortex.reset_short_term_memory()
+    system.working_memory.clear()
+    system.ltm.clear()
+    
+    contexts_temporal = [
+        "A社 の CEO は B氏 です",
+        "A社 の CEO が C氏 に 変わり ました"
+    ]
+    
+    print("時系列エピソードを順番に経験・記憶中 (STDP学習あり)...")
+    for ctx in contexts_temporal:
+        sdr_ctx = encoder.encode(ctx)
+        # learning=True にすることで、STDPによる SNN step が実行される
+        system.experience_and_memorize(sensory_sdr=sdr_ctx, content=ctx, context="Task_ICL", learning=True)
+        print(f" -> 記憶完了: {ctx}")
+        
+    print("\n睡眠・休息フェーズ: consolidate_memories による時系列リプレイと記憶の定着...")
+    # 記憶を時間順にリプレイし、STDPを駆動させる
+    system.consolidate_memories(context="Task_ICL", replay_count=2)
+    print(" -> 定着プロセスがエラーなく完了しました。")
+
+    query_temporal = "現在 の CEO は 誰 です か ？"
+    query_sdr_temporal = encoder.encode(query_temporal)
+    print(f"\nクエリ: '{query_temporal}'")
+    
+    # 最近の記憶 (C氏) が Recency Bonus によって上位に来るかを推論
+    temporal_results = system.in_context_inference(current_sensory_sdr=query_sdr_temporal, context="Task_ICL")
+    
+    print("【時系列推論結果（STDPとRecency Bonusによる引き出し）】")
+    if temporal_results:
+        for idx, res in enumerate(temporal_results, 1):
+            print(f" {idx}. {res['content']} (スコア: {res['score']:.4f})")
+    else:
+        print(" 関連する記憶が見つかりませんでした。")
+
+    # クリーンアップ
     for f in [test_ltm_file, vocab_file]:
         if os.path.exists(f):
             try:

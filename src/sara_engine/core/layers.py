@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/layers.py",
-    "//": "タイトル: Dynamic Liquid Layer (Homeostasis Core)",
-    "//": "目的: Rust拡張が利用可能な場合は高速なRust実装を使い、ない場合は純粋なPythonリストのみでLiquid State Machineを実行する。ヘルスチェック用の状態取得メソッドなどを追加。"
+    "//": "タイトル: Dynamic Liquid Layer (Homeostasis & R-STDP Core)",
+    "//": "目的: Rust実装およびPythonフォールバックの両方で、報酬変調型STDP（R-STDP）をサポートするよう拡張。"
 }
 
 import random
@@ -94,24 +94,25 @@ class DynamicLiquidLayer:
 
     def forward_with_feedback(self, active_inputs: List[int], prev_active_hidden: List[int], 
                               feedback_active: List[int] = [], attention_signal: List[int] = [],
-                              learning: bool = False) -> List[int]:
+                              learning: bool = False, reward: float = 1.0) -> List[int]:
         """フィードバック付きでforwardを実行するエイリアス"""
         return self.forward(
             active_inputs=active_inputs, 
             prev_active_hidden=prev_active_hidden, 
             feedback_active=feedback_active,
             attention_signal=attention_signal,
-            learning=learning
+            learning=learning,
+            reward=reward
         )
 
     def forward(self, active_inputs: List[int], prev_active_hidden: List[int], 
                 feedback_active: List[int] = [], attention_signal: List[int] = [],
-                learning: bool = False) -> List[int]:
+                learning: bool = False, reward: float = 1.0) -> List[int]:
         
         if self.use_rust:
-            # Rust側へは単純な整数のリストを渡すだけでよい
+            # Rust側へは単純な整数のリストとrewardを渡す
             return self.core.forward(
-                active_inputs, prev_active_hidden, feedback_active, attention_signal, learning
+                active_inputs, prev_active_hidden, feedback_active, attention_signal, learning, float(reward)
             )
         
         # --- Python純粋実装 ---
@@ -180,20 +181,20 @@ class DynamicLiquidLayer:
             if self.dynamic_thresh[i] < 0.5: self.dynamic_thresh[i] = 0.5
             if self.dynamic_thresh[i] > 5.0: self.dynamic_thresh[i] = 5.0
 
-        # 7. STDP (Spike-Timing Dependent Plasticity) - 学習
+        # 7. R-STDP (報酬変調型 STDP) - 学習
         if learning and prev_active_hidden:
             for pre_id in prev_active_hidden:
                 if pre_id < len(self.rec_weights):
                     # 既存の接続のみ更新
                     for target_id in self.rec_weights[pre_id].keys():
                         if target_id in fired_set:
-                            # LTP (Long-Term Potentiation): 前→後 の順で発火
-                            self.rec_weights[pre_id][target_id] += 0.02
+                            # LTP (Long-Term Potentiation): 前→後 の順で発火 (報酬変調)
+                            self.rec_weights[pre_id][target_id] += 0.02 * reward
                             if self.rec_weights[pre_id][target_id] > 2.0:
                                 self.rec_weights[pre_id][target_id] = 2.0
                         else:
-                            # LTD (Long-Term Depression): 前のみ発火
-                            self.rec_weights[pre_id][target_id] -= 0.005
+                            # LTD (Long-Term Depression): 前のみ発火 (報酬変調)
+                            self.rec_weights[pre_id][target_id] -= 0.005 * reward
                             if self.rec_weights[pre_id][target_id] < -2.0:
                                 self.rec_weights[pre_id][target_id] = -2.0
 
