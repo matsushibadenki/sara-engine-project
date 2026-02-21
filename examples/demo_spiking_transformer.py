@@ -1,57 +1,101 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: examples/demo_spiking_transformer.py",
-    "//": "タイトル: スパイクトランスフォーマーのデモ",
-    "//": "目的: 構築したSNNベースのTransformerモデルを実行し、学習と推論のログをワークスペースに出力する。"
-}
+# examples/demo_spiking_transformer.py
+# スパイキング・トランスフォーマーの実行とテスト
+# BP不使用のError-Driven Hebbian学習が、エポックごとにどのように収束していくか（文字化けから正しい文字列へ）を可視化します。
 
 import os
 import json
-from sara_engine.core.transformer import SpikeTransformer
+import random
+import sys
+
+# Add src directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
+from sara_engine.models.spiking_transformer_stdp import SpikingTransformer
+
+def ensure_workspace():
+    workspace_dir = os.path.join(os.path.dirname(__file__), '../workspace/spiking_transformer_logs')
+    os.makedirs(workspace_dir, exist_ok=True)
+    return workspace_dir
+
+def text_to_bytes(text: str) -> list:
+    return list(text.encode('utf-8'))
+
+def bytes_to_text(byte_list: list) -> str:
+    try:
+        clean_bytes = [b for b in byte_list if 0 < b <= 255]
+        return bytes(clean_bytes).decode('utf-8', errors='replace')
+    except Exception:
+        return ""
 
 def main():
-    print("Starting Spiking Transformer Demo...")
+    workspace_dir = ensure_workspace()
+    log_file = os.path.join(workspace_dir, 'training_log.json')
     
-    # 1. Setup workspace for logs
-    workspace_dir = os.path.join(os.getcwd(), "workspace", "logs")
-    os.makedirs(workspace_dir, exist_ok=True)
-    log_file_path = os.path.join(workspace_dir, "spiking_transformer_log.json")
+    print("Initializing Error-Driven Spiking Transformer...")
+    vocab_size = 256
+    seq_len = 32
+    d_model = 32  # 表現力を高めるために拡張
+    d_ff = 64
+    num_layers = 2
+    simulation_steps = 15
     
-    # 2. Initialize Model (d_model=128, 2 layers, 4 heads)
-    vocab_size = 10000
-    model = SpikeTransformer(vocab_size=vocab_size, d_model=128, num_layers=2, num_heads=4)
+    model = SpikingTransformer(
+        vocab_size=vocab_size, 
+        seq_len=seq_len, 
+        d_model=d_model, 
+        d_ff=d_ff, 
+        num_layers=num_layers
+    )
     
-    # Simulate a multi-lingual sentence mapped to token IDs
-    # e.g., "こんにちは" (JP), "Hello" (EN), "World" (EN)
-    sample_sentence_ids = [4021, 150, 892] 
+    training_data = [
+        "Hello, Spiking World!",
+        "こんにちは、SNNの世界。",
+        "Rust and Python SARA.",
+        "Energy efficient design."
+    ]
     
-    logs = {
-        "event": "Spike Transformer Execution",
-        "parameters": {
-            "d_model": 128,
-            "num_layers": 2,
-            "num_heads": 4
-        },
-        "results": []
-    }
-
-    # 3. Forward Pass (Learning Mode)
-    print(f"Processing sequence: {sample_sentence_ids} (Learning=True)")
-    outputs_learn = model.compute(sample_sentence_ids, learning=True)
+    logs = []
     
-    for pos, spikes in enumerate(outputs_learn):
-        logs["results"].append({
-            "step": pos,
-            "token_id": sample_sentence_ids[pos],
-            "active_neurons_count": len(spikes),
-            "sample_spikes": spikes[:10]  # Only log first 10 for readability
-        })
-        print(f" Step {pos}: Token {sample_sentence_ids[pos]} -> {len(spikes)} active neurons.")
+    print("Starting Error-Driven Hebbian & STDP Learning Process...")
+    epochs = 15
+    for epoch in range(epochs):
+        # To show learning curve clearly, we keep the order fixed in this demo
+        epoch_log = {"epoch": epoch + 1, "samples": []}
         
-    # 4. Save results to workspace
-    with open(log_file_path, "w", encoding="utf-8") as f:
-        json.dump(logs, f, indent=4, ensure_ascii=False)
+        print(f"\n--- Epoch {epoch + 1:2d} ---")
+        for text in training_data:
+            tokens = text_to_bytes(text)
+            target_tokens = tokens[1:] + [0]
+            
+            # Forward pass inherently triggers STDP and Error-Driven local learning
+            predicted_tokens = model(tokens, target_tokens=target_tokens, simulation_steps=simulation_steps)
+            
+            output_text = bytes_to_text(predicted_tokens)
+            target_text = bytes_to_text(target_tokens)
+            
+            sample_log = {
+                "input": text,
+                "input_bytes": tokens,
+                "predicted_bytes": predicted_tokens,
+                "predicted_text": output_text
+            }
+            epoch_log["samples"].append(sample_log)
+            
+            # 予測結果が正解に近づいているか視覚的に確認
+            print(f"In:  '{text}'\nOut: '{output_text}'")
+            
+        logs.append(epoch_log)
         
-    print(f"Demo completed. Logs saved to: {log_file_path}")
+    with open(log_file, 'w', encoding='utf-8') as f:
+        json.dump(logs, f, indent=2, ensure_ascii=False)
+        
+    attn_weights = model.layers[0].attention.attn_weights
+    attn_log_file = os.path.join(workspace_dir, 'attention_weights.json')
+    with open(attn_log_file, 'w', encoding='utf-8') as f:
+        json.dump(attn_weights, f, indent=2)
+        
+    print(f"\nTraining logs saved to {log_file}")
+    print("Spiking Transformer simulation completed successfully without BP/Matrices.")
 
 if __name__ == "__main__":
     main()
