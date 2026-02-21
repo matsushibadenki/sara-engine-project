@@ -33,7 +33,10 @@ def main():
     
     print("Initializing Error-Driven Spiking Transformer...")
     vocab_size = 256
-    seq_len = 32
+    # 修正: seq_len を 64 に拡張
+    # 理由: 日本語UTF-8バイト列が33バイトで旧seq_len=32を超えていた
+    #       'こんにちは、SNNの世界。' = 33バイト → 末尾が切り捨てられ '。' が文字化けしていた
+    seq_len = 64
     d_model = 32  # 表現力を高めるために拡張
     d_ff = 64
     num_layers = 2
@@ -65,11 +68,23 @@ def main():
         print(f"\n--- Epoch {epoch + 1:2d} ---")
         for text in training_data:
             tokens = text_to_bytes(text)
-            target_tokens = tokens[1:] + [0]
+            # 修正: target = tokens のコピー（autoencoder = 入力の再生）
+            # 旧: target_tokens = tokens[1:] + [0]  ← next-token prediction
+            #     これは位置iの発火で tokens[i+1] を学習するため 1文字シフトが発生していた
+            # 新: target_tokens = list(tokens)  ← 入力をそのまま再生するよう学習
+            target_tokens = list(tokens)
             
             # Forward pass inherently triggers STDP and Error-Driven local learning
-            predicted_tokens = model(tokens, target_tokens=target_tokens, simulation_steps=simulation_steps)
-            
+            # 修正: return_input_len=True で入力長を取得し末尾ゴミを除去
+            result = model(tokens, target_tokens=target_tokens, simulation_steps=simulation_steps, return_input_len=True)
+            if isinstance(result, tuple):
+                predicted_tokens, input_len = result
+            else:
+                predicted_tokens = result
+                input_len = len(tokens)
+            # 末尾のPADスロット出力を除去
+            predicted_tokens = predicted_tokens[:input_len]
+
             output_text = bytes_to_text(predicted_tokens)
             target_text = bytes_to_text(target_tokens)
             
@@ -85,6 +100,8 @@ def main():
             print(f"In:  '{text}'\nOut: '{output_text}'")
             
         logs.append(epoch_log)
+        # エポック終了時に一括正規化（trainable=True の場合のみ有効）
+        model.flush_normalize()
         
     with open(log_file, 'w', encoding='utf-8') as f:
         json.dump(logs, f, indent=2, ensure_ascii=False)
