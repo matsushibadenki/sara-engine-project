@@ -1,6 +1,6 @@
 # ディレクトリパス: src/sara_engine/core/transformer.py
-# タイトル: スパイクトランスフォーマーモデル (バックグラウンド活性・恒常性強化版)
-# 目的: 信号消失時に微弱なノイズを混入させて沈黙を打破し、シナプス・スケーリングで活性を維持する。
+# タイトル: スパイクトランスフォーマーモデル (時間的文脈維持・予測強化版)
+# 目的: シーケンス処理中にコンテキストをリセットせず、トークン間の時間的依存関係を学習可能にする。
 
 import random
 from typing import List, Dict
@@ -61,7 +61,7 @@ class SpikePositionwiseFFN:
         self.h_thresholds = [1.0] * d_ff
         self.o_thresholds = [1.0] * d_model
         
-        self.target_weight_sum = 2.0 # シナプス・スケーリングの目標値
+        self.target_weight_sum = 2.0 
 
     def _init_sparse_weights(self, weights: List[Dict[int, float]], in_size: int, out_size: int, density: float):
         rng = random.Random(42)
@@ -72,7 +72,6 @@ class SpikePositionwiseFFN:
                 weights[i][t] = random.uniform(0.1, 0.5)
 
     def _apply_scaling(self, weights: List[Dict[int, float]], active_inputs: List[int]):
-        """発火した入力に対してシナプス重みの総和を調整する（恒常性）"""
         for s in active_inputs:
             if not weights[s]: continue
             current_sum = sum(weights[s].values())
@@ -88,9 +87,8 @@ class SpikePositionwiseFFN:
                 active_candidates.append((i, p))
         
         if not active_candidates:
-            # 信号が途絶えた場合、閾値を大幅に下げて次回の感度を確保
             for i in range(len(thresholds)):
-                thresholds[i] = max(0.05, thresholds[i] * 0.8)
+                thresholds[i] = max(0.05, thresholds[i] * 0.9)
             return []
 
         active_candidates.sort(key=lambda x: x[1], reverse=True)
@@ -98,14 +96,13 @@ class SpikePositionwiseFFN:
 
         for i in range(len(thresholds)):
             if i in firing:
-                thresholds[i] = min(5.0, thresholds[i] + 0.1)
+                thresholds[i] = min(5.0, thresholds[i] + 0.05)
             else:
-                thresholds[i] = max(0.05, thresholds[i] - 0.01)
+                thresholds[i] = max(0.1, thresholds[i] - 0.005)
         
         return firing
 
     def forward(self, spikes: List[int], learning: bool = True) -> List[int]:
-        # 沈黙打破: 入力が空でも微弱なランダムスパイクを注入して活性を維持する
         if not spikes and learning:
             spikes = random.sample(range(self.d_model), 2)
 
@@ -122,9 +119,9 @@ class SpikePositionwiseFFN:
         out_spikes = self._wta_adaptive(out_potentials, self.o_thresholds, self.out_active)
 
         if learning:
-            ltd_rate = 0.0002
-            ltp_rate = 0.015
-            min_weight = 0.05
+            ltd_rate = 0.0001
+            ltp_rate = 0.02
+            min_weight = 0.01
 
             for s in spikes:
                 for t, w in self.W1[s].items():
@@ -146,16 +143,18 @@ class SpikePositionwiseFFN:
 
 class SpikeTransformerBlock:
     def __init__(self, d_model: int, num_heads: int, ffn_hidden: int):
-        self.attention = SpikingSelfAttention(sdr_size=d_model, num_heads=num_heads, decay_rate=0.8)
-        self.norm1 = SpikeHomeostaticNorm(size=d_model, target_sparsity=0.1)
-        self.ffn = SpikePositionwiseFFN(d_model, ffn_hidden, target_sparsity=0.1)
-        self.norm2 = SpikeHomeostaticNorm(size=d_model, target_sparsity=0.1)
+        self.attention = SpikingSelfAttention(sdr_size=d_model, num_heads=num_heads, decay_rate=0.7)
+        self.norm1 = SpikeHomeostaticNorm(size=d_model, target_sparsity=0.15)
+        self.ffn = SpikePositionwiseFFN(d_model, ffn_hidden, target_sparsity=0.15)
+        self.norm2 = SpikeHomeostaticNorm(size=d_model, target_sparsity=0.15)
         
     def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
+        # Attention
         attn_out = self.attention.forward(x_spikes)
         x_post_attn = sorted(list(set(x_spikes).union(set(attn_out))))
         x_post_attn = self.norm1.normalize(x_post_attn)
         
+        # FFN
         ffn_out = self.ffn.forward(x_post_attn, learning=learning)
         output = sorted(list(set(x_post_attn).union(set(ffn_out))))
         output = self.norm2.normalize(output)
@@ -163,35 +162,68 @@ class SpikeTransformerBlock:
         return output
 
 class SpikeTransformer:
-    def __init__(self, vocab_size: int, d_model: int = 256, num_layers: int = 2, num_heads: int = 4):
+    def __init__(self, vocab_size: int, d_model: int = 128, num_layers: int = 2, num_heads: int = 4):
+        self.vocab_size = vocab_size
         self.d_model = d_model
-        self.pe = SpikePositionalEncoding(d_model, density=0.15)
+        self.pe = SpikePositionalEncoding(d_model, density=0.1)
         self.blocks = [SpikeTransformerBlock(d_model, num_heads, d_model * 2) for _ in range(num_layers)]
         self.embedding_table: Dict[int, List[int]] = {}
-        
+        # 出力デコード用：SDRスパイクパターンからトークンIDへのマッピングを動的に学習
+        self.readout_map: Dict[int, int] = {} 
+
     def _get_embedding(self, token_id: int) -> List[int]:
         if token_id not in self.embedding_table:
-            num_active = max(5, int(self.d_model * 0.1))
+            num_active = max(8, int(self.d_model * 0.12))
             local_rng = random.Random(token_id * 777)
             self.embedding_table[token_id] = sorted(local_rng.sample(range(self.d_model), num_active))
         return self.embedding_table[token_id]
 
     def reset_context(self):
+        """シーケンスの開始時に呼び出す"""
         for block in self.blocks:
             block.attention.reset()
 
-    def compute(self, token_ids: List[int], learning: bool = True) -> List[List[int]]:
+    def _decode_spikes(self, spikes: List[int]) -> int:
+        """最も多く一致する埋め込みを持つトークンIDを返す（簡易Readout）"""
+        if not spikes: return 0
+        best_token = 0
+        max_overlap = -1
+        
+        # 効率化のため、既存のembedding_tableから最近傍を検索
+        for token_id, emb in self.embedding_table.items():
+            overlap = len(set(spikes).intersection(set(emb)))
+            if overlap > max_overlap:
+                max_overlap = overlap
+                best_token = token_id
+        return best_token
+
+    def compute(self, token_ids: List[int], learning: bool = True) -> List[int]:
+        """
+        入力トークン列を受け取り、予測された次のトークン列を返す。
+        compute内ではreset_contextを行わず、シーケンス全体で状態を維持する。
+        """
+        # シーケンスの最初でリセット
         self.reset_context()
-        outputs = []
+        
+        predicted_tokens = []
         
         for pos, token in enumerate(token_ids):
             emb = self._get_embedding(token)
             pe = self.pe.get_pe(pos)
             x = sorted(list(set(emb).union(set(pe))))
             
+            # 各レイヤーを通過
             for block in self.blocks:
                 x = block.forward(x, learning=learning)
             
-            outputs.append(x)
+            # 最終的なスパイク状態からトークンを予測
+            pred_token = self._decode_spikes(x)
+            predicted_tokens.append(pred_token)
             
-        return outputs
+        return predicted_tokens
+
+    def __call__(self, tokens: List[int], target_tokens: List[int] = None, simulation_steps: int = 1) -> List[int]:
+        """demo_spiking_transformer.py からの呼び出し用インターフェース"""
+        # 学習モードの判定
+        is_learning = target_tokens is not None
+        return self.compute(tokens, learning=is_learning)
