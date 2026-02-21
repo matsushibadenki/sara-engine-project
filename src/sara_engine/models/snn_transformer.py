@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/snn_transformer.py",
     "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル",
-    "//": "ファイルの目的や内容: 高次元SDRリザバーとEOS(生成終了)マーカーを導入し、完全な文脈維持と自然な生成停止を実現した自己回帰モデル。"
+    "//": "ファイルの目的や内容: Rust拡張を活用した超高速なリードアウト層学習と、完全な自己回帰生成を実現。"
 }
 
 import json
@@ -68,6 +68,7 @@ class SpikingTransformerModel:
         self.config = config
         self.context_length = 32
         self.reservoir_size = 4096
+        self.total_readout_size = self.reservoir_size + config.embed_dim
         
         # SDRマッピング
         self.sdr_map = {}
@@ -78,11 +79,20 @@ class SpikingTransformerModel:
         random.seed()
         
         self.layers = [SNNTransformerBlock(config) for _ in range(config.num_layers)]
-        
-        self.total_readout_size = self.reservoir_size + config.embed_dim
-        self.readout_synapses: List[Dict[int, float]] = [{} for _ in range(self.total_readout_size)]
-        
         self.delay_buffer: List[int] = []
+
+        # Rust拡張を利用した高速なReadout Layerの初期化
+        try:
+            from sara_engine import sara_rust_core
+            self.rust_readout = sara_rust_core.RustReadoutLayer(self.total_readout_size, config.vocab_size)
+            self.use_rust = True
+            print("Successfully initialized RustReadoutLayer for ultra-fast learning.")
+        except ImportError:
+            self.rust_readout = None
+            self.use_rust = False
+            self.readout_synapses: List[Dict[int, float]] = [{} for _ in range(self.total_readout_size)]
+            print("Warning: Rust extension not found. Using slow Python fallback.")
+
         print(f"Initialized SpikingTransformerModel with config: {config.to_dict()}")
 
     def reset_state(self):
@@ -109,32 +119,36 @@ class SpikingTransformerModel:
             
         combined_spikes = res_spikes + [s + self.reservoir_size for s in block_spikes]
         
-        out_potentials = [0.0] * self.config.vocab_size
-        for s in combined_spikes:
-            if s < self.total_readout_size:
-                for v_idx, w in self.readout_synapses[s].items():
-                    out_potentials[v_idx] += w
-                    
-        if max(out_potentials) > 0.1:
-            predicted_id = out_potentials.index(max(out_potentials))
+        # 学習と推論をRustへ移譲（高速化の要）
+        if self.use_rust:
+            predicted_id = self.rust_readout.forward_and_learn(combined_spikes, learning, target_id)
         else:
-            predicted_id = 32
-
-        if learning and target_id is not None:
+            # Pythonフォールバック
+            out_potentials = [0.0] * self.config.vocab_size
             for s in combined_spikes:
                 if s < self.total_readout_size:
-                    current_w = self.readout_synapses[s].get(target_id, 0.0)
-                    self.readout_synapses[s][target_id] = min(15.0, current_w + 1.5)
-                    
-                    if predicted_id != target_id and predicted_id in self.readout_synapses[s]:
-                        self.readout_synapses[s][predicted_id] -= 0.1
-                        if self.readout_synapses[s][predicted_id] <= 0:
-                            del self.readout_synapses[s][predicted_id]
+                    for v_idx, w in self.readout_synapses[s].items():
+                        out_potentials[v_idx] += w
+                        
+            if max(out_potentials) > 0.1:
+                predicted_id = out_potentials.index(max(out_potentials))
+            else:
+                predicted_id = 32
+
+            if learning and target_id is not None:
+                for s in combined_spikes:
+                    if s < self.total_readout_size:
+                        current_w = self.readout_synapses[s].get(target_id, 0.0)
+                        self.readout_synapses[s][target_id] = min(15.0, current_w + 1.5)
+                        
+                        if predicted_id != target_id and predicted_id in self.readout_synapses[s]:
+                            self.readout_synapses[s][predicted_id] -= 0.1
+                            if self.readout_synapses[s][predicted_id] <= 0:
+                                del self.readout_synapses[s][predicted_id]
 
         return predicted_id
 
     def learn_sequence(self, text: str):
-        # 修正: 文の終端に EOS (End Of Sequence) として NULLバイト (0) を付与
         input_bytes = list(text.encode('utf-8')) + [0]
         self.reset_state()
         for i in range(len(input_bytes) - 1):
@@ -152,7 +166,6 @@ class SpikingTransformerModel:
         current_token = last_pred
         
         for _ in range(max_length):
-            # 修正: 予測されたトークンが EOS (0) だった場合、そこで生成を美しく終了する
             if current_token == 0:
                 break
                 
@@ -167,7 +180,16 @@ class SpikingTransformerModel:
         config_path = os.path.join(save_directory, "config.json")
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(self.config.to_dict(), f, indent=4)
-        print(f"Model config saved to {save_directory}")
+            
+        weights_path = os.path.join(save_directory, "readout_synapses.json")
+        with open(weights_path, "w", encoding="utf-8") as f:
+            if self.use_rust:
+                synapses = self.rust_readout.get_synapses()
+            else:
+                synapses = self.readout_synapses
+            json.dump(synapses, f)
+            
+        print(f"Model config and synapses successfully saved to {save_directory}")
 
     @classmethod
     def from_pretrained(cls, save_directory: str):
@@ -179,4 +201,22 @@ class SpikingTransformerModel:
             config_dict = json.load(f)
             
         config = SNNTransformerConfig.from_dict(config_dict)
-        return cls(config)
+        model = cls(config)
+        
+        weights_path = os.path.join(save_directory, "readout_synapses.json")
+        if os.path.exists(weights_path):
+            with open(weights_path, "r", encoding="utf-8") as f:
+                loaded_synapses = json.load(f)
+                converted_synapses = [
+                    {int(k): float(v) for k, v in neuron_dict.items()} 
+                    for neuron_dict in loaded_synapses
+                ]
+                if model.use_rust:
+                    model.rust_readout.set_synapses(converted_synapses)
+                else:
+                    model.readout_synapses = converted_synapses
+            print(f"Loaded trained synapses from {weights_path}")
+        else:
+            print("Warning: Synapses file not found. Initialized with empty synapses.")
+            
+        return model

@@ -47,8 +47,9 @@ Run these Python scripts to see the engine in action. All scripts are located in
 | **Interactive SNN** | python examples/interactive\_snn.py |
 | **Visualize STDP** | python examples/visualize\_stdp.py |
 | **SNN transformer** | python examples/demo\_snn\_transformer.py |
+| **Stream Learning** | python examples/demo\_stream\_learning.py |
 
-
+  
 *(Note: examples/utils.py is a utility module for the examples and is not meant to be run directly as a standalone demo.)*
 
 ### **3\. Utilities & Diagnostics**
