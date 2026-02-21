@@ -1,85 +1,102 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/spike_attention.py",
-    "//": "タイトル: スパイク自己注意機構 (Rustバックエンド対応)",
-    "//": "目的: Rust拡張モジュールを正しいパスからインポートし、スパイク伝播処理をオフロードして高速化する。"
+    "//": "ファイルの日本語タイトル: 生体模倣型 スパイキング・アテンション",
+    "//": "ファイルの目的や内容: STDPと短期記憶トレースを用い、行列演算を完全に排除したイベント駆動アテンション機構の実装。"
 }
 
 import random
 from typing import List, Dict
 
 try:
-    # インポートパスを修正: sara_engineパッケージ内から呼び出す
     from sara_engine import sara_rust_core
     RUST_AVAILABLE = True
 except ImportError:
     RUST_AVAILABLE = False
-    print("Warning: sara_rust_core not found. Using slow Python backend for Attention.")
 
-class SpikingSelfAttention:
-    def __init__(self, sdr_size: int, num_heads: int = 4, decay_rate: float = 0.9):
-        self.sdr_size = sdr_size
-        self.num_heads = num_heads
-        self.decay_rate = decay_rate
+class SpikeSelfAttention:
+    """
+    Spike-driven Self-Attention without matrix multiplication or backpropagation.
+    Uses STDP (Spike-Timing Dependent Plasticity) traces to associate Query and Key spikes,
+    routing Value spikes accordingly.
+    """
+    def __init__(self, embed_dim: int, density: float = 0.1, use_rust: bool = True):
+        self.embed_dim = embed_dim
+        self.use_rust = use_rust and RUST_AVAILABLE
         
-        self.W_q: List[Dict[int, float]] = [{} for _ in range(sdr_size)]
-        self.W_k: List[Dict[int, float]] = [{} for _ in range(sdr_size)]
-        self.W_v: List[Dict[int, float]] = [{} for _ in range(sdr_size)]
+        # Sparse projection dictionaries: [input_neuron_idx] -> {output_neuron_idx: weight}
+        self.q_weights = self._init_sparse_weights(embed_dim, embed_dim, density)
+        self.k_weights = self._init_sparse_weights(embed_dim, embed_dim, density)
+        self.v_weights = self._init_sparse_weights(embed_dim, embed_dim, density)
+        self.o_weights = self._init_sparse_weights(embed_dim, embed_dim, density)
         
-        self._init_sparse_weights(self.W_q)
-        self._init_sparse_weights(self.W_k)
-        self._init_sparse_weights(self.W_v)
+        # Biological short-term memory traces for Keys
+        self.k_traces = [0.0] * embed_dim
+        self.trace_decay = 0.9
         
-        self.k_trace: List[float] = [0.0] * sdr_size
-        self.v_trace: List[float] = [0.0] * sdr_size
+        # Dynamic attention synapses (STDP learned routing: Query -> Value)
+        self.attn_synapses: List[Dict[int, float]] = [{} for _ in range(embed_dim)]
 
-    def _init_sparse_weights(self, weights: List[Dict[int, float]], density: float = 0.05):
-        rng = random.Random(42)
-        for i in range(self.sdr_size):
-            num_connections = max(1, int(self.sdr_size * density))
-            targets = rng.sample(range(self.sdr_size), num_connections)
+    def _init_sparse_weights(self, in_dim: int, out_dim: int, density: float) -> List[Dict[int, float]]:
+        weights = [{} for _ in range(in_dim)]
+        for i in range(in_dim):
+            num_connections = max(1, int(out_dim * density))
+            targets = random.sample(range(out_dim), num_connections)
             for t in targets:
-                weights[i][t] = random.uniform(0.1, 0.5)
+                # Initialize with random biological excitatory/inhibitory weights
+                weights[i][t] = random.uniform(-1.0, 1.0)
+        return weights
 
-    def reset(self):
-        self.k_trace = [0.0] * self.sdr_size
-        self.v_trace = [0.0] * self.sdr_size
-
-    def _propagate(self, active_inputs: List[int], weights: List[Dict[int, float]]) -> List[int]:
-        if RUST_AVAILABLE:
-            return sara_rust_core.sparse_propagate_threshold(active_inputs, weights, self.sdr_size, 1.0)
+    def _sparse_propagate(self, active_spikes: List[int], weights: List[Dict[int, float]], out_size: int, threshold: float = 0.5) -> List[int]:
+        if self.use_rust:
+            # Call high-speed Rust core if available
+            return sara_rust_core.sparse_propagate_threshold(active_spikes, weights, out_size, threshold)
             
-        potentials = [0.0] * self.sdr_size
-        for pre_id in active_inputs:
-            for post_id, w in weights[pre_id].items():
-                potentials[post_id] += w
-        
-        return [i for i, p in enumerate(potentials) if p > 1.0]
+        # Pure Python fallback
+        potentials = [0.0] * out_size
+        for s in active_spikes:
+            if s < len(weights):
+                for t, w in weights[s].items():
+                    if t < out_size:
+                        potentials[t] += w
+                        
+        return [i for i, p in enumerate(potentials) if p > threshold]
 
-    def forward(self, current_spikes: List[int]) -> List[int]:
-        q_spikes = self._propagate(current_spikes, self.W_q)
-        k_spikes = self._propagate(current_spikes, self.W_k)
-        v_spikes = self._propagate(current_spikes, self.W_v)
-        
-        for i in range(self.sdr_size):
-            self.k_trace[i] *= self.decay_rate
-            self.v_trace[i] *= self.decay_rate
-            
+    def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
+        """Processes a single time-step of spikes."""
+        # 1. Project to Q, K, V spaces
+        q_spikes = self._sparse_propagate(x_spikes, self.q_weights, self.embed_dim, threshold=0.5)
+        k_spikes = self._sparse_propagate(x_spikes, self.k_weights, self.embed_dim, threshold=0.5)
+        v_spikes = self._sparse_propagate(x_spikes, self.v_weights, self.embed_dim, threshold=0.5)
+
+        # 2. Decay previous Key traces
+        for i in range(self.embed_dim):
+            self.k_traces[i] *= self.trace_decay
+
+        # 3. Update Key traces with new spikes
         for k in k_spikes:
-            self.k_trace[k] += 1.0
-        for v in v_spikes:
-            self.v_trace[v] += 1.0
+            self.k_traces[k] = 1.0
+
+        out_potentials = [0.0] * self.embed_dim
+
+        # 4. Spike-driven Attention & STDP Learning
+        for q in q_spikes:
+            if learning:
+                # STDP: Co-occurrence of Q spike and recent K trace strengthens their association
+                for k in range(self.embed_dim):
+                    if self.k_traces[k] > 0.1:
+                        # Biological Hebbian update
+                        self.attn_synapses[q][k] = self.attn_synapses[q].get(k, 0.0) + 0.1 * self.k_traces[k]
+                        if self.attn_synapses[q][k] > 2.0:
+                            self.attn_synapses[q][k] = 2.0
             
-        overlap_score = sum(self.k_trace[q] for q in q_spikes)
+            # Route Value spikes modulated by learned Attention synapses
+            for v in v_spikes:
+                weight = self.attn_synapses[q].get(v, 0.0)
+                if weight > 0.2:
+                    out_potentials[q] += weight
+
+        attn_out_spikes = [i for i, p in enumerate(out_potentials) if p > 1.0]
         
-        output_potentials = [0.0] * self.sdr_size
-        if overlap_score > 0:
-            signal_strength = min(1.0, overlap_score / max(1.0, len(q_spikes)))
-            for i in range(self.sdr_size):
-                output_potentials[i] = self.v_trace[i] * signal_strength
-                
-        target_active = max(1, int(self.sdr_size * 0.1))
-        active_neurons = [(i, p) for i, p in enumerate(output_potentials) if p > 0.5]
-        active_neurons.sort(key=lambda x: x[1], reverse=True)
-        
-        attended_spikes = sorted([i for i, p in active_neurons[:target_active]])
-        return attended_spikes
+        # 5. Output projection
+        y_spikes = self._sparse_propagate(attn_out_spikes, self.o_weights, self.embed_dim, threshold=0.5)
+        return y_spikes
