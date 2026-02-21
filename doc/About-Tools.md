@@ -41,6 +41,14 @@ Run these Python scripts to see the engine in action.
 | **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
 | **snn_llm** (snn_llm) | python examples/demo\_snn\_llm.py |
 | **crossmodal recall ** (crossmodal recall) | python examples/demo\_crossmodal\_recall.py |
+
+| **spiking_llm** (spiking_llm) | python examples/demo_spiking_llm.py |
+| **spiking_llm_save_load** (spiking_llm_save_load) | python examples/demo\_spiking\_llm\_save\_load.py |
+| **spiking_llm_text** (spiking_llm_text) | python examples/demo\_spiking\_llm\_text.py |
+| **snn_text_generation** (snn_text_generation) | python examples/demo\_snn\_text\_generation.py |
+| **spiking_transformer** (spiking_transformer) | python examples/demo\_spiking\_transformer.py |
+| **bio_transformer** (bio_transformer) | python examples/demo\_bio\_transformer.py |
+
   
 ### **3\. Utilities & Diagnostics**
 
