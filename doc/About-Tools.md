@@ -5,7 +5,7 @@ This document describes the tools and commands used for testing and verifying th
 ## **Test Commands**
 
 The following commands are used to verify the functionality of the SARA Engine. Ensure you are in the project root directory before running these commands.
-  
+
 ### **1\. Unit Tests (pytest)**
 
 Run the full test suite or specific modules using pytest.
@@ -17,39 +17,38 @@ Run the full test suite or specific modules using pytest.
 | **SNN & STDP Tests** | pytest tests/test\_spatiotemporal\_stdp.py tests/test\_event\_driven\_snn.py |
 | **Memory & Hippocampus Tests** | pytest tests/test\_hippocampal\_system.py tests/test\_crossmodal\_association.py |
 | **New Features Tests** | pytest tests/test\_new\_features.py |
-| **Visualization Tests** | pytest tests/test\_neurofem\_visualize.py |
-| **Million Token Snn** | pytest test\_million\_token\_snn.py |
+| **Million Token SNN** | pytest tests/test\_million\_token\_snn.py |
 
 ### **2\. Demos & Examples**
 
-Run these Python scripts to see the engine in action.
+Run these Python scripts to see the engine in action. All scripts are located in the examples/ directory.
 
 | Description | Command |
 | :---- | :---- |
-| **MNIST SNN Demo** (Spiking Neural Network on MNIST) | python examples/demo\_mnist\_snn.py |
-| **RL Training Demo** (Reinforcement Learning) | python examples/demo\_rl\_training.py |
-| **Interactive SNN** (Real-time interaction) | python examples/interactive\_snn.py |
-| **Agent Chat Demo** (SARA Agent conversation) | python examples/demo\_agent\_chat.py |
-| **Multimodal Memory** (Vision & Audio association) | python examples/demo\_multimodal\_memory.py |
-| **STDP Visualization** (Visualizing weight updates) | python examples/visualize\_stdp.py |
-| **Rust Benchmark** (Performance comparison) | python examples/benchmark\_rust.py |
-| **rust snn** (no numpy) | python examples/demo_rust\_snn\_no\_numpy.py |
-| **snn learning** (snn learning) | python examples/demo\_snn\_learning.py |
-| **interactive demo** (interactive demo) | python examples/interactive\_demo.py |
-| **knowledge recall** (knowledge recall) | python examples/test\_knowledge\_recall.py |
-| **utils** (utils) | python examples/utils.py |
-| **Fashion-MNIST** (Fashion-MNIST) | python examples/demo_advanced_snn.py |
-| **snn_llm** (snn_llm) | python examples/demo\_snn\_llm.py |
-| **crossmodal recall ** (crossmodal recall) | python examples/demo\_crossmodal\_recall.py |
+| **MNIST SNN Demo** | python examples/demo\_mnist\_snn.py |
+| **Fashion-MNIST SNN** | python examples/demo\_advanced\_snn.py |
+| **RL Training Demo** | python examples/demo\_rl\_training.py |
+| **SNN Learning** | python examples/demo\_snn\_learning.py |
+| **Rust SNN (No Numpy)** | python examples/demo\_rust\_snn\_no\_numpy.py |
+| **Benchmark Rust** | python examples/benchmark\_rust.py |
+| **SNN LLM** | python examples/demo\_snn\_llm.py |
+| **SNN Text Generation** | python examples/demo\_snn\_text\_generation.py |
+| **Spiking LLM** | python examples/demo\_spiking\_llm.py |
+| **Spiking LLM Save/Load** | python examples/demo\_spiking\_llm\_save\_load.py |
+| **Spiking LLM Text** | python examples/demo\_spiking\_llm\_text.py |
+| **Spiking Transformer** | python examples/demo\_spiking\_transformer.py |
+| **Bio Transformer** (STDP Self-Attention) | python examples/demo\_bio\_transformer.py |
+| **Agent Chat** | python examples/demo\_agent\_chat.py |
+| **Million Token Agent** | python examples/demo\_million\_token\_agent.py |
+| **Crossmodal Recall** | python examples/demo\_crossmodal\_recall.py |
+| **Multimodal Memory** | python examples/demo\_multimodal\_memory.py |
+| **Knowledge Recall** | python examples/test\_knowledge\_recall.py |
+| **Interactive Demo** | python examples/interactive\_demo.py |
+| **Interactive SNN** | python examples/interactive\_snn.py |
+| **Visualize STDP** | python examples/visualize\_stdp.py |
 
-| **spiking_llm** (spiking_llm) | python examples/demo_spiking_llm.py |
-| **spiking_llm_save_load** (spiking_llm_save_load) | python examples/demo\_spiking\_llm\_save\_load.py |
-| **spiking_llm_text** (spiking_llm_text) | python examples/demo\_spiking\_llm\_text.py |
-| **snn_text_generation** (snn_text_generation) | python examples/demo\_snn\_text\_generation.py |
-| **spiking_transformer** (spiking_transformer) | python examples/demo\_spiking\_transformer.py |
-| **bio_transformer** (bio_transformer) | python examples/demo\_bio\_transformer.py |
+*(Note: examples/utils.py is a utility module for the examples and is not meant to be run directly as a standalone demo.)*
 
-  
 ### **3\. Utilities & Diagnostics**
 
 | Description | Command |
@@ -60,12 +59,5 @@ Run these Python scripts to see the engine in action.
 
 Ensure your environment is set up correctly before running tests:
 
-1. **Install Dependencies:**  
-   pip install \-r requirements.txt
-
-2. **Build Rust Extension (if modified):**  
-   maturin develop \--release
-
-3. **Check Python Path:**  
-   Ensure the project root is in your PYTHONPATH if you encounter import errors (though the package structure usually handles this).  
-   export PYTHONPATH=$PYTHONPATH:.  
+1. **Install Dependencies:** pip install \-e . (or use requirements if specified)  
+2. **Rust Compilation (if using Rust core):** Ensure the sara\_rust\_core library is compiled and available in src/sara\_engine/.
