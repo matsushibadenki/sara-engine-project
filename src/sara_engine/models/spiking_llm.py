@@ -2,12 +2,12 @@
 """
 {
     "title": "スパイキング・大規模言語モデルブロック（多層・STDP対応）",
-    "description": "誤差逆伝播法と行列演算を排除し、純粋なPython実装による多層SNN Transformerブロック。各層の結合重みは、発火タイミングに依存する局所的なシナプス可塑性（STDP）により教師なしで学習・更新されます。"
+    "description": "誤差逆伝播法と行列演算を排除し、純粋なPython実装による多層SNN Transformerおよび言語モデル。generateメソッドの引数（prompt_tokens, max_new_tokens）をデモスクリプトに適合するよう柔軟に修正し、系列からの生成に対応しました。"
 }
 """
 import math
 import random
-from src.sara_engine.core.spike_attention import SpikingSelfAttention
+from sara_engine.core.spike_attention import SpikingSelfAttention
 
 class SpikingLayerNorm:
     def __init__(self, sdr_size, base_threshold=1.0, target_active_ratio=0.05):
@@ -163,3 +163,115 @@ class MultiLayerSpikingTransformer:
         for layer_idx, layer in enumerate(self.layers):
             current_spikes = layer.forward(current_spikes, t_step=t_step)
         return current_spikes
+
+
+class SpikingLLM:
+    def __init__(self, num_layers=2, sdr_size=128, vocab_size=10000, enable_learning=True, **kwargs):
+        """
+        行列演算を排除した、SDRベースの純粋なPython実装による大規模言語モデルのラッパー。
+        """
+        self.sdr_size = kwargs.get('d_model', sdr_size)
+        self.vocab_size = vocab_size
+        self.enable_learning = enable_learning
+        
+        # トランスフォーマーコア
+        self.transformer = MultiLayerSpikingTransformer(num_layers, self.sdr_size, enable_learning)
+        
+        # Readout層（LM Head）: 隠れ層のSDR（スパイク）から語彙次元へのスパース結合
+        self.lm_head_w = [{} for _ in range(self.sdr_size)]
+        self._init_lm_head_weights(density=0.1)
+
+    def _init_lm_head_weights(self, density):
+        for i in range(self.sdr_size):
+            num_connections = max(1, int(self.vocab_size * density))
+            sample_size = min(num_connections, self.vocab_size)
+            targets = random.sample(range(self.vocab_size), sample_size)
+            for t in targets:
+                self.lm_head_w[i][t] = random.uniform(0.1, 0.8)
+
+    def forward(self, input_spikes, t_step=0):
+        # 1. ネットワーク本体（Transformer層）の順伝播処理
+        hidden_spikes = self.transformer.forward(input_spikes, t_step=t_step)
+        
+        # 2. LM Head (語彙サイズへのマッピング)
+        vocab_potentials = [0.0] * self.vocab_size
+        for pre_id in hidden_spikes:
+            if pre_id < len(self.lm_head_w):
+                for post_id, w in self.lm_head_w[pre_id].items():
+                    vocab_potentials[post_id] += w
+                    
+        return vocab_potentials
+
+    def learn_sequence(self, token_ids):
+        """
+        デモスクリプトからの呼び出しに対応。
+        時系列のトークンIDリストを受け取り、局所的なヘッブ則を用いて次トークン予測の学習を行います。
+        """
+        if not self.enable_learning or len(token_ids) < 2:
+            return
+
+        for t in range(len(token_ids) - 1):
+            current_token = token_ids[t]
+            next_token = token_ids[t + 1]
+
+            # 入力スパイク化 (generate時と同じ簡易エンコーディング)
+            input_spikes = [current_token % self.sdr_size]
+
+            # Transformerの順伝播と内部層（STDP）の駆動
+            hidden_spikes = self.transformer.forward(input_spikes, t_step=t)
+
+            # LM Headの局所的ヘッブ則（Hebbian Learning）による重み更新
+            for pre_id in hidden_spikes:
+                if pre_id < len(self.lm_head_w):
+                    # 結合が存在しなければ初期化
+                    if next_token not in self.lm_head_w[pre_id]:
+                        self.lm_head_w[pre_id][next_token] = 0.1
+                    
+                    # LTP (Long-Term Potentiation): 正解への結合を強化
+                    self.lm_head_w[pre_id][next_token] += 0.05
+                    self.lm_head_w[pre_id][next_token] = min(1.0, self.lm_head_w[pre_id][next_token])
+                    
+                    # LTD (Long-Term Depression): 同じプレニューロンからの他の結合を僅かに減衰
+                    for post_id in list(self.lm_head_w[pre_id].keys()):
+                        if post_id != next_token:
+                            self.lm_head_w[pre_id][post_id] -= 0.005
+                            self.lm_head_w[pre_id][post_id] = max(0.0, self.lm_head_w[pre_id][post_id])
+
+    def generate(self, prompt_tokens=None, max_new_tokens=5, threshold=0.1, **kwargs):
+        """
+        デモなどの利用に向けた推論・生成インターフェース。
+        勝者総取り（Winner-takes-all）方式で最大ポテンシャルをトークンとして扱います。
+        """
+        # 後方互換性と引数名の揺れ（input_spikes, max_length等）を吸収
+        if prompt_tokens is None:
+            prompt_tokens = kwargs.get('input_spikes', [])
+        
+        # max_lengthが指定された場合はmax_new_tokensを上書き
+        max_new_tokens = kwargs.get('max_length', max_new_tokens)
+
+        generated_sequence = []
+        
+        if not prompt_tokens:
+            return generated_sequence
+
+        # プロンプトの最後のトークンを初期入力とする
+        current_token = prompt_tokens[-1]
+        current_spikes = [current_token % self.sdr_size]
+        
+        for t in range(max_new_tokens):
+            vocab_potentials = self.forward(current_spikes, t_step=t)
+            
+            if not vocab_potentials:
+                break
+                
+            max_potential = max(vocab_potentials)
+            if max_potential < threshold:
+                break
+                
+            best_vocab_id = vocab_potentials.index(max_potential)
+            generated_sequence.append(best_vocab_id)
+            
+            # 次のステップのための擬似的なエンコーディング
+            current_spikes = [best_vocab_id % self.sdr_size]
+            
+        return generated_sequence

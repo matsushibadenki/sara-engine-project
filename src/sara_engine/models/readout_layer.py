@@ -1,176 +1,69 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/readout_layer.py",
-    "//": "タイトル: Adam最適化機能付き読み出し層 (時空間・永続化対応版)",
-    "//": "目的: 時間と空間の特徴を分離して受け取り、学習済みモデルの重みと状態をJSONで高速に保存・復元できるようにする。"
+    "//": "タイトル: スパイク読み出し層 (強LTD付き)",
+    "//": "目的: 頻出トークンによる予測のハイジャックを防ぐため、誤予測時のペナルティを大幅に強化する。"
 }
 
-import math
 import random
-import json
-from typing import List, Dict
+from typing import List, Dict, Optional
 
-class ReadoutLayer:
-    def __init__(self, input_size: int, output_size: int, learning_rate: float = 0.002):
-        self.input_size = input_size
-        self.output_size = output_size
-        self.lr = learning_rate
-        self.t = 0
+class SpikeReadoutLayer:
+    def __init__(self, d_model: int, vocab_size: int, learning_rate: float = 0.05):
+        self.d_model = d_model
+        self.vocab_size = vocab_size
+        self.learning_rate = learning_rate
         
-        self.beta1 = 0.90
-        self.beta2 = 0.999
-        self.epsilon = 1e-8
+        self.W: List[Dict[int, float]] = [{} for _ in range(d_model)]
         
-        self.weights: List[Dict[int, float]] = [{} for _ in range(output_size)]
-        self.m: List[Dict[int, float]] = [{} for _ in range(output_size)]
-        self.v: List[Dict[int, float]] = [{} for _ in range(output_size)]
-        
-        limit = math.sqrt(3.0 / max(1, input_size))
-        for o in range(output_size):
-            n_init = int(input_size * 0.15)
-            for i in random.sample(range(input_size), n_init):
-                self.weights[o][i] = random.uniform(-limit, limit)
-                self.m[o][i] = 0.0
-                self.v[o][i] = 0.0
+        self.refractory_states: Dict[int, int] = {}
+        self.refractory_duration = 2
 
-    def predict(self, active_hidden_indices: List[int]) -> List[float]:
-        potentials = [0.0] * self.output_size
-        if not active_hidden_indices:
-            return potentials
+    def forward(self, spikes: List[int], target_token: Optional[int] = None, learning: bool = True) -> int:
+        for tid in list(self.refractory_states.keys()):
+            self.refractory_states[tid] -= 1
+            if self.refractory_states[tid] <= 0:
+                del self.refractory_states[tid]
 
-        scale_factor = 10.0 / (math.sqrt(len(active_hidden_indices)) + 1.0)
-        
-        for o in range(self.output_size):
-            s = 0.0
-            w_o = self.weights[o]
-            for idx in active_hidden_indices:
-                if idx in w_o:
-                    s += w_o[idx]
-            potentials[o] = s * scale_factor
-            
-        max_p = max(potentials)
-        if max_p > -999.0:
-            mean_p = sum(potentials) / self.output_size
-            for o in range(self.output_size):
-                potentials[o] -= 0.15 * mean_p
-                if potentials[o] < -10.0: potentials[o] = -10.0
-                if potentials[o] > 10.0: potentials[o] = 10.0
+        potentials: Dict[int, float] = {}
+        for s in spikes:
+            for token_id, weight in self.W[s].items():
+                if token_id not in potentials:
+                    potentials[token_id] = 0.0
+                potentials[token_id] += weight
                 
-        return potentials
+        if not learning:
+            for tid in self.refractory_states:
+                if tid in potentials:
+                    potentials[tid] = -9999.0 
+                
+        predicted_token = 0
+        max_potential = -1.0
+        
+        if potentials:
+            for token_id, p in potentials.items():
+                if p > max_potential:
+                    max_potential = p
+                    predicted_token = token_id
+        else:
+            predicted_token = random.randint(0, self.vocab_size - 1)
+            
+        if not learning:
+            self.refractory_states[predicted_token] = self.refractory_duration
 
-    def train_step(self, active_hidden_indices: List[int], target_label: int):
-        if not active_hidden_indices:
-            return
-            
-        self.t += 1
-        current_lr = self.lr / (1.0 + 0.0002 * self.t)
-        
-        potentials = self.predict(active_hidden_indices)
-        errors = [0.0] * self.output_size
-        
-        if potentials[target_label] < 4.0:
-            errors[target_label] = 4.0 - potentials[target_label]
-            
-        for o in range(self.output_size):
-            if o != target_label and potentials[o] > -1.5:
-                errors[o] = -1.5 - potentials[o]
+        if learning and target_token is not None:
+            for s in spikes:
+                if target_token not in self.W[s]:
+                    self.W[s][target_token] = 0.01 
                 
-        for o in range(self.output_size):
-            err = errors[o]
-            if abs(err) <= 0.05:
-                continue
+                self.W[s][target_token] += self.learning_rate
                 
-            w_o = self.weights[o]
-            m_o = self.m[o]
-            v_o = self.v[o]
-            
-            for idx in active_hidden_indices:
-                if idx not in w_o:
-                    w_o[idx] = 0.0
-                    m_o[idx] = 0.0
-                    v_o[idx] = 0.0
-                
-                g = err 
-                
-                m_o[idx] = self.beta1 * m_o[idx] + (1 - self.beta1) * g
-                v_o[idx] = self.beta2 * v_o[idx] + (1 - self.beta2) * (g * g)
-                
-                m_hat = m_o[idx] / (1 - (self.beta1 ** min(self.t, 1000)))
-                v_hat = v_o[idx] / (1 - (self.beta2 ** min(self.t, 1000)))
-                
-                w_o[idx] += current_lr * m_hat / (math.sqrt(v_hat) + self.epsilon)
-                
-                if w_o[idx] < -6.0: w_o[idx] = -6.0
-                if w_o[idx] > 6.0: w_o[idx] = 6.0
-
-    def sleep_phase(self, prune_rate: float = 0.05) -> str:
-        pruned_total = 0
-        total_weights = 0
-        
-        for o in range(self.output_size):
-            w_o = self.weights[o]
-            for idx in list(w_o.keys()):
-                w_o[idx] *= 0.995
-                
-            active_weights = [abs(w) for w in w_o.values() if abs(w) > 1e-6]
-            if not active_weights:
-                continue
-                
-            active_weights.sort()
-            prune_idx = int(len(active_weights) * prune_rate)
-            threshold = active_weights[prune_idx] if prune_idx < len(active_weights) else 0.0
-            
-            keys_to_remove = []
-            sq_sum = 0.0
-            
-            for idx, w in w_o.items():
-                total_weights += 1
-                if abs(w) < threshold:
-                    keys_to_remove.append(idx)
-                    pruned_total += 1
-                else:
-                    sq_sum += w * w
+                if self.W[s][target_token] > 1.0:
+                    self.W[s][target_token] = 1.0
                     
-            for idx in keys_to_remove:
-                del w_o[idx]
-                if idx in self.m[o]: del self.m[o][idx]
-                if idx in self.v[o]: del self.v[o][idx]
-                
-            norm = math.sqrt(sq_sum)
-            target_norm = 10.0
-            if norm > 0:
-                scale = target_norm / norm
-                if scale > 2.0: scale = 2.0
-                if scale < 0.5: scale = 0.5
-                
-                for idx in w_o:
-                    w_o[idx] *= scale
-                    
-        return f"[Sleep Phase] {pruned_total}個の不要なシナプス結合を枝刈りし、スケーリングを完了しました。（全結合数: {total_weights}）"
-
-    def save_model(self, filepath: str):
-        """モデルの重みと状態をJSONファイルに保存する"""
-        data = {
-            "input_size": self.input_size,
-            "output_size": self.output_size,
-            "lr": self.lr,
-            "t": self.t,
-            "weights": [{str(k): v for k, v in w.items()} for w in self.weights],
-            "m": [{str(k): v for k, v in m_dict.items()} for m_dict in self.m],
-            "v": [{str(k): v for k, v in v_dict.items()} for v_dict in self.v]
-        }
-        with open(filepath, 'w') as f:
-            json.dump(data, f)
-        print(f"[Model] {filepath} にモデルを保存しました。")
-
-    def load_model(self, filepath: str):
-        """JSONファイルからモデルの重みと状態を読み込む"""
-        with open(filepath, 'r') as f:
-            data = json.load(f)
-        self.input_size = data["input_size"]
-        self.output_size = data["output_size"]
-        self.lr = data["lr"]
-        self.t = data["t"]
-        self.weights = [{int(k): v for k, v in w.items()} for w in data["weights"]]
-        self.m = [{int(k): v for k, v in m_dict.items()} for m_dict in data["m"]]
-        self.v = [{int(k): v for k, v in v_dict.items()} for v_dict in data["v"]]
-        print(f"[Model] {filepath} からモデルを読み込みました。")
+                # 誤予測したトークンに対して強烈なLTD(減衰)ペナルティを与える
+                if predicted_token != target_token and predicted_token in self.W[s]:
+                    self.W[s][predicted_token] -= self.learning_rate * 0.5  # 0.05から0.5に強化
+                    if self.W[s][predicted_token] <= 0.0:
+                        del self.W[s][predicted_token]
+                        
+        return predicted_token

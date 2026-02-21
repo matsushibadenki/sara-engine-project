@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/utils/tokenizer.py",
     "//": "タイトル: SARA トークナイザー",
-    "//": "目的: Janomeによる自動形態素解析（分かち書き）を導入し、自然な日本語入力に対応。未インストール時は従来動作にフォールバックする。"
+    "//": "目的: Janomeによる自動形態素解析（分かち書き）を導入し、自然な日本語入力に対応。空白の有無に依存せず常に一貫したトークン化を行うよう修正。"
 }
 
 import json
@@ -34,16 +34,14 @@ class SaraTokenizer:
         if not text:
             return []
         
-        if " " in text or "　" in text:
-            return [w for w in text.replace("　", " ").split(" ") if w]
-            
         if _HAS_JANOME:
             if self._janome_tokenizer is None:
                 self._janome_tokenizer = JanomeTokenizer()
-            # _janome_tokenizer は Any 型なので、ここでは type: ignore 不要
-            return [token.surface for token in self._janome_tokenizer.tokenize(text)]
+            # 形態素解析を行い、不要なスペースのみのトークンは除外する
+            return [token.surface for token in self._janome_tokenizer.tokenize(text) if token.surface.strip()]
         else:
-            return text.split()
+            # Janomeがない場合のフォールバック
+            return [w for w in text.replace("　", " ").split(" ") if w]
 
     def _add_token(self, token: str) -> int:
         if token not in self.vocab:
