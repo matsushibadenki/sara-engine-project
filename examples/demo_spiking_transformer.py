@@ -1,109 +1,57 @@
-# /Users/Shared/Program/python310/sara-engine-project/examples/demo_spiking_transformer.py
-# スパイキング・トランスフォーマーの実行とテスト
-# BP不使用のError-Driven Hebbian学習が、エポックごとにどのように収束していくか（文字化けから正しい文字列へ）を可視化します。
+_FILE_INFO = {
+    "path": "examples/demo_spiking_transformer.py",
+    "title": "スパイキング・トランスフォーマー・デモ",
+    "description": "SNN版Transformerブロックの動作確認とSTDPによる学習のデモンストレーション。"
+}
 
 import os
 import json
 import random
-import sys
-
-# Add src directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-
-from sara_engine.models.spiking_transformer_stdp import SpikingTransformer
-
-def ensure_workspace():
-    workspace_dir = os.path.join(os.path.dirname(__file__), '../workspace/spiking_transformer_logs')
-    os.makedirs(workspace_dir, exist_ok=True)
-    return workspace_dir
-
-def text_to_bytes(text: str) -> list:
-    return list(text.encode('utf-8'))
-
-def bytes_to_text(byte_list: list) -> str:
-    try:
-        clean_bytes = [b for b in byte_list if 0 < b <= 255]
-        return bytes(clean_bytes).decode('utf-8', errors='replace')
-    except Exception:
-        return ""
+from sara_engine.core.transformer import SpikeTransformerBlock
 
 def main():
-    workspace_dir = ensure_workspace()
-    log_file = os.path.join(workspace_dir, 'training_log.json')
+    print("Starting Spiking Transformer Demo...")
     
-    print("Initializing Error-Driven Spiking Transformer...")
-    vocab_size = 256
-    seq_len = 64
-    d_model = 32
-    d_ff = 64
-    num_layers = 2
-    simulation_steps = 15
+    # Ensure workspace directory exists for outputs (to prevent project bloating)
+    workspace_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "workspace")
+    os.makedirs(workspace_dir, exist_ok=True)
+    log_file_path = os.path.join(workspace_dir, "spiking_transformer_log.json")
     
-    # 修正: trainable=True を指定し、学習プロセスを有効化
-    model = SpikingTransformer(
-        vocab_size=vocab_size, 
-        seq_len=seq_len, 
-        d_model=d_model, 
-        d_ff=d_ff, 
-        num_layers=num_layers,
-        trainable=True
-    )
+    embed_dim = 256
+    hidden_dim = 512
+    seq_length = 20
     
-    training_data = [
-        "Hello, Spiking World!",
-        "こんにちは、SNNの世界。",
-        "Rust and Python SARA.",
-        "Energy efficient design."
-    ]
+    # Initialize the Spike Transformer Block
+    block = SpikeTransformerBlock(embed_dim=embed_dim, hidden_dim=hidden_dim, density=0.1, context_size=64)
     
+    # Generate dummy multilingual input spikes (e.g., token encoding simulation)
+    # Independent of language structure, simply simulated as active network nodes
+    input_sequence = []
+    for _ in range(seq_length):
+        # Base input firing rate of ~10%
+        spikes = random.sample(range(embed_dim), int(embed_dim * 0.1))
+        input_sequence.append(spikes)
+        
     logs = []
     
-    print("Starting Error-Driven Hebbian & STDP Learning Process...")
-    epochs = 15
-    for epoch in range(epochs):
-        epoch_log = {"epoch": epoch + 1, "samples": []}
+    print("Running forward pass with STDP learning...")
+    for step, x_spikes in enumerate(input_sequence):
+        # Forward pass with learning enabled (Local STDP active)
+        y_spikes = block.forward(x_spikes, learning=True)
         
-        print(f"\n--- Epoch {epoch + 1:2d} ---")
-        for text in training_data:
-            tokens = text_to_bytes(text)
-            target_tokens = list(tokens)
-            
-            # Forward pass and Hebbian learning
-            result = model(tokens, target_tokens=target_tokens, simulation_steps=simulation_steps, return_input_len=True)
-            if isinstance(result, tuple):
-                predicted_tokens, input_len = result
-            else:
-                predicted_tokens = result
-                input_len = len(tokens)
-            
-            predicted_tokens = predicted_tokens[:input_len]
-
-            output_text = bytes_to_text(predicted_tokens)
-            
-            sample_log = {
-                "input": text,
-                "input_bytes": tokens,
-                "predicted_bytes": predicted_tokens,
-                "predicted_text": output_text
-            }
-            epoch_log["samples"].append(sample_log)
-            
-            print(f"In:  '{text}'\nOut: '{output_text}'")
-            
-        logs.append(epoch_log)
-        # エポック終了時に一括正規化とEMA安定化を実行
-        model.flush_normalize()  # trainable=True の場合にのみ機能
+        log_entry = {
+            "step": step,
+            "input_spike_count": len(x_spikes),
+            "output_spike_count": len(y_spikes)
+        }
+        logs.append(log_entry)
+        print(f"Step {step}: Input Spikes = {len(x_spikes)}, Output Spikes = {len(y_spikes)}")
         
-    with open(log_file, 'w', encoding='utf-8') as f:
-        json.dump(logs, f, indent=2, ensure_ascii=False)
+    # Save test logs to workspace
+    with open(log_file_path, "w") as f:
+        json.dump(logs, f, indent=4)
         
-    attn_weights = model.layers[0].attention.attn_weights
-    attn_log_file = os.path.join(workspace_dir, 'attention_weights.json')
-    with open(attn_log_file, 'w', encoding='utf-8') as f:
-        json.dump(attn_weights, f, indent=2)
-        
-    print(f"\nTraining logs saved to {log_file}")
-    print("Spiking Transformer simulation completed successfully without BP/Matrices.")
+    print(f"Demo completed. Logs saved to {log_file_path}")
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/__init__.py",
     "//": "ファイルの日本語タイトル: パッケージ初期化モジュール",
-    "//": "ファイルの目的や内容: 外部から主要なクラスへ簡単にアクセスできるようにする。インポートエラーを解決。"
+    "//": "ファイルの目的や内容: SpikeStreamDataLoaderなどの新規モジュールを公開し、アクセス性を向上させる。"
 }
 
 __version__ = "0.2.0"
@@ -16,26 +16,36 @@ from .auto import (
 )
 from .pipelines import pipeline
 
-# --- Legacy & Core Models ---
+# --- Core Components ---
+from .core.transformer import SpikeTransformerBlock, SpikeTransformerModel
+from .core.spike_attention import SpikeSelfAttention
+from .core.layers import DynamicLiquidLayer, SpikeNormalization, SpikeFeedForward
+from .core.data_loader import SpikeStreamDataLoader, TextToSpikeEncoder, SemanticSpikeEncoder # 追加
+
+# --- Legacy & Memory ---
 from .models.gpt import SaraGPT
 from .models.rlm import StatefulRLMAgent
 from .memory.sdr import SDREncoder
 from .memory.ltm import SparseMemoryStore
-from .core.layers import DynamicLiquidLayer
 from .utils.visualizer import SaraVisualizer
 from .encoders.audio import AudioSpikeEncoder
 from .encoders.vision import ImageSpikeEncoder
 
 __all__ = [
-    # Pipelines & Auto Classes
     "pipeline",
     "AutoTokenizer",
     "AutoModelForCausalSNN",
     "AutoSNNModelForSequenceClassification",
     "AutoSNNModelForFeatureExtraction",
     "AutoSNNModelForImageClassification",
-    
-    # Legacy Core
+    "SpikeTransformerBlock",
+    "SpikeTransformerModel",
+    "SpikeSelfAttention",
+    "SpikeNormalization",
+    "SpikeFeedForward",
+    "SpikeStreamDataLoader",
+    "TextToSpikeEncoder",
+    "SemanticSpikeEncoder",
     "SaraGPT",
     "StatefulRLMAgent",
     "SDREncoder",
