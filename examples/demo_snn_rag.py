@@ -55,20 +55,25 @@ def main():
     print(f"\n[Phase 2]: User Query -> '{query}'")
     query_vector = retriever(query)
     
-    best_score = -1.0
-    best_doc = ""
-    
+    scored_docs = []
     for i, doc_vec in enumerate(kb_vectors):
         score = compute_cosine_similarity(query_vector, doc_vec)
+        scored_docs.append((score, knowledge_base[i]))
         print(f"  Similarity with Doc {i+1}: {score:.4f}")
-        if score > best_score:
-            best_score = score
-            best_doc = knowledge_base[i]
+        
+    # スコアで降順ソートし、上位2つのドキュメントを取得する
+    scored_docs.sort(key=lambda x: x[0], reverse=True)
+    top_k = 2
+    best_docs = [doc for score, doc in scored_docs[:top_k]]
+    combined_context = " ".join(best_docs)
             
-    print(f"\n=> Top Retrieved Document: '{best_doc}' (Score: {best_score:.4f})")
+    print(f"\n=> Top Retrieved Documents for Context:")
+    for i, doc in enumerate(best_docs):
+        print(f"  Rank {i+1}: '{doc}'")
     
     print("\n[Phase 3]: Generation with Retrieved Context...")
-    train_text = f"回答: {best_doc}"
+    # SNNが文脈を理解できるよう、質問と回答のペアとしてSTDP学習させる
+    train_text = f"質問: {query}\n回答: {combined_context}"
     
     epochs = 30
     print(f"  -> Local STDP Learning... ({epochs} epochs)")
@@ -79,8 +84,10 @@ def main():
         sys.stdout.flush()
     print("\n  -> Learning Finished.")
     
-    prompt = "回答: "
-    generated_text = generator(prompt, max_length=100)
+    # 質問を与えて続きを生成させる
+    # 日本語はトークン数を多く消費するため、max_lengthを多めに確保する
+    prompt = f"質問: {query}\n回答: "
+    generated_text = generator(prompt, max_length=512)
     print(f"\nPrompt: '{prompt}'")
     print(f"SNN Output: '{generated_text}'")
     
@@ -91,7 +98,7 @@ def main():
     with open(log_file, "w", encoding="utf-8") as f:
         f.write("=== SARA SNN RAG Demonstration Log ===\n")
         f.write("Status: SUCCESS\n")
-        f.write(f"Retrieved: {best_doc}\n")
+        f.write(f"Retrieved Context: {combined_context}\n")
         f.write(f"Generated: {generated_text}\n")
     print("\n=== Demonstration Completed ===")
 
