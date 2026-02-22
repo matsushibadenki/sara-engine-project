@@ -1,87 +1,84 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_snn_pipeline.py",
     "//": "ファイルの日本語タイトル: SNNパイプラインのデモ",
-    "//": "ファイルの目的や内容: STDP学習時に終了トークン[EOS]を付与し、モデルが自律的に生成を停止できるように修正。"
+    "//": "ファイルの目的や内容: SNNを用いたテキスト生成パイプラインの動作確認。多言語のSTDP学習を行い、ワークスペース下に出力ファイルを保存する。"
 }
 
 import os
 import sys
 
-# Ensure src is in the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+# Ensure the sara_engine package is in the path for testing
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
-from sara_engine.encoders.spike_tokenizer import SpikeTokenizer
-from sara_engine.pipelines import pipeline
+from sara_engine.auto import AutoModelForCausalSNN, AutoTokenizer
+from sara_engine.pipelines.text_generation import pipeline
 
 def main():
-    print("=== SNN Text Generation Pipeline Demo ===")
-    print("Initiating bio-inspired, backprop-free, matrix-free model inference.\n")
+    print("=== SARA Engine: SNN Pipeline Demonstration ===")
     
-    # 1. Setup workspace for artifacts
-    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'workspace', 'pipeline_demo'))
+    # Create workspace directory to store generated files and logs
+    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "workspace", "snn_pipeline_demo"))
     os.makedirs(workspace_dir, exist_ok=True)
     
-    # 2. Initialize tokenizer and train on multi-lingual data
-    tokenizer = SpikeTokenizer()
-    training_texts = [
-        "Hello, I am a spiking neural network.",
-        "This model is biologically inspired and energy efficient.",
-        "こんにちは、私はスパイキングニューラルネットワークです。",
-        "省エネルギーで動作し、行列演算を使用しません。",
-        "Bonjour, je suis un réseau de neurones à impulsions."
-    ]
-    print("Training SpikeTokenizer on multilingual corpus...")
-    tokenizer.train(training_texts)
+    model_dir = os.path.join(workspace_dir, "snn_model_checkpoint")
     
-    tokenizer_path = os.path.join(workspace_dir, "tokenizer.json")
-    tokenizer.save(tokenizer_path)
-    print(f"Tokenizer trained and saved to: {tokenizer_path}\n")
+    # 1. Initialize tokenizer and model (similar to Hugging Face API)
+    print("Loading Tokenizer and Model...")
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    model = AutoModelForCausalSNN.from_pretrained(model_dir)
     
-    # 3. Initialize SNN model configuration
-    config = SNNTransformerConfig(
-        vocab_size=max(256, tokenizer.vocab_size + 50), 
-        embed_dim=128, 
-        num_layers=2, 
-        ffn_dim=256
-    )
-    model = SpikingTransformerModel(config)
-    
-    # 4. Pre-train the model with STDP rule
-    print("Training SNN model with STDP (No backpropagation, CPU-only)...")
-    epochs = 20
-    
-    for epoch in range(epochs):
-        for text in training_texts:
-            # 重要: 文章の終わりに[EOS] (ID:3) を付与し、モデルに「ストップ信号」を学習させる
-            token_ids = tokenizer.encode(text) + [3]
-            model.reset_state()
-            for i in range(len(token_ids) - 1):
-                # Biologically plausible step-by-step learning via Hebbian STDP
-                model.forward_step(token_ids[i], learning=True, target_id=token_ids[i+1])
-        
-        if (epoch + 1) % 5 == 0:
-            print(f"Epoch {epoch + 1}/{epochs} completed.")
-            
-    model_save_path = os.path.join(workspace_dir, "saved_snn_model")
-    model.save_pretrained(model_save_path)
-    print(f"\nModel successfully saved to: {model_save_path}\n")
-
-    # 5. Initialize Pipeline
+    # 2. Instantiate pipeline
     print("Initializing Text Generation Pipeline...")
     generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
     
-    # 6. Generate Text using the Pipeline API
-    # 20エポックでEOSの出力まで完全に学習しているはずなので、max_new_tokensを少し長めに取ります
+    # 3. Multilingual training data (English + Japanese to prove multilingual support)
+    training_data = [
+        "SARA engine utilizes Spiking Neural Networks.",
+        "誤差逆伝播法を使わず、STDPによる局所学習を行います。",
+        "This is an energy efficient alternative to Transformers."
+    ]
+    
+    # 4. Local STDP Learning Phase (No Backpropagation)
+    print("\n--- Starting Local STDP Learning Phase ---")
+    epochs = 3
+    for epoch in range(epochs):
+        print(f"Epoch {epoch + 1}/{epochs}")
+        for text in training_data:
+            print(f"  Learning sequence: {text}")
+            generator.learn(text)
+            
+    # 5. Generation Phase
+    print("\n--- Text Generation Phase ---")
     prompts = [
-        "Hello, I am",
-        "こんにちは、私は"
+        "SARA engine",
+        "誤差逆伝播法",
+        "This is an"
     ]
     
     for prompt in prompts:
-        print(f"\n[Prompt] -> '{prompt}'")
-        output = generator(prompt, max_new_tokens=30)
-        print(f"[Generated] -> '{output[0]['generated_text']}'")
+        # Generate with max_length=30
+        generated_text = generator(prompt, max_length=30)
+        print(f"Prompt: '{prompt}'")
+        print(f"Generated: '{generated_text}'\n")
+        
+    # 6. Save the model state to workspace
+    print(f"Saving model state to: {model_dir}")
+    generator.save_pretrained(model_dir)
+    
+    # 7. Write a log file
+    log_file = os.path.join(workspace_dir, "execution.log")
+    with open(log_file, "w", encoding="utf-8") as f:
+        f.write("=== SARA SNN Pipeline Execution Log ===\n")
+        f.write("Status: SUCCESS\n")
+        f.write(f"Model saved at: {model_dir}\n")
+        f.write("Tested Features:\n")
+        f.write("  - AutoTokenizer / AutoModelForCausalSNN\n")
+        f.write("  - Multilingual STDP Learning (UTF-8 byte level)\n")
+        f.write("  - Backpropagation-free learning\n")
+        f.write("  - Matrix-multiplication-free inference\n")
+        
+    print(f"Execution log saved to {log_file}")
+    print("=== Demonstration Completed ===")
 
 if __name__ == "__main__":
     main()

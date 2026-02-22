@@ -1,94 +1,99 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_snn_rag.py",
-    "//": "ファイルの日本語タイトル: SNNベースのRAG（検索拡張生成）デモ",
-    "//": "ファイルの目的や内容: 知識ベースをベクトル化して検索し、その結果を自己回帰SNNにSTDPで即席学習させてから回答を生成させる。"
+    "//": "ファイルの日本語タイトル: SNNベース RAG (検索拡張生成) デモ",
+    "//": "ファイルの目的や内容: 検索したテキストを反復学習させ、進捗をプログレス出力しながらSNNに続きを生成させる。"
 }
 
 import os
 import sys
+import math
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
-from sara_engine.models.spiking_feature_extractor import SpikingFeatureExtractor, SNNFeatureExtractorConfig
-from sara_engine.encoders.spike_tokenizer import SpikeTokenizer
+from sara_engine.auto import AutoSNNModelForFeatureExtraction, AutoModelForCausalSNN, AutoTokenizer
 from sara_engine.pipelines import pipeline
-from sara_engine.memory.snn_vector_store import SNNVectorStore
+
+def compute_cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+    mag1 = math.sqrt(sum(a * a for a in vec1))
+    mag2 = math.sqrt(sum(b * b for b in vec2))
+    if mag1 == 0 or mag2 == 0:
+        return 0.0
+    return dot_product / (mag1 * mag2)
 
 def main():
-    print("=== SNN Retrieval-Augmented Generation (RAG) System ===")
-    print("Integrating Liquid State Machine (Retrieval) and STDP (Generation)...\n")
+    print("=== SARA Engine: 100% Matrix-Free SNN RAG Demonstration ===")
     
-    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'workspace', 'rag_demo'))
+    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "workspace", "snn_rag_demo"))
     os.makedirs(workspace_dir, exist_ok=True)
+    feat_model_dir = os.path.join(workspace_dir, "snn_feat_checkpoint")
+    gen_model_dir = os.path.join(workspace_dir, "snn_gen_checkpoint")
     
-    # --- 1. 知識ベースとトークナイザーの準備 ---
+    print("Loading Models and Tokenizers...")
+    tokenizer = AutoTokenizer.from_pretrained(feat_model_dir)
+    
+    feat_model = AutoSNNModelForFeatureExtraction.from_pretrained(feat_model_dir)
+    retriever = pipeline("feature-extraction", model=feat_model, tokenizer=tokenizer)
+    
+    gen_model = AutoModelForCausalSNN.from_pretrained(gen_model_dir)
+    generator = pipeline("text-generation", model=gen_model, tokenizer=tokenizer)
+    
     knowledge_base = [
-        "The SARA Engine is a bio-inspired AI that does not use matrix multiplications or GPUs.",
-        "SARA uses Spiking Neural Networks (SNN) for extreme energy efficiency.",
-        "Traditional LLMs rely on backpropagation, which consumes massive amounts of power.",
-        "The feature extractor in SARA uses a Liquid State Machine and Homeostatic Plasticity.",
-        "To achieve generation, SARA relies on Spike-Timing-Dependent Plasticity (STDP)."
+        "SARAエンジンは、行列演算と誤差逆伝播法を完全に排除したAIです。",
+        "日本の首都は東京であり、人口が非常に密集しています。",
+        "STDP(スパイクタイミング依存可塑性)を用いることで局所学習を実現します。",
+        "今日の天気は晴れで、湿度が低く過ごしやすい一日です。"
     ]
     
-    tokenizer = SpikeTokenizer()
-    print("Training common Tokenizer on knowledge base...")
-    tokenizer.train(knowledge_base + ["What is the SARA Engine?", "It is"])
-    
-    # --- 2. 検索エンジン(Retriever)の構築 ---
-    print("\n[Step 1] Building Knowledge Vector Store using LSM Feature Extractor...")
-    # 特徴抽出モデルのセットアップ
-    extractor_config = SNNFeatureExtractorConfig(embedding_dim=512, leak_rate=0.98, std_decay=0.2, std_recovery=0.05)
-    extractor_model = SpikingFeatureExtractor(extractor_config)
-    
-    # 背景ノイズのダウン・スケーリング（恒常性可塑性）
-    extractor_model.habituate([tokenizer.encode(doc) for doc in knowledge_base])
-    retriever_pipeline = pipeline("feature-extraction", model=extractor_model, tokenizer=tokenizer)
-    
-    # ベクトルストアへの格納
-    vector_store = SNNVectorStore()
+    print("\n[Phase 1]: Encoding Knowledge Base into Spiking SDRs...")
+    kb_vectors = []
     for doc in knowledge_base:
-        emb = retriever_pipeline(doc)
-        vector_store.add_document(doc, emb)
-    print(f"Successfully stored {len(knowledge_base)} documents in the SNN Vector Store.")
-
-    # --- 3. ユーザーからのクエリと検索 ---
-    query = "What is the SARA Engine?"
-    print(f"\n[Step 2] Querying: '{query}'")
+        kb_vectors.append(retriever(doc))
+        print(f"  Encoded: {doc[:15]}...")
+        
+    query = "SARAエンジンの学習方法は何ですか？"
+    print(f"\n[Phase 2]: User Query -> '{query}'")
+    query_vector = retriever(query)
     
-    query_emb = retriever_pipeline(query)
-    search_results = vector_store.search(query_emb, top_k=1)
+    best_score = -1.0
+    best_doc = ""
     
-    retrieved_context = search_results[0][0]
-    similarity = search_results[0][1]
-    print(f"-> Retrieved Context: '{retrieved_context}' (Similarity: {similarity:.4f})")
-    
-    # --- 4. 回答生成エンジン(Generator)の構築と「インコンテキスト学習」 ---
-    print("\n[Step 3] Rapidly learning the context via STDP (Biological In-Context Learning)...")
-    generator_config = SNNTransformerConfig(vocab_size=tokenizer.vocab_size + 10, embed_dim=128, num_layers=2, ffn_dim=256)
-    generator_model = SpikingTransformerModel(generator_config)
-    
-    # 検索してきた知識を、生成モデルのシナプスにSTDPで急激に焼き付ける（エポックを回して強固に記憶）
-    epochs = 20
-    for _ in range(epochs):
-        # "[EOS] (ID:3)" を付与して文末を学習させる
-        token_ids = tokenizer.encode(retrieved_context) + [3]
-        generator_model.reset_state()
-        for i in range(len(token_ids) - 1):
-            generator_model.forward_step(token_ids[i], learning=True, target_id=token_ids[i+1])
+    for i, doc_vec in enumerate(kb_vectors):
+        score = compute_cosine_similarity(query_vector, doc_vec)
+        print(f"  Similarity with Doc {i+1}: {score:.4f}")
+        if score > best_score:
+            best_score = score
+            best_doc = knowledge_base[i]
             
-    # --- 5. 回答の生成 ---
-    print("\n[Step 4] Generating Answer...")
-    generator_pipeline = pipeline("text-generation", model=generator_model, tokenizer=tokenizer)
+    print(f"\n=> Top Retrieved Document: '{best_doc}' (Score: {best_score:.4f})")
     
-    # 検索された文脈を元に、プロンプトの続きを自己回帰で出力させる
-    prompt = "The SARA Engine is"
-    output = generator_pipeline(prompt, max_new_tokens=20)
+    print("\n[Phase 3]: Generation with Retrieved Context...")
+    train_text = f"回答: {best_doc}"
     
-    print("-" * 50)
-    print(f"Question: {query}")
-    print(f"Answer  : {output[0]['generated_text']}")
-    print("-" * 50)
+    epochs = 30
+    print(f"  -> Local STDP Learning... ({epochs} epochs)")
+    for epoch in range(epochs):
+        generator.learn(train_text)
+        # プログレス出力を行い、フリーズしていないことを視覚的に確認する
+        sys.stdout.write(f"\r    Epoch {epoch+1}/{epochs} completed.")
+        sys.stdout.flush()
+    print("\n  -> Learning Finished.")
+    
+    prompt = "回答: "
+    generated_text = generator(prompt, max_length=100)
+    print(f"\nPrompt: '{prompt}'")
+    print(f"SNN Output: '{generated_text}'")
+    
+    feat_model.save_pretrained(feat_model_dir)
+    gen_model.save_pretrained(gen_model_dir)
+    
+    log_file = os.path.join(workspace_dir, "execution.log")
+    with open(log_file, "w", encoding="utf-8") as f:
+        f.write("=== SARA SNN RAG Demonstration Log ===\n")
+        f.write("Status: SUCCESS\n")
+        f.write(f"Retrieved: {best_doc}\n")
+        f.write(f"Generated: {generated_text}\n")
+    print("\n=== Demonstration Completed ===")
 
 if __name__ == "__main__":
     main()

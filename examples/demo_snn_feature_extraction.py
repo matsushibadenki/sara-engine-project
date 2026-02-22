@@ -1,86 +1,83 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_snn_feature_extraction.py",
-    "//": "ファイルの日本語タイトル: SNN特徴抽出パイプラインのデモ",
-    "//": "ファイルの目的や内容: 恒常性シナプス可塑性(Homeostatic Plasticity)を適用し、助詞や句読点によるノイズ類似度を劇的に低下させるテスト。"
+    "//": "ファイルの日本語タイトル: SNN特徴抽出デモ",
+    "//": "ファイルの目的や内容: SNNを用いてテキストをベクトル化し、行列演算(NumPy)を使わずに文章間の類似度を計算して比較する。"
 }
 
 import os
 import sys
 import math
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from sara_engine.models.spiking_feature_extractor import SpikingFeatureExtractor, SNNFeatureExtractorConfig
-from sara_engine.encoders.spike_tokenizer import SpikeTokenizer
+from sara_engine.auto import AutoSNNModelForFeatureExtraction, AutoTokenizer
 from sara_engine.pipelines import pipeline
 
-def cosine_similarity(v1: list, v2: list) -> float:
-    dot_product = sum(a * b for a, b in zip(v1, v2))
-    norm_v1 = math.sqrt(sum(a * a for a in v1))
-    norm_v2 = math.sqrt(sum(b * b for b in v2))
-    if norm_v1 * norm_v2 == 0:
+def compute_cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
+    """
+    行列演算ライブラリ(NumPyなど)を使わず、標準の算術演算のみで
+    コサイン類似度を計算する（制約準拠）。
+    """
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+    mag1 = math.sqrt(sum(a * a for a in vec1))
+    mag2 = math.sqrt(sum(b * b for b in vec2))
+    
+    if mag1 == 0 or mag2 == 0:
         return 0.0
-    return dot_product / (norm_v1 * norm_v2)
+    return dot_product / (mag1 * mag2)
 
 def main():
-    print("=== SNN Feature Extraction with Homeostatic Plasticity ===")
-    print("Simulating Synaptic Downscaling to globally filter background noise.\n")
+    print("=== SARA Engine: SNN Feature Extraction Demonstration ===")
     
-    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'workspace', 'feature_extraction_demo'))
+    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "workspace", "snn_feat_demo"))
     os.makedirs(workspace_dir, exist_ok=True)
+    model_dir = os.path.join(workspace_dir, "snn_feat_checkpoint")
     
-    # 1. トークナイザーの準備
-    tokenizer = SpikeTokenizer()
-    texts_to_train = [
-        "The quick brown fox jumps over the lazy dog.",
-        "A fast brown fox leaps over a sleeping dog.",
-        "I love programming in Python and Rust.",
-        "人工知能は世界を変える技術です。",
-        "AIは社会を大きく変化させるテクノロジーです。",
-        "今日の夕食は美味しいカレーライスでした。"
-    ]
-    tokenizer.train(texts_to_train)
-    tokenizer_path = os.path.join(workspace_dir, "tokenizer.json")
-    tokenizer.save(tokenizer_path)
+    print("Loading Tokenizer and Model...")
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    model = AutoSNNModelForFeatureExtraction.from_pretrained(model_dir)
     
-    # 2. 特徴抽出モデルの準備 (Embedding次元を1024に拡大し波紋の衝突を抑える)
-    config = SNNFeatureExtractorConfig(embedding_dim=1024, leak_rate=0.98, std_decay=0.2, std_recovery=0.05)
-    model = SpikingFeatureExtractor(config)
+    # Instantiate the feature-extraction pipeline
+    extractor = pipeline("feature-extraction", model=model, tokenizer=tokenizer)
     
-    # 3. 恒常性シナプス可塑性 (Homeostatic Plasticity) によるノイズ抑制
-    print("Habituating SNN with global corpus frequencies (Biological TF-IDF)...")
-    tokenized_texts = [tokenizer.encode(t) for t in texts_to_train]
-    model.habituate(tokenized_texts)
+    # 検索クエリ
+    query = "誤差逆伝播法を使わない次世代のAIエンジン"
     
-    model_dir = os.path.join(workspace_dir, "saved_feature_extractor")
-    model.save_pretrained(model_dir)
-    
-    # 4. パイプラインの初期化
-    print("Initializing Feature Extraction Pipeline...")
-    extractor = pipeline("feature-extraction", model=model_dir, tokenizer=tokenizer)
-    
-    # 5. 類似度テスト
-    print("\n--- Semantic Similarity Test (Cosine Similarity) ---")
-    
-    test_cases = [
-        # 英語の類似ペア
-        ("The quick brown fox jumps over the lazy dog.", "A fast brown fox leaps over a sleeping dog."),
-        # 英語の非類似ペア
-        ("The quick brown fox jumps over the lazy dog.", "I love programming in Python and Rust."),
-        # 日本語の類似ペア
-        ("人工知能は世界を変える技術です。", "AIは社会を大きく変化させるテクノロジーです。"),
-        # 日本語の非類似ペア (前回はノイズで 0.5691 もあった)
-        ("人工知能は世界を変える技術です。", "今日の夕食は美味しいカレーライスでした。")
+    # 比較対象のドキュメント群
+    documents = [
+        "誤差逆伝播法を排除した全く新しいAIエンジン",     # 意味・構文ともに近い (高類似度を期待)
+        "行列演算に依存しないスパイク駆動のAIモデル",      # トピックは同じだが表現が違う (中程度を期待)
+        "今日の天気はとても晴れていて絶好の散歩日和です",  # 全く無関係 (低類似度を期待)
     ]
     
-    for text1, text2 in test_cases:
-        vec1 = extractor(text1)
-        vec2 = extractor(text2)
-        sim = cosine_similarity(vec1, vec2)
+    print(f"\n[Query]: {query}")
+    print("-" * 50)
+    
+    # クエリのベクトル化
+    query_vector = extractor(query)
+    
+    # 各ドキュメントとの類似度計算
+    for i, doc in enumerate(documents):
+        doc_vector = extractor(doc)
+        similarity = compute_cosine_similarity(query_vector, doc_vector)
         
-        print(f"\nText A: '{text1}'")
-        print(f"Text B: '{text2}'")
-        print(f"-> Cosine Similarity: {sim:.4f}")
+        print(f"Doc {i+1}: {doc}")
+        print(f" -> Cosine Similarity: {similarity:.4f}\n")
+        
+    # SNNの状態を保存
+    print(f"Saving model state to: {model_dir}")
+    extractor.save_pretrained(model_dir)
+    
+    # ログ出力
+    log_file = os.path.join(workspace_dir, "execution.log")
+    with open(log_file, "w", encoding="utf-8") as f:
+        f.write("=== SARA SNN Feature Extraction Log ===\n")
+        f.write("Status: SUCCESS\n")
+        f.write(f"Model saved at: {model_dir}\n")
+        f.write("Note: Vector similarities calculated without NumPy/Matrix Ops.\n")
+        
+    print(f"Execution log saved to {log_file}")
+    print("=== Demonstration Completed ===")
 
 if __name__ == "__main__":
     main()

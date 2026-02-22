@@ -1,18 +1,18 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/__init__.py",
     "//": "ファイルの日本語タイトル: パッケージ初期化モジュール",
-    "//": "ファイルの目的や内容: 外部から主要なクラスへ簡単にアクセスできるようにする。従来のモデルに加えて、TransformersライクなAutoクラスとpipelineを公開。"
+    "//": "ファイルの目的や内容: 外部から主要なクラスへ簡単にアクセスできるようにする。インポートエラーを解決。"
 }
 
 __version__ = "0.2.0"
 
 # --- New Hugging Face Transformers-like API ---
 from .auto import (
-    AutoSNNModelForCausalLM,
+    AutoTokenizer,
+    AutoModelForCausalSNN,
     AutoSNNModelForSequenceClassification,
     AutoSNNModelForFeatureExtraction,
-    AutoSNNModelForImageClassification,
-    AutoSpikeTokenizer
+    AutoSNNModelForImageClassification
 )
 from .pipelines import pipeline
 
@@ -29,11 +29,11 @@ from .encoders.vision import ImageSpikeEncoder
 __all__ = [
     # Pipelines & Auto Classes
     "pipeline",
-    "AutoSNNModelForCausalLM",
+    "AutoTokenizer",
+    "AutoModelForCausalSNN",
     "AutoSNNModelForSequenceClassification",
     "AutoSNNModelForFeatureExtraction",
     "AutoSNNModelForImageClassification",
-    "AutoSpikeTokenizer",
     
     # Legacy Core
     "SaraGPT",

@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/snn_transformer.py",
     "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル",
-    "//": "ファイルの目的や内容: Rust拡張を活用した超高速なリードアウト層学習と、完全な自己回帰生成を実現。"
+    "//": "ファイルの目的や内容: SparseSpikingFFNにLTD(抑制学習)を追加し、シナプスの重み飽和による全発火を防止して疎性を維持する。"
 }
 
 import json
@@ -10,7 +10,6 @@ import random
 from typing import List, Dict, Optional
 
 from sara_engine.core.spike_attention import SpikeSelfAttention
-from sara_engine.learning.stdp import STDPLayer
 
 class SNNTransformerConfig:
     def __init__(self, vocab_size: int = 256, embed_dim: int = 128, num_layers: int = 2, ffn_dim: int = 256):
@@ -32,35 +31,78 @@ class SNNTransformerConfig:
         return cls(**data)
 
 
+class SparseSpikingFFN:
+    def __init__(self, in_dim: int, out_dim: int, density: float = 0.2):
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        self.weights: List[Dict[int, float]] = [{} for _ in range(in_dim)]
+        for i in range(in_dim):
+            num_conn = max(1, int(out_dim * density))
+            targets = random.sample(range(out_dim), num_conn)
+            for t in targets:
+                self.weights[i][t] = random.uniform(0.1, 0.8)
+
+    def process(self, in_spikes: List[int], learning: bool = True) -> List[int]:
+        potentials = [0.0] * self.out_dim
+        
+        for s in in_spikes:
+            if s < self.in_dim:
+                for t, w in self.weights[s].items():
+                    potentials[t] += w
+
+        out_spikes = [i for i, p in enumerate(potentials) if p > 1.5]
+
+        if learning:
+            out_set = set(out_spikes)
+            for s in in_spikes:
+                if s < self.in_dim:
+                    for t in self.weights[s]:
+                        if t in out_set:
+                            # LTP
+                            self.weights[s][t] = min(3.0, self.weights[s][t] + 0.1)
+                        else:
+                            # LTD (発火しなかったシナプスは減衰させ、重みの飽和を防ぐ)
+                            self.weights[s][t] = max(0.0, self.weights[s][t] - 0.05)
+
+        return out_spikes
+
+
 class SNNTransformerBlock:
     def __init__(self, config: SNNTransformerConfig):
         self.config = config
         self.attention = SpikeSelfAttention(config.embed_dim)
-        self.ffn_in = STDPLayer(config.embed_dim, config.ffn_dim)
-        self.ffn_out = STDPLayer(config.ffn_dim, config.embed_dim)
+        self.ffn_in = SparseSpikingFFN(config.embed_dim, config.ffn_dim, density=0.2)
+        self.ffn_out = SparseSpikingFFN(config.ffn_dim, config.embed_dim, density=0.2)
+        
+        self.max_attn_spikes = max(1, config.embed_dim // 4)
+        self.max_ffn_hidden_spikes = max(1, config.ffn_dim // 4)
+        self.max_ffn_out_spikes = max(1, config.embed_dim // 4)
+        self.max_block_spikes = max(1, config.embed_dim // 2)
 
     def reset_state(self):
-        self.attention.k_traces = [0.0] * self.config.embed_dim
+        self.attention.reset_state()
 
     def forward(self, spikes: List[int], learning: bool = True) -> List[int]:
         attn_out = self.attention.forward(spikes, learning)
+        
+        if len(attn_out) > self.max_attn_spikes:
+            attn_out = random.sample(attn_out, self.max_attn_spikes)
+
         res1_spikes = list(set(spikes + attn_out))
         
-        ffn_hidden, _ = self.ffn_in.process_step(self._to_dense(res1_spikes, self.ffn_in.num_inputs), reward=1.0 if learning else 0.0)
-        ffn_hidden_idx = [i for i, s in enumerate(ffn_hidden) if s == 1]
+        ffn_hidden_idx = self.ffn_in.process(res1_spikes, learning)
+        if len(ffn_hidden_idx) > self.max_ffn_hidden_spikes:
+            ffn_hidden_idx = random.sample(ffn_hidden_idx, self.max_ffn_hidden_spikes)
         
-        ffn_out, _ = self.ffn_out.process_step(self._to_dense(ffn_hidden_idx, self.ffn_out.num_inputs), reward=1.0 if learning else 0.0)
-        ffn_out_idx = [i for i, s in enumerate(ffn_out) if s == 1]
+        ffn_out_idx = self.ffn_out.process(ffn_hidden_idx, learning)
+        if len(ffn_out_idx) > self.max_ffn_out_spikes:
+            ffn_out_idx = random.sample(ffn_out_idx, self.max_ffn_out_spikes)
         
         res2_spikes = list(set(res1_spikes + ffn_out_idx))
+        if len(res2_spikes) > self.max_block_spikes:
+            res2_spikes = random.sample(res2_spikes, self.max_block_spikes)
+            
         return res2_spikes
-
-    def _to_dense(self, sparse_indices: List[int], size: int) -> List[int]:
-        dense = [0] * size
-        for idx in sparse_indices:
-            if idx < size:
-                dense[idx] = 1
-        return dense
 
 
 class SpikingTransformerModel:
@@ -70,7 +112,6 @@ class SpikingTransformerModel:
         self.reservoir_size = 4096
         self.total_readout_size = self.reservoir_size + config.embed_dim
         
-        # SDRマッピング
         self.sdr_map = {}
         random.seed(42)
         for delay in range(self.context_length):
@@ -81,7 +122,6 @@ class SpikingTransformerModel:
         self.layers = [SNNTransformerBlock(config) for _ in range(config.num_layers)]
         self.delay_buffer: List[int] = []
 
-        # Rust拡張を利用した高速なReadout Layerの初期化
         try:
             from sara_engine import sara_rust_core
             self.rust_readout = sara_rust_core.RustReadoutLayer(self.total_readout_size, config.vocab_size)
@@ -119,11 +159,9 @@ class SpikingTransformerModel:
             
         combined_spikes = res_spikes + [s + self.reservoir_size for s in block_spikes]
         
-        # 学習と推論をRustへ移譲（高速化の要）
         if self.use_rust:
             predicted_id = self.rust_readout.forward_and_learn(combined_spikes, learning, target_id)
         else:
-            # Pythonフォールバック
             out_potentials = [0.0] * self.config.vocab_size
             for s in combined_spikes:
                 if s < self.total_readout_size:

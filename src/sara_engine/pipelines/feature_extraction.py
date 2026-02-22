@@ -1,34 +1,31 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/pipelines/feature_extraction.py",
     "//": "ファイルの日本語タイトル: 特徴抽出パイプライン",
-    "//": "ファイルの目的や内容: mypy型エラーの修正。isinstanceをif文の条件に直接記述し、型の絞り込み（Type Narrowing）を確実に機能させる。"
+    "//": "ファイルの目的や内容: 入力テキストからSNNのリザーバー発火パターン（埋め込みベクトル）を抽出する。"
 }
 
-from typing import Union, List, Any
+from typing import Union, List
 from .base import Pipeline
 
 class FeatureExtractionPipeline(Pipeline):
-    def __init__(self, model: Any, tokenizer: Any, **kwargs: Any):
-        super().__init__(model, tokenizer, **kwargs)
-
-    def __call__(self, text_inputs: Union[str, List[str]], **kwargs: Any) -> Any:
-        # mypyのType Narrowingを効かせるため、if文の条件式に直接isinstanceを記述します
+    """
+    Feature extraction pipeline using SNN.
+    Outputs the final membrane potentials of the reservoir as a dense vector.
+    """
+    def __call__(self, text_inputs: Union[str, List[str]], **kwargs) -> Union[List[float], List[List[float]]]:
         if isinstance(text_inputs, str):
-            inputs: List[str] = [text_inputs]
-            is_single_input = True
-        else:
-            inputs = text_inputs
-            is_single_input = False
+            text_inputs = [text_inputs]
 
         results = []
-        for text in inputs:
+        for text in text_inputs:
             if self.tokenizer is not None and hasattr(self.model, 'forward'):
                 token_ids = self.tokenizer.encode(text)
-                embedding = self.model.forward(token_ids)
-                results.append(embedding)
+                # Extract SNN features (Returns a dense list of floats representing spike potentials)
+                features = self.model.forward(token_ids)
+                results.append(features)
             else:
                 results.append([])
 
-        if is_single_input:
+        if len(results) == 1:
             return results[0]
         return results

@@ -1,39 +1,29 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/pipelines/__init__.py",
     "//": "ファイルの日本語タイトル: パイプライン初期化モジュール",
-    "//": "ファイルの目的や内容: 各種パイプラインの登録とファクトリ関数。Autoクラスの呼び出しを相対インポートに修正。"
+    "//": "ファイルの目的や内容: TokenClassificationPipelineの登録。"
 }
 
-from .base import Pipeline
+from typing import Any
 from .text_generation import TextGenerationPipeline
 from .text_classification import TextClassificationPipeline
 from .feature_extraction import FeatureExtractionPipeline
 from .image_classification import ImageClassificationPipeline
+from .audio_classification import AudioClassificationPipeline
+from .token_classification import TokenClassificationPipeline
 
-SUPPORTED_TASKS = {
-    "text-generation": TextGenerationPipeline,
-    "text-classification": TextClassificationPipeline,
-    "feature-extraction": FeatureExtractionPipeline,
-    "image-classification": ImageClassificationPipeline,
-}
-
-def pipeline(task: str, model=None, tokenizer=None, **kwargs) -> Pipeline:
-    if task not in SUPPORTED_TASKS:
-        raise ValueError(f"Task '{task}' is not supported. Available tasks: {list(SUPPORTED_TASKS.keys())}")
-    
-    if isinstance(model, str):
-        if task == "text-classification":
-            from ..auto import AutoSNNModelForSequenceClassification
-            model = AutoSNNModelForSequenceClassification.from_pretrained(model)
-        elif task == "feature-extraction":
-            from ..auto import AutoSNNModelForFeatureExtraction
-            model = AutoSNNModelForFeatureExtraction.from_pretrained(model)
-        elif task == "image-classification":
-            from ..auto import AutoSNNModelForImageClassification
-            model = AutoSNNModelForImageClassification.from_pretrained(model)
-        else:
-            from ..auto import AutoSNNModelForCausalLM
-            model = AutoSNNModelForCausalLM.from_pretrained(model)
-            
-    pipeline_class = SUPPORTED_TASKS[task]
-    return pipeline_class(model=model, tokenizer=tokenizer, **kwargs)
+def pipeline(task: str, model: Any = None, tokenizer: Any = None, feature_extractor: Any = None, **kwargs) -> Any:
+    if task == "text-generation":
+        return TextGenerationPipeline(model=model, tokenizer=tokenizer, **kwargs)
+    elif task == "text-classification":
+        return TextClassificationPipeline(model=model, tokenizer=tokenizer, **kwargs)
+    elif task == "feature-extraction":
+        return FeatureExtractionPipeline(model=model, tokenizer=tokenizer, **kwargs)
+    elif task == "image-classification":
+        return ImageClassificationPipeline(model=model, feature_extractor=feature_extractor, **kwargs)
+    elif task == "audio-classification":
+        return AudioClassificationPipeline(model=model, feature_extractor=feature_extractor, **kwargs)
+    elif task == "token-classification":
+        return TokenClassificationPipeline(model=model, tokenizer=tokenizer, **kwargs)
+    else:
+        raise NotImplementedError(f"The task '{task}' is not yet supported in the SARA engine.")
