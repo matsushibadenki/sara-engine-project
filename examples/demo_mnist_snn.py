@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_mnist_snn.py",
-    "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (Spatial Pooling & Robust Features)",
-    "//": "目的: 発火タイミングのわずかなズレが別の特徴として扱われる問題を解消するため、時間方向のオフセットを廃止し空間的にプーリング。これによりノイズ耐性が飛躍的に向上し、90%以上の精度に到達する。"
+    "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (Spatiotemporal Thermometer Coding)",
+    "//": "目的: 時間ステップごとに異なるシナプス次元を使用する時空間エンコーディング（サーモメーター符号化）を復活させ、濃淡情報を高次元の空間に展開。これにより線形分離性能が劇的に向上する。"
 }
 
 import sys
@@ -112,7 +112,7 @@ def apply_spatial_receptive_fields(layer, width, height, patch_sizes):
 
 def run_mnist_snn():
     print("="*60)
-    print("SARA-Engine: MNIST Classification (Spatial Pooling & Rust SRF)")
+    print("SARA-Engine: MNIST Classification (Spatiotemporal SVM)")
     print("="*60)
 
     train_images, train_labels, test_images, test_labels = prepare_mnist_dataset()
@@ -146,10 +146,11 @@ def run_mnist_snn():
     
     total_hidden = sum(cfg["size"] for cfg in layer_configs)
     
-    thresholds = [200, 128, 64]
+    thresholds = [192, 128, 64, 16]
     
-    # 時間による特徴の細分化(time_offset)を廃止し、空間情報として一本化
-    temporal_spatial_size = num_inputs + total_hidden
+    # 【重要】特徴空間を時間ステップ分拡張（23,136次元の超空間を形成）
+    features_per_step = num_inputs + total_hidden
+    temporal_spatial_size = features_per_step * len(thresholds)
     
     readout_layer = SpikeReadoutLayer(
         d_model=temporal_spatial_size, 
@@ -184,22 +185,23 @@ def run_mnist_snn():
             
             accumulated_fired = set()
             prev_fired = [[] for _ in range(len(liquid_layers))]
-            has_fired_inputs = set()
             
             for step, thresh in enumerate(thresholds):
-                active_inputs = [
-                    idx for idx, pixel in enumerate(image) 
-                    if pixel > thresh and idx not in has_fired_inputs
-                ]
+                # 明るいピクセルは複数のステップで発火（Thermometer Coding）
+                active_inputs = [idx for idx, pixel in enumerate(image) if pixel > thresh]
+                
                 if not active_inputs:
                     continue
-                    
-                has_fired_inputs.update(active_inputs)
                 
-                # 時間ステップに関わらず、同じ入力インデックスに統合
-                accumulated_fired.update(active_inputs)
+                # 時間ステップに応じた次元オフセットを適用
+                offset = 0
+                time_offset = step * features_per_step
                 
-                offset = num_inputs
+                # Skip Connection (生ピクセル)
+                accumulated_fired.update([inp + offset + time_offset for inp in active_inputs])
+                offset += num_inputs
+                
+                # Liquid Layer
                 for l_idx, l in enumerate(liquid_layers):
                     fired_hidden = l.forward(
                         active_inputs=active_inputs,
@@ -207,8 +209,7 @@ def run_mnist_snn():
                     )
                     prev_fired[l_idx] = fired_hidden
                     
-                    # 時間ステップに関わらず、同じ隠れ層インデックスに統合
-                    accumulated_fired.update([f + offset for f in fired_hidden])
+                    accumulated_fired.update([f + offset + time_offset for f in fired_hidden])
                     offset += l.size
                 
             if accumulated_fired:
@@ -222,7 +223,7 @@ def run_mnist_snn():
     print("\n[Sleep] 睡眠フェーズ開始 (ノイズシナプスの枝刈り)...")
     pruned_count = 0
     total_count = 0
-    prune_rate = 0.02 
+    prune_rate = 0.01 
     for s_idx in range(len(readout_layer.W)):
         to_delete = []
         for t_id, weight in readout_layer.W[s_idx].items():
@@ -251,29 +252,26 @@ def run_mnist_snn():
             
         accumulated_fired = set()
         prev_fired = [[] for _ in range(len(liquid_layers))]
-        has_fired_inputs = set()
         
         for step, thresh in enumerate(thresholds):
-            active_inputs = [
-                idx for idx, pixel in enumerate(image) 
-                if pixel > thresh and idx not in has_fired_inputs
-            ]
+            active_inputs = [idx for idx, pixel in enumerate(image) if pixel > thresh]
+            
             if not active_inputs:
                 continue
                 
-            has_fired_inputs.update(active_inputs)
+            offset = 0
+            time_offset = step * features_per_step
             
-            # テスト時も同じく空間統合
-            accumulated_fired.update(active_inputs)
+            accumulated_fired.update([inp + offset + time_offset for inp in active_inputs])
+            offset += num_inputs
             
-            offset = num_inputs
             for l_idx, l in enumerate(liquid_layers):
                 fired_h = l.forward(
                     active_inputs=active_inputs,
                     prev_active_hidden=prev_fired[l_idx]
                 )
                 prev_fired[l_idx] = fired_h
-                accumulated_fired.update([f + offset for f in fired_h])
+                accumulated_fired.update([f + offset + time_offset for f in fired_h])
                 offset += l.size
             
         if accumulated_fired:
