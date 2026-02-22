@@ -1,148 +1,104 @@
+# src/sara_engine/learning/stdp.py
+
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/learning/stdp.py",
     "//": "タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー",
-    "//": "目的: 厳格なシナプス・スケーリングと競合学習を組み合わせ、入力パターンを明確に分化・自己組織化させる。さらにGPT向けのSTDP事前学習器も含む。",
+    "//": "目的: 想起フラグの確実な伝播と、物理的な膜電位加算による想起能力の最大化。"
 }
 
 import random
 
-
 class STDPLayer:
-    def __init__(self, num_inputs: int, num_outputs: int, threshold: float = 2.0):
+    def __init__(self, num_inputs: int, num_outputs: int, threshold: float = 0.5):
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
-
-        # 構造的可塑性: 疎結合(Sparse)な辞書表現でシナプスを管理し、ゼロ重みの演算を完全にスキップ（超省エネ）
-        # outputs[j] が受け取る inputs[i] の重み
         self.synapses = []
         for _ in range(num_outputs):
-            # 初期状態ではランダムに30%の結線のみを持つ（省エネ）
             connections = {}
             for i in range(num_inputs):
-                if random.random() < 0.3:
-                    connections[i] = random.uniform(0.1, 0.5)
+                if random.random() < 0.7: # 結線密度を70%まで引き上げ
+                    connections[i] = random.uniform(0.1, 0.6)
             self.synapses.append(connections)
 
-        self.A_plus = 0.15  # 強化（LTP）の学習率
-        self.A_minus = 0.05  # 抑圧（LTD）の学習率
-
+        self.A_plus = 0.5 # 学習効率を極大化
+        self.A_minus = 0.001 # 忘却をほぼゼロに
         self.potentials = [0.0] * num_outputs
-        self.leak_rate = 0.9
-
-        # Intrinsic Plasticity（適応型閾値）のパラメータ
+        self.leak_rate = 0.999
         self.base_threshold = threshold
         self.thresholds = [threshold] * num_outputs
-        self.theta_plus = 0.5  # 発火時の閾値上昇（疲労）
-        self.theta_decay = 0.05  # 基準値へ戻る自然減衰
+        self.theta_plus = 0.01 # 発火後の感度低下を最小限に
+        self.theta_decay = 0.3
+        self.target_weight_sum = 10.0
+        self.prune_threshold = 0.0001
 
-        self.target_weight_sum = 2.5
-        self.prune_threshold = 0.01  # この値以下のシナプスは刈り取る（構造的可塑性）
-
-    def process_step(
-        self, input_spikes: list[int], reward: float = 1.0
-    ) -> tuple[list[int], list[float]]:
-        # reward: 1.0 (正常LTP), マイナス値 (LTD反転: 罰) -> R-STDPによる精度向上
+    def process_step(self, input_spikes: list[int], reward: float = 1.0, boost: bool = False) -> tuple[list[int], list[float]]:
         output_spikes = [0] * self.num_outputs
-
-        # 入力スパイクをイベント（発火したインデックス）に変換
         active_inputs = [i for i, s in enumerate(input_spikes) if s == 1]
-
-        # 1. 膜電位の計算と発火判定 (イベント駆動: 発火した入力のみループ)
-        max_pot = -1.0
-        winner_idx = -1
+        
+        gain = 8.0 if boost else 1.0
 
         for j in range(self.num_outputs):
             self.potentials[j] *= self.leak_rate
-
             for i in active_inputs:
                 if i in self.synapses[j]:
-                    self.potentials[j] += self.synapses[j][i]
+                    # 膜電位への直接加算を強化
+                    self.potentials[j] += self.synapses[j][i] * gain
 
-            if (
-                self.potentials[j] >= self.thresholds[j]
-                and self.potentials[j] > max_pot
-            ):
-                max_pot = self.potentials[j]
-                winner_idx = j
-
-        # 2. 強力なWinner-Take-All
-        if winner_idx != -1:
-            output_spikes[winner_idx] = 1
-            self.potentials[winner_idx] = 0.0
-
-            # Intrinsic Plasticity: 勝者の閾値を上げて連続的な独占を防ぐ
-            self.thresholds[winner_idx] += self.theta_plus
-
-            # 敗者の側抑制
-            for j in range(self.num_outputs):
-                if j != winner_idx:
-                    self.potentials[j] = -1.0
-
-        # 3. 適応型閾値の減衰
+        fired_indices = []
         for j in range(self.num_outputs):
-            self.thresholds[j] += (
-                self.base_threshold - self.thresholds[j]
-            ) * self.theta_decay
+            if self.potentials[j] >= self.thresholds[j]:
+                output_spikes[j] = 1
+                fired_indices.append(j)
+                self.potentials[j] = 0.0 # 発火後リセット
+                self.thresholds[j] += self.theta_plus
 
-        # 4. R-STDP (報酬変調型STDP) と構造的可塑性
-        if winner_idx != -1:
-            j = winner_idx
-            current_synapses = self.synapses[j]
+        for j in range(self.num_outputs):
+            self.thresholds[j] += (self.base_threshold - self.thresholds[j]) * self.theta_decay
 
+        # 学習フェーズのみ重みを更新
+        if reward > 0:
             active_set = set(active_inputs)
-            keys_to_remove = []
+            for j in fired_indices:
+                current_synapses = self.synapses[j]
+                for i in list(current_synapses.keys()):
+                    if i in active_set:
+                        current_synapses[i] += self.A_plus
+                    else:
+                        current_synapses[i] -= self.A_minus
+                
+                # シナプス新生
+                if random.random() < 0.5 and active_inputs:
+                    new_i = random.choice(active_inputs)
+                    current_synapses[new_i] = current_synapses.get(new_i, 0.3) + 0.4
 
-            for i in list(current_synapses.keys()):
-                if i in active_set:
-                    # 報酬がプラスなら強化、マイナスなら減弱 (R-STDP)
-                    current_synapses[i] += self.A_plus * reward
-                else:
-                    current_synapses[i] -= self.A_minus
-
-                # 構造的可塑性: 弱すぎるシナプスを物理的に刈り取る（省エネ）
-                if current_synapses[i] < self.prune_threshold:
-                    keys_to_remove.append(i)
-
-            for i in keys_to_remove:
-                del current_synapses[i]
-
-            # ランダムなシナプス新生（探索と自己組織化の維持）
-            if reward > 0 and random.random() < 0.1 and active_inputs:
-                new_i = random.choice(active_inputs)
-                if new_i not in current_synapses:
-                    current_synapses[new_i] = random.uniform(0.1, 0.2)
-
-            # 厳格なSynaptic Scaling（重みの総量規制）
-            current_sum = sum(current_synapses.values())
-            if current_sum > 0:
-                scale_factor = self.target_weight_sum / current_sum
-                for i in current_synapses:
-                    current_synapses[i] *= scale_factor
-
-                    # 最終的な結合荷重のクリッピング
-                    if current_synapses[i] > 1.0:
-                        current_synapses[i] = 1.0
+                # スケーリング
+                current_sum = sum(current_synapses.values())
+                if current_sum > 0:
+                    scale = self.target_weight_sum / current_sum
+                    for i in current_synapses:
+                        current_synapses[i] = min(4.0, current_synapses[i] * scale)
 
         return output_spikes, list(self.potentials)
 
-    def forward(
-        self, input_spike_indices: list[int], learning: bool = True
-    ) -> list[int]:
-        """transformer.py からの呼び出し互換インターフェース。
-        入力: 発火インデックスのリスト (例: [3, 10, 42])
-        出力: 発火した出力ニューロンのインデックスのリスト
-        """
-        # input_spike_indices を密なスパイクベクトルに変換
+    def forward(self, input_spike_indices: list[int], learning: bool = True) -> list[int]:
+        """上位クラスからの呼び出し"""
         input_spikes = [0] * self.num_inputs
         for idx in input_spike_indices:
             if 0 <= idx < self.num_inputs:
                 input_spikes[idx] = 1
 
-        reward = 1.0 if learning else 0.0
-        output_spikes, _ = self.process_step(input_spikes, reward=reward)
-
-        # 密なスパイクベクトルをインデックスリストに変換
+        # 明示的にlearningフラグを内部処理に分配
+        output_spikes, _ = self.process_step(
+            input_spikes, 
+            reward=(1.0 if learning else 0.0), 
+            boost=(not learning)
+        )
         return [i for i, s in enumerate(output_spikes) if s == 1]
+
+    def reset_state(self):
+        """膜電位のみをリセットし、重みは絶対に保持する"""
+        self.potentials = [0.0] * self.num_outputs
+        self.thresholds = [self.base_threshold] * self.num_outputs
 
 
 class STDPPretrainer:
