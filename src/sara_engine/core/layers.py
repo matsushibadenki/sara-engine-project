@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/layers.py",
-    "//": "タイトル: スパイキング・ニューラル・レイヤー (検証精度向上版)",
-    "//": "目的: 推論時の確率的なゆらぎを抑え、モデルの保存・復元の完全一致を保証する。"
+    "//": "ファイルの日本語タイトル: スパイキング・ニューラル・レイヤー",
+    "//": "ファイルの目的や内容: FFNへのTeacher Forcingとシナプス新生の導入、および推論時のNormalization緩和。"
 }
 
 import random
@@ -123,7 +123,6 @@ class DynamicLiquidLayer:
         for i in range(self.size):
             if i in fired_set:
                 self.v[i] = 0.0
-                # 学習時はランダム、テスト時は固定値で再現性を確保
                 self.refractory[i] = random.uniform(2.0, 5.0) if learning else 3.0
                 self.trace[i] += 1.0
                 self.dynamic_thresh[i] += 0.05
@@ -166,11 +165,10 @@ class SpikeNormalization:
         for s in spikes:
             offset = self.threshold_offsets.get(s, 0.0)
             if learning:
-                # 学習時は確率的な間引きを行い、多様性を確保
                 if random.random() > offset: normalized_spikes.append(s)
             else:
-                # 推論時は決定論的に。オフセット（抑制）が0.5未満なら通す
-                if offset < 0.5: normalized_spikes.append(s)
+                # 推論時は決定論的に。オフセットの閾値を緩和し、抑制されすぎないようにする（0.5 -> 0.99）
+                if offset < 0.99: normalized_spikes.append(s)
         
         if learning:
             current_rate = len(spikes) / max(1, dim)
@@ -201,25 +199,41 @@ class SpikeFeedForward:
             for t in random.sample(range(out_dim), num): weights[i][t] = random.uniform(-1.0, 1.0)
         return weights
 
-    def _sparse_propagate(self, active_spikes: List[int], weights: List[Dict[int, float]], out_size: int, threshold: float = 0.5) -> List[int]:
+    def _sparse_propagate(self, active_spikes: List[int], weights: List[Dict[int, float]], out_size: int, threshold: float = 0.5, gain: float = 1.0) -> List[int]:
         potentials = [0.0] * out_size
         for s in active_spikes:
             if s < len(weights):
-                for t, w in weights[s].items(): potentials[t] += w
+                for t, w in weights[s].items(): potentials[t] += w * gain
         return [i for i, p in enumerate(potentials) if p > threshold]
 
-    def _apply_stdp(self, pre_spikes: List[int], post_spikes: List[int], weights: List[Dict[int, float]], lr: float = 0.01):
+    def _apply_stdp(self, pre_spikes: List[int], post_spikes: List[int], weights: List[Dict[int, float]], lr: float = 0.05):
         post_set = set(post_spikes)
         for pre in pre_spikes:
             if pre < len(weights):
-                for target in weights[pre].keys():
-                    if target in post_set: weights[pre][target] = min(1.0, weights[pre][target] + lr)
-                    else: weights[pre][target] = max(-1.0, weights[pre][target] - lr * 0.5)
+                for target in list(weights[pre].keys()):
+                    if target in post_set: 
+                        weights[pre][target] = min(3.0, weights[pre][target] + lr)
+                    else: 
+                        weights[pre][target] = max(0.0, weights[pre][target] - lr * 0.01)
+                
+                # シナプス新生 (Structural Plasticity)
+                for target in post_set:
+                    if target not in weights[pre]:
+                        if random.random() < 0.2:
+                            weights[pre][target] = 0.5
 
     def forward(self, spikes: List[int], learning: bool = True) -> List[int]:
-        h = self._sparse_propagate(spikes, self.w1, self.hidden_dim, threshold=0.8)
-        out = self._sparse_propagate(h, self.w2, self.embed_dim, threshold=0.8)
+        gain = 1.0 if learning else 12.0
+        h = self._sparse_propagate(spikes, self.w1, self.hidden_dim, threshold=0.5, gain=gain)
+        out = self._sparse_propagate(h, self.w2, self.embed_dim, threshold=0.5, gain=gain)
         if learning:
-            self._apply_stdp(spikes, h, self.w1)
-            self._apply_stdp(h, out, self.w2)
+            forced_h = list(set(h))
+            if len(forced_h) < max(1, len(spikes) // 2):
+                forced_h.extend([(s * 7) % self.hidden_dim for s in spikes])
+                forced_h = list(set(forced_h))
+                
+            forced_out = list(set(out) | set(spikes))
+            
+            self._apply_stdp(spikes, forced_h, self.w1)
+            self._apply_stdp(forced_h, forced_out, self.w2)
         return out
