@@ -1,9 +1,7 @@
-# src/sara_engine/learning/stdp.py
-
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/learning/stdp.py",
-    "//": "タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー",
-    "//": "目的: 想起フラグの確実な伝播と、物理的な膜電位加算による想起能力の最大化。"
+    "//": "ファイルの日本語タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー",
+    "//": "ファイルの目的や内容: 想起フラグの確実な伝播と、物理的な膜電位加算による想起能力の最大化。シナプス刈り込みによる構造的可塑性の実現。"
 }
 
 import random
@@ -65,6 +63,9 @@ class STDPLayer:
                         current_synapses[i] += self.A_plus
                     else:
                         current_synapses[i] -= self.A_minus
+                        # 閾値を下回ったシナプスを削除（刈り込み）
+                        if current_synapses[i] < self.prune_threshold:
+                            del current_synapses[i]
                 
                 # シナプス新生
                 if random.random() < 0.5 and active_inputs:

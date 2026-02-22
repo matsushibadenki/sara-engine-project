@@ -1,7 +1,7 @@
-{
+_FILE_INFO = {
     "//": "ディレクトリパス: scripts/health_check.py",
     "//": "ファイルの日本語タイトル: SARA-Engine 統合アーキテクチャ・ヘルスチェック",
-    "//": "ファイルの目的や内容: SARA-Engineの主要コンポーネント（STDP、Homeostasis、Rust連携等）が正常に機能しているか診断するスクリプト。"
+    "//": "ファイルの目的や内容: SARA-Engineの主要コンポーネント（STDP、Homeostasis、Rust連携等）が正常に機能しているか診断するスクリプト。最新APIへの追従修正。"
 }
 
 import sys
@@ -39,7 +39,9 @@ class SARAHealthCheck:
         """1. 行列演算排除の検証"""
         try:
             layer = DynamicLiquidLayer(input_size=10, hidden_size=20, decay=0.9, use_rust=False)
-            v, thresh = layer.get_state()
+            # get_state() ではなくプロパティに直接アクセス
+            v = layer.v
+            thresh = layer.dynamic_thresh
             is_pure_list = isinstance(v, list) and isinstance(thresh, list)
             if is_pure_list:
                 self.log("行列演算排除", True, "Numpy依存なし（純粋なPython List）を確認。")
@@ -82,7 +84,7 @@ class SARAHealthCheck:
             )
             
             # 初期状態取得
-            _, thresh_start = layer.get_state()
+            thresh_start = list(layer.dynamic_thresh)
             avg_start = sum(thresh_start) / len(thresh_start)
             
             # 300ステップの連続過剰刺激
@@ -92,13 +94,14 @@ class SARAHealthCheck:
                 # 膜電位を強制的に閾値以上に引き上げる
                 layer.v = [50.0] * layer.size 
                 
-                layer.forward_with_feedback(
+                # forward_with_feedback は forward に統合されたため変更
+                layer.forward(
                     active_inputs=list(range(10)), 
                     prev_active_hidden=[],
                     feedback_active=[]
                 )
                 
-            _, thresh_end = layer.get_state()
+            thresh_end = list(layer.dynamic_thresh)
             avg_end = sum(thresh_end) / len(thresh_end)
             
             # 閾値が上昇していることを確認（終了時 > 開始時）
@@ -117,7 +120,7 @@ class SARAHealthCheck:
             
             start_time = time.time()
             for _ in range(100):
-                layer.forward_with_feedback(active_inputs=[random.randint(0, 999)], prev_active_hidden=[])
+                layer.forward(active_inputs=[random.randint(0, 999)], prev_active_hidden=[])
             end_time = time.time()
             
             self.log("省エネ性能", True, f"スパース・イベント駆動の処理速度を確認（{end_time - start_time:.4f}s）。")

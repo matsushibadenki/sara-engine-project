@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/layers.py",
     "//": "ファイルの日本語タイトル: スパイキング・ニューラル・レイヤー",
-    "//": "ファイルの目的や内容: FFNへのTeacher Forcingとシナプス新生の導入、および推論時のNormalization緩和。"
+    "//": "ファイルの目的や内容: FFNへのTeacher Forcingとシナプス新生の導入、および推論時のNormalization緩和。Rustによる高速化とプルーニング(刈り込み)による精度向上。"
 }
 
 import random
@@ -167,7 +167,6 @@ class SpikeNormalization:
             if learning:
                 if random.random() > offset: normalized_spikes.append(s)
             else:
-                # 推論時は決定論的に。オフセットの閾値を緩和し、抑制されすぎないようにする（0.5 -> 0.99）
                 if offset < 0.99: normalized_spikes.append(s)
         
         if learning:
@@ -182,6 +181,7 @@ class SpikeFeedForward:
     def __init__(self, embed_dim: int, hidden_dim: int, density: float = 0.1):
         self.embed_dim = embed_dim
         self.hidden_dim = hidden_dim
+        self.use_rust = RUST_AVAILABLE
         self.w1 = self._init_sparse_weights(embed_dim, hidden_dim, density)
         self.w2 = self._init_sparse_weights(hidden_dim, embed_dim, density)
 
@@ -200,6 +200,11 @@ class SpikeFeedForward:
         return weights
 
     def _sparse_propagate(self, active_spikes: List[int], weights: List[Dict[int, float]], out_size: int, threshold: float = 0.5, gain: float = 1.0) -> List[int]:
+        if self.use_rust:
+            # Rustの高速処理を利用。ゲイン分は閾値側を下げることで数学的に等価に処理する
+            effective_threshold = threshold / gain
+            return sara_rust_core.sparse_propagate_threshold(active_spikes, weights, out_size, effective_threshold)
+
         potentials = [0.0] * out_size
         for s in active_spikes:
             if s < len(weights):
@@ -210,12 +215,19 @@ class SpikeFeedForward:
         post_set = set(post_spikes)
         for pre in pre_spikes:
             if pre < len(weights):
+                to_remove = []
                 for target in list(weights[pre].keys()):
                     if target in post_set: 
                         weights[pre][target] = min(3.0, weights[pre][target] + lr)
                     else: 
-                        weights[pre][target] = max(0.0, weights[pre][target] - lr * 0.01)
+                        weights[pre][target] -= lr * 0.05  # 弱体化のバランスを調整
+                        if weights[pre][target] <= 0.01:
+                            to_remove.append(target)
                 
+                # プルーニング(刈り込み)実行: スパース性を保ち計算速度と精度を維持する
+                for target in to_remove:
+                    del weights[pre][target]
+
                 # シナプス新生 (Structural Plasticity)
                 for target in post_set:
                     if target not in weights[pre]:
