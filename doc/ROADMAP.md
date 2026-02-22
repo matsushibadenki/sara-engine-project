@@ -1,54 +1,82 @@
-# **SARA Engine Roadmap**
+# **SARA Engine \- Evolution Roadmap**
 
-This roadmap outlines the development path for the SARA (Spiking Advanced Reasoning Agent) Engine. The focus is on evolving from a basic SNN framework to a fully cognitive, Transformer-equivalent Spiking Neural Network architecture, complying with the "No-GPU / First Principles" policy.
+## **ビジョン: 生体模倣型AIへのパラダイムシフト**
 
-## **1\. Spiking Transformer Architecture (The "SNN-LLM" Core)**
+SARAエンジンは、現在のAI（PyTorch/TensorFlowなど）が依存する「密な行列演算」「誤差逆伝播法（BP）」「GPU」からの完全な脱却を目指します。純粋なスパイク駆動と局所学習（STDP）による、超低消費電力・高効率な次世代AIエンジンを実現するためのロードマップです。
 
-To realize functionality equivalent to Transformers using Spiking Neural Networks without relying on matrix multiplication-heavy backpropagation.
+## **1\. 既存DLフレームワーク（PyTorch/TensorFlow）から取り入れるべき「必須機能」のSNN的昇華**
 
-* \[ \] **Spiking Multi-Head Self-Attention**  
-  * Implement attention mechanisms using temporal spike logic (e.g., spike timing coincidence) rather than dot-product matrices.  
-  * Develop "Query", "Key", and "Value" equivalents using neuron populations.  
-* \[ \] **Spiking Softmax / Winner-Take-All (WTA)**  
-  * Implement lateral inhibition circuits to approximate Softmax normalization for attention weights.  
-* \[ \] **Temporal Positional Encoding**  
-  * Develop time-based encoding (Phase Coding or Time-to-First-Spike) to represent token positions in sequences.  
-* \[ \] **Spiking Residual Connections**  
-  * Implement skip connections via direct membrane potential injection to support deep network architectures.  
-* \[ \] **Spiking Layer Normalization**  
-  * Implement homeostatic plasticity (dynamic threshold adaptation) to normalize layer activity without statistical normalization.  
-* \[ \] **Token-to-Spike Embeddings**  
-  * Optimize methods for converting semantic tokens into sparse distributed representations (SDR) or spike trains.
+SARAエンジンが実用的なフレームワークとして研究者や開発者に普及するためには、既存フレームワークの利便性を「BPなし・行列演算なし」の制約下で再構築する必要があります。
 
-## **2\. Advanced Learning & Plasticity**
+### **A. 動的トポロジーと自動学習ルーティング (Autogradの代替)**
 
-Moving beyond basic STDP to support complex, deep architectures.
+* **課題:** PyTorchのAutogradは微分の連鎖律を自動計算しますが、SNNには微分計算がありません。  
+* **目標:** モジュールを繋ぐだけで、スパイクの伝播経路と局所的な学習則（STDP、反ヘブ則など）の相互作用が自動的に構築・ルーティングされる「Auto-Synapse」機能の実装。
 
-* \[ \] **Reward-Modulated STDP (R-STDP)**  
-  * Integrate global dopamine-like reward signals to modulate local STDP updates for reinforcement learning tasks.  
-* \[ \] **Structural Plasticity (Synaptic Rewiring)**  
-  * Implement dynamic creation and pruning of synapses based on correlation and usage, allowing the network topology to evolve.  
-* \[ \] **Surrogate Gradient Learning (Rust Backend)**  
-  * Implement gradient approximations in the Rust core to enable supervision for deep SNNs while keeping the Python interface clean and bio-inspired.  
-* \[ \] **Homeostatic Regulation**  
-  * Global activity regulation mechanisms to prevent "epileptic" runaway excitation in large networks.
+### **B. 直感的なモジュールAPI (nn.Moduleの代替)**
 
-## **3\. Cognitive Architecture & Global Workspace**
+* **課題:** 層をブロックのように積み重ねて複雑なアーキテクチャを容易に構築する機能の欠如。  
+* **目標:** 視覚野、海馬、前頭前野などの生体脳の機能ブロックを、レゴブロックのように直感的に組み合わせてネットワークを構築できる高位モジュールAPI（例: sara.modules.Hippocampus）の拡充。
 
-* \[ \] **Thalamo-Cortical Loops (Gating)**  
-  * Implement a central routing system (Thalamus) to control information flow between cortex regions (Visual, Audio, Memory).  
-* \[ \] **Working Memory (Attractor Networks)**  
-  * Implement sustained firing circuits (recurrent excitation) to hold context over long timeframes, replacing the "Context Window" of Transformers.  
-* \[ \] **Metacognition & Monitoring**  
-  * Circuits that monitor the "energy" (spike rate) and "confidence" (entropy) of the system to trigger curiosity or doubt.
+### **C. 状態のシリアライゼーションと復元 (state\_dictの保存/読込)**
 
-## **4\. Performance & Rust Core Optimization**
+* **課題:** 大規模モデルの学習途中での保存と、推論時の再開。  
+* **目標:** シナプス荷重だけでなく、各ニューロンの膜電位、発火閾値、不応期といった「動的な内部状態」をまるごと高効率に保存・ロード・スナップショット化する機構の実装。
 
-* \[ \] **Parallel Spike Propagation**  
-  * Further optimize the Rust backend to handle millions of neurons on CPU using multi-threading.  
-* \[ \] **Sparse Matrix Optimization**  
-  * Optimize memory usage for massive synaptic connectivity using Sparse Distributed Representations (SDR) at the Rust level.  
-* \[ \] **Serialization & State Management**  
-  * Efficient saving/loading of full brain states (membrane potentials \+ weights) for pausing and resuming "consciousness".
+### **D. スパイク・ストリーム・データローダー (DataLoaderの代替)**
 
-*Note: Completed features (Basic NeuroFEM, Basic STDP, Hippocampal Memory, standard RL, and Python-Rust bridging) have been archived from this list.*
+* **課題:** 静的なバッチデータではなく、連続的な時系列データの効率的な処理。  
+* **目標:** 動画、音声、センサーなどの連続データをリアルタイムでイベント駆動型スパイク（AERフォーマット等）にエンコードし、非同期ストリームとしてエンジンに継続的に流し込むデータパイプラインの構築。
+
+### **E. 実行環境の抽象化とエッジ最適化 (.to("device")の代替)**
+
+* **課題:** 実行ハードウェアのシームレスな切り替え。  
+* **目標:** GPUに依存しないため、マルチコアCPUアーキテクチャ（Rustバックエンドの非同期処理）への徹底した並列最適化。将来的にはニューロモルフィック専用チップ（Loihi等）やエッジマイコンへ透過的にデプロイできるハードウェア抽象化層（HAL）の実装。
+
+### **F. リアルタイム・ダイナミクス可視化 (TensorBoardの代替)**
+
+* **課題:** ブラックボックス化しやすいネットワーク内部の挙動のモニタリング。  
+* **目標:** スパイク発火のラスタープロット、シナプス結合のトポロジー変化、脳波（LFP）に相当するマクロな活動電位をリアルタイムで監視する専用可視化ツール「Sara-Board」の開発。
+
+## **2\. Transformerの代替となるための「理論的ブレイクスルー」開発**
+
+LLMなどにおけるTransformerの圧倒的性能にSNNが追いつき、それを超えるためのコア技術開発領域です。
+
+### **A. 乗算と非線形演算に依存しない「Spike-driven Attention」**
+
+* 行列演算（Q, K, Vの積）とSoftmax関数を完全に排除。  
+* スパイクの「発火タイミングの同期（Phase Synchrony）」や「発火頻度（Rate）」の加算のみで、情報の重要度を動的にルーティングする純粋なスパイキング・アテンション機構の確立。
+
+### **B. 長距離依存性（Long-Range Dependencies）の保持**
+
+* RNN特有の「時間の経過による文脈情報の減衰」の克服。  
+* 海馬システム（短期記憶から長期記憶への転送機構）の統合や、異なる時間スケール（時定数）を持つニューロン群の階層化により、数万トークン以上の長大なコンテキストを保持し続けるダイナミクスの実現。
+
+### **C. 大域的最適化を実現する「局所学習則」**
+
+* 誤差逆伝播法（BP）による力技の大域最適化の排除。  
+* 予測符号化（Predictive Coding: 予測と入力の誤差のみをスパイクとして伝播させる）や、報酬予測誤差に基づく大域的なドーパミン変調（Reward-modulated STDP）により、局所的なシナプス更新の連鎖だけでネットワーク全体をタスクに適応させる学習理論の実装。
+
+## **3\. 開発フェーズとマイルストーン**
+
+### **Phase 1: コアアーキテクチャの確立とフレームワーク化 (現在 〜 中期)**
+
+* \[x\] Rustコアによる非同期スパイク計算エンジンの基礎実装。  
+* \[x\] 誤差逆伝播（BP）と行列演算の完全排除ルールの徹底。  
+* \[ \] PyTorchライクな高位APIの実装（Moduleベースの直感的な構築）。  
+* \[ \] 膜電位やシナプス状態の完全なSave/Load機能の実装。  
+* \[ \] スパイクデータローダーとリアルタイム可視化ツールのプロトタイプ開発。
+
+### **Phase 2: 理論の実装とTransformer機能の代替 (中期 〜 長期)**
+
+* \[ \] Spike-driven Attentionモデルのプロトタイプ実装。  
+* \[ \] 長距離依存性をテストするタスク（Long-context retrievalなど）でのベンチマークテスト。  
+* \[ \] 予測符号化および報酬変調STDPアルゴリズムの実装と検証。  
+* \[ \] テキスト・画像・音声を統合したマルチモーダル処理パイプラインの構築。
+
+### **Phase 3: 大規模化とエッジ・ハードウェア展開 (長期)**
+
+* \[ \] マルチコアCPUでの分散スパイク処理の極限最適化（ゼロ・コピー設計の徹底）。  
+* \[ \] Sara-Boardによる大規模ネットワークのリアルタイム・モニタリング環境の提供。  
+* \[ \] エッジデバイス（ラズベリーパイ、TinyML環境等）向け軽量ランタイム（Sara-Edge）のリリース。  
+* \[ \] 次世代ニューロモルフィック専用ハードウェアへの対応に向けたHALの構築と試験。
