@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_mnist_snn.py",
     "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (Spatiotemporal Thermometer Coding)",
-    "//": "目的: 時間ステップごとに異なるシナプス次元を使用する時空間エンコーディング（サーモメーター符号化）を復活させ、濃淡情報を高次元の空間に展開。これにより線形分離性能が劇的に向上する。"
+    "//": "目的: 時間ステップごとに異なるシナプス次元を使用する時空間エンコーディング（サーモメーター符号化）を使用し、層の多様性（時間スケールと空間パッチ）を高め、超高次元スパース特徴空間を構築することで精度95%以上を達成する。"
 }
 
 import sys
@@ -119,16 +119,18 @@ def run_mnist_snn():
     
     num_inputs = 784
     num_classes = 10
-    epochs = 4  
+    epochs = 8  
     
     train_samples_to_use = len(train_images)
     test_samples_to_use = len(test_images)
 
     print("\n[Network] 生物学的マルチスケール・ネットワークを構築中...")
     
+    # 時間スケール（decay）と空間パッチサイズを明確に分離した3つの層を構築
     layer_configs = [
-        {"size": 3000, "decay": 0.80, "patch_sizes": [3, 5, 7]},
-        {"size": 2000, "decay": 0.95, "patch_sizes": [9, 13, 17]} 
+        {"size": 4000, "decay": 0.70, "patch_sizes": [3, 4, 5]},      # 短期記憶・局所特徴
+        {"size": 4000, "decay": 0.85, "patch_sizes": [6, 8, 10]},     # 中期記憶・中域特徴
+        {"size": 4000, "decay": 0.98, "patch_sizes": [12, 16, 20]}    # 長期記憶・広域特徴
     ]
     
     liquid_layers = []
@@ -137,7 +139,7 @@ def run_mnist_snn():
             input_size=num_inputs, 
             hidden_size=cfg["size"], 
             decay=cfg["decay"], 
-            target_rate=0.06,
+            target_rate=0.04,  # 発火率を抑えてよりスパースな特徴にする
             density=0.0,
             input_scale=0.0
         )
@@ -146,9 +148,9 @@ def run_mnist_snn():
     
     total_hidden = sum(cfg["size"] for cfg in layer_configs)
     
-    thresholds = [192, 128, 64, 16]
+    thresholds = [224, 192, 160, 128, 96, 64, 32]
     
-    # 【重要】特徴空間を時間ステップ分拡張（23,136次元の超空間を形成）
+    # 【重要】特徴空間を時間ステップ分拡張 (今回は約89,000次元の超空間)
     features_per_step = num_inputs + total_hidden
     temporal_spatial_size = features_per_step * len(thresholds)
     
@@ -168,8 +170,9 @@ def run_mnist_snn():
         random.shuffle(combined)
         train_images_shuffled, train_labels_shuffled = zip(*combined)
         
+        # エポックが進むごとに学習率を急激に下げて微調整を安定させる
         if epoch > 0:
-            readout_layer.learning_rate *= 0.85
+            readout_layer.learning_rate *= 0.80
             
         for i in range(train_samples_to_use):
             image = train_images_shuffled[i]
@@ -187,13 +190,11 @@ def run_mnist_snn():
             prev_fired = [[] for _ in range(len(liquid_layers))]
             
             for step, thresh in enumerate(thresholds):
-                # 明るいピクセルは複数のステップで発火（Thermometer Coding）
                 active_inputs = [idx for idx, pixel in enumerate(image) if pixel > thresh]
                 
                 if not active_inputs:
                     continue
                 
-                # 時間ステップに応じた次元オフセットを適用
                 offset = 0
                 time_offset = step * features_per_step
                 
