@@ -1,14 +1,14 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/spike_attention.py",
     "//": "ファイルの日本語タイトル: 生体模倣型 スパイキング・アテンション",
-    "//": "ファイルの目的や内容: STDPと短期記憶トレースを用い、行列演算を完全に排除したイベント駆動アテンション機構の実装。"
+    "//": "ファイルの目的や内容: mypy型エラーの修正。動的モジュール解決の回避と、weights変数への型アノテーション追加。"
 }
 
 import random
 from typing import List, Dict
 
 try:
-    from sara_engine import sara_rust_core
+    from sara_engine import sara_rust_core  # type: ignore
     RUST_AVAILABLE = True
 except ImportError:
     RUST_AVAILABLE = False
@@ -37,7 +37,7 @@ class SpikeSelfAttention:
         self.attn_synapses: List[Dict[int, float]] = [{} for _ in range(embed_dim)]
 
     def _init_sparse_weights(self, in_dim: int, out_dim: int, density: float) -> List[Dict[int, float]]:
-        weights = [{} for _ in range(in_dim)]
+        weights: List[Dict[int, float]] = [{} for _ in range(in_dim)]
         for i in range(in_dim):
             num_connections = max(1, int(out_dim * density))
             targets = random.sample(range(out_dim), num_connections)

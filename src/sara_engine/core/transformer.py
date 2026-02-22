@@ -1,18 +1,20 @@
-# ディレクトリパス: src/sara_engine/core/transformer.py
-# タイトル: スパイクトランスフォーマーモデル (時間的文脈維持・予測強化版)
-# 目的: シーケンス処理中にコンテキストをリセットせず、トークン間の時間的依存関係を学習可能にする。
+_FILE_INFO = {
+    "//": "ディレクトリパス: src/sara_engine/core/transformer.py",
+    "//": "ファイルの日本語タイトル: スパイクトランスフォーマーモデル (時間的文脈維持・予測強化版)",
+    "//": "ファイルの目的や内容: mypy型エラーの修正。Optionalの追加、import元のクラス名修正(SpikeSelfAttention)、およびFFNのウェイトへの型アノテーション追加。"
+}
 
 import random
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 try:
-    from sara_engine import sara_rust_core
+    from sara_engine import sara_rust_core  # type: ignore
     RUST_AVAILABLE = True
 except ImportError:
     RUST_AVAILABLE = False
     print("Warning: sara_rust_core not found. Using slow Python backend for FFN.")
 
-from sara_engine.core.spike_attention import SpikingSelfAttention
+from sara_engine.core.spike_attention import SpikeSelfAttention
 
 class SpikeHomeostaticNorm:
     def __init__(self, size: int, target_sparsity: float = 0.1):
@@ -51,8 +53,8 @@ class SpikePositionwiseFFN:
     def __init__(self, d_model: int, d_ff: int, target_sparsity: float = 0.1):
         self.d_model = d_model
         self.d_ff = d_ff
-        self.W1 = [{} for _ in range(d_model)]
-        self.W2 = [{} for _ in range(d_ff)]
+        self.W1: List[Dict[int, float]] = [{} for _ in range(d_model)]
+        self.W2: List[Dict[int, float]] = [{} for _ in range(d_ff)]
         self._init_sparse_weights(self.W1, d_model, d_ff, 0.2)
         self._init_sparse_weights(self.W2, d_ff, d_model, 0.2)
         
@@ -143,14 +145,14 @@ class SpikePositionwiseFFN:
 
 class SpikeTransformerBlock:
     def __init__(self, d_model: int, num_heads: int, ffn_hidden: int):
-        self.attention = SpikingSelfAttention(sdr_size=d_model, num_heads=num_heads, decay_rate=0.7)
+        self.attention = SpikeSelfAttention(embed_dim=d_model, density=0.1)
         self.norm1 = SpikeHomeostaticNorm(size=d_model, target_sparsity=0.15)
         self.ffn = SpikePositionwiseFFN(d_model, ffn_hidden, target_sparsity=0.15)
         self.norm2 = SpikeHomeostaticNorm(size=d_model, target_sparsity=0.15)
         
     def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
         # Attention
-        attn_out = self.attention.forward(x_spikes)
+        attn_out = self.attention.forward(x_spikes, learning=learning)
         x_post_attn = sorted(list(set(x_spikes).union(set(attn_out))))
         x_post_attn = self.norm1.normalize(x_post_attn)
         
@@ -181,7 +183,8 @@ class SpikeTransformer:
     def reset_context(self):
         """シーケンスの開始時に呼び出す"""
         for block in self.blocks:
-            block.attention.reset()
+            if hasattr(block.attention, 'reset'):
+                block.attention.reset()
 
     def _decode_spikes(self, spikes: List[int]) -> int:
         """最も多く一致する埋め込みを持つトークンIDを返す（簡易Readout）"""
@@ -222,7 +225,7 @@ class SpikeTransformer:
             
         return predicted_tokens
 
-    def __call__(self, tokens: List[int], target_tokens: List[int] = None, simulation_steps: int = 1) -> List[int]:
+    def __call__(self, tokens: List[int], target_tokens: Optional[List[int]] = None, simulation_steps: int = 1) -> List[int]:
         """demo_spiking_transformer.py からの呼び出し用インターフェース"""
         # 学習モードの判定
         is_learning = target_tokens is not None
