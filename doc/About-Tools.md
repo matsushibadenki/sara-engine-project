@@ -48,6 +48,17 @@ Run these Python scripts to see the engine in action. All scripts are located in
 | **Visualize STDP** | python examples/visualize\_stdp.py |
 | **SNN transformer** | python examples/demo\_snn\_transformer.py |
 | **Stream Learning** | python examples/demo\_stream\_learning.py |
+| **stream learning** | python examples/demo\_stream\_learning.py |
+| **snn classification** | python examples/demo\_snn\_classification.py |
+| **snn rag persistent** | python examples/demo\_snn\_rag\_persistent.py |
+| **snn pipeline** | python examples/demo\_snn\_pipeline.py |
+| **snn text classification** | python examples/demo\_snn\_text\_classification.py |
+| **snn feature extraction** | python examples/demo\_snn\_feature\_extraction.py |
+| **snn image classification** | python examples/demo\_snn\_image\_classification.py |
+| **snn audio classification** | python examples/demo\_snn\_audio\_classification.py |
+| **snn token classification** | python examples/demo\_snn\_token\_classification.py |
+| **spike attention** | python examples/demo\_spike\_attention.py |
+| **snn rag** | python examples/demo\_snn\_rag.py |
 
   
 *(Note: examples/utils.py is a utility module for the examples and is not meant to be run directly as a standalone demo.)*
