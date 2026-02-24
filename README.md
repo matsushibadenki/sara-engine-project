@@ -6,7 +6,7 @@ It completely eliminates the "backpropagation (BP)" and "matrix operations" that
 
 It operates completely on CPU, without using any GPU or NumPy.
 
-Current Version: **v0.2.0**
+Current Version: **v0.2.1**
 
 ## Features
 
@@ -24,7 +24,7 @@ pip install sara-engine
 
 ## Quick Start
 
-SARA v0.2.0 introduces an incredibly intuitive pipeline API, bringing the ease of modern NLP frameworks to Spiking Neural Networks.
+SARA v0.2.1 introduces an incredibly intuitive pipeline API, bringing the ease of modern NLP frameworks to Spiking Neural Networks.
 
 ### 1. Text Generation (Zero-Shot Inference)
 
