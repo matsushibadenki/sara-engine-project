@@ -1,8 +1,8 @@
-# [配置するディレクトリのパス]: examples/demo_snn_learning.py
-# [ファイルの日本語タイトル]: SARA-Engine SNN学習・睡眠・永続化デモ
-# [ファイルの目的や内容]:
-# ホメオスタシスによる過剰な抑制（閾値上昇）をリセットし、推論時に安定して発火・予測させる。
-# インポートエラーの解消と、インデントエラー(スペース/タブ混在)を厳密な4スペースで修正。
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_snn_learning.py",
+    "//": "タイトル: SARA-Engine SNN学習・睡眠・永続化デモ",
+    "//": "目的: 最新のSpikeReadoutLayerとDynamicLiquidLayerのAPI(forward等)に適合させ、エラーを解消する。"
+}
 
 import sys
 import os
@@ -13,17 +13,20 @@ import json
 # プロジェクトルートをパスの先頭に追加し、ローカルのsrcを確実に優先させる
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# cortexではなくlayersから正しくインポートするように修正
 from src.sara_engine.core.layers import DynamicLiquidLayer
-from src.sara_engine.models.readout_layer import ReadoutLayer
+from src.sara_engine.models.readout_layer import SpikeReadoutLayer
 
 def save_brain_state(readout_layer, filename="workspace/sara_readout_state.json"):
     """学習した読み出し層の重みをJSONとして保存する"""
+    if not os.path.exists("workspace"):
+        os.makedirs("workspace")
+        
     state = {
-        "weights": [dict((int(k), float(v)) for k, v in w.items()) for w in readout_layer.weights],
+        "W": [dict((int(k), float(v)) for k, v in w.items()) for w in readout_layer.W],
+        "b": readout_layer.b,
         "metadata": {
-            "input_size": readout_layer.input_size,
-            "output_size": readout_layer.output_size,
+            "input_size": readout_layer.d_model,
+            "output_size": readout_layer.vocab_size,
             "timestamp": time.time()
         }
     }
@@ -53,10 +56,11 @@ def run_snn_learning_demo():
     )
     
     # 2. 読み出し層の初期化
-    readout_layer = ReadoutLayer(
-        input_size=hidden_size, 
-        output_size=num_classes,
-        learning_rate=0.005
+    readout_layer = SpikeReadoutLayer(
+        d_model=hidden_size, 
+        vocab_size=num_classes,
+        learning_rate=0.005,
+        use_refractory=False
     )
 
     # 2つの異なる入力パターン (AとB)
@@ -81,16 +85,17 @@ def run_snn_learning_demo():
         
         # SNNの時間発展 (5タイムステップ)
         for _ in range(5):
-            fired_hidden = liquid_layer.forward_with_feedback(
+            fired_hidden = liquid_layer.forward(
                 active_inputs=active_inputs,
                 prev_active_hidden=[]
             )
             accumulated_fired.update(fired_hidden)
         
         if accumulated_fired:
-            readout_layer.train_step(
-                active_hidden_indices=list(accumulated_fired), 
-                target_label=target_label
+            readout_layer.forward(
+                list(accumulated_fired), 
+                target_token=target_label,
+                learning=True
             )
             
         if (epoch + 1) % 200 == 0:
@@ -101,31 +106,38 @@ def run_snn_learning_demo():
     
     # 3. 睡眠フェーズの実行
     print("\n--- 睡眠フェーズ開始 ---")
-    sleep_result = readout_layer.sleep_phase(prune_rate=0.05)
-    print(sleep_result)
+    pruned_count = 0
+    for s_idx in range(len(readout_layer.W)):
+        to_delete = [t_id for t_id, weight in readout_layer.W[s_idx].items() if abs(weight) < 0.05]
+        for t_id in to_delete:
+            del readout_layer.W[s_idx][t_id]
+            pruned_count += 1
+    print(f"睡眠フェーズ完了: 全ての層から {pruned_count} 個のシナプスを枝刈りしました。")
     
     # 4. 推論テスト
     print("\n--- 推論テスト ---")
     
-    # 【重要修正】: 学習によって上がりきった発火閾値や活動履歴をリセット
     liquid_layer.reset()
     
     for name, pattern, true_label in [("Pattern A", pattern_a, 0), ("Pattern B", pattern_b, 1)]:
         active_in = [i for i, v in enumerate(pattern) if v == 1]
         
-        # テスト時もパターン提示前に膜電位をリセット
         liquid_layer.v = [0.0] * hidden_size
         liquid_layer.refractory = [0.0] * hidden_size
         
         accumulated_fired = set()
-        # テスト時は発火を確実にするためステップ数を10に増加
         for _ in range(10):
-            fired_h = liquid_layer.forward_with_feedback(active_in, [])
+            fired_h = liquid_layer.forward(active_inputs=active_in, prev_active_hidden=[])
             accumulated_fired.update(fired_h)
+            
+        potentials_dict = {i: readout_layer.b[i] for i in range(num_classes)}
+        for s in accumulated_fired:
+            if s < len(readout_layer.W):
+                for tid, w in readout_layer.W[s].items():
+                    potentials_dict[tid] += w
+        potentials = [potentials_dict[i] for i in range(num_classes)]
         
-        potentials = readout_layer.predict(list(accumulated_fired))
-        predicted = potentials.index(max(potentials)) if accumulated_fired else -1
-        
+        predicted = readout_layer.forward(list(accumulated_fired), learning=False)
         formatted_potentials = [round(p, 3) for p in potentials]
         
         print(f"{name}: 予測クラス={predicted} (正解={true_label}) | ポテンシャル={formatted_potentials}")

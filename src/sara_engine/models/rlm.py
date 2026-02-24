@@ -1,7 +1,8 @@
+# ファイルメタ情報
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/rlm.py",
     "//": "タイトル: 強化学習モジュール (Stateful RLM)",
-    "//": "目的: READ状態での状態推移の暴走修正、および存在しないupdate_memoryメソッドの呼び出しを削除してAttributeErrorを解消する。"
+    "//": "目的: DynamicLiquidLayerのforward_with_feedbackメソッド廃止に伴い、新しいforwardメソッドへ移行する。"
 }
 
 import numpy as np
@@ -151,16 +152,14 @@ class StatefulSaraGPT:
         
         combined_input = list(set(input_sdr + context_spikes))
         
-        spikes_1 = self.l1.forward_with_feedback(combined_input, self.prev_spikes[0], feedback_active=self.prev_spikes[1], learning=training)
-        spikes_2 = self.l2.forward_with_feedback(spikes_1, self.prev_spikes[1], feedback_active=self.prev_spikes[2], learning=training)
+        spikes_1 = self.l1.forward(active_inputs=combined_input, prev_active_hidden=self.prev_spikes[0], feedback_active=self.prev_spikes[1], learning=training)
+        spikes_2 = self.l2.forward(active_inputs=spikes_1, prev_active_hidden=self.prev_spikes[1], feedback_active=self.prev_spikes[2], learning=training)
         
         attn_signal = []
         if self.attention_active:
-            # 修正ポイント: compute() の内部でメモリへの追加(k, vの保存)が行われるため、
-            # update_memory() の呼び出しは不要であり削除しました。
             attn_signal = self.attention.compute(spikes_2)
         
-        spikes_3 = self.l3.forward_with_feedback(spikes_2, self.prev_spikes[2], feedback_active=[], learning=training, attention_signal=attn_signal)
+        spikes_3 = self.l3.forward(active_inputs=spikes_2, prev_active_hidden=self.prev_spikes[2], feedback_active=[], learning=training, attention_signal=attn_signal)
         
         self.prev_spikes = [spikes_1, spikes_2, spikes_3]
         

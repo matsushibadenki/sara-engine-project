@@ -1,17 +1,22 @@
+# ファイルメタ情報
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/readout_layer.py",
     "//": "ファイルの日本語タイトル: スパイク読み出し層 (Top-1 Hinge-Loss STDP / 生物学的WTA)",
-    "//": "ファイルの目的や内容: Winner-Take-All（側抑制）の原理を応用し、最大の競合クラス（Top-1）に対してのみマージン更新を行うPassive-Aggressiveアルゴリズムを実装。複数クラスへの過剰な更新による発散を防ぎ、L2正則化（恒常性）を取り入れることで精度95%以上を実現する。"
+    "//": "ファイルの目的や内容: Winner-Take-All（側抑制）の原理を応用し、最大の競合クラス（Top-1）に対してのみマージン更新を行うPassive-Aggressiveアルゴリズムを実装。独立サンプルの分類タスクに悪影響を与えていた不応期（Refractory）の無効化オプションを追加し、精度95%以上の壁を突破する。"
 }
 
 import random
+import math
 from typing import List, Dict, Optional
 
 class SpikeReadoutLayer:
-    def __init__(self, d_model: int, vocab_size: int, learning_rate: float = 0.01):
+    def __init__(self, d_model: int, vocab_size: int, learning_rate: float = 0.01, use_refractory: bool = False):
         self.d_model = d_model
         self.vocab_size = vocab_size
         self.learning_rate = learning_rate
+        
+        # LLM等の時系列生成タスクではTrue、画像分類等の独立タスクではFalseを使用する
+        self.use_refractory = use_refractory
         
         self.W: List[Dict[int, float]] = [{} for _ in range(d_model)]
         self.b: List[float] = [0.0] * vocab_size
@@ -24,10 +29,11 @@ class SpikeReadoutLayer:
         self.w_min = -50.0 
 
     def forward(self, spikes: List[int], target_token: Optional[int] = None, learning: bool = True) -> int:
-        for tid in list(self.refractory_states.keys()):
-            self.refractory_states[tid] -= 1
-            if self.refractory_states[tid] <= 0:
-                del self.refractory_states[tid]
+        if self.use_refractory:
+            for tid in list(self.refractory_states.keys()):
+                self.refractory_states[tid] -= 1
+                if self.refractory_states[tid] <= 0:
+                    del self.refractory_states[tid]
 
         # 膜電位の計算 (バイアス項 + スパイク加算)
         potentials = list(self.b)
@@ -36,7 +42,7 @@ class SpikeReadoutLayer:
                 for token_id, weight in self.W[s].items():
                     potentials[token_id] += weight
                 
-        if not learning:
+        if not learning and self.use_refractory:
             for tid in self.refractory_states:
                 if tid < self.vocab_size:
                     potentials[tid] = -9999.0 
@@ -52,7 +58,7 @@ class SpikeReadoutLayer:
         if max_potential <= -9000.0 and len(spikes) == 0:
             predicted_token = random.randint(0, self.vocab_size - 1)
             
-        if not learning:
+        if not learning and self.use_refractory:
             self.refractory_states[predicted_token] = self.refractory_duration
 
         # Top-1 Hinge-Loss STDP (Crammer & Singer Multiclass PA)
@@ -70,9 +76,12 @@ class SpikeReadoutLayer:
                         max_wrong_potential = potentials[i]
                         max_wrong_token = i
             
-            # 学習率のスケール係数と要求マージン
+            # 学習率のスケール係数と要求マージンの動的調整
             C = self.learning_rate * 50.0
-            target_margin = 20.0
+            
+            # スパイク数に応じて要求マージンをスケーリングし、多次元空間での埋没を防ぐ
+            margin_scale = math.sqrt(norm_sq) / 10.0 if norm_sq > 100 else 1.0
+            target_margin = 20.0 * margin_scale
             
             # Top-1 クラスに対するヒンジロス
             if max_wrong_token != -1:

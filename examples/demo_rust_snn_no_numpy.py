@@ -1,14 +1,18 @@
-"""
-{
-    "//": "配置パス: examples/demo_rust_snn_no_numpy.py",
-    "//": "日本語タイトル: Numpy非依存のRust版SNNエンジン連携デモ",
-    "//": "目的: 行列演算やnumpyを使わず、Python標準のリスト処理だけでRustの計算エンジンを高速に呼び出す実証を行う。"
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_rust_snn_no_numpy.py",
+    "//": "タイトル: Numpy非依存のSNNエンジン連携デモ",
+    "//": "目的: 未実装のRust関数への直接参照を避け、公式のPythonラッパー(DynamicLiquidLayer, SpikeAttention)を利用する。"
 }
-"""
 
 import random
 import time
-from sara_engine.sara_rust_core import RustLiquidLayer, RustSpikeAttention
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.sara_engine.core.layers import DynamicLiquidLayer
+from src.sara_engine.core.attention import SpikeAttention
 
 def generate_random_spikes(num_neurons: int, probability: float) -> list[int]:
     """
@@ -24,11 +28,10 @@ def run_demo():
     input_size = 1000
     hidden_size = 500
     
-    print("=== Rust SNN Engine Demo (No Numpy, No Matrix Math) ===")
+    print("=== SNN Engine Demo (No Numpy, No Matrix Math) ===")
     
-    # Rust側で初期化（重みや状態はすべてRust側のメモリに保持される）
-    print("Initializing RustLiquidLayer...")
-    layer = RustLiquidLayer(
+    print("Initializing DynamicLiquidLayer...")
+    layer = DynamicLiquidLayer(
         input_size=input_size,
         hidden_size=hidden_size,
         decay=0.9,
@@ -36,8 +39,8 @@ def run_demo():
         feedback_scale=0.5
     )
     
-    print("Initializing RustSpikeAttention...")
-    attention = RustSpikeAttention(
+    print("Initializing SpikeAttention...")
+    attention = SpikeAttention(
         input_size=hidden_size,
         hidden_size=256,
         num_heads=4,
@@ -57,11 +60,12 @@ def run_demo():
         # 2. Liquid Layerへのフォワードパス（状態更新とSTDP学習）
         attention_signal = []
         active_hidden = layer.forward(
-            active_inputs,
-            prev_active_hidden,
-            feedback_active,
-            attention_signal,
-            learning=True
+            active_inputs=active_inputs,
+            prev_active_hidden=prev_active_hidden,
+            feedback_active=feedback_active,
+            attention_signal=attention_signal,
+            learning=True,
+            reward=1.0
         )
         
         # 3. Attention機構の計算（SDRの共通集合による類似度計算）

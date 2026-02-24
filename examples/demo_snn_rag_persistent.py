@@ -1,19 +1,18 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_snn_rag_persistent.py",
-    "//": "ファイルの日本語タイトル: 永続化対応SNN-RAGデモ",
-    "//": "ファイルの目的や内容: SNNVectorStoreの保存・読み込み機能を利用し、既に構築された知識ベースがあればエンコード処理をスキップして爆速でRAG推論を行う実践的なスクリプト。"
+    "//": "タイトル: 永続化対応SNN-RAGデモ",
+    "//": "目的: 古いPipelineや存在しないConfig引数を廃止し、最新のSpikingFeatureExtractorとSpikingCausalLMを直接使用する堅牢なコードへ修正する。"
 }
 
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
-from sara_engine.models.spiking_feature_extractor import SpikingFeatureExtractor, SNNFeatureExtractorConfig
-from sara_engine.encoders.spike_tokenizer import SpikeTokenizer
-from sara_engine.pipelines import pipeline
-from sara_engine.memory.snn_vector_store import SNNVectorStore
+from src.sara_engine.models.spiking_feature_extractor import SpikingFeatureExtractor, SNNFeatureExtractorConfig
+from src.sara_engine.encoders.spike_tokenizer import SpikeTokenizer
+from src.sara_engine.memory.snn_vector_store import SNNVectorStore
+from src.sara_engine.models.spiking_causal_lm import SpikingCausalLM
 
 def main():
     print("=== Persistent SNN RAG System Demo ===")
@@ -24,14 +23,13 @@ def main():
     vector_store_dir = os.path.join(workspace_dir, "saved_vector_store")
     tokenizer_path = os.path.join(workspace_dir, "tokenizer.json")
     
-    # 共通の知識ベース
     knowledge_base = [
         "The SARA Engine is a bio-inspired AI that does not use matrix multiplications or GPUs.",
         "SARA uses Spiking Neural Networks (SNN) for extreme energy efficiency.",
         "SARA stores knowledge in a biological vector store without FAISS or NumPy."
     ]
     
-    # --- 1. トークナイザーの準備 (保存されていればロード、なければ学習) ---
+    # --- 1. トークナイザーの準備 ---
     tokenizer = SpikeTokenizer()
     if os.path.exists(tokenizer_path):
         print("Loading existing Tokenizer...")
@@ -42,12 +40,9 @@ def main():
         tokenizer.save(tokenizer_path)
 
     # --- 2. 検索エンジンとベクトルストアの準備 ---
-    extractor_config = SNNFeatureExtractorConfig(embedding_dim=512, leak_rate=0.98, std_decay=0.2, std_recovery=0.05)
+    extractor_config = SNNFeatureExtractorConfig(vocab_size=tokenizer.vocab_size, reservoir_size=512, context_length=32)
     extractor_model = SpikingFeatureExtractor(extractor_config)
-    extractor_model.habituate([tokenizer.encode(doc) for doc in knowledge_base])
-    retriever_pipeline = pipeline("feature-extraction", model=extractor_model, tokenizer=tokenizer)
     
-    # ★ ここが永続化の実践部分 ★
     if os.path.exists(os.path.join(vector_store_dir, "vector_store.json")):
         print("\n[Database] Found existing SNN Vector Store. Loading from disk...")
         vector_store = SNNVectorStore.from_pretrained(vector_store_dir)
@@ -55,10 +50,9 @@ def main():
         print("\n[Database] Building new SNN Vector Store from scratch...")
         vector_store = SNNVectorStore()
         for doc in knowledge_base:
-            emb = retriever_pipeline(doc)
+            token_ids = tokenizer.encode(doc)
+            emb = extractor_model.forward(token_ids)
             vector_store.add_document(doc, emb)
-        
-        # 構築したベクトルストアを保存
         vector_store.save_pretrained(vector_store_dir)
     
     print(f"-> Store holds {len(vector_store.documents)} documents ready for search.")
@@ -67,7 +61,7 @@ def main():
     query = "How does SARA store knowledge?"
     print(f"\n[Search] Querying: '{query}'")
     
-    query_emb = retriever_pipeline(query)
+    query_emb = extractor_model.forward(tokenizer.encode(query))
     search_results = vector_store.search(query_emb, top_k=1)
     
     retrieved_context = search_results[0][0]
@@ -76,24 +70,21 @@ def main():
     
     # --- 4. 回答生成エンジン(Generator)の構築 ---
     print("\n[Generation] Learning context via STDP...")
-    generator_config = SNNTransformerConfig(vocab_size=tokenizer.vocab_size + 10, embed_dim=128, num_layers=2, ffn_dim=256)
-    generator_model = SpikingTransformerModel(generator_config)
+    generator_model = SpikingCausalLM(vocab_size=tokenizer.vocab_size, d_model=128, num_layers=2)
     
     epochs = 20
+    token_ids = tokenizer.encode(retrieved_context) + [3]
     for _ in range(epochs):
-        token_ids = tokenizer.encode(retrieved_context) + [3]
-        generator_model.reset_state()
-        for i in range(len(token_ids) - 1):
-            generator_model.forward_step(token_ids[i], learning=True, target_id=token_ids[i+1])
+        generator_model.train_step(token_ids, update_backbone=True)
             
     # --- 5. 回答の生成 ---
-    generator_pipeline = pipeline("text-generation", model=generator_model, tokenizer=tokenizer)
-    prompt = "SARA stores knowledge"
-    output = generator_pipeline(prompt, max_new_tokens=15)
+    prompt_ids = tokenizer.encode("SARA stores knowledge")
+    out_ids = generator_model.generate(prompt_ids, max_new_tokens=15)
+    output_text = tokenizer.decode(out_ids)
     
     print("-" * 50)
     print(f"Question: {query}")
-    print(f"Answer  : {output[0]['generated_text']}")
+    print(f"Answer  : {output_text}")
     print("-" * 50)
 
 if __name__ == "__main__":

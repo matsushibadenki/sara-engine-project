@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/benchmark_rust.py",
     "//": "タイトル: Rust vs Python ベンチマーク",
-    "//": "目的: インストールされたsara-engineの計算速度を計測する。仮想環境の古いパッケージを回避し、ローカルの最新のソースコードから読み込むようにパスとインポートを修正する。"
+    "//": "目的: DynamicLiquidLayerのforward_with_feedback廃止に伴い、新しいforwardメソッドへ移行する。"
 }
 
 import time
@@ -36,7 +36,7 @@ def run_benchmark():
             input_spikes = [(x + 1) % 1024 for x in input_spikes]
             
         # 順伝播
-        spikes = layer.forward_with_feedback(input_spikes, prev_spikes)
+        spikes = layer.forward(active_inputs=input_spikes, prev_active_hidden=prev_spikes)
         prev_spikes = spikes
         
     duration = time.time() - start_time

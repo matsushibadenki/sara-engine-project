@@ -1,12 +1,13 @@
-# filepath: examples/demo_snn_llm.py
-# title: スパイキング・トランスフォーマー実行デモ
-# description: 多言語テキストを入力としてSNNベースのTransformerモジュールを動作させ、発火状態の結果をworkspaceディレクトリに出力する。
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_snn_llm.py",
+    "//": "タイトル: スパイキング・トランスフォーマー実行デモ",
+    "//": "目的: 新しいSpikeTokenizerの仕様に合わせて初期化とエンコード処理を修正し、トランスフォーマーを正常に動作させる。"
+}
 
 import os
 import sys
 import json
 
-# プロジェクトルートディレクトリをsys.pathに追加して、srcモジュールを読み込めるようにする
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
@@ -17,33 +18,36 @@ from src.sara_engine.models.spiking_llm import SpikingTransformerBlock
 def main():
     print("Initializing SARA Spiking Transformer...")
     sdr_size = 1024
-    tokenizer = SpikeTokenizer(sdr_size=sdr_size, active_bits=32)
+    
+    # 新しいSpikeTokenizerにはsdr_size等の引数は不要
+    tokenizer = SpikeTokenizer()
     transformer_block = SpikingTransformerBlock(sdr_size=sdr_size)
     
-    # Multilingual text input
     input_text = "Hello SNN! こんにちは、世界。Bonjour!"
     print(f"Input Text: {input_text}")
     
-    # Encode text to temporal spike trains
-    spike_trains = tokenizer.encode(input_text, time_window=10)
+    # トークナイザーの語彙を学習させてからエンコードする
+    tokenizer.train([input_text])
+    token_ids = tokenizer.encode(input_text)
     
     output_log = []
     
     print("Starting temporal simulation...")
-    for t_step, spikes in spike_trains:
-        # Feed into transformer block
-        out_spikes = transformer_block.forward(spikes)
+    for t_step, token_id in enumerate(token_ids):
+        # トークンIDをスパイク（発火ニューロンのインデックス）に変換
+        spikes = [token_id % sdr_size]
+        out_spikes = transformer_block.forward(spikes, t_step=t_step)
         
         log_entry = {
             "time_step": t_step,
+            "token_id": token_id,
             "input_spikes_count": len(spikes),
             "output_spikes_count": len(out_spikes),
             "active_ratio": round(len(out_spikes) / sdr_size, 4)
         }
         output_log.append(log_entry)
-        print(f"Time: {t_step:3d} | Input Spikes: {len(spikes):3d} | Output Spikes: {len(out_spikes):3d}")
+        print(f"Time: {t_step:3d} | Token: {token_id:3d} | Input Spikes: {len(spikes):3d} | Output Spikes: {len(out_spikes):3d}")
 
-    # Ensure workspace directory exists at the root level
     workspace_dir = os.path.join(project_root, "workspace")
     os.makedirs(workspace_dir, exist_ok=True)
     

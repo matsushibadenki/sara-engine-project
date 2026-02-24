@@ -1,6 +1,6 @@
 # パス: tests/test_event_driven_snn.py
 # タイトル: イベント駆動・スパースSNNアーキテクチャの動作検証
-# 目的: 行列演算非依存のスパース結合、R-STDP、構造的可塑性が正しく動作し、計算が削減されるかを検証する。
+# 目的: 廃止されたget_state()やforward_with_feedback()を新しいAPIに置き換え、テストを修正する。
 # {
 #     "//": "試行錯誤のプロセスを検証するため、シードを固定して実行します。"
 # }
@@ -52,18 +52,23 @@ class TestEventDrivenSNN(unittest.TestCase):
         active_inputs = [1, 5, 8]
         prev_active_hidden = [2, 10]
         
-        _, init_thresh = layer.get_state()
+        # 修正: get_state() ではなく直接プロパティにアクセス
+        init_thresh = list(layer.dynamic_thresh)
         self.assertEqual(init_thresh[0], 1.0)
         
         for _ in range(15):
-            fired = layer.forward_with_feedback(
+            # 修正: forward_with_feedback を forward に変更
+            fired = layer.forward(
                 active_inputs=active_inputs,
                 prev_active_hidden=prev_active_hidden,
                 learning=True
             )
             prev_active_hidden = fired
             
-        v_state, thresh_state = layer.get_state()
+        # 修正: get_state() ではなく直接プロパティにアクセス
+        v_state = layer.v
+        thresh_state = layer.dynamic_thresh
+        
         self.assertIsInstance(v_state, list)
         self.assertIsInstance(thresh_state, list)
         self.assertEqual(len(v_state), 20)

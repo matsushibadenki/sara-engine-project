@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/attention.py",
     "//": "タイトル: Spike-based Multi-Head Attention",
-    "//": "目的: 行列演算を使わず、SDRの共通集合（Overlap）で類似度を計算する。Rust実装があればそちらを優先する。",
+    "//": "目的: 行列演算を使わず、SDRの共通集合（Overlap）で類似度を計算する。Rust実装がロードできない場合はPython実装へ安全にフォールバックする。"
 }
 
 import random
@@ -39,12 +39,13 @@ class SpikeAttention:
         else:
             self.use_rust = use_rust and RUST_AVAILABLE
 
-        if self.use_rust:
+        if self.use_rust and hasattr(sara_rust_core, 'RustSpikeAttention'):
             self.core = sara_rust_core.RustSpikeAttention(
                 input_size, hidden_size, num_heads, memory_size
             )
             print("SpikeAttention: Rust core initialized.")
         else:
+            self.use_rust = False
             print("SpikeAttention: Python fallback mode.")
             # メモリ: [TimeStep][Head] -> Set[int] (スパイクインデックスの集合)
             self.memory_keys: List[List[Set[int]]] = []

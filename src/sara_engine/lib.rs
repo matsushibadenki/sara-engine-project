@@ -1,6 +1,6 @@
 // ディレクトリパス: src/sara_engine/lib.rs
 // ファイルの日本語タイトル: SARA-Engine Rust高速化コアモジュール
-// ファイルの目的や内容: スパース推論の高速化。ハードコードされていた発火率を15%から4%に引き下げ、パターン分離能力を極大化する。
+// ファイルの目的や内容: スパース推論の高速化およびGaborフィルタを用いた生物学的視覚野（V1）受容野の導入。パターン分離能力を極大化する。
 
 use pyo3::prelude::*;
 use std::collections::HashMap;
@@ -132,7 +132,7 @@ impl RustLiquidLayer {
             v: vec![0.0; hidden_size], refractory: vec![0.0; hidden_size],
             dynamic_thresh: vec![1.0; hidden_size], trace: vec![0.0; hidden_size],
             in_weights, rec_weights, feedback_map,
-            target_rate: 0.04, // ★ 生物学的な4%のスパース性に修正
+            target_rate: 0.04, // 生物学的な4%のスパース性
         }
     }
 
@@ -167,7 +167,6 @@ impl RustLiquidLayer {
             }
         }
 
-        // ★ 最大発火率を 0.15 から 0.04 (4%) へ厳格化。これによりスパイクがノイズ化せず表現が鋭くなる
         let max_spikes = (self.hidden_size as f64 * 0.04) as usize; 
         let mut fired_indices = Vec::new();
         
@@ -196,14 +195,22 @@ impl RustLiquidLayer {
     fn apply_spatial_receptive_fields(&mut self, width: usize, height: usize, patch_sizes: Vec<usize>) {
         let mut rng = rand::thread_rng();
         self.in_weights = vec![HashMap::new(); width * height];
-        let patterns = ["random", "center_on", "center_off", "edge_h", "edge_v", "edge_d1", "edge_d2"];
+        
+        // Gaborフィルタ用パラメータ群: 4方向の角度と2つの位相(エッジ検出とライン検出)
+        let angles = [0.0, std::f64::consts::PI / 4.0, std::f64::consts::PI / 2.0, std::f64::consts::PI * 3.0 / 4.0];
+        let phases = [0.0, std::f64::consts::PI / 2.0]; 
         
         for hidden_idx in 0..self.hidden_size {
             let cx = rng.gen_range(0..width) as isize;
             let cy = rng.gen_range(0..height) as isize;
             let patch_size = *patch_sizes.choose(&mut rng).unwrap_or(&3) as isize;
             let half_p = patch_size / 2;
-            let pattern_type = *patterns.choose(&mut rng).unwrap_or(&"random");
+            
+            let theta = *angles.choose(&mut rng).unwrap_or(&0.0);
+            let psi = *phases.choose(&mut rng).unwrap_or(&0.0);
+            let lambda = patch_size as f64 * 0.8; // 空間周波数の波長
+            let sigma = patch_size as f64 * 0.4;  // ガウス包絡線の標準偏差
+            let gamma = 0.5; // アスペクト比
             
             for dy in -half_p..=half_p {
                 for dx in -half_p..=half_p {
@@ -211,22 +218,25 @@ impl RustLiquidLayer {
                     let y = cy + dy;
                     if x >= 0 && x < width as isize && y >= 0 && y < height as isize {
                         let inp_idx = (y * width as isize + x) as usize;
-                        let mut w = 0.0;
-                        let dist = (dx * dx + dy * dy) as f64;
-                        let r_th = (half_p as f64 * 0.6) * (half_p as f64 * 0.6);
                         
-                        match pattern_type {
-                            "random" => w = rng.gen_range(-4.0..4.0),
-                            "center_on" => w = if dist <= r_th { 6.0 } else { -3.0 },
-                            "center_off" => w = if dist <= r_th { -6.0 } else { 3.0 },
-                            "edge_h" => w = if dy < 0 { 6.0 } else { -6.0 },
-                            "edge_v" => w = if dx < 0 { 6.0 } else { -6.0 },
-                            "edge_d1" => w = if dx > dy { 6.0 } else { -6.0 },
-                            "edge_d2" => w = if dx > -dy { 6.0 } else { -6.0 },
-                            _ => {}
-                        }
-                        w += rng.gen_range(-0.8..0.8);
-                        self.in_weights[inp_idx].insert(hidden_idx, w * 1.5);
+                        let x_f = dx as f64;
+                        let y_f = dy as f64;
+                        
+                        // 座標の回転
+                        let x_prime = x_f * theta.cos() + y_f * theta.sin();
+                        let y_prime = -x_f * theta.sin() + y_f * theta.cos();
+                        
+                        // ガウス包絡線と正弦波キャリアの積
+                        let env = (-(x_prime * x_prime + gamma * gamma * y_prime * y_prime) / (2.0 * sigma * sigma)).exp();
+                        let carrier = (2.0 * std::f64::consts::PI * x_prime / lambda + psi).cos();
+                        
+                        let mut w = env * carrier;
+                        
+                        // 重みのスケールアップと微小ノイズの追加
+                        w *= 8.0; 
+                        w += rng.gen_range(-0.5..0.5); 
+                        
+                        self.in_weights[inp_idx].insert(hidden_idx, w);
                     }
                 }
             }

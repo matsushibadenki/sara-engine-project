@@ -1,10 +1,13 @@
-# ディレクトリパス: src/sara_engine/models/spiking_llm.py
-# タイトル: スパイキング・大規模言語モデルブロック（多層・STDP対応）
-# 目的: ホメオスタシスと学習規則を安定化させ、モデルの沈黙問題を解決する。
+# ファイルメタ情報
+_FILE_INFO = {
+    "//": "ディレクトリパス: src/sara_engine/models/spiking_llm.py",
+    "//": "タイトル: スパイキング・大規模言語モデルブロック（多層・STDP対応）",
+    "//": "目的: SpikingSelfAttentionのインポートエラーを解消し、SpikeSelfAttentionを使用する。"
+}
 
 import math
 import random
-from sara_engine.core.spike_attention import SpikingSelfAttention
+from sara_engine.core.spike_attention import SpikeSelfAttention
 
 class SpikingLayerNorm:
     def __init__(self, sdr_size, base_threshold=1.0, target_active_ratio=0.05):
@@ -17,12 +20,10 @@ class SpikingLayerNorm:
         active_potentials = [(i, p) for i, p in enumerate(input_potentials) if p > 0]
         
         if not active_potentials:
-            # 入力が枯渇した場合、閾値を積極的に下げて感度を最大化し、沈黙を打破します
             for i in range(self.sdr_size):
                 self.thresholds[i] = max(0.01, self.thresholds[i] - 0.02)
             return []
 
-        # 広域抑制の係数を 0.1 に下げ、微弱な信号でも発火しやすくする
         active_ratio = len(active_potentials) / self.sdr_size
         avg_potential = sum(p for _, p in active_potentials) / len(active_potentials)
         global_inhibition = avg_potential * active_ratio * 0.1
@@ -45,7 +46,6 @@ class SpikingLayerNorm:
                 if len(spikes) >= min_required: break
                 if idx not in spikes: spikes.append(idx)
 
-        # ホメオスタシス: 回復率を向上 (0.2 -> 0.8) させ、閾値の下限を 0.01 まで許可します
         adjustment_rate = 0.01
         for i in range(self.sdr_size):
             if i in spikes:
@@ -95,7 +95,7 @@ class SpikingTransformerBlock:
     def __init__(self, sdr_size, enable_learning=True):
         self.sdr_size = sdr_size
         self.enable_learning = enable_learning
-        self.attention = SpikingSelfAttention(sdr_size)
+        self.attention = SpikeSelfAttention(embed_dim=sdr_size, density=0.05)
         
         self.layer_norm1 = SpikingLayerNorm(sdr_size, base_threshold=1.0, target_active_ratio=0.1)
         self.layer_norm2 = SpikingLayerNorm(sdr_size, base_threshold=1.2, target_active_ratio=0.1)
@@ -115,7 +115,7 @@ class SpikingTransformerBlock:
 
     def forward(self, input_spikes, t_step=0):
         # 1. Spiking Attention
-        att_spikes = self.attention.forward(input_spikes)
+        att_spikes = self.attention.forward(input_spikes, learning=self.enable_learning)
         
         # 2. Spiking Residual Connection 1 & Norm
         res_potentials_1 = [0.0] * self.sdr_size
@@ -170,7 +170,6 @@ class SpikingLLM:
             sample_size = min(num_connections, self.vocab_size)
             targets = random.sample(range(self.vocab_size), sample_size)
             for t in targets:
-                # 初期重みを安定化
                 self.lm_head_w[i][t] = random.uniform(0.1, 0.8)
 
     def forward(self, input_spikes, t_step=0):
@@ -193,9 +192,7 @@ class SpikingLLM:
                 if pre_id < len(self.lm_head_w):
                     if next_token not in self.lm_head_w[pre_id]:
                         self.lm_head_w[pre_id][next_token] = 0.1
-                    # LTP: 強化
                     self.lm_head_w[pre_id][next_token] = min(1.0, self.lm_head_w[pre_id][next_token] + 0.05)
-                    # LM Head LTD: 減衰を 0.00001 に緩和し、最小結合強度を 0.05 で維持
                     for post_id in list(self.lm_head_w[pre_id].keys()):
                         if post_id != next_token:
                             self.lm_head_w[pre_id][post_id] = max(0.05, self.lm_head_w[pre_id][post_id] - 0.00001)                                                                                                                                        
@@ -217,7 +214,6 @@ class SpikingLLM:
                 break
                 
             max_potential = max(vocab_potentials)
-            # 低いポテンシャルでも生成を続行できるよう調整
             if max_potential < 0.001:
                 break
                 
