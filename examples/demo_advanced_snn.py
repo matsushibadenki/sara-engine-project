@@ -1,8 +1,8 @@
 # ファイルメタ情報
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_advanced_snn.py",
-    "//": "タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / 高速化・高精度版)",
-    "//": "目的: 旧ReadoutLayerのインポートエラーを解消し、最新のSpikeReadoutLayerへ適応。MNISTで98%超えを叩き出したGabor受容野とO(1)事前計算をFashion-MNISTへ適用し、JSONによるモデル保存・読み込みのテストも実行する。"
+    "//": "タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / 高精度最適化版)",
+    "//": "目的: Fashion-MNISTの複雑なテクスチャと形状を学習するため、受容野を3層構成に拡張し、GaborフィルタとRank-Orderの閾値を最適化。行列演算・逆伝播なしで精度90%超えを狙う。"
 }
 
 import sys
@@ -71,7 +71,7 @@ def prepare_dataset(dataset_name="fashion_mnist"):
 
 def apply_spatial_receptive_fields(layer, width, height, patch_sizes):
     if layer.use_rust and hasattr(layer.core, 'apply_spatial_receptive_fields'):
-        print(f"  -> 局所受容野（Spatial Receptive Fields: Gabor）をRustコア内に構築中... (層サイズ: {layer.size})")
+        print(f"  -> 局所受容野（Spatial Receptive Fields: Gabor）をRustコア内に構築中... (層サイズ: {layer.size}, パッチ: {patch_sizes})")
         layer.core.apply_spatial_receptive_fields(width, height, patch_sizes)
         return
 
@@ -112,13 +112,12 @@ def apply_spatial_receptive_fields(layer, width, height, patch_sizes):
                     layer.in_weights[inp_idx][hidden_idx] = w
 
 def preprocess_images(images, thresholds):
-    print("  -> Rank-Order エンコーディングの事前計算中 (コントラスト正規化込み)...")
+    print(f"  -> Rank-Order エンコーディングの事前計算中 (閾値: {thresholds})...")
     preprocessed = []
     min_thresh = thresholds[-1]
     num_steps = len(thresholds)
     
     for img in images:
-        # 画像ごとのコントラスト正規化
         max_p = max(img)
         if max_p > 0:
             scale = 255.0 / max_p
@@ -151,14 +150,13 @@ def load_snn_model(readout_layer, filepath):
     print(f"\n[Model] シナプス重みをファイルから復元中: {filepath}")
     with open(filepath, 'r') as f:
         data = json.load(f)
-    # JSONで文字列化されたキーをintに戻す
     readout_layer.W = [{int(k): float(v) for k, v in layer_dict.items()} for layer_dict in data["W"]]
     readout_layer.b = data["b"]
     print("  -> 復元完了")
 
 def run_advanced_snn():
     print("="*65)
-    print("SARA-Engine: Advanced SNN (Fashion-MNIST / Gabor V1 & Fast-PA)")
+    print("SARA-Engine: Advanced SNN (Fashion-MNIST / 3-Layer Gabor & Fast-PA)")
     print("="*65)
 
     DATASET_NAME = "fashion_mnist"
@@ -168,13 +166,15 @@ def run_advanced_snn():
     
     num_inputs = 784
     num_classes = 10
-    epochs = 5  # Fashion-MNISTは少し複雑なため5エポック
+    epochs = 8  # 表現空間が拡大したため、学習エポックを増やして十分な収束を促す
     
     print("\n[Network] 生物学的マルチスケール・ネットワークを構築中...")
     
+    # 衣服の複雑な形状を捉えるための3層アーキテクチャ
     layer_configs = [
-        {"size": 4000, "decay": 0.50, "patch_sizes": [4, 6, 8]},
-        {"size": 4000, "decay": 0.80, "patch_sizes": [12, 16, 20]}
+        {"size": 4000, "decay": 0.55, "patch_sizes": [3, 4, 5]},     # 微細なテクスチャ・素材感
+        {"size": 4000, "decay": 0.75, "patch_sizes": [6, 8, 10]},    # 襟や袖などのパーツ形状
+        {"size": 4000, "decay": 0.90, "patch_sizes": [12, 16, 20]}   # 全体のシルエット
     ]
     
     liquid_layers = []
@@ -183,14 +183,15 @@ def run_advanced_snn():
             input_size=num_inputs, 
             hidden_size=cfg["size"], 
             decay=cfg["decay"], 
-            target_rate=0.05,
+            target_rate=0.06,  # やや高めの発火率で豊かな表現力を確保
             density=0.0,
             input_scale=0.0
         )
         apply_spatial_receptive_fields(layer, 28, 28, cfg["patch_sizes"])
         liquid_layers.append(layer)
     
-    thresholds = [220, 160, 100, 40]
+    # Fashion-MNISTの暗いピクセル（服の内部のシワなど）も抽出するため、閾値の階調を増やす
+    thresholds = [240, 180, 120, 60, 20]
     num_steps = len(thresholds)
     
     total_hidden = sum(cfg["size"] for cfg in layer_configs)
@@ -200,7 +201,7 @@ def run_advanced_snn():
     readout_layer = SpikeReadoutLayer(
         d_model=temporal_spatial_size, 
         vocab_size=num_classes,
-        learning_rate=0.02,
+        learning_rate=0.03,  # 初期学習率
         use_refractory=False
     )
 
@@ -221,8 +222,9 @@ def run_advanced_snn():
         random.shuffle(combined)
         train_encoded_shuffled, train_labels_shuffled = zip(*combined)
         
+        # 学習率の減衰をマイルドにし、終盤まで微調整を続ける
         if epoch > 0:
-            readout_layer.learning_rate *= 0.85
+            readout_layer.learning_rate *= 0.90
             
         for i in range(train_samples_to_use):
             encoded_image = train_encoded_shuffled[i]
@@ -273,7 +275,8 @@ def run_advanced_snn():
     print("\n[Sleep] 睡眠フェーズ開始 (ノイズシナプスの枝刈り)...")
     pruned_count = 0
     total_count = 0
-    prune_rate = 0.005
+    # 表現力が3層に分散したため、有用なシナプスを消さないよう閾値をさらに下げる
+    prune_rate = 0.002
     for s_idx in range(len(readout_layer.W)):
         to_delete = [t_id for t_id, weight in readout_layer.W[s_idx].items() if abs(weight) < prune_rate]
         for t_id in to_delete:
