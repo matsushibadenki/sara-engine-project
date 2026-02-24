@@ -59,6 +59,10 @@ Run these Python scripts to see the engine in action. All scripts are located in
 | **snn token classification** | python examples/demo\_snn\_token\_classification.py |
 | **spike attention** | python examples/demo\_spike\_attention.py |
 | **snn rag** | python examples/demo\_snn\_rag.py |
+| **associative_memory_stdp** | python examples/demo\_associative\_memory\_stdp.py |
+| **semantic_spike_routing** | python examples/demo\_semantic\_spike\_routing.py |
+| **spike_stream_processing** | python examples/demo\_spike\_stream\_processing.py |
+| **spiking_transformer_save_load** | python examples/demo\_spiking\_transformer\_save\_load.py |
 
   
 *(Note: examples/utils.py is a utility module for the examples and is not meant to be run directly as a standalone demo.)*
