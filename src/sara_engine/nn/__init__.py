@@ -8,3 +8,4 @@ from .module import SNNModule
 from .sequential import Sequential
 from .linear_spike import LinearSpike
 from .attention import SpikeSelfAttention
+from .predictive import PredictiveSpikeLayer

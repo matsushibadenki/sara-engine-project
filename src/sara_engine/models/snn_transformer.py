@@ -1,15 +1,16 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/snn_transformer.py",
     "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル",
-    "//": "ファイルの目的や内容: SparseSpikingFFNにLTD(抑制学習)を追加し、シナプスの重み飽和による全発火を防止して疎性を維持する。"
+    "//": "ファイルの目的や内容: sara_engine.nnモジュールを用いてリファクタリング。自前のFFNをnn.LinearSpikeに、Attentionをnn.SpikeSelfAttentionに置き換え、state_dictベースの保存/復元に統一。"
 }
 
 import json
 import os
 import random
+import pickle
 from typing import List, Dict, Optional
 
-from sara_engine.core.spike_attention import SpikeSelfAttention
+from sara_engine import nn
 
 class SNNTransformerConfig:
     def __init__(self, vocab_size: int = 256, embed_dim: int = 128, num_layers: int = 2, ffn_dim: int = 256):
@@ -31,87 +32,44 @@ class SNNTransformerConfig:
         return cls(**data)
 
 
-class SparseSpikingFFN:
-    def __init__(self, in_dim: int, out_dim: int, density: float = 0.2):
-        self.in_dim = in_dim
-        self.out_dim = out_dim
-        self.weights: List[Dict[int, float]] = [{} for _ in range(in_dim)]
-        for i in range(in_dim):
-            num_conn = max(1, int(out_dim * density))
-            targets = random.sample(range(out_dim), num_conn)
-            for t in targets:
-                self.weights[i][t] = random.uniform(0.1, 0.8)
-
-    def process(self, in_spikes: List[int], learning: bool = True) -> List[int]:
-        potentials = [0.0] * self.out_dim
-        
-        for s in in_spikes:
-            if s < self.in_dim:
-                for t, w in self.weights[s].items():
-                    potentials[t] += w
-
-        out_spikes = [i for i, p in enumerate(potentials) if p > 1.5]
-
-        if learning:
-            out_set = set(out_spikes)
-            for s in in_spikes:
-                if s < self.in_dim:
-                    for t in self.weights[s]:
-                        if t in out_set:
-                            # LTP
-                            self.weights[s][t] = min(3.0, self.weights[s][t] + 0.1)
-                        else:
-                            # LTD (発火しなかったシナプスは減衰させ、重みの飽和を防ぐ)
-                            self.weights[s][t] = max(0.0, self.weights[s][t] - 0.05)
-
-        return out_spikes
-
-
-class SNNTransformerBlock:
+class SNNTransformerBlock(nn.SNNModule):
     def __init__(self, config: SNNTransformerConfig):
+        super().__init__()
         self.config = config
-        self.attention = SpikeSelfAttention(config.embed_dim)
-        self.ffn_in = SparseSpikingFFN(config.embed_dim, config.ffn_dim, density=0.2)
-        self.ffn_out = SparseSpikingFFN(config.ffn_dim, config.embed_dim, density=0.2)
-        
-        self.max_attn_spikes = max(1, config.embed_dim // 4)
-        self.max_ffn_hidden_spikes = max(1, config.ffn_dim // 4)
-        self.max_ffn_out_spikes = max(1, config.embed_dim // 4)
+        # nn.SNNModule の機能を利用してAttentionとFFNを構築
+        self.attention = nn.SpikeSelfAttention(embed_dim=config.embed_dim, density=0.1, context_size=64)
+        self.ffn = nn.Sequential(
+            nn.LinearSpike(in_features=config.embed_dim, out_features=config.ffn_dim, density=0.2),
+            nn.LinearSpike(in_features=config.ffn_dim, out_features=config.embed_dim, density=0.2)
+        )
         self.max_block_spikes = max(1, config.embed_dim // 2)
 
-    def reset_state(self):
-        self.attention.reset_state()
-
     def forward(self, spikes: List[int], learning: bool = True) -> List[int]:
-        attn_out = self.attention.forward(spikes, learning)
+        attn_out = self.attention(spikes, learning=learning)
         
-        if len(attn_out) > self.max_attn_spikes:
-            attn_out = random.sample(attn_out, self.max_attn_spikes)
-
+        # Residual connection 1
         res1_spikes = list(set(spikes + attn_out))
         
-        ffn_hidden_idx = self.ffn_in.process(res1_spikes, learning)
-        if len(ffn_hidden_idx) > self.max_ffn_hidden_spikes:
-            ffn_hidden_idx = random.sample(ffn_hidden_idx, self.max_ffn_hidden_spikes)
+        ffn_out = self.ffn(res1_spikes, learning=learning)
         
-        ffn_out_idx = self.ffn_out.process(ffn_hidden_idx, learning)
-        if len(ffn_out_idx) > self.max_ffn_out_spikes:
-            ffn_out_idx = random.sample(ffn_out_idx, self.max_ffn_out_spikes)
+        # Residual connection 2
+        res2_spikes = list(set(res1_spikes + ffn_out))
         
-        res2_spikes = list(set(res1_spikes + ffn_out_idx))
         if len(res2_spikes) > self.max_block_spikes:
             res2_spikes = random.sample(res2_spikes, self.max_block_spikes)
             
         return res2_spikes
 
 
-class SpikingTransformerModel:
+class SpikingTransformerModel(nn.SNNModule):
     def __init__(self, config: SNNTransformerConfig):
+        super().__init__()
         self.config = config
         self.context_length = 32
         self.reservoir_size = 4096
         self.total_readout_size = self.reservoir_size + config.embed_dim
         
+        # Fixed SDR Map (シード固定で再現するため保存不要)
         self.sdr_map = {}
         random.seed(42)
         for delay in range(self.context_length):
@@ -119,26 +77,20 @@ class SpikingTransformerModel:
                 self.sdr_map[(delay, tok)] = random.sample(range(self.reservoir_size), 3)
         random.seed()
         
-        self.layers = [SNNTransformerBlock(config) for _ in range(config.num_layers)]
+        # SNNTransformerBlock を nn.Sequential で直列に繋ぐ
+        layers = [SNNTransformerBlock(config) for _ in range(config.num_layers)]
+        self.transformer_layers = nn.Sequential(*layers)
+        
+        # 動的状態バッファ
         self.delay_buffer: List[int] = []
-
-        try:
-            from sara_engine import sara_rust_core
-            self.rust_readout = sara_rust_core.RustReadoutLayer(self.total_readout_size, config.vocab_size)
-            self.use_rust = True
-            print("Successfully initialized RustReadoutLayer for ultra-fast learning.")
-        except ImportError:
-            self.rust_readout = None
-            self.use_rust = False
-            self.readout_synapses: List[Dict[int, float]] = [{} for _ in range(self.total_readout_size)]
-            print("Warning: Rust extension not found. Using slow Python fallback.")
-
-        print(f"Initialized SpikingTransformerModel with config: {config.to_dict()}")
+        
+        # 出力層のシナプス重みを状態として登録
+        self.readout_synapses: List[Dict[int, float]] = [{} for _ in range(self.total_readout_size)]
+        self.register_state("readout_synapses")
 
     def reset_state(self):
-        self.delay_buffer = []
-        for layer in self.layers:
-            layer.reset_state()
+        super().reset_state()
+        self.delay_buffer.clear()
 
     def _get_reservoir_spikes(self, token_id: int) -> List[int]:
         self.delay_buffer.insert(0, token_id)
@@ -147,42 +99,39 @@ class SpikingTransformerModel:
             
         spikes = set()
         for delay, tok in enumerate(self.delay_buffer):
-            spikes.update(self.sdr_map[(delay, tok)])
+            spikes.update(self.sdr_map.get((delay, tok), []))
         return list(spikes)
 
     def forward_step(self, token_id: int, learning: bool = True, target_id: Optional[int] = None) -> int:
         res_spikes = self._get_reservoir_spikes(token_id)
         block_spikes = list(set([s % self.config.embed_dim for s in res_spikes]))
         
-        for layer in self.layers:
-            block_spikes = layer.forward(block_spikes, learning)
+        # nn.Sequential の forward を呼び出し
+        block_spikes = self.transformer_layers(block_spikes, learning=learning)
             
         combined_spikes = res_spikes + [s + self.reservoir_size for s in block_spikes]
         
-        if self.use_rust:
-            predicted_id = self.rust_readout.forward_and_learn(combined_spikes, learning, target_id)
+        out_potentials = [0.0] * self.config.vocab_size
+        for s in combined_spikes:
+            if s < self.total_readout_size:
+                for v_idx, w in self.readout_synapses[s].items():
+                    out_potentials[v_idx] += w
+                    
+        if max(out_potentials) > 0.1:
+            predicted_id = out_potentials.index(max(out_potentials))
         else:
-            out_potentials = [0.0] * self.config.vocab_size
+            predicted_id = 32
+
+        if learning and target_id is not None:
             for s in combined_spikes:
                 if s < self.total_readout_size:
-                    for v_idx, w in self.readout_synapses[s].items():
-                        out_potentials[v_idx] += w
-                        
-            if max(out_potentials) > 0.1:
-                predicted_id = out_potentials.index(max(out_potentials))
-            else:
-                predicted_id = 32
-
-            if learning and target_id is not None:
-                for s in combined_spikes:
-                    if s < self.total_readout_size:
-                        current_w = self.readout_synapses[s].get(target_id, 0.0)
-                        self.readout_synapses[s][target_id] = min(15.0, current_w + 1.5)
-                        
-                        if predicted_id != target_id and predicted_id in self.readout_synapses[s]:
-                            self.readout_synapses[s][predicted_id] -= 0.1
-                            if self.readout_synapses[s][predicted_id] <= 0:
-                                del self.readout_synapses[s][predicted_id]
+                    current_w = self.readout_synapses[s].get(target_id, 0.0)
+                    self.readout_synapses[s][target_id] = min(15.0, current_w + 1.5)
+                    
+                    if predicted_id != target_id and predicted_id in self.readout_synapses[s]:
+                        self.readout_synapses[s][predicted_id] -= 0.1
+                        if self.readout_synapses[s][predicted_id] <= 0:
+                            del self.readout_synapses[s][predicted_id]
 
         return predicted_id
 
@@ -206,55 +155,39 @@ class SpikingTransformerModel:
         for _ in range(max_length):
             if current_token == 0:
                 break
-                
             generated_bytes.append(current_token)
             current_token = self.forward_step(current_token, learning=False)
             
-        generated_text = bytes(generated_bytes).decode('utf-8', errors='ignore')
-        return text + generated_text
+        return text + bytes(generated_bytes).decode('utf-8', errors='ignore')
 
     def save_pretrained(self, save_directory: str):
         os.makedirs(save_directory, exist_ok=True)
-        config_path = os.path.join(save_directory, "config.json")
-        with open(config_path, "w", encoding="utf-8") as f:
+        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf-8") as f:
             json.dump(self.config.to_dict(), f, indent=4)
             
-        weights_path = os.path.join(save_directory, "readout_synapses.json")
-        with open(weights_path, "w", encoding="utf-8") as f:
-            if self.use_rust:
-                synapses = self.rust_readout.get_synapses()
-            else:
-                synapses = self.readout_synapses
-            json.dump(synapses, f)
-            
-        print(f"Model config and synapses successfully saved to {save_directory}")
+        state_path = os.path.join(save_directory, "model_state.pkl")
+        with open(state_path, "wb") as f:
+            pickle.dump(self.state_dict(), f)
 
     @classmethod
     def from_pretrained(cls, save_directory: str):
         config_path = os.path.join(save_directory, "config.json")
-        if not os.path.exists(config_path):
-            raise FileNotFoundError(f"Config not found at {config_path}")
-            
         with open(config_path, "r", encoding="utf-8") as f:
-            config_dict = json.load(f)
+            config = SNNTransformerConfig.from_dict(json.load(f))
             
-        config = SNNTransformerConfig.from_dict(config_dict)
         model = cls(config)
         
-        weights_path = os.path.join(save_directory, "readout_synapses.json")
-        if os.path.exists(weights_path):
-            with open(weights_path, "r", encoding="utf-8") as f:
-                loaded_synapses = json.load(f)
-                converted_synapses = [
-                    {int(k): float(v) for k, v in neuron_dict.items()} 
-                    for neuron_dict in loaded_synapses
-                ]
-                if model.use_rust:
-                    model.rust_readout.set_synapses(converted_synapses)
-                else:
-                    model.readout_synapses = converted_synapses
-            print(f"Loaded trained synapses from {weights_path}")
+        state_path = os.path.join(save_directory, "model_state.pkl")
+        if os.path.exists(state_path):
+            with open(state_path, "rb") as f:
+                state = pickle.load(f)
+            model.load_state_dict(state)
         else:
-            print("Warning: Synapses file not found. Initialized with empty synapses.")
-            
+            # 旧バージョン (readout_synapses.json) からの互換フォールバック
+            old_weights_path = os.path.join(save_directory, "readout_synapses.json")
+            if os.path.exists(old_weights_path):
+                with open(old_weights_path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                    model.readout_synapses = [{int(k): float(v) for k, v in n.items()} for n in loaded]
+                    
         return model
