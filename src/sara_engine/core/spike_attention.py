@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/spike_attention.py",
     "//": "ファイルの日本語タイトル: 連合学習強化型 スパイキング・アテンション",
-    "//": "ファイルの目的や内容: スパイクの爆発（モード崩壊の根本原因）を防ぐため、推論時の異常なGain値を修正し、Top-Kによる発火数制御を追加。"
+    "//": "ファイルの目的や内容: スパイクの爆発および記憶の干渉（クロストーク）を防ぐため、Winner-Takes-Allに基づく厳格なスパース・ルーティングを導入し、自然言語の文脈分離能力を向上させる。"
 }
 
 import random
@@ -63,10 +63,9 @@ class SpikeSelfAttention:
                     if t < out_size:
                         potentials[t] += w * gain
         
-        # 修正: 発火するニューロン数を制御（Top-Kスパースネス）し、スパイクの爆発を防ぐ
+        # 発火するニューロン数を制御（Top-Kスパースネス）し、スパイクの爆発を防ぐ
         active = [(i, p) for i, p in enumerate(potentials) if p > threshold]
         active.sort(key=lambda x: x[1], reverse=True)
-        # SNNの特性を活かすため、最大でも全体の10%程度しか発火させない
         max_spikes = max(1, int(out_size * 0.1))
         return [i for i, p in active[:max_spikes]]
 
@@ -88,8 +87,7 @@ class SpikeSelfAttention:
                             weights[pre][target] = 0.2
 
     def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
-        # 修正: 以前は learning=False の時に gain=12.0 となっており、これが推論時のスパイク爆発を引き起こしていた。
-        # 安定させるため、推論時も gain は 1.2 程度に抑える。
+        # 安定させるため、推論時も gain は 1.2 程度に抑える
         gain = 1.0 if learning else 1.2
         
         q_list = self._sparse_propagate(x_spikes, self.q_weights, self.embed_dim, threshold=0.5, gain=gain)
@@ -110,10 +108,18 @@ class SpikeSelfAttention:
         routed_v_spikes = set()
         dynamic_threshold = max(1, int(len(q_spikes) * 0.2))
         
+        # 修正: 過去のすべての記憶を和集合で混ぜるのではなく、Winner-Takes-Allで最も一致する単一の記憶のみをルーティングする
+        best_match_idx = -1
+        max_coincidence = 0
+        
         for i, past_k in enumerate(self.key_buffer):
             coincidence = len(q_spikes.intersection(past_k))
-            if coincidence >= dynamic_threshold and coincidence > 0:
-                routed_v_spikes.update(self.value_buffer[i])
+            if coincidence >= dynamic_threshold and coincidence > max_coincidence:
+                max_coincidence = coincidence
+                best_match_idx = i
+
+        if best_match_idx != -1:
+            routed_v_spikes.update(self.value_buffer[best_match_idx])
 
         y_spikes = self._sparse_propagate(list(routed_v_spikes), self.o_weights, self.embed_dim, threshold=0.5, gain=gain)
         
