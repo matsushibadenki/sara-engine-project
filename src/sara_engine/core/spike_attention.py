@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/spike_attention.py",
     "//": "ファイルの日本語タイトル: 連合学習強化型 スパイキング・アテンション",
-    "//": "ファイルの目的や内容: 構造的可塑性(シナプス新生)とTeacher Forcingを導入し、連合記憶の形成と想起を確実にする。"
+    "//": "ファイルの目的や内容: スパイクの爆発（モード崩壊の根本原因）を防ぐため、推論時の異常なGain値を修正し、Top-Kによる発火数制御を追加。"
 }
 
 import random
@@ -27,7 +27,8 @@ class SpikeSelfAttention:
             num_connections = max(1, int(out_dim * density))
             targets = random.sample(range(out_dim), num_connections)
             for t in targets:
-                weights[i][t] = random.uniform(-1.0, 1.0)
+                # 負の重みはスパイクを相殺しすぎるため、0.0〜1.0の興奮性シナプスをベースにする
+                weights[i][t] = random.uniform(0.0, 1.0)
         return weights
 
     def reset_state(self):
@@ -61,7 +62,13 @@ class SpikeSelfAttention:
                 for t, w in weights[s].items():
                     if t < out_size:
                         potentials[t] += w * gain
-        return [i for i, p in enumerate(potentials) if p > threshold]
+        
+        # 修正: 発火するニューロン数を制御（Top-Kスパースネス）し、スパイクの爆発を防ぐ
+        active = [(i, p) for i, p in enumerate(potentials) if p > threshold]
+        active.sort(key=lambda x: x[1], reverse=True)
+        # SNNの特性を活かすため、最大でも全体の10%程度しか発火させない
+        max_spikes = max(1, int(out_size * 0.1))
+        return [i for i, p in active[:max_spikes]]
 
     def _apply_stdp(self, pre_spikes: List[int], post_spikes: List[int], weights: List[Dict[int, float]], lr: float = 0.05):
         """Modified STDP: Minimize LTD and enable structural plasticity."""
@@ -72,16 +79,18 @@ class SpikeSelfAttention:
                     if target in post_set:
                         weights[pre][target] = min(3.0, weights[pre][target] + lr)
                     else:
-                        weights[pre][target] = max(0.0, weights[pre][target] - lr * 0.01)
+                        weights[pre][target] = max(0.0, weights[pre][target] - lr * 0.05) # LTDを適度に効かせる
                 
                 # シナプス新生 (Structural Plasticity)
                 for target in post_set:
                     if target not in weights[pre]:
-                        if random.random() < 0.2:
-                            weights[pre][target] = 0.5
+                        if random.random() < 0.1: # 新生確率を少し下げてノイズを抑制
+                            weights[pre][target] = 0.2
 
     def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
-        gain = 1.0 if learning else 12.0
+        # 修正: 以前は learning=False の時に gain=12.0 となっており、これが推論時のスパイク爆発を引き起こしていた。
+        # 安定させるため、推論時も gain は 1.2 程度に抑える。
+        gain = 1.0 if learning else 1.2
         
         q_list = self._sparse_propagate(x_spikes, self.q_weights, self.embed_dim, threshold=0.5, gain=gain)
         k_list = self._sparse_propagate(x_spikes, self.k_weights, self.embed_dim, threshold=0.5, gain=gain)
@@ -103,7 +112,7 @@ class SpikeSelfAttention:
         
         for i, past_k in enumerate(self.key_buffer):
             coincidence = len(q_spikes.intersection(past_k))
-            if coincidence >= dynamic_threshold:
+            if coincidence >= dynamic_threshold and coincidence > 0:
                 routed_v_spikes.update(self.value_buffer[i])
 
         y_spikes = self._sparse_propagate(list(routed_v_spikes), self.o_weights, self.embed_dim, threshold=0.5, gain=gain)

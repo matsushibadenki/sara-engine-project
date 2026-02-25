@@ -1,8 +1,7 @@
-# ファイルメタ情報
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/spiking_llm.py",
-    "//": "タイトル: スパイキング・大規模言語モデルブロック（多層・STDP対応）",
-    "//": "目的: SpikingSelfAttentionのインポートエラーを解消し、SpikeSelfAttentionを使用する。"
+    "//": "ファイルの日本語タイトル: スパイキング・大規模言語モデルブロック（多層・STDP・恒常性可塑性対応）",
+    "//": "ファイルの目的や内容: Winner-Takes-Allによるモード崩壊を防ぐため、Homeostatic Plasticity（恒常性可塑性）と厳密な不応期を導入する。"
 }
 
 import math
@@ -114,28 +113,23 @@ class SpikingTransformerBlock:
                 weights[i][t] = random.uniform(0.1, 0.5)
 
     def forward(self, input_spikes, t_step=0):
-        # 1. Spiking Attention
         att_spikes = self.attention.forward(input_spikes, learning=self.enable_learning)
         
-        # 2. Spiking Residual Connection 1 & Norm
         res_potentials_1 = [0.0] * self.sdr_size
         for s in set(input_spikes).union(set(att_spikes)):
             res_potentials_1[s] += 1.0
         norm1_spikes = self.layer_norm1.forward(res_potentials_1)
         
-        # 3. FFN
         ffn_potentials = [0.0] * self.sdr_size
         for pre_id in norm1_spikes:
             for post_id, w in self.ffn_w[pre_id].items():
                 ffn_potentials[post_id] += w
                 
-        # 4. Spiking Residual Connection 2 & Norm
         res_potentials_2 = list(ffn_potentials)
         for s in norm1_spikes:
             res_potentials_2[s] += 1.0
         output_spikes = self.layer_norm2.forward(res_potentials_2)
         
-        # 5. 学習（STDP）の適用
         if self.enable_learning:
             self.stdp.update_weights(t_step, norm1_spikes, output_spikes, self.ffn_w)
             
@@ -162,41 +156,68 @@ class SpikingLLM:
         self.enable_learning = enable_learning
         self.transformer = MultiLayerSpikingTransformer(num_layers, self.sdr_size, enable_learning)
         self.lm_head_w = [{} for _ in range(self.sdr_size)]
-        self._init_lm_head_weights(density=0.1)
+        self._init_lm_head_weights()
 
-    def _init_lm_head_weights(self, density):
-        for i in range(self.sdr_size):
-            num_connections = max(1, int(self.vocab_size * density))
-            sample_size = min(num_connections, self.vocab_size)
-            targets = random.sample(range(self.vocab_size), sample_size)
-            for t in targets:
-                self.lm_head_w[i][t] = random.uniform(0.1, 0.8)
+    def _init_lm_head_weights(self):
+        pass
 
     def forward(self, input_spikes, t_step=0):
         hidden_spikes = self.transformer.forward(input_spikes, t_step=t_step)
+        combined_spikes = list(set(input_spikes + hidden_spikes))
+        
         vocab_potentials = [0.0] * self.vocab_size
-        for pre_id in hidden_spikes:
+        for pre_id in combined_spikes:
             if pre_id < len(self.lm_head_w):
                 for post_id, w in self.lm_head_w[pre_id].items():
-                    vocab_potentials[post_id] += w
-        return vocab_potentials
+                    if post_id < self.vocab_size:
+                        vocab_potentials[post_id] += w
+                        
+        return vocab_potentials, combined_spikes
 
     def learn_sequence(self, token_ids):
         if not self.enable_learning or len(token_ids) < 2: return
+        
+        context_tokens = []
         for t in range(len(token_ids) - 1):
             current_token = token_ids[t]
             next_token = token_ids[t + 1]
-            input_spikes = [current_token % self.sdr_size]
-            hidden_spikes = self.transformer.forward(input_spikes, t_step=t)
-            for pre_id in hidden_spikes:
+            
+            context_tokens.append(current_token)
+            if len(context_tokens) > 4:
+                context_tokens.pop(0)
+                
+            input_spikes = []
+            for i, tok in enumerate(context_tokens):
+                spike_id = (tok * 37 + (len(context_tokens) - i) * 19) % self.sdr_size
+                input_spikes.append(spike_id)
+            
+            input_spikes = list(set(input_spikes))
+            
+            vocab_potentials, combined_spikes = self.forward(input_spikes, t_step=t)
+            
+            # 競合学習と恒常性可塑性（Homeostatic Plasticity）
+            for pre_id in combined_spikes:
                 if pre_id < len(self.lm_head_w):
                     if next_token not in self.lm_head_w[pre_id]:
-                        self.lm_head_w[pre_id][next_token] = 0.1
-                    self.lm_head_w[pre_id][next_token] = min(1.0, self.lm_head_w[pre_id][next_token] + 0.05)
+                        self.lm_head_w[pre_id][next_token] = 0.0
+                    
+                    if vocab_potentials[next_token] < 2.0:
+                        self.lm_head_w[pre_id][next_token] += 0.2
+                    
+                    target_score = vocab_potentials[next_token]
                     for post_id in list(self.lm_head_w[pre_id].keys()):
-                        if post_id != next_token:
-                            self.lm_head_w[pre_id][post_id] = max(0.05, self.lm_head_w[pre_id][post_id] - 0.00001)                                                                                                                                        
-    def generate(self, prompt_tokens=None, max_new_tokens=5, threshold=0.1, **kwargs):
+                        if post_id != next_token and vocab_potentials[post_id] >= target_score - 0.5:
+                            self.lm_head_w[pre_id][post_id] -= 0.1
+                            if self.lm_head_w[pre_id][post_id] <= 0.0:
+                                del self.lm_head_w[pre_id][post_id]
+                    
+                    # 重みの総和を1.0に厳密に正規化し、少数のトークンによるWinner-Takes-Allの暴走を防止
+                    total_weight = sum(self.lm_head_w[pre_id].values())
+                    if total_weight > 1.0:
+                        for post_id in self.lm_head_w[pre_id]:
+                            self.lm_head_w[pre_id][post_id] /= total_weight
+
+    def generate(self, prompt_tokens=None, max_new_tokens=5, top_k=3, temperature=0.8, **kwargs):
         if prompt_tokens is None:
             prompt_tokens = kwargs.get('input_spikes', [])
         max_new_tokens = kwargs.get('max_length', max_new_tokens)
@@ -205,20 +226,67 @@ class SpikingLLM:
         if not prompt_tokens:
             return generated_sequence
 
-        current_token = prompt_tokens[-1]
-        current_spikes = [current_token % self.sdr_size]
+        context_tokens = list(prompt_tokens[-4:])
+        
+        # ニューロンの不応期（Refractory Period）を管理
+        refractory_counters = {}
+        for rt in prompt_tokens:
+            refractory_counters[rt] = 2
         
         for t in range(max_new_tokens):
-            vocab_potentials = self.forward(current_spikes, t_step=t)
-            if not vocab_potentials:
+            input_spikes = []
+            for i, tok in enumerate(context_tokens):
+                spike_id = (tok * 37 + (len(context_tokens) - i) * 19) % self.sdr_size
+                input_spikes.append(spike_id)
+            current_spikes = list(set(input_spikes))
+
+            vocab_potentials, _ = self.forward(current_spikes, t_step=t)
+            
+            # 不応期中のニューロンの発火ポテンシャルを完全にゼロにして物理的に抑制
+            for vocab_id in range(self.vocab_size):
+                if refractory_counters.get(vocab_id, 0) > 0:
+                    vocab_potentials[vocab_id] = 0.0
+                
+            valid_indices = [i for i, p in enumerate(vocab_potentials) if p > 0.0]
+            
+            if not valid_indices:
                 break
                 
-            max_potential = max(vocab_potentials)
-            if max_potential < 0.001:
+            valid_indices.sort(key=lambda i: vocab_potentials[i], reverse=True)
+            top_k_indices = valid_indices[:top_k]
+            top_potentials = [vocab_potentials[i] for i in top_k_indices]
+            
+            if temperature != 1.0:
+                top_potentials = [p ** (1.0 / temperature) for p in top_potentials]
+            
+            sum_p = sum(top_potentials)
+            if sum_p <= 0.0:
                 break
                 
-            best_vocab_id = vocab_potentials.index(max_potential)
+            probs = [p / sum_p for p in top_potentials]
+            r = random.random()
+            cumulative = 0.0
+            best_vocab_id = top_k_indices[0]
+            
+            for idx, prob in zip(top_k_indices, probs):
+                cumulative += prob
+                if r <= cumulative:
+                    best_vocab_id = idx
+                    break
+                    
             generated_sequence.append(best_vocab_id)
-            current_spikes = [best_vocab_id % self.sdr_size]
+            
+            # 全ての不応期カウンターを1進める
+            for k in list(refractory_counters.keys()):
+                refractory_counters[k] -= 1
+                if refractory_counters[k] <= 0:
+                    del refractory_counters[k]
+            
+            # 新たに発火したトークンニューロンに強い不応期を設定
+            refractory_counters[best_vocab_id] = 3
+            
+            context_tokens.append(best_vocab_id)
+            if len(context_tokens) > 4:
+                context_tokens.pop(0)
             
         return generated_sequence
