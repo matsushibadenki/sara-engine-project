@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/spiking_causal_lm.py",
     "//": "ファイルの日本語タイトル: スパイキング因果言語モデル (予測符号化 + Attention)",
-    "//": "ファイルの目的や内容: nn.SNNModuleを使用し、Predictive Coding層とSpike Self-Attentionを融合したTransformer代替の次世代ジェネレーティブモデル。デコードとSTDP学習の次元不一致バグを修正。"
+    "//": "ファイルの目的や内容: nn.SNNModuleを使用し、Predictive Coding層とSpike Self-Attentionを融合したTransformer代替の次世代ジェネレーティブモデル。トークンIDベースの処理に変更し、デコード時のループ防止機能を実装。"
 }
 
 import os
@@ -69,7 +69,7 @@ class SpikingCausalLM(nn.SNNModule):
     def _encode_token(self, token_id: int) -> List[int]:
         return self.sdr_map.get(token_id, [])
 
-    def forward_step(self, token_id: int, learning: bool = False, target_id: Optional[int] = None) -> int:
+    def forward_step(self, token_id: int, learning: bool = False, target_id: Optional[int] = None) -> List[int]:
         in_spikes = self._encode_token(token_id)
         
         # ブロックを通過
@@ -94,33 +94,46 @@ class SpikingCausalLM(nn.SNNModule):
                          wrong_w = self.readout.weights[s].get(best_token, 0.0)
                          self.readout.weights[s][best_token] = max(0.0, wrong_w - 0.1)
 
-        return best_token
+        return out_spikes
 
-    def learn_sequence(self, text: str):
+    def learn_sequence(self, input_ids: List[int]):
+        """トークンIDのリストを受け取り、系列としてSTDP学習を行う"""
         self.reset_state()
-        input_bytes = list(text.encode('utf-8')) + [0]
-        for i in range(len(input_bytes) - 1):
-            self.forward_step(input_bytes[i], learning=True, target_id=input_bytes[i+1])
+        for i in range(len(input_ids) - 1):
+            self.forward_step(input_ids[i], learning=True, target_id=input_ids[i+1])
 
-    def generate(self, prompt: str, max_length: int = 50) -> str:
+    def generate(self, input_ids: List[int], max_length: int = 50) -> List[int]:
+        """トークンIDのリストから次のトークンを予測し、生成されたIDリストを返す"""
         self.reset_state()
-        input_bytes = list(prompt.encode('utf-8'))
-        
-        # コンテキストの構築
-        last_pred = 0
-        for byte_val in input_bytes:
-            last_pred = self.forward_step(byte_val, learning=False)
+        if not input_ids:
+            return []
             
-        generated_bytes = []
-        current_token = last_pred
+        # コンテキストの構築
+        last_out_spikes = []
+        for token_id in input_ids:
+            last_out_spikes = self.forward_step(token_id, learning=False)
+            
+        generated_ids = []
         
         for _ in range(max_length):
-            if current_token == 0:
-                break
-            generated_bytes.append(current_token)
-            current_token = self.forward_step(current_token, learning=False)
+            next_token = 0
+            # ループ防止機構: 直近5トークン以内に同じトークンがある場合は避けて次に確信度の高いトークンを選ぶ
+            for candidate in last_out_spikes:
+                if candidate not in generated_ids[-5:] and candidate != 0:
+                    next_token = candidate
+                    break
             
-        return prompt + bytes(generated_bytes).decode('utf-8', errors='ignore')
+            # 全ての候補が制限に引っかかった場合や候補がない場合は、一番上のトークンを強制採用
+            if next_token == 0 and last_out_spikes:
+                next_token = last_out_spikes[0]
+                
+            if next_token == 0: # 予測不能な場合は終了
+                break
+                
+            generated_ids.append(next_token)
+            last_out_spikes = self.forward_step(next_token, learning=False)
+            
+        return generated_ids
 
     def save_pretrained(self, save_directory: str):
         os.makedirs(save_directory, exist_ok=True)

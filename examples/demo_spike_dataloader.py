@@ -6,6 +6,7 @@ _FILE_INFO = {
 
 from sara_engine import nn
 from sara_engine.utils.data import Dataset, SpikeDataLoader
+from sara_engine.utils.sara_board import SaraBoardVisualizer
 
 # カスタムデータセットの定義
 class DummySpikeDataset(Dataset):
@@ -48,6 +49,12 @@ def main():
             # 学習モードでフォワードパス (行列のバッチではなく、スパイクのリストを直接渡す)
             out_spikes = model(spikes, learning=True)
             print(f"  Step {step+1} | Input: {spikes} -> Output Spikes: {out_spikes} | Label: {label}")
+            
+    print("\n[*] Generating Sara-Board HTML Dashboard...")
+    visualizer = SaraBoardVisualizer(log_dir=test_log_dir)
+    html_path = visualizer.generate_dashboard(output_html="workspace/sara_dashboard.html")
+    print(f"  -> Dashboard generated successfully at: {html_path}")
+    print("  -> Open this file in your web browser to view the plots!")
 
 if __name__ == "__main__":
     main()
