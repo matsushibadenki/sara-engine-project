@@ -1,8 +1,8 @@
 # ファイルメタ情報
 _FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/rlm.py",
-    "//": "タイトル: 強化学習モジュール (Stateful RLM)",
-    "//": "目的: DynamicLiquidLayerのforward_with_feedbackメソッド廃止に伴い、新しいforwardメソッドへ移行する。"
+    "//": "配置するディレクトリのパス: src/sara_engine/models/rlm.py",
+    "//": "ファイルの日本語タイトル: 強化学習モジュール (Stateful RLM) - RLAnything実装版",
+    "//": "ファイルの目的や内容: RLAnythingの「動的報酬モデル(Critic)」「方策のステップ学習」「自己カリキュラム(環境適応)」をSNNベースに統合。行列演算や誤差逆伝播法を完全排除。"
 }
 
 import numpy as np
@@ -95,6 +95,42 @@ class StateNeuronGroup:
             self.activations[idx] = 1.0
             self.current_state = idx
 
+class DynamicRewardModel:
+    """
+    RLAnything論文における学習型報酬モデル（Critic）。
+    行列演算・誤差逆伝播法を排除し、適格度トレースによる局所学習を行う。
+    """
+    def __init__(self, sdr_size: int):
+        self.sdr_size = sdr_size
+        self.weights = np.zeros(sdr_size, dtype=np.float32)
+        self.eligibility_trace = np.zeros(sdr_size, dtype=np.float32)
+        self.gamma = 0.95
+        self.lr = 0.05
+
+    def predict(self, active_spikes: List[int]) -> float:
+        val = 0.0
+        # 行列の積を使わず、シンプルなループで重み積算
+        for idx in active_spikes:
+            if idx < self.sdr_size:
+                val += self.weights[idx]
+        return val
+
+    def update_traces(self, active_spikes: List[int]):
+        self.eligibility_trace *= self.gamma
+        for idx in active_spikes:
+            if idx < self.sdr_size:
+                self.eligibility_trace[idx] += 1.0
+
+    def learn(self, td_error: float):
+        # 誤差逆伝播を使わず、TD誤差と適格度トレースの積に基づくHebbianルール
+        for idx in range(self.sdr_size):
+            if self.eligibility_trace[idx] > 0:
+                self.weights[idx] += self.lr * td_error * self.eligibility_trace[idx]
+        
+    def reset_traces(self):
+        self.eligibility_trace.fill(0)
+
+
 class StatefulSaraGPT:
     def __init__(self, sdr_size: int = 1024):
         self.sdr_size = sdr_size
@@ -132,6 +168,9 @@ class StatefulSaraGPT:
         self.readout_thresh = 0.5
         self.readout_refractory = np.zeros(sdr_size, dtype=np.float32)
         self.step_counter = 0
+        
+        # RLAnything: 動的報酬モデル(Critic)のインスタンス化
+        self.reward_model = DynamicRewardModel(sdr_size)
 
     def reset_state(self):
         for layer in self.layers: layer.reset()
@@ -142,6 +181,7 @@ class StatefulSaraGPT:
         self.readout_v.fill(0)
         self.readout_refractory.fill(0)
         self.step_counter = 0
+        self.reward_model.reset_traces()
 
     def forward_step(self, input_sdr: List[int], training: bool = False, 
                     force_output: bool = False) -> Tuple[List[int], List[int], str]:
@@ -225,14 +265,33 @@ class StatefulSaraGPT:
         
         return predicted_sdr, all_hidden_spikes, current_state_name
 
-    def reinforce(self, trajectory: List[Dict[str, Any]], final_reward: float):
+    def reinforce(self, trajectory: List[Dict[str, Any]], final_env_reward: float):
+        # 1. Criticによる予測とTD誤差の計算
+        active_spikes_in_episode = []
+        for step_data in trajectory:
+            if 'spikes' in step_data:
+                active_spikes_in_episode.extend(step_data['spikes'])
+                
+        unique_spikes = list(set(active_spikes_in_episode))
+        predicted_value = self.reward_model.predict(unique_spikes)
+        td_error = final_env_reward - predicted_value
+        
+        # 2. Critic(報酬モデル)を適格度トレースを用いて更新
+        self.reward_model.learn(td_error)
+
+        # 3. Policy(遷移モデル)の更新 (RLAnything: ステップごとの内在的シグナル統合)
         gamma = 0.9
-        running_reward = final_reward
+        running_reward = final_env_reward + td_error
+        
         for step_data in reversed(trajectory):
             state_name = step_data['state']
             next_state_name = step_data['next_state']
             step_reward = step_data.get('reward', 0.0)
-            running_reward = running_reward + step_reward
+            
+            # 内在的報酬: 環境からの報酬 + CriticのTD誤差による自己評価
+            intrinsic_reward = step_reward + (td_error * 0.1)
+            running_reward = running_reward + intrinsic_reward
+            
             s_idx = self.state_neurons.get_state_index(state_name)
             ns_idx = self.state_neurons.get_state_index(next_state_name)
             if s_idx >= 0 and ns_idx >= 0:
@@ -241,12 +300,13 @@ class StatefulSaraGPT:
 
     def save_model(self, filepath: str):
         state = {
-            'version': 'stateful_v2_rl',
+            'version': 'stateful_v2_rlanything',
             'sdr_size': self.sdr_size,
             'state_readout_weights': self.state_readout_weights,
             'encoder_cache': dict(self.encoder.token_sdr_map),
             'attn_w_q': self.attention.w_query, 'attn_w_k': self.attention.w_key, 'attn_w_v': self.attention.w_value,
-            'transition_matrix': self.state_neurons.transition_matrix
+            'transition_matrix': self.state_neurons.transition_matrix,
+            'reward_weights': self.reward_model.weights
         }
         with open(filepath, 'wb') as f: pickle.dump(state, f)
 
@@ -255,6 +315,7 @@ class StatefulSaraGPT:
         self.state_readout_weights = state['state_readout_weights']
         if 'encoder_cache' in state: self.encoder.token_sdr_map = dict(state['encoder_cache'])
         if 'transition_matrix' in state: self.state_neurons.transition_matrix = state['transition_matrix']
+        if 'reward_weights' in state: self.reward_model.weights = state['reward_weights']
 
 class StatefulRLMAgent:
     def __init__(self, model_path: Optional[str] = None):
@@ -262,6 +323,7 @@ class StatefulRLMAgent:
         if model_path and os.path.exists(model_path):
             self.brain.load_model(model_path)
         
+        self.difficulty_level = 1.0  # RLAnything: 環境(Environment)の自己カリキュラム難易度
         self.ltm: Optional[SparseMemoryStore] = None
         try:
             from ..memory.ltm import SparseMemoryStore
@@ -277,7 +339,11 @@ class StatefulRLMAgent:
         for w in q_words:
             self.brain.working_memory.store(self.brain.encoder.encode(w), importance=2.0)
             
-        chunks = [document[i:i+100] for i in range(0, len(document), 100)] if document else []
+        # RLAnything: 環境の動的生成/カリキュラム適応
+        # 難易度が高いほど細かくチャンクを切り、情報の文脈を見失わせやすくする
+        current_chunk_size = max(20, int(100 / self.difficulty_level))
+        chunks = [document[i:i+current_chunk_size] for i in range(0, len(document), current_chunk_size)] if document else []
+        
         max_steps = 20
         current_chunk_idx = 0
         found_info = ""
@@ -293,10 +359,22 @@ class StatefulRLMAgent:
                 visual_input_text = "END"
             
             input_sdr = self.brain.encoder.encode(visual_input_text)
+            
+            # 難易度(difficulty_level)に応じたノイズ注入による動的環境変化（行列演算を使わずループ処理）
+            if self.difficulty_level > 1.5:
+                noise_count = int(len(input_sdr) * 0.1 * (self.difficulty_level - 1.0))
+                for _ in range(noise_count):
+                    random_idx = int(np.random.randint(0, self.brain.sdr_size))
+                    if random_idx not in input_sdr:
+                        input_sdr.append(random_idx)
+                        
             predicted_sdr, _, state_name = self.brain.forward_step(input_sdr)
             
+            # Critic（報酬モデル）の適格度トレースの更新
+            self.brain.reward_model.update_traces(predicted_sdr)
+            
             if step > 0:
-                trajectory.append({'state': prev_state_name, 'next_state': state_name, 'step': step})
+                trajectory.append({'state': prev_state_name, 'next_state': state_name, 'step': step, 'spikes': predicted_sdr})
             prev_state_name = state_name
             
             if state_name == "SEARCH":
@@ -328,13 +406,20 @@ class StatefulRLMAgent:
             elif state_name == "DONE": break
             
             if step > 8 and state_name == "INIT":
-                trajectory.append({'state': 'INIT', 'next_state': 'SEARCH', 'reward': -0.05, 'step': step})
+                trajectory.append({'state': 'INIT', 'next_state': 'SEARCH', 'reward': -0.05, 'step': step, 'spikes': predicted_sdr})
                 self.brain.state_neurons.set_state("SEARCH")
                 prev_state_name = "SEARCH"
 
         if train_rl:
             reward = 0.0
-            if found_info and found_info not in query: reward = 1.0
-            else: reward = -0.5
+            if found_info and found_info not in query: 
+                reward = 1.0
+                # 成功: カリキュラムの難易度を上げる(環境の共進化)
+                self.difficulty_level = min(3.0, self.difficulty_level + 0.1)
+            else: 
+                reward = -0.5
+                # 失敗: カリキュラムの難易度を下げる
+                self.difficulty_level = max(1.0, self.difficulty_level - 0.2)
+                
             self.brain.reinforce(trajectory, reward)
         return found_info

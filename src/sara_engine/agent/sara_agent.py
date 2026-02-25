@@ -1,10 +1,9 @@
-"""
-{
-    "//": "ディレクトリパス: src/sara_engine/agent/sara_agent.py",
-    "//": "タイトル: 統合マルチモーダル・エージェント (Sara Agent) - クロスモーダル完全分離版",
-    "//": "目的: PFCの検索ルーティングにおいて、視覚概念の抽出時に会話ノイズを完全に除外するトップダウン制御を追加し、正確な2段階連想を実現する。"
+# ファイルメタ情報
+_FILE_INFO = {
+    "//": "配置するディレクトリのパス: src/sara_engine/agent/sara_agent.py",
+    "//": "ファイルの日本語タイトル: 統合マルチモーダル・エージェント (Retrieval-Augmented MoE 実装版)",
+    "//": "ファイルの目的や内容: 論文「Agentic Context Engineering (ACE)」と「Retrieval-Augmented Mixture of Experts (MoE)」の概念を統合。PFCのコンパートメントをExpertと見なし、上位K個のExpertで並列して海馬（外部記憶）を検索し、文脈を動的にブレンドする。"
 }
-"""
 
 import os
 import random
@@ -46,6 +45,8 @@ class SaraAgent:
             hidden_size_per_comp=hidden_size,
             compartment_names=compartments,
         )
+        
+        # 外部記憶（Hippocampus & LTM）
         self.brain = CorticoHippocampalSystem(
             cortex=self.cortex,
             ltm_filepath="models/sara_multimodal_ltm.pkl",
@@ -211,16 +212,12 @@ class SaraAgent:
 
         self._update_history("system", f"[視覚情報: {label}]", bound_sdr)
 
-        # 視覚コンテキスト(vision)に限定して記憶する
         self.brain.experience_and_memorize(
             bound_sdr, content=f"[視覚入力: {label}]", context="vision", learning=True
         )
         return f"[視覚野] 画像を解析し、『{label}』の概念と結合しました。"
 
     def recognize_image(self, image_features: List[float], question: str = "") -> str:
-        """
-        視覚情報（画像特徴量）から関連する記憶（テキスト/概念）を想起するクロスモーダル推論。
-        """
         vision_sdr = self.vision.encode(image_features)
         search_sdr = set(vision_sdr)
         
@@ -231,28 +228,22 @@ class SaraAgent:
         else:
             self._update_history("user", "[画像入力のみ]", vision_sdr)
 
-        # 1. 視覚コンテキスト(vision)のみから検索する
         all_results = self.brain.in_context_inference(
             current_sensory_sdr=list(search_sdr), context="vision"
         )
 
-        # 【PFCの厳格な認知制御】
-        # 会話履歴の引きずり等でテキストエピソードがvisionコンテキストに混入していた場合でも、
-        # 第一段階では純粋な視覚バインディング記憶（[視覚入力: ...]）のみを確実に抽出する
         vision_memories = [res for res in all_results if "[視覚入力:" in res["content"]]
 
         if vision_memories:
             vision_memories.sort(key=lambda x: x["score"], reverse=True)
             best_memory = vision_memories[0]
             
-            # 閾値を0.15に設定し、無関係なノイズ画像の誤検知を防止
             if best_memory["score"] > 0.15:
                 memory_content = best_memory["content"]
                 
                 final_response = f"[PFC: vision (Cross-Modal)]\n"
                 final_response += f" >> 視覚記憶からの直接想起: {memory_content}"
                 
-                # "[視覚入力: 愛犬のポチ]" から "愛犬のポチ" を抽出
                 concept_text = memory_content.replace("[視覚入力: ", "").replace("]", "").strip()
                 
                 original_vsa = self.encoder.apply_vsa
@@ -260,7 +251,6 @@ class SaraAgent:
                 concept_sdr = self.encoder.encode(concept_text)
                 self.encoder.apply_vsa = original_vsa
                 
-                # 2. 抽出した概念を使って、他のコンテキスト(vision以外)からエピソードを検索
                 assoc_results = []
                 for comp in self.prefrontal.compartments:
                     if comp != "vision":
@@ -270,7 +260,6 @@ class SaraAgent:
                     assoc_results.sort(key=lambda x: x["score"], reverse=True)
                     for assoc in assoc_results:
                         assoc_memory = assoc["content"]
-                        # 視覚入力タグがない、純粋なエピソードを選ぶ
                         if "視覚入力" not in assoc_memory:
                             final_response += f"\n >> クロスモーダル連想エピソード: {assoc_memory}"
                             break
@@ -307,29 +296,28 @@ class SaraAgent:
             )
             routing_sdr.update(routing_sample)
 
+        # --- Retrieval-Augmented MoE Routing (SDR Base) ---
+        # 1. 各Expert(コンパートメント)との関連度(overlap)を計算
         overlaps = {}
         for comp, anchor in self.prefrontal.context_anchors.items():
             overlap = len(routing_sdr.intersection(set(anchor)))
+            # general以外の専門コンパートメントにはバイアスをかけて発火しやすくする
+            if comp != "general":
+                overlap += 2
             overlaps[comp] = overlap
 
-        max_overlap = max(overlaps.values())
-
-        if max_overlap < 5:
-            context = "general"
-        else:
-            best_comp = "general"
-            best_score = -1
-            for comp, score in overlaps.items():
-                adjusted_score = score
-                if comp != "general":
-                    adjusted_score += 2
-
-                if adjusted_score > best_score:
-                    best_score = adjusted_score
-                    best_comp = comp
-            context = best_comp
+        # 2. Top-K Routing: 上位2つのExpertを選出
+        sorted_experts = sorted(overlaps.items(), key=lambda x: x[1], reverse=True)
+        top_k = 2
+        active_experts = [comp for comp, score in sorted_experts[:top_k] if score > 0]
+        
+        # どこにも引っかからない場合はgeneralをデフォルトExpertにする
+        if not active_experts or sorted_experts[0][1] < 5:
+            active_experts = ["general"]
 
         if teaching_mode:
+            # 教示モード: 指定がない場合は最もスコアの高かった(Top-1)Expertに記憶させる
+            context = active_experts[0]
             if ":" in user_text:
                 parts = user_text.split(":", 1)
                 explicit_context = parts[0].strip()
@@ -359,7 +347,7 @@ class SaraAgent:
             self.gpt.learn_sequence(user_text, weight=5.0)
 
             response_text = (
-                f"[PFC: {context}] 海馬に記憶し、シーケンスとアンカーを学習しました。"
+                f"[MoE Router: {context} Expertに割当] 海馬に記憶し、シーケンスとアンカーを学習しました。"
             )
 
             response_ids = self._text_to_ids(response_text)
@@ -387,22 +375,28 @@ class SaraAgent:
             if associated_sdr:
                 search_sdr.update(associated_sdr)
 
-            all_results = []
-            for comp in self.prefrontal.compartments:
+            # --- Expertごとに海馬（外部記憶）を並列検索 ---
+            all_retrieved_memories = []
+            for comp in active_experts:
                 res = self.brain.in_context_inference(
                     current_sensory_sdr=list(search_sdr), context=comp
                 )
-                all_results.extend(res)
+                all_retrieved_memories.extend(res)
 
-            if all_results:
-                all_results.sort(key=lambda x: x["score"], reverse=True)
-                best_memory = all_results[0]["content"]
+            # 全Expertの結果をスコアで統合（Aggregation）
+            if all_retrieved_memories:
+                all_retrieved_memories.sort(key=lambda x: x["score"], reverse=True)
+                # 上位の関連記憶を最大2つまでブレンドする
+                best_memories = [m["content"] for m in all_retrieved_memories[:2]]
+                blended_memory = " | ".join(best_memories)
+                best_memory_for_gen = best_memories[0]
             else:
-                best_memory = "なし"
+                blended_memory = "なし"
+                best_memory_for_gen = "なし"
 
             memory_context = ""
-            if best_memory != "なし":
-                memory_context = best_memory
+            if best_memory_for_gen != "なし":
+                memory_context = best_memory_for_gen
             elif associated_text:
                 memory_context = associated_text
 
@@ -414,8 +408,8 @@ class SaraAgent:
 
                 generation_context_sdr = set(memory_sdr)
 
-                if best_memory != "なし":
-                    final_generated_text = best_memory.replace(" ", "")
+                if best_memory_for_gen != "なし":
+                    final_generated_text = best_memory_for_gen.replace(" ", "")
                 else:
                     if associated_text:
                         seed_prompt = associated_text.split()[0]
@@ -436,8 +430,9 @@ class SaraAgent:
                     "関連する明確なエピソード記憶が海馬に見つかりませんでした。"
                 )
 
-            full_response = f"[PFC: {context}]\n"
-            full_response += f" >> 海馬記憶: {best_memory}\n"
+            active_experts_str = ", ".join(active_experts)
+            full_response = f"[MoE Router: {active_experts_str} Experts 活性化]\n"
+            full_response += f" >> 海馬ブレンド記憶: {blended_memory}\n"
             if associated_text:
                 full_response += f" >> SNN直感連想: {associated_text}\n"
             full_response += f" >> SNN-GPT生成: {final_generated_text}"
@@ -447,12 +442,72 @@ class SaraAgent:
 
             return full_response
 
+    def _reflect_on_history(self) -> Dict[str, set]:
+        insights_by_comp = {comp: set() for comp in self.prefrontal.compartments}
+        
+        for i in range(len(self.dialogue_history) - 1):
+            if self.dialogue_history[i]["role"] == "user" and self.dialogue_history[i+1]["role"] == "system":
+                user_sdr = set(self.dialogue_history[i]["sdr"])
+                sys_sdr = set(self.dialogue_history[i+1]["sdr"])
+                
+                insight_sdr = user_sdr.intersection(sys_sdr)
+                
+                if insight_sdr:
+                    best_comp = "general"
+                    best_score = -1
+                    for comp, anchor in self.prefrontal.context_anchors.items():
+                        score = len(insight_sdr.intersection(set(anchor)))
+                        if score > best_score:
+                            best_score = score
+                            best_comp = comp
+                            
+                    insights_by_comp[best_comp].update(insight_sdr)
+                    
+        return insights_by_comp
+
+    def _curate_playbook(self, insights_by_comp: Dict[str, set]):
+        target_bits = int(self.encoder.input_size * self.encoder.density)
+        
+        for comp, new_insights in insights_by_comp.items():
+            if not new_insights:
+                continue
+                
+            current_anchor = set(self.prefrontal.context_anchors[comp])
+            current_anchor.update(new_insights)
+            
+            if len(current_anchor) > target_bits:
+                core_retention = int(target_bits * 0.7)
+                original_anchor = set(self.prefrontal.context_anchors[comp])
+                core_candidates = list(original_anchor.intersection(current_anchor))
+                
+                if len(core_candidates) >= core_retention:
+                    core_bits = random.sample(core_candidates, core_retention)
+                else:
+                    core_bits = core_candidates
+                    
+                remaining_novel = list(new_insights - set(core_bits))
+                novel_allowance = target_bits - len(core_bits)
+                novel_bits = random.sample(remaining_novel, min(len(remaining_novel), novel_allowance))
+                
+                final_bits = set(core_bits + novel_bits)
+                
+                if len(final_bits) < target_bits:
+                    leftovers = list(current_anchor - final_bits)
+                    fillers = random.sample(leftovers, min(len(leftovers), target_bits - len(final_bits)))
+                    final_bits.update(fillers)
+                    
+                self.prefrontal.context_anchors[comp] = final_bits
+            else:
+                self.prefrontal.context_anchors[comp] = current_anchor
+
     def sleep(self, consolidation_epochs: int = 3) -> str:
+        insights = self._reflect_on_history()
+        self._curate_playbook(insights)
+        
         for comp in self.prefrontal.compartments:
             self.brain.consolidate_memories(
                 context=comp, replay_count=consolidation_epochs
             )
 
         self.dialogue_history = []
-
-        return "[睡眠完了] 海馬から皮質への記憶の統合(リプレイ)を実行し、短期記憶バッファをクリアしました。"
+        return "[睡眠完了] ACEフレームワーク(Reflector/Curator)によるPFCアンカーの差分進化と、海馬記憶の統合を実行しました。"
