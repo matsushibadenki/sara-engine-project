@@ -1,30 +1,38 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/utils/data/dataloader.py",
     "//": "ファイルの日本語タイトル: スパイク・ストリーム・データローダー",
-    "//": "ファイルの目的や内容: PyTorchのDataLoaderの代替。データセットから連続的な時系列データをリアルタイムでイベント駆動型スパイクとしてエンコードし、非同期ストリームとしてSARAエンジンに供給する。"
+    "//": "ファイルの目的や内容: PyTorch DataLoaderの代替。静的なバッチではなく、AER (Address-Event Representation) 形式の連続ストリームとして時系列データをエンジンに供給する。"
 }
 
-from typing import Iterator, Tuple, List
-from .dataset import SpikeDataset
+from typing import List, Generator, Any, Callable
 
-class SpikeDataLoader:
+class SpikeStreamLoader:
     """
-    SNN特化型のストリームデータローダー。
-    静的なテンソルバッチではなく、時間軸に沿ったスパイクイベントのストリームを生成し、
-    メモリやCPU負荷を抑えながら学習エンジンへデータを供給する。
+    Biological alternative to PyTorch DataLoader.
+    Converts sequential data into an asynchronous Spike Stream (AER format).
     """
-    def __init__(self, dataset: SpikeDataset, batch_size: int = 1, shuffle: bool = False):
-        # SNNは時間的な連続性と因果関係を重視するため、時系列タスクでは通常シャッフルしない
+    def __init__(self, dataset: List[Any], encode_fn: Callable[[Any], List[int]], time_step: int = 1):
+        """
+        Args:
+            dataset: Raw sequence data (e.g., list of characters, frames, etc.)
+            encode_fn: Function to map raw data to spike IDs.
+            time_step: Simulated time increment per item.
+        """
         self.dataset = dataset
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-
-    def __iter__(self) -> Iterator[Tuple[int, List[int]]]:
+        self.encode_fn = encode_fn
+        self.time_step = time_step
+        
+    def stream(self) -> Generator[dict, None, None]:
         """
-        データセットから時間ステップごとにスパイクのリストを取得し、逐次供給する。
-        AER (Address-Event Representation) に似た形式でルーティングを行う。
+        Yields event-driven spikes continuously.
+        Returns: { "time": int, "spikes": List[int], "raw": Any }
         """
-        # 現状はシンプルなジェネレータパススルー。
-        # 将来的には複数ストリームの非同期マージ（SNN的なバッチ化）に対応する。
-        for timestamp, spikes in self.dataset:
-            yield (timestamp, spikes)
+        current_time = 0
+        for item in self.dataset:
+            spikes = self.encode_fn(item)
+            yield {
+                "time": current_time,
+                "spikes": spikes,
+                "raw": item
+            }
+            current_time += self.time_step

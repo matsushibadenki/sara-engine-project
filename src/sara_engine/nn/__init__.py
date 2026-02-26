@@ -9,3 +9,7 @@ from .sequential import Sequential
 from .linear_spike import LinearSpike
 from .attention import SpikeSelfAttention
 from .predictive import PredictiveSpikeLayer
+from .dropout import SpikeDropout
+from .normalization import SpikeLayerNorm
+from .multimodal import CrossModalAssociator
+from .rstdp import RewardModulatedLinearSpike
