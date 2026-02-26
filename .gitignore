@@ -92,12 +92,13 @@ coverage.xml
 # データセット (examples/train_mnist.py でダウンロードされる場所)
 examples/data/
 
-# データエリア
+# data area
 # data/*.gz
 # data/*.csv
 
 # 学習済みモデル (保存されたpklファイルなど)
 *.pkl
+models/*.msgpack
 
 # Logs
 *.log
