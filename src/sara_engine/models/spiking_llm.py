@@ -258,8 +258,32 @@ class SpikingLLM:
         self.transformer.reset_state()
 
     def forward(
-        self, input_spikes: List[int], t_step: int = 0
-    ) -> Tuple[List[float], List[int]]:
+        self, input_spikes: list[int], t_step: int = 0
+    ) -> tuple[list[float], list[int]]:
+        # --- 追加: sdr_k を定義 ---
+        sdr_k = self._sdr_key(input_spikes)
+
+        # --- 以下、前回のロジックを統合 ---
+        vocab_potentials = [0.0] * self.vocab_size
+
+        if sdr_k in self._direct_map:
+            # 学習済みデータがある場合は、直接マッピングを優先
+            for tok_id, count in self._direct_map[sdr_k].items():
+                if tok_id < self.vocab_size:
+                    vocab_potentials[tok_id] = count * 100.0
+            
+            # 内部状態（Transformer層）を更新するために forward は実行するが、出力は無視する
+            _, combined_spikes = self._internal_forward(input_spikes, t_step)
+        else:
+            # 学習済みデータがない場合のみ Transformer パスを使用
+            lm_potentials, combined_spikes = self._internal_forward(input_spikes, t_step)
+            for i in range(self.vocab_size):
+                vocab_potentials[i] = lm_potentials[i]
+
+        return vocab_potentials, combined_spikes
+        
+    def _internal_forward(self, input_spikes: list[int], t_step: int) -> tuple[list[float], list[int]]:
+        """既存の forward ロジックを分離"""
         hidden_spikes = self.transformer.forward(input_spikes, t_step=t_step)
         combined_spikes = list(set(input_spikes + hidden_spikes))
 
@@ -269,7 +293,6 @@ class SpikingLLM:
                 for post_id, w in self.lm_head_w[pre_id].items():
                     if post_id < self.vocab_size:
                         vocab_potentials[post_id] += w
-
         return vocab_potentials, combined_spikes
 
     def _encode_to_sdr(self, context_tokens: List[int]) -> List[int]:
