@@ -23,7 +23,7 @@ _FILE_INFO = {
     "//": "ファイルの目的や内容: SpikeStreamDataLoaderなどの新規モジュールを公開し、アクセス性を向上させる。"
 }
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 # --- New Hugging Face Transformers-like API ---
 

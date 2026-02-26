@@ -8,10 +8,10 @@ build-backend = "maturin"
 
 [project]
 name = "sara_engine"
-version = "0.2.2"
+version = "0.2.3"
 description = "A bio-inspired Spiking Neural Network engine with Hugging Face-like pipeline APIs (CPU-only, Backprop-free)."
 authors = [
-    { name = "Your Name", email = "your.email@example.com" }
+    { name = "matsushibadenki", email = "apple.darwin@gmail.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/sara_engine"
+Homepage = "https://github.com/matsushibadenki/sara-engine-project"
 
 [tool.maturin]
 python-source = "src"
