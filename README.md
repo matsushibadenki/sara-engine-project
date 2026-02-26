@@ -1,83 +1,127 @@
-# SARA Engine (Liquid Harmony)
+# **SARA Engine**
 
-**SARA (Spiking Advanced Recursive Architecture)** is a next-generation AI engine that mimics the biological brain's power efficiency and event-driven processing. 
+**SARA (Spiking Architecture for Reasoning and Adaptation) Engine** is a cutting-edge AI framework that bridges the gap between biological intelligence and modern artificial neural networks.
 
-It completely eliminates the "backpropagation (BP)" and "matrix operations" that modern deep learning (ANNs) rely on, achieving advanced recognition, text generation, and retrieval capabilities using **only sparse spike communication**.
-
-It operates completely on CPU, without using any GPU or NumPy.
-
-Current Version: **v0.2.2**
-
-## Features
-
-* **Hugging Face-like Pipelines**: Incredibly easy-to-use API (`pipeline("text-generation")`, `pipeline("image-classification")`, etc.).
-* **No Backpropagation**: Learns natively using biological rules like Spike-Timing-Dependent Plasticity (STDP) and Homeostatic Plasticity.
-* **Zero Matrix Math**: Replaces dense tensor multiplications with purely discrete spike routing.
-* **CPU Only & Eco-Friendly**: Does not require expensive GPU resources.
-
-## Installation  
+It provides a highly efficient, event-driven Spiking Neural Network (SNN) core accelerated by Rust, combined with an intuitive PyTorch-like API. SARA goes beyond standard deep learning by natively supporting biological mechanisms such as **NeuroFEM**, **Predictive Coding**, and **Hippocampal-inspired memory systems**.
   
-```bash
-pip install sara-engine
+  
+## **🧠 Key Features**
 
-```
+* **High-Performance Event-Driven Core:** Rust-based SNN simulation engine that minimizes computational overhead and maximizes simulation speed.  
+* **PyTorch-like API (sara\_engine.nn):** Build, train, and deploy complex spiking networks using familiar, modular, and declarative syntax.  
+* **Advanced Biologically-Plausible Mechanisms:**  
+  * **NeuroFEM:** Neuro-Finite Element Method for modeling spatial neural dynamics in 2D/3D spaces.  
+  * **Predictive Coding:** Cortex-inspired architecture supporting top-down predictions and bottom-up error processing.  
+  * **Hippocampal Memory System:** Long-Term (LTM) and Short-Term (STM) memory supporting **Million-Token contexts** and SDR (Sparse Distributed Representations).  
+  * **Synaptic Plasticity:** Native support for STDP (Spike-Timing-Dependent Plasticity) and Reward-Modulated STDP (R-STDP).  
+* **Spiking LLMs & Transformers:** Innovative spike-based attention mechanisms and fully operational Spiking Language Models.  
+* **Multimodal Integration:** Built-in encoders and pipelines for Vision, Audio, Physical, and Textual data.  
+* **Hardware & Edge Ready:** Includes a Hardware Abstraction Layer (HAL) and exporters for edge deployment (e.g., SARA Board).
+  
+  
+## **🚀 Installation**
 
-## Quick Start
+Ensure you have Python 3.10 or higher and a working Rust toolchain installed.
 
-SARA v0.2.2 introduces an incredibly intuitive pipeline API, bringing the ease of modern NLP frameworks to Spiking Neural Networks.
+\# Clone the repository  
+git clone \[https://github.com/matsushibadenki/sara-engine-project.git\](https://github.com/matsushibadenki/sara-engine-project.git)  
+cd sara-engine-project
 
-### 1. Text Generation (Zero-Shot Inference)
+\# Install the package in editable mode (compiles the Rust core automatically)  
+pip install \-e .
 
-You can easily load pre-trained STDP synapses and generate text autoregressively.
+*(Note: If changes to the core are not reflecting, ensure you re-run pip install \-e . to rebuild the Rust extensions.)*
+  
+  
+## **💡 Quick Start**
 
-```python
-from sara_engine import pipeline
+Here is a simple example of building and running a Spiking Neural Network using the SARA Engine:
 
-# Load a biologically trained model and tokenizer
-generator = pipeline("text-generation", model="path/to/saved_snn_model")
+import numpy as np  
+from sara\_engine import nn
 
-output = generator("Hello, I am a spiking", max_new_tokens=15)
-print(output[0]['generated_text'])
+\# Define a simple SNN model  
+class SimpleSNN(nn.Module):  
+    def \_\_init\_\_(self):  
+        super().\_\_init\_\_()  
+        self.fc1 \= nn.LinearSpike(in\_features=784, out\_features=256)  
+        self.fc2 \= nn.LinearSpike(in\_features=256, out\_features=10)
 
-```
+    def forward(self, spikes):  
+        x \= self.fc1(spikes)  
+        x \= self.fc2(x)  
+        return x
 
-### 2. Feature Extraction & RAG
+\# Initialize model  
+model \= SimpleSNN()
 
-Extract semantic embeddings using Liquid State Machines (LSM) without any mathematical attention layers.
+\# Create dummy input spikes (Batch Size: 1, Features: 784\)  
+input\_spikes \= np.random.rand(1, 784\) \> 0.8 
 
-```python
-from sara_engine import pipeline
+\# Forward pass  
+output\_spikes \= model(input\_spikes)  
+print("Output Spikes Shape:", output\_spikes.shape)
+  
+  
+## **🛠️ Examples and Tools**
 
-extractor = pipeline("feature-extraction", model="path/to/saved_extractor")
+The repository contains a massive collection of 70+ scripts covering demos, interactive tools, benchmarks, and unit tests.
+  
+  
+### **🌟 Demos (examples/)**
 
-# Extracts a high-dimensional membrane potential vector
-vector = extractor("Artificial intelligence is evolving.")
-print(f"Spike Vector Length: {len(vector)}")
+Explore over 50 demonstration scripts showing SARA's capabilities:
 
-```
+* **Spiking LLMs & Transformers:** demo\_spiking\_llm.py, demo\_bio\_transformer.py  
+* **Agent Frameworks:** demo\_agent\_chat.py, demo\_million\_token\_agent.py  
+* **Multimodal Pipelines:** demo\_multimodal\_pipeline.py, demo\_crossmodal\_recall.py  
+* **Learning & Plasticity:** demo\_rl\_training.py, demo\_snn\_learning.py  
+* **Advanced Bio-Mechanisms:** demo\_predictive\_coding.py, demo\_semantic\_spike\_routing.py
+  
+  
+### **📊 Benchmarks (examples/)**
 
-### 3. Image Classification
+Measure performance and scaling:
 
-Process pixels via Retinal Rate Coding directly into SNN layers.
+* benchmark\_rust\_acceleration.py: Compare Python vs. Rust core speeds.  
+* benchmark\_long\_context.py: Evaluate memory usage over massive contexts.
+  
+  
+### **🧪 Tests (tests/)**
 
-```python
-from sara_engine import pipeline
+Comprehensive test suite ensuring stability:
 
-vision_classifier = pipeline("image-classification", model="path/to/vision_model")
+* test\_neurofem.py, test\_hippocampal\_system.py, test\_event\_driven\_snn.py
 
-# Pass a 2D array of pixel intensities (0.0 to 1.0)
-image = [
-    [1.0, 0.0, 1.0],
-    [0.0, 1.0, 0.0],
-    [1.0, 0.0, 1.0]
-]
-prediction = vision_classifier(image)
-print(prediction[0]['label']) # e.g., "Cross (X)"
+👉 **For a complete and detailed list of all available scripts, please refer to [doc/About-Tools-EN.md](https://www.google.com/search?q=doc/About-Tools-EN.md).**
+  
+  
+## **🏗️ Architecture & Modules**
 
-```
+The project is structured to provide both high-level usability and low-level performance:
 
-## License
+* sara\_engine.core: The fundamental building blocks, interfacing with the Rust backend.  
+* sara\_engine.nn: High-level PyTorch-like API for model construction.  
+* sara\_engine.models: Pre-built architectures (e.g., SpikingImageClassifier, BioTransformer, SpikingLLM).  
+* sara\_engine.pipelines: End-to-end inference pipelines (Text, Vision, Audio).  
+* sara\_engine.memory: Implementations of SDR, Hippocampus, and Vector Stores.  
+* sara\_engine.edge: Exporters and runtime utilities for hardware deployment.
+  
+  
+## **🗺️ Roadmap & Documentation**
 
-MIT License
+To understand the future direction and deep theoretical background of the SARA Engine, check the following documents:
 
-```
+* [ROADMAP.md](https://www.google.com/search?q=doc/ROADMAP.md) \- Short-term development goals.  
+* [SARA\_EVOLUTION\_ROADMAP.md](https://www.google.com/search?q=doc/SARA_EVOLUTION_ROADMAP.md) \- Long-term evolutionary roadmap.  
+* [stateful\_snn\_theory.md](https://www.google.com/search?q=doc/stateful_snn_theory.md) \- Theoretical background on Stateful SNNs and NeuroFEM.
+  
+  
+## **🤝 Contributing**
+
+We welcome contributions\! Please review our [policy.md](https://www.google.com/search?q=doc/policy.md) for coding standards and contribution guidelines. When developing, remember our core philosophy: avoid relying on backpropagation or dense matrix multiplications where biological spike-driven mechanisms (like STDP) are intended, and ensure hardware agnosticism (no hard GPU dependencies).
+  
+  
+## **📄 License**
+
+This project is licensed under the MIT License.
