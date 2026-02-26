@@ -100,3 +100,6 @@ examples/data/
 
 # 作業領域
 workspace/
+.DS_Store
+src/.DS_Store
+src/sara_engine/.DS_Store
