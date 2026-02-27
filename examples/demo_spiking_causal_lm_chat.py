@@ -1,5 +1,6 @@
 # examples/demo_spiking_causal_lm_chat.py
-# v4: register_vocab を使って supervised_qa_train の句読点除外を有効化
+# スパイキング因果LLMチャットデモ v4.7
+# 目的: 生成モデルに停止トークンのIDを渡し、無駄なループを防いで正確な文末で切断する。
 
 from sara_engine.encoders.spike_tokenizer import SpikeTokenizer
 from sara_engine.models.spiking_causal_lm import SpikingCausalLM
@@ -12,7 +13,8 @@ from typing import List, Dict, Tuple
 
 _FILE_INFO = {
     "path":  "examples/demo_spiking_causal_lm_chat.py",
-    "title": "スパイキング因果LLMチャットデモ v4",
+    "title": "スパイキング因果LLMチャットデモ v4.7",
+    "description": "生成モデルに停止トークンのIDを渡し、無駄なループを防いで正確な文末で切断する。"
 }
 
 DATA_PATH      = "data/chat_data.jsonl"
@@ -22,12 +24,13 @@ EMBED_DIM      = 256
 HIDDEN_DIM     = 512
 SPARSITY       = 0.10
 EPOCHS         = 30
-LR_NORMAL      = 0.8
+LR_NORMAL      = 0.3
 LR_QA          = 2.0
 MAX_GEN_TOKENS = 25
-TEMPERATURE    = 0.2
+TEMPERATURE    = 0.01
 DEBUG          = True
 SEP            = " Assistant: "
+EOS_WORD       = "＜終＞"
 
 
 def load_data(data_path: str, max_samples: int) -> Tuple[List[str], List[Tuple[str, str]]]:
@@ -56,7 +59,7 @@ def load_data(data_path: str, max_samples: int) -> Tuple[List[str], List[Tuple[s
                 except (json.JSONDecodeError, KeyError):
                     continue
 
-    corpus = [f"User: {q}{SEP}{a}" for q, a in qa_pairs]
+    corpus = [f"User: {q}{SEP}{a}{EOS_WORD}" for q, a in qa_pairs]
     return corpus, qa_pairs
 
 
@@ -73,17 +76,8 @@ def patch_sparsity(model: SpikingCausalLM, sparsity: float) -> None:
 
 
 def build_id_to_token(tokenizer: SpikeTokenizer) -> Dict[int, str]:
-    """
-    SpikeTokenizer から id→token テキストの逆引きテーブルを構築する。
-
-    優先順位:
-      1. get_vocab() が使えて非空エントリが多ければそれを使う
-      2. vocab_size 分ループして decode() で引く
-      3. それでも空なら tokenizer の内部属性 (decoder 等) を直接参照する
-    """
     id_to_token: Dict[int, str] = {}
 
-    # 方法1: get_vocab() → {token_str: id} の逆引き
     if hasattr(tokenizer, "get_vocab"):
         vocab = tokenizer.get_vocab()
         candidate: Dict[int, str] = {v: k for k, v in vocab.items()}
@@ -92,7 +86,6 @@ def build_id_to_token(tokenizer: SpikeTokenizer) -> Dict[int, str]:
             print(f"  [build_id_to_token] get_vocab: {non_empty_c}/{len(candidate)} non-empty")
             return candidate
 
-    # 方法2: decode([i]) で個別に引く
     for i in range(tokenizer.vocab_size):
         try:
             text = tokenizer.decode([i])
@@ -102,7 +95,6 @@ def build_id_to_token(tokenizer: SpikeTokenizer) -> Dict[int, str]:
 
     non_empty2 = sum(1 for v in id_to_token.values() if v.strip())
 
-    # 方法2が不十分なら方法3: 内部属性を直接参照
     if non_empty2 < tokenizer.vocab_size * 0.3:
         for attr in ("id_to_token", "_id_to_token", "decoder", "_decoder"):
             if hasattr(tokenizer, attr):
@@ -119,16 +111,14 @@ def build_id_to_token(tokenizer: SpikeTokenizer) -> Dict[int, str]:
     non_empty_f = sum(1 for v in id_to_token.values() if v.strip())
     print(f"  [build_id_to_token] final: {non_empty_f}/{tokenizer.vocab_size} non-empty")
 
-    # それでも非空が少ない場合: encode→decode往復でサンプル確認
     if non_empty_f < 10:
         print("  [build_id_to_token] WARNING: very few non-empty entries!")
         print("  Trying encode→id mapping for known texts...")
-        # 回答テキストから直接マッピングを作る
         known_texts = [
             "こんにちは", "SARAです", "絶好調です", "私はSARAです",
             "どういたしまして", "様々なタスクに対応しています",
             "ローカル環境で動くSNNのAIです", "また何かあれば聞いてください",
-            "M4チップの推論速度は素晴らしいですね",
+            "M4チップの推論速度は素晴らしいですね", "＜終＞"
         ]
         for text in known_texts:
             ids = tokenizer.encode(text)
@@ -150,23 +140,22 @@ def train(
     print("--- Training SpikingCausalLM ---")
     start = time.time()
 
-    # Q/A トークン列を事前計算 + デバッグ表示
     qa_token_pairs: List[Tuple[List[int], List[int]]] = []
     id_to_token_debug = build_id_to_token(tokenizer)
     print("\n[DEBUG] Q/A token encoding:")
-    for q_text, a_text in qa_pairs[:3]:  # 最初の3件だけ表示
+    for q_text, a_text in qa_pairs[:3]:
         q_prompt = f"User: {q_text}{SEP}"
         q_ids    = tokenizer.encode(q_prompt)
-        a_ids    = tokenizer.encode(a_text)
+        a_ids    = tokenizer.encode(a_text + EOS_WORD)
         if q_ids and a_ids:
             qa_token_pairs.append((q_ids, a_ids))
             a_decoded = [f"id={t}:'{id_to_token_debug.get(t,'?')}'" for t in a_ids[:5]]
             print(f"  Q='{q_text}' → A tokens(first5): {a_decoded}")
-    # 残りのペアも追加（デバッグ表示なし）
+            
     for q_text, a_text in qa_pairs[3:]:
         q_prompt = f"User: {q_text}{SEP}"
         q_ids    = tokenizer.encode(q_prompt)
-        a_ids    = tokenizer.encode(a_text)
+        a_ids    = tokenizer.encode(a_text + EOS_WORD)
         if q_ids and a_ids:
             qa_token_pairs.append((q_ids, a_ids))
     print()
@@ -178,7 +167,7 @@ def train(
                 model.train_step(token_ids, learning_rate=LR_NORMAL)
 
         for q_ids, a_ids in qa_token_pairs:
-            model.supervised_qa_train(q_ids, a_ids, learning_rate=LR_QA, max_qa_tokens=5)
+            model.supervised_qa_train(q_ids, a_ids, learning_rate=LR_QA, max_qa_tokens=15)
 
         if (epoch + 1) % 5 == 0:
             print(f"  Epoch {epoch+1}/{epochs}  ({time.time()-start:.1f}s)")
@@ -192,7 +181,6 @@ def train(
     print(f"Total generic synapses : {total_synapses}")
     print(f"Total QA entries       : {qa_entries}")
 
-    # QAボーナス内容を表示
     print("\n[DEBUG] QA bonus table:")
     id_to_token = build_id_to_token(tokenizer)
     for ctx_k, tok_dict in model.qa_weights.items():
@@ -253,7 +241,7 @@ def debug_top_candidates(
         count = token_support_count.get(t_id, 1)
         token_potentials[t_id] *= (count ** 1.2)
 
-    QA_SCALE = 1000.0
+    QA_SCALE = 500.0
     if qa_bonus:
         for t_id, bonus_w in qa_bonus.items():
             extra = bonus_w * QA_SCALE
@@ -291,11 +279,15 @@ def generate_reply(
         print("  [WARN] Tokenization empty.\n")
         return
 
+    # 停止条件となるトークンIDのリスト（BPEで「＜」「終」「＞」などを含んでしまったトークンすべてを対象）
+    stop_ids = [k for k, v in id_to_token.items() if "終" in v or "＜" in v or "＞" in v]
+
     generated_ids = model.generate(
         prompt_ids,
         max_new_tokens=MAX_GEN_TOKENS,
         temperature=TEMPERATURE,
         question_ids=prompt_ids,
+        stop_token_ids=stop_ids,  # 追加: Early Stoppingを有効化
     )
 
     if not generated_ids:
@@ -304,19 +296,20 @@ def generate_reply(
 
     result_text = tokenizer.decode(generated_ids)
 
+    # プレフィックスの除去
     if "User:" in result_text:
-        result_text = result_text.split("User:")[0].strip()
+        result_text = result_text.split("User:")[0]
+    if "Assistant:" in result_text:
+        result_text = result_text.split("Assistant:")[0]
+        
+    # BPEで結合されて出力されてしまった「。＜」などのゴミを綺麗に除去
+    result_text = result_text.split("終")[0].split("＜")[0].replace("＞", "").strip()
 
-    for p in ["。", "！", "？", ".", "!", "?"]:
-        if p in result_text:
-            result_text = result_text.split(p)[0] + p
-            break
-
-    print(f"Assistant: {result_text.strip()}\n")
+    print(f"Assistant: {result_text}\n")
 
 
 def main() -> None:
-    print("=== Spiking Causal LM Chat Demo v4 ===\n")
+    print("=== Spiking Causal LM Chat Demo v4.7 ===\n")
 
     corpus, qa_pairs = load_data(DATA_PATH, MAX_SAMPLES)
     print(f"Loaded {len(qa_pairs)} Q/A pairs.\n")
@@ -335,13 +328,11 @@ def main() -> None:
     )
     patch_sparsity(model, SPARSITY)
 
-    # id→token テーブルを登録（supervised_qa_train での除外判定に使用）
     id_to_token = build_id_to_token(tokenizer)
     model.register_vocab(id_to_token)
 
     train(model, tokenizer, corpus, qa_pairs, epochs=EPOCHS)
 
-    # SDR衝突率確認
     all_sdrs = list(model.token_to_sdr.values())
     if len(all_sdrs) >= 2:
         sample   = all_sdrs[:min(len(all_sdrs), 20)]
