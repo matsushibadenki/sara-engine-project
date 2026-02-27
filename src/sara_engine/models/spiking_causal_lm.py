@@ -1,8 +1,9 @@
 # src/sara_engine/models/spiking_causal_lm.py
-# スパイキング因果言語モデル v4.8
-# 目的: Phase 1のタスクである「不応期（ペナルティ）の外部パラメータ化」を実装。
+# スパイキング因果言語モデル v5.0 (Rust Hybrid)
+# 目的: Rustコアを統合し、汎用シナプスのSTDP学習と電位計算をオフロードして超高速化する。
 
 from sara_engine.core.transformer import SpikeTransformerModel
+from sara_engine.sara_rust_core import CausalSynapses
 from typing import List, Dict, Optional
 import math
 import random
@@ -10,8 +11,8 @@ import json
 
 _FILE_INFO = {
     "path":  "src/sara_engine/models/spiking_causal_lm.py",
-    "title": "スパイキング因果言語モデル v4.8",
-    "description": "不応期（ペナルティ）の外部パラメータ化と、制御信号の許容。"
+    "title": "スパイキング因果言語モデル v5.0 (Rust Hybrid)",
+    "description": "Rustコアを統合し、汎用シナプスのSTDP学習と電位計算をオフロードして超高速化する。"
 }
 
 # 除外対象の記号文字セット（1文字トークンのみ対象）
@@ -39,10 +40,10 @@ class SpikingCausalLM:
         )
         self.token_to_sdr: Dict[int, List[int]] = {}
 
-        self.weights: List[Dict[int, Dict[int, float]]] = [
-            {} for _ in range(self.max_delay + 1)
-        ]
+        # --- Rust Core への差し替え ---
+        self.rust_synapses = CausalSynapses(max_delay=self.max_delay)
 
+        # QA専用シナプスは引き続きPython側で管理
         self.qa_weights: Dict[int, Dict[int, float]] = {}
 
         self._id_to_token: Dict[int, str] = {}
@@ -80,7 +81,7 @@ class SpikingCausalLM:
         if clean in _EXCLUDE_WORDS:
             return True
         
-        # 終了シグナルやシステムタグはQAボーナスから除外
+        # 終了シグナルはQAボーナスから除外
         if "終" in clean or "＜" in clean or "＞" in clean:
             return True
             
@@ -105,26 +106,8 @@ class SpikingCausalLM:
             if len(spike_history) > self.max_delay + 1:
                 spike_history.pop()
 
-            for delay, active_spikes in enumerate(spike_history):
-                eff_lr = learning_rate * (1.0 - delay * 0.08)
-                if eff_lr <= 0:
-                    continue
-                for s in active_spikes:
-                    if s not in self.weights[delay]:
-                        self.weights[delay][s] = {}
-                    
-                    for existing_nxt in list(self.weights[delay][s].keys()):
-                        if existing_nxt != nxt:
-                            self.weights[delay][s][existing_nxt] *= (1.0 - eff_lr * 0.01)
-                    
-                    old_w = self.weights[delay][s].get(nxt, 0.0)
-                    self.weights[delay][s][nxt] = old_w + eff_lr * (1.0 - old_w)
-                    
-                    total_w = sum(self.weights[delay][s].values())
-                    if total_w > 5.0:
-                        scale = 5.0 / total_w
-                        for k in self.weights[delay][s]:
-                            self.weights[delay][s][k] *= scale
+            # --- RustコアにSTDP学習を完全オフロード ---
+            self.rust_synapses.train_step(spike_history, nxt, learning_rate)
 
     def supervised_qa_train(
         self,
@@ -165,8 +148,8 @@ class SpikingCausalLM:
         temperature:    float = 0.01,
         question_ids:   Optional[List[int]] = None,
         stop_token_ids: Optional[List[int]] = None,
-        repetition_penalty: float = 0.01,  # 追加: 不応期ペナルティ強度 (0.0〜1.0)
-        repetition_window: int = 3,        # 追加: 対象となる過去のトークン数
+        repetition_penalty: float = 0.01,
+        repetition_window: int = 3,
     ) -> List[int]:
         self.reset_context()
         generated:     List[int]       = []
@@ -178,11 +161,8 @@ class SpikingCausalLM:
         QA_SCALE         = 500.0
         qa_scale_current = QA_SCALE
 
-        token_fan_in: Dict[int, float] = {}
-        for delay_dict in self.weights:
-            for s_dict in delay_dict.values():
-                for t, w in s_dict.items():
-                    token_fan_in[t] = token_fan_in.get(t, 0.0) + w
+        # Rust側から各トークンのファンイン（受容結合重み）を取得
+        token_fan_in = self.rust_synapses.get_token_fan_in()
 
         for t in prompt_tokens[:-1]:
             input_spikes  = self._get_sdr_for_token(t)
@@ -202,28 +182,11 @@ class SpikingCausalLM:
             if len(spike_history) > self.max_delay + 1:
                 spike_history.pop()
 
-            token_potentials:    Dict[int, float] = {}
-            token_support_count: Dict[int, int]   = {}
-
-            for delay, active_spikes in enumerate(spike_history):
-                time_decay  = max(0.1, 1.0 - delay * 0.08)
-                supported: set = set()
-                for s in active_spikes:
-                    if s in self.weights[delay]:
-                        for t_id, weight in self.weights[delay][s].items():
-                            token_potentials[t_id] = (
-                                token_potentials.get(t_id, 0.0) + weight * time_decay
-                            )
-                            supported.add(t_id)
-                for t_id in supported:
-                    token_support_count[t_id] = token_support_count.get(t_id, 0) + 1
+            # --- Rustコアで全トークンの発火ポテンシャルを一括計算 ---
+            token_potentials = self.rust_synapses.calculate_potentials(spike_history)
 
             if not token_potentials:
                 break
-
-            for t_id in token_potentials:
-                count = token_support_count.get(t_id, 1)
-                token_potentials[t_id] *= (count ** 1.2)
 
             if qa_bonus and qa_scale_current > 0:
                 for t_id, bonus_w in qa_bonus.items():
@@ -236,7 +199,6 @@ class SpikingCausalLM:
                 if hub > 1.0:
                     token_potentials[t_id] /= math.pow(hub, 0.2)
 
-            # 外部パラメータ化された不応期（ペナルティ）の適用
             if repetition_window > 0 and repetition_penalty < 1.0:
                 forbidden = set(generated[-repetition_window:] + [current_token])
                 for f_id in forbidden:
@@ -281,9 +243,34 @@ class SpikingCausalLM:
         return generated
 
     def save_pretrained(self, filepath: str) -> None:
-        # 既存の実装と同じため省略
-        pass
-        
+        print("[WARN] Rust Hybrid v5.0 では、汎用シナプスのシリアライズは未実装です。QA専用シナプスのみ保存します。")
+        serializable_qa: Dict[str, Dict[str, float]] = {
+            str(ctx_k): {str(tok_id): w for tok_id, w in tok_dict.items()}
+            for ctx_k, tok_dict in self.qa_weights.items()
+        }
+
+        state = {
+            "vocab_size":  self.vocab_size,
+            "embed_dim":   self.embed_dim,
+            "max_delay":   self.max_delay,
+            "transformer": self.transformer.state_dict(),
+            "qa_weights":  serializable_qa,
+        }
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+
     def load_pretrained(self, filepath: str) -> None:
-        # 既存の実装と同じため省略
-        pass
+        with open(filepath, "r", encoding="utf-8") as f:
+            state = json.load(f)
+
+        self.vocab_size = state["vocab_size"]
+        self.embed_dim  = state["embed_dim"]
+        self.max_delay  = state.get("max_delay", 10)
+        self.transformer.load_state_dict(state["transformer"])
+
+        self.qa_weights = {}
+        for ctx_k_str, tok_dict in state.get("qa_weights", {}).items():
+            ctx_k = int(ctx_k_str)
+            self.qa_weights[ctx_k] = {
+                int(tok_id): float(w) for tok_id, w in tok_dict.items()
+            }
