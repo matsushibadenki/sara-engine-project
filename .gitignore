@@ -108,3 +108,9 @@ workspace/
 .DS_Store
 src/.DS_Store
 src/sara_engine/.DS_Store
+
+# 古いけど残すもの
+scripts/old/
+data/old/
+examples/old/
+test/old/

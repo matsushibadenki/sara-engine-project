@@ -1,10 +1,13 @@
-# ディレクトリパス: scripts/chat_rust_core.py
-# ファイルの日本語タイトル: Rustコア推論スクリプト (クリーン版)
-# ファイルの目的や内容: 正常な脳に対応した、無駄なフィルターのない最速の推論コード。
+{
+    "//": "ディレクトリパス: scripts/chat_rust_core.py",
+    "//": "ファイルの日本語タイトル: Rustコア推論スクリプト (ソフト・ペナルティ修正版)",
+    "//": "ファイルの目的や内容: 8192ニューロンのまま、助詞のハブ化のみを安全な対数ペナルティで抑制し、ワードサラダを完全に防ぐ。"
+}
 
 import msgpack
 import time
 import os
+import math
 import tqdm
 from transformers import AutoTokenizer
 from sara_engine.models.spiking_llm import SpikingLLM
@@ -27,36 +30,48 @@ def run_rust_chat():
         return
 
     print(f"Loading distilled knowledge from {model_path}...")
-    try:
-        with open(model_path, "rb") as f:
-            state = msgpack.unpack(f, raw=False)
-        
-        weights = [{} for _ in range(sdr_size)]
-        
-        items = state.get("direct_map", {}).items()
-        for str_sdr_k, next_tokens in tqdm.tqdm(items, desc="Transferring to Rust Core"):
-            sdr_k = eval(str_sdr_k)
-            for str_tok_id, count in next_tokens.items():
-                tok_id = int(str_tok_id)
-                weight_per_spike = float(count) / len(sdr_k)
-                for pre_id in sdr_k:
-                    weights[pre_id][tok_id] = max(weights[pre_id].get(tok_id, 0.0), weight_per_spike)
+    with open(model_path, "rb") as f:
+        state = msgpack.unpack(f, raw=False)
+    
+    items = list(state.get("direct_map", {}).items())
+    
+    print("Analyzing neural pathways (Applying Safe Soft-Penalty)...")
+    token_freq = {}
+    for str_sdr_k, next_tokens in items:
+        for str_tok_id, count in next_tokens.items():
+            tok_id = int(str_tok_id)
+            token_freq[tok_id] = token_freq.get(tok_id, 0) + 1
 
-        rust_engine.set_weights(weights)
-        print(f"🚀 Successfully transferred {len(items)} patterns!")
-        del state
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return
+    weights = [{} for _ in range(sdr_size)]
+    
+    for str_sdr_k, next_tokens in tqdm.tqdm(items, desc="Transferring to Rust Core"):
+        sdr_k = eval(str_sdr_k)
+        for str_tok_id, count in next_tokens.items():
+            tok_id = int(str_tok_id)
+            freq = token_freq.get(tok_id, 1)
+            
+            # 💡 修正点：希少な言葉を爆発させず、10回以上出現した言葉のみを対数で優しく抑制
+            penalty = 1.0
+            if freq > 10:
+                penalty = 1.0 / math.log10(freq)
+            
+            weight_per_spike = (float(count) / len(sdr_k)) * penalty
+            
+            for pre_id in sdr_k:
+                weights[pre_id][tok_id] = max(weights[pre_id].get(tok_id, 0.0), weight_per_spike)
+
+    rust_engine.set_weights(weights)
+    print(f"🚀 Successfully transferred {len(items)} patterns into Rust Core!")
+    del state
 
     print("\n" + "="*50)
-    print("⚡ SARA Rust Core Session (Clean State)")
+    print("⚡ SARA Rust Core Session (Safe Hub-Suppression)")
     print("終了するには 'quit' または 'exit' と入力してください。")
     print("="*50 + "\n")
 
     while True:
         try:
-            user_input = input("You: ")
+            user_input = input("\nYou: ")
         except (KeyboardInterrupt, EOFError): break
         if user_input.strip().lower() in ["quit", "exit"]: break
         if not user_input.strip(): continue
@@ -69,15 +84,15 @@ def run_rust_chat():
         generated_count = 0
         refractory_buffer = []
 
-        # 💡 通常の閾値に戻す
-        fire_threshold = 60.0 
+        # 💡 スパイクが正常化されたため、適切な閾値を設定
+        fire_threshold = 40.0 
 
         for step in range(50): 
             context_tokens = current_tokens[-8:]
             sdr = student._encode_to_sdr(context_tokens)
             
-            # 💡 シンプルにトップの候補をもらう
-            out_spikes = rust_engine.propagate(sdr, fire_threshold, 3)
+            # 候補を5つ取得
+            out_spikes = rust_engine.propagate(sdr, fire_threshold, 5)
             
             if not out_spikes:
                 if step == 0:
@@ -107,7 +122,8 @@ def run_rust_chat():
                 
         elapsed_time = time.time() - start_time
         tps = generated_count / elapsed_time if elapsed_time > 0 else 0
-        print(f"\n      [⏱️ Speed: {tps:.2f} tokens/sec]")
+        if generated_count > 0:
+            print(f"\n      [⏱️ Speed: {tps:.2f} tokens/sec]")
 
 if __name__ == "__main__":
     run_rust_chat()

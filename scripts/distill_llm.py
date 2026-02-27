@@ -1,6 +1,8 @@
-# ディレクトリパス: scripts/distill_llm.py
-# ファイルの日本語タイトル: LLM蒸留スクリプト (SQLite DB対応・忘却ロジック修正版)
-# ファイルの目的や内容: 欠落していたDecay（忘却）処理を復活させ、ノイズの過学習（助詞の嵐）を防止する。
+{
+    "//": "ディレクトリパス: scripts/distill_llm.py",
+    "//": "ファイルの日本語タイトル: LLM蒸留スクリプト (メモリ安全・8192ニューロン版)",
+    "//": "ファイルの目的や内容: メモリ超過による強制終了を防ぐためニューロン数を8192に戻し、忘却ロジックを用いて安全に蒸留する。"
+}
 
 import torch
 import msgpack
@@ -80,17 +82,14 @@ class SNNLLMDistiller:
             dm = self.student._direct_map[sdr_k]
             actual = input_ids[i+1]
             
-            # 正解ラベルの加算
             dm[actual] = dm.get(actual, 0.0) + 100.0
             
-            # ソフトラベルの加算
             top_probs, top_indices = torch.topk(probs[i], 5)
             for rank in range(5):
                 t_idx = top_indices[rank].item()
                 if t_idx != actual:
                     dm[t_idx] = dm.get(t_idx, 0.0) + 10.0 * top_probs[rank].item()
                     
-            # 💡 復活：正解以外の重みを減衰（忘却）させ、上限を200.0にクリップする
             for tok_id in list(dm.keys()):
                 if tok_id != actual:
                     dm[tok_id] *= 0.8  
@@ -102,6 +101,7 @@ if __name__ == "__main__":
     data_dir = "data"
     progress_file = os.path.join(data_dir, "progress.json")
     
+    print("Initializing SNN Student Model (8192 neurons)...")
     student = SpikingLLM(num_layers=2, sdr_size=8192, vocab_size=256000)
     device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
     
