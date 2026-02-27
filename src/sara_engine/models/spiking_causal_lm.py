@@ -1,154 +1,200 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/spiking_causal_lm.py",
-    "//": "ファイルの日本語タイトル: スパイキング因果言語モデル (予測符号化 + Attention)",
-    "//": "ファイルの目的や内容: nn.SNNModuleを使用し、Predictive Coding層とSpike Self-Attentionを融合したTransformer代替の次世代ジェネレーティブモデル。トークンIDベースの処理に変更し、デコード時のループ防止機能を実装。"
+    "//": "ファイルの日本語タイトル: スパイキング因果言語モデル",
+    "//": "ファイルの目的や内容: BPE導入によるサブワード分割に伴い、文脈保持のための軸索遅延（max_delay）を10に拡張。また、フレーズ単位でのループを防ぐため不応期の範囲を拡大。"
 }
 
-import os
 import json
-import pickle
 import random
-from typing import List, Dict, Optional
+import math
+from typing import List, Dict, Tuple, Optional
+from sara_engine.core.transformer import SpikeTransformerModel
 
-from sara_engine import nn
-
-class SpikingCausalLMConfig:
-    def __init__(self, vocab_size: int = 256, embed_dim: int = 128, context_size: int = 64):
+class SpikingCausalLM:
+    def __init__(self, vocab_size: int, embed_dim: int = 1024, hidden_dim: int = 2048, 
+                 num_layers: int = 2, use_lif: bool = True):
         self.vocab_size = vocab_size
         self.embed_dim = embed_dim
-        self.context_size = context_size
-
-    def to_dict(self):
-        return {
-            "vocab_size": self.vocab_size,
-            "embed_dim": self.embed_dim,
-            "context_size": self.context_size
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        return cls(**data)
-
-
-class PredictiveTransformerBlock(nn.SNNModule):
-    def __init__(self, embed_dim: int, context_size: int):
-        super().__init__()
-        # 予測符号化を用いて入力を高次元表現に変換(省エネ化)
-        self.predictive_encoder = nn.PredictiveSpikeLayer(in_features=embed_dim, out_features=embed_dim, density=0.3)
-        # 文脈の依存関係を捉える
-        self.attention = nn.SpikeSelfAttention(embed_dim=embed_dim, density=0.2, context_size=context_size)
-
-    def forward(self, spikes: List[int], learning: bool = False) -> List[int]:
-        # 予測誤差のみがAttentionへ送られる
-        pred_spikes = self.predictive_encoder(spikes, learning=learning)
-        attn_spikes = self.attention(pred_spikes, learning=learning)
+        # BPEトークンの長さに合わせて過去10ステップ前までの遅延線を保持
+        self.max_delay = 10 
         
-        # Residual connection (入力スパイクとAttention出力を統合)
-        out_spikes = list(set(spikes + attn_spikes))
-        return out_spikes
-
-
-class SpikingCausalLM(nn.SNNModule):
-    def __init__(self, config: SpikingCausalLMConfig):
-        super().__init__()
-        self.config = config
+        self.transformer = SpikeTransformerModel(
+            num_layers=num_layers, 
+            embed_dim=embed_dim, 
+            hidden_dim=hidden_dim, 
+            use_lif=use_lif
+        )
+        self.token_to_sdr: Dict[int, List[int]] = {}
         
-        # 固定の入力エンコーディング (SDRマップ)
-        self.sdr_map = {}
-        random.seed(42)
-        for tok in range(config.vocab_size):
-            self.sdr_map[tok] = random.sample(range(config.embed_dim), max(1, config.embed_dim // 10))
-        random.seed()
+        # weights[delay][spike_id][token_id] 
+        self.weights: List[Dict[int, Dict[int, float]]] = [{} for _ in range(self.max_delay + 1)]
 
-        # Transformer代替ブロック
-        self.block = PredictiveTransformerBlock(config.embed_dim, config.context_size)
+    def _get_sdr_for_token(self, token_id: int, sparsity: float = 0.05) -> List[int]:
+        if token_id not in self.token_to_sdr:
+            random.seed(token_id)
+            num_spikes = max(1, int(self.embed_dim * sparsity))
+            self.token_to_sdr[token_id] = random.sample(range(self.embed_dim), num_spikes)
+            random.seed()
+        return self.token_to_sdr[token_id]
+
+    def reset_context(self):
+        """膜電位と状態をリセット"""
+        self.transformer.reset_state()
+
+    def train_step(self, sequence: List[int], learning_rate: float = 0.5):
+        """
+        破壊的忘却を防ぐための純粋なヘッブ則（加算のみのSTDP学習）
+        """
+        self.reset_context()
+        spike_history: List[List[int]] = []
         
-        # 出力層(Readout): Embed次元からVocab次元への変換
-        self.readout = nn.LinearSpike(in_features=config.embed_dim, out_features=config.vocab_size, density=0.5)
-
-    def _encode_token(self, token_id: int) -> List[int]:
-        return self.sdr_map.get(token_id, [])
-
-    def forward_step(self, token_id: int, learning: bool = False, target_id: Optional[int] = None) -> List[int]:
-        in_spikes = self._encode_token(token_id)
-        
-        # ブロックを通過
-        block_out = self.block(in_spikes, learning=learning)
-        
-        # Readout層の出力スパイクは語彙(Vocab)のIDに直接対応する
-        out_spikes = self.readout(block_out, learning=learning)
-        
-        # LinearSpikeは内部でポテンシャルが高い順にソートして出力するため、最初の要素が最も確信度の高いトークン
-        best_token = out_spikes[0] if len(out_spikes) > 0 else 0
-
-        # 学習時のReadout層の直接STDP補完
-        if learning and target_id is not None:
-             for s in block_out:
-                 if s < self.readout.in_features:
-                     # ターゲットIDへの結合を直接強化 (LTP)
-                     current_w = self.readout.weights[s].get(target_id, 0.0)
-                     self.readout.weights[s][target_id] = min(3.0, current_w + 0.3)
-                     
-                     # 間違った予測への結合を抑制 (LTD)
-                     if best_token != target_id and best_token != 0:
-                         wrong_w = self.readout.weights[s].get(best_token, 0.0)
-                         self.readout.weights[s][best_token] = max(0.0, wrong_w - 0.1)
-
-        return out_spikes
-
-    def learn_sequence(self, input_ids: List[int]):
-        """トークンIDのリストを受け取り、系列としてSTDP学習を行う"""
-        self.reset_state()
-        for i in range(len(input_ids) - 1):
-            self.forward_step(input_ids[i], learning=True, target_id=input_ids[i+1])
-
-    def generate(self, input_ids: List[int], max_length: int = 50) -> List[int]:
-        """トークンIDのリストから次のトークンを予測し、生成されたIDリストを返す"""
-        self.reset_state()
-        if not input_ids:
-            return []
+        for i in range(len(sequence) - 1):
+            curr, nxt = sequence[i], sequence[i + 1]
+            input_spikes = self._get_sdr_for_token(curr)
             
-        # コンテキストの構築
-        last_out_spikes = []
-        for token_id in input_ids:
-            last_out_spikes = self.forward_step(token_id, learning=False)
+            # LSMとして動作 (learning=False)
+            output_spikes = self.transformer.forward(input_spikes, learning=False)
             
-        generated_ids = []
-        
-        for _ in range(max_length):
-            next_token = 0
-            # ループ防止機構: 直近5トークン以内に同じトークンがある場合は避けて次に確信度の高いトークンを選ぶ
-            for candidate in last_out_spikes:
-                if candidate not in generated_ids[-5:] and candidate != 0:
-                    next_token = candidate
-                    break
+            # 感覚スパイク(SDR)と文脈スパイク(LSM)を統合
+            offset_context_spikes = [s + self.embed_dim for s in output_spikes]
+            combined_spikes = input_spikes + offset_context_spikes
             
-            # 全ての候補が制限に引っかかった場合や候補がない場合は、一番上のトークンを強制採用
-            if next_token == 0 and last_out_spikes:
-                next_token = last_out_spikes[0]
+            # 遅延バッファの更新
+            spike_history.insert(0, combined_spikes)
+            if len(spike_history) > self.max_delay + 1:
+                spike_history.pop()
                 
-            if next_token == 0: # 予測不能な場合は終了
+            # 各遅延線ごとにシナプスを強化
+            for delay, active_spikes in enumerate(spike_history):
+                # 古い記憶ほど学習率を緩やかに落とす
+                eff_lr = learning_rate * (1.0 - delay * 0.08) 
+                if eff_lr <= 0: continue
+                
+                for s in active_spikes:
+                    if s not in self.weights[delay]:
+                        self.weights[delay][s] = {}
+                        
+                    # Oja近似によるシナプス強化 (Soft-bound at 1.0)
+                    old_w = self.weights[delay][s].get(nxt, 0.0)
+                    self.weights[delay][s][nxt] = old_w + eff_lr * (1.0 - old_w)
+
+    def generate(self, prompt_tokens: List[int], max_new_tokens: int = 15, temperature: float = 1.0) -> List[int]:
+        self.reset_context()
+        generated = []
+        spike_history: List[List[int]] = []
+        
+        # ハブ単語へのペナルティ事前計算 (Inverse Fan-in)
+        token_fan_in: Dict[int, float] = {}
+        for delay_dict in self.weights:
+            for s_dict in delay_dict.values():
+                for t, w in s_dict.items():
+                    token_fan_in[t] = token_fan_in.get(t, 0.0) + w
+
+        # 1. プロンプトの流し込みと遅延線の構築
+        for t in prompt_tokens[:-1]:
+            input_spikes = self._get_sdr_for_token(t)
+            output_spikes = self.transformer.forward(input_spikes, learning=False)
+            combined_spikes = input_spikes + [s + self.embed_dim for s in output_spikes]
+            
+            spike_history.insert(0, combined_spikes)
+            if len(spike_history) > self.max_delay + 1:
+                spike_history.pop()
+                
+        current_token = prompt_tokens[-1]
+        
+        # 2. 生成ループ
+        for _ in range(max_new_tokens):
+            input_spikes = self._get_sdr_for_token(current_token)
+            output_spikes = self.transformer.forward(input_spikes, learning=False)
+            combined_spikes = input_spikes + [s + self.embed_dim for s in output_spikes]
+            
+            spike_history.insert(0, combined_spikes)
+            if len(spike_history) > self.max_delay + 1:
+                spike_history.pop()
+                
+            token_potentials: Dict[int, float] = {}
+            
+            # 時間的に一致したスパイクの電位を全て統合 (Polychronization)
+            for delay, active_spikes in enumerate(spike_history):
+                for s in active_spikes:
+                    if s in self.weights[delay]:
+                        for t_id, weight in self.weights[delay][s].items():
+                            token_potentials[t_id] = token_potentials.get(t_id, 0.0) + weight
+
+            if not token_potentials:
                 break
                 
-            generated_ids.append(next_token)
-            last_out_spikes = self.forward_step(next_token, learning=False)
+            # Inverse Fan-in Penaltyの適用（Hubトークンの過剰発火を抑制）
+            for t_id in token_potentials:
+                hub_factor = token_fan_in.get(t_id, 1.0)
+                if hub_factor > 1.0:
+                    # ペナルティをやや強める
+                    token_potentials[t_id] /= (math.sqrt(hub_factor) * 1.2)
             
-        return generated_ids
+            # 絶対不応期: BPEに合わせて直近5トークンの出力を強力に抑制
+            forbidden = set(generated[-5:] + [current_token])
+            for f_id in forbidden:
+                if f_id in token_potentials:
+                    token_potentials[f_id] *= 0.001
 
-    def save_pretrained(self, save_directory: str):
-        os.makedirs(save_directory, exist_ok=True)
-        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf-8") as f:
-            json.dump(self.config.to_dict(), f, indent=4)
-        with open(os.path.join(save_directory, "model_state.pkl"), "wb") as f:
-            pickle.dump(self.state_dict(), f)
+            sorted_candidates = sorted(token_potentials.items(), key=lambda x: x[1], reverse=True)
+            
+            if not sorted_candidates:
+                break
 
-    @classmethod
-    def from_pretrained(cls, save_directory: str):
-        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf-8") as f:
-            config = SpikingCausalLMConfig.from_dict(json.load(f))
-        model = cls(config)
-        state_path = os.path.join(save_directory, "model_state.pkl")
-        if os.path.exists(state_path):
-            with open(state_path, "rb") as f:
-                model.load_state_dict(pickle.load(f))
-        return model
+            # サンプリング
+            if temperature <= 0.1:
+                next_token = sorted_candidates[0][0] # Greedy
+            else:
+                top_k = min(5, len(sorted_candidates))
+                candidates = sorted_candidates[:top_k]
+                total_pot = sum(pow(p, 1.0/temperature) for _, p in candidates)
+                r = random.uniform(0, total_pot)
+                
+                next_token = candidates[0][0]
+                cumulative = 0.0
+                for t_id, pot in candidates:
+                    cumulative += pow(pot, 1.0/temperature)
+                    if r <= cumulative:
+                        next_token = t_id
+                        break
+            
+            if token_potentials.get(next_token, 0) < 0.05:
+                break
+                
+            generated.append(next_token)
+            current_token = next_token
+            
+        return generated
+
+    def save_pretrained(self, filepath: str):
+        serializable_weights = []
+        for delay_dict in self.weights:
+            serializable_weights.append({
+                str(k): {str(tk): v for tk, v in tv.items()} for k, tv in delay_dict.items()
+            })
+            
+        state = {
+            "vocab_size": self.vocab_size,
+            "embed_dim": self.embed_dim,
+            "max_delay": self.max_delay,
+            "transformer": self.transformer.state_dict(),
+            "weights": serializable_weights
+        }
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+
+    def load_pretrained(self, filepath: str):
+        with open(filepath, "r", encoding="utf-8") as f:
+            state = json.load(f)
+            
+        self.vocab_size = state["vocab_size"]
+        self.embed_dim = state["embed_dim"]
+        self.max_delay = state.get("max_delay", 10)
+        self.transformer.load_state_dict(state["transformer"])
+        
+        self.weights = []
+        for delay_dict in state.get("weights", []):
+            self.weights.append({
+                int(k): {int(tk): float(v) for tk, v in tv.items()} for k, tv in delay_dict.items()
+            })

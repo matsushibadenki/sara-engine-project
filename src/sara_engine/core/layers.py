@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/layers.py",
     "//": "ファイルの日本語タイトル: スパイキング・ニューラル・レイヤー",
-    "//": "ファイルの目的や内容: FFNへのTeacher Forcingとシナプス新生の導入、および推論時のNormalization緩和。Rustによる高速化とプルーニング(刈り込み)による精度向上。"
+    "//": "ファイルの目的や内容: FFNでの過剰発火（てんかん状態）を防ぐためのゲイン調整と、推論時におけるk-WTA（勝者独占）ベースの正規化ロジックの導入。"
 }
 
 import random
@@ -148,6 +148,7 @@ class DynamicLiquidLayer:
             self.refractory = [0.0] * self.size
             self.dynamic_thresh = [1.0] * self.size
 
+
 class SpikeNormalization:
     def __init__(self, target_rate: float = 0.1, adaptation_rate: float = 0.01):
         self.target_rate = target_rate
@@ -162,20 +163,37 @@ class SpikeNormalization:
 
     def forward(self, spikes: List[int], dim: int, learning: bool = True) -> List[int]:
         normalized_spikes = []
-        for s in spikes:
-            offset = self.threshold_offsets.get(s, 0.0)
-            if learning:
-                if random.random() > offset: normalized_spikes.append(s)
-            else:
-                if offset < 0.99: normalized_spikes.append(s)
         
         if learning:
+            for s in spikes:
+                offset = self.threshold_offsets.get(s, 0.0)
+                # 学習時は確率的にスパイクをドロップダウンさせる
+                if random.random() > offset: 
+                    normalized_spikes.append(s)
+            
+            # 発火率の誤差からオフセット（抑制）を更新
             current_rate = len(spikes) / max(1, dim)
             error = current_rate - self.target_rate
             for s in spikes:
                 curr = self.threshold_offsets.get(s, 0.0)
                 self.threshold_offsets[s] = max(0.0, min(0.9, curr + self.adaptation_rate * error))
+        else:
+            # 推論時: Target Rateに基づくk-WTA（上位K個の勝者独占）的な足切りを行う
+            valid_spikes = []
+            for s in spikes:
+                offset = self.threshold_offsets.get(s, 0.0)
+                valid_spikes.append((s, offset))
+            
+            # オフセットが低い（抑制されにくい）順にソート
+            valid_spikes.sort(key=lambda x: x[1])
+            max_allowed = max(1, int(dim * self.target_rate * 1.5)) # スパース性を担保する許容上限
+            
+            for s, offset in valid_spikes[:max_allowed]:
+                if offset < 0.9: # 抑制限界を超えていないものだけを通過
+                    normalized_spikes.append(s)
+
         return normalized_spikes
+
 
 class SpikeFeedForward:
     def __init__(self, embed_dim: int, hidden_dim: int, density: float = 0.1):
@@ -201,7 +219,6 @@ class SpikeFeedForward:
 
     def _sparse_propagate(self, active_spikes: List[int], weights: List[Dict[int, float]], out_size: int, threshold: float = 0.5, gain: float = 1.0) -> List[int]:
         if self.use_rust:
-            # Rustの高速処理を利用。ゲイン分は閾値側を下げることで数学的に等価に処理する
             effective_threshold = threshold / gain
             return sara_rust_core.sparse_propagate_threshold(active_spikes, weights, out_size, effective_threshold)
 
@@ -220,24 +237,31 @@ class SpikeFeedForward:
                     if target in post_set: 
                         weights[pre][target] = min(3.0, weights[pre][target] + lr)
                     else: 
-                        weights[pre][target] -= lr * 0.05  # 弱体化のバランスを調整
+                        weights[pre][target] -= lr * 0.05
                         if weights[pre][target] <= 0.01:
                             to_remove.append(target)
                 
-                # プルーニング(刈り込み)実行: スパース性を保ち計算速度と精度を維持する
                 for target in to_remove:
                     del weights[pre][target]
 
-                # シナプス新生 (Structural Plasticity)
                 for target in post_set:
                     if target not in weights[pre]:
                         if random.random() < 0.2:
                             weights[pre][target] = 0.5
 
     def forward(self, spikes: List[int], learning: bool = True) -> List[int]:
-        gain = 1.0 if learning else 12.0
+        # 推論時の異常発火（12.0）を防ぐため、gainを1.2に引き下げる
+        gain = 1.0 if learning else 1.2
+        
         h = self._sparse_propagate(spikes, self.w1, self.hidden_dim, threshold=0.5, gain=gain)
+        
+        # 中間層のスパイク数にも上限を設ける（全体の15%まで）
+        max_h_spikes = int(self.hidden_dim * 0.15)
+        if len(h) > max_h_spikes:
+            h = random.sample(h, max_h_spikes) if learning else h[:max_h_spikes]
+            
         out = self._sparse_propagate(h, self.w2, self.embed_dim, threshold=0.5, gain=gain)
+        
         if learning:
             forced_h = list(set(h))
             if len(forced_h) < max(1, len(spikes) // 2):

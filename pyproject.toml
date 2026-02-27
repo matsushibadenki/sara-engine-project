@@ -1,6 +1,6 @@
 # ディレクトリパス: pyproject.toml
 # ファイルの日本語タイトル: プロジェクト設定ファイル
-# ファイルの目的や内容: mypyの二重解決エラーを根絶するための決定的な設定。
+# ファイルの目的や内容: CLIコマンド、依存関係の追加と、既存のmypy設定・Rust連携の統合。
 
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
@@ -8,7 +8,7 @@ build-backend = "maturin"
 
 [project]
 name = "sara_engine"
-version = "0.2.3"
+version = "0.3.0"
 description = "A bio-inspired Spiking Neural Network engine with Hugging Face-like pipeline APIs (CPU-only, Backprop-free)."
 authors = [
     { name = "matsushibadenki", email = "apple.darwin@gmail.com" }
@@ -22,14 +22,24 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
+    "transformers",
+    "msgpack",
+    "numpy",
+    "torch",
+    "tqdm"
 ]
 
 [project.urls]
 Homepage = "https://github.com/matsushibadenki/sara-engine-project"
 
+[project.scripts]
+sara-chat = "sara_engine.cli:chat"
+sara-train = "sara_engine.cli:train"
+
 [tool.maturin]
 python-source = "src"
 module-name = "sara_engine.sara_rust_core"
+features = ["pyo3/extension-module"]
 
 [tool.mypy]
 # src を唯一のモジュール探索ルートに設定
