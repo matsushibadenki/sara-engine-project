@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//1": "ディレクトリパス: src/sara_engine/models/spiking_llm.py",
     "//2": "ファイルの日本語タイトル: スパイキング・大規模言語モデル（MoEとLIF長文脈統合版）",
-    "//3": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。推論のスパース化と数十トークンの長文脈保持を実現する。"
+    "//3": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。恒常性を導入して記憶の上書きを防ぐ。"
 }
 
 import math
@@ -74,7 +74,6 @@ class SpikingTransformerBlock:
         self.sdr_size = sdr_size
         self.enable_learning = enable_learning
         
-        # 💡 Phase 3: 長文の文脈を膜電位の減衰で保持する LIF Attention
         self.attention = LIFSpikeAttention(embed_dim=sdr_size, density=0.05, decay_rate=0.95)
 
         self.layer_norm1 = SpikingLayerNorm(
@@ -82,7 +81,6 @@ class SpikingTransformerBlock:
         self.layer_norm2 = SpikingLayerNorm(
             sdr_size, base_threshold=1.2, target_active_ratio=0.02)
 
-        # 💡 Phase 3: 行列演算なしで動的ルーティングを行う大脳皮質カラム (MoE代替)
         self.moe_ffn = SpikingCorticalColumns(embed_dim=sdr_size, num_experts=4, top_k=1, density=0.1)
 
     def reset_state(self) -> None:
@@ -92,20 +90,16 @@ class SpikingTransformerBlock:
             self.moe_ffn.reset_state()
 
     def forward(self, input_spikes: List[int], t_step: int = 0) -> List[int]:
-        # 1. LIF Attention による文脈抽出（内部でSTDP学習も実施）
         att_spikes = self.attention.forward(
             input_spikes, learning=self.enable_learning)
 
-        # 残差接続と正規化
         res_potentials_1 = [0.0] * self.sdr_size
         for s in set(input_spikes).union(set(att_spikes)):
             res_potentials_1[s] += 1.0
         norm1_spikes = self.layer_norm1.forward(res_potentials_1)
 
-        # 2. Cortical Columns (MoE) によるエキスパート・ルーティング
         ffn_spikes = self.moe_ffn.forward(norm1_spikes, learning=self.enable_learning)
 
-        # 残差接続と正規化
         res_potentials_2 = [0.0] * self.sdr_size
         for s in set(norm1_spikes).union(set(ffn_spikes)):
             res_potentials_2[s] += 1.0
@@ -225,7 +219,6 @@ class SpikingLLM:
             return
 
         self.reset_state()
-        # 💡 長文脈対応: コンテキストウィンドウを 8 -> 64 に大幅拡大
         context_window = 64
 
         context_tokens: List[int] = []
@@ -245,35 +238,36 @@ class SpikingLLM:
             dm = self._direct_map[sdr_k]
 
             dm[next_token] = dm.get(next_token, 0.0) + 5.0
-            for post_id in list(dm.keys()):
-                if post_id != next_token:
-                    dm[post_id] -= 0.5
-                    if dm[post_id] <= 0.0:
+            
+            # 生物学的恒常性による正規化
+            total_w = sum(dm.values())
+            limit = 50.0
+            if total_w > limit:
+                decay = limit / total_w
+                for post_id in list(dm.keys()):
+                    dm[post_id] *= decay
+                    if dm[post_id] < 0.1:
                         del dm[post_id]
-
-            if dm.get(next_token, 0.0) > 50.0:
-                dm[next_token] = 50.0
 
             _, combined_spikes = self.forward(input_spikes, t_step=self.global_t)
             self.global_t += 1
 
             ltp_amount = 3.0
-            ltd_amount = 0.5
 
             for pre_id in combined_spikes:
                 if pre_id < len(self.lm_head_w):
-                    if next_token not in self.lm_head_w[pre_id]:
-                        self.lm_head_w[pre_id][next_token] = 0.0
-                    self.lm_head_w[pre_id][next_token] += ltp_amount
+                    self.lm_head_w[pre_id][next_token] = self.lm_head_w[pre_id].get(next_token, 0.0) + ltp_amount
 
-                    for post_id in list(self.lm_head_w[pre_id].keys()):
-                        if post_id != next_token:
-                            self.lm_head_w[pre_id][post_id] -= ltd_amount
-                            if self.lm_head_w[pre_id][post_id] <= 0.0:
+                    # シナプスの総負荷上限による恒常性維持
+                    total_synapse_weight = sum(self.lm_head_w[pre_id].values())
+                    capacity_limit = 30.0
+                    
+                    if total_synapse_weight > capacity_limit:
+                        decay = capacity_limit / total_synapse_weight
+                        for post_id in list(self.lm_head_w[pre_id].keys()):
+                            self.lm_head_w[pre_id][post_id] *= decay
+                            if self.lm_head_w[pre_id][post_id] < 0.1:
                                 del self.lm_head_w[pre_id][post_id]
-
-                    if self.lm_head_w[pre_id].get(next_token, 0.0) > 30.0:
-                        self.lm_head_w[pre_id][next_token] = 30.0
 
     def generate(
         self,

@@ -1,6 +1,8 @@
-# ディレクトリパス: scripts/train_chat.py
-# ファイルの日本語タイトル: 対話データ蒸留スクリプト
-# ファイルの目的や内容: 煩雑なデータ管理を避けるため、JSONLから対話パターンのみを独立してSNNに学習させる。複数のチャットソース統合に対応。
+_FILE_INFO = {
+    "//": "ディレクトリパス: scripts/train_chat.py",
+    "//": "ファイルの日本語タイトル: 対話データ蒸留スクリプト",
+    "//": "ファイルの目的や内容: 煩雑なデータ管理を避けるため、JSONLから対話パターンのみを独立してSNNに学習させる。恒常性による忘却防止を適用。"
+}
 
 import torch
 import msgpack
@@ -12,18 +14,15 @@ from sara_engine.models.spiking_llm import SpikingLLM
 
 def train_chat_data():
     model_path = "models/distilled_sara_llm.msgpack"
+    data_path = "data/chat_data.jsonl"
     
-    # 学習対象のJSONLファイルをリストで定義
-    data_paths = [
-        "data/chat_data.jsonl",
-        "data/math_corpus.jsonl"
-    ]
-    
+    if not os.path.exists(data_path):
+        print(f"❌ '{data_path}' が見つかりません。")
+        return
+        
     print("Initializing SNN Student Model (8192 neurons)...")
     student = SpikingLLM(num_layers=2, sdr_size=8192, vocab_size=256000)
-    
-    # GPUに依存しないようCPUに固定
-    device = "cpu"
+    device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
     
     print(f"Loading teacher model: google/gemma-2-2b on {device}")
     tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b")
@@ -49,34 +48,17 @@ def train_chat_data():
         print("⚠️ 既存の記憶がありません。")
         student._direct_map = {}
 
-    # JSONLファイル群からのデータ抽出とフォーマット統一
     chat_lines = []
-    for dp in data_paths:
-        if os.path.exists(dp):
-            print(f"読み込み中: {dp}")
-            with open(dp, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        item = json.loads(line)
-                        # chat_data.jsonl と math_corpus.jsonl のフォーマット差異を吸収
-                        if "user" in item and "sara" in item:
-                            text = f"You: {item['user']}\nSARA: {item['sara']}\n"
-                            chat_lines.append(text)
-                        elif "text" in item:
-                            # ユーザー/システムの表記をYou/SARAに統一して影響を抑える
-                            text = item["text"]
-                            text = text.replace("ユーザー:", "You:").replace("システム:", "SARA:") + "\n"
-                            chat_lines.append(text)
-        else:
-            print(f"⚠️ '{dp}' が見つかりません。スキップします。")
+    with open(data_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                chat_lines.append(json.loads(line))
                 
-    if not chat_lines:
-        print("❌ 学習できるデータがありません。")
-        return
-
     print(f"🚀 {len(chat_lines)}件の対話データを学習します...")
     
-    for text in tqdm.tqdm(chat_lines, desc="Chat Training"):
+    for item in tqdm.tqdm(chat_lines, desc="Chat Training"):
+        text = f"You: {item['user']}\nSARA: {item['sara']}\n"
+        
         inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128).to(device)
         input_ids = inputs["input_ids"][0].tolist()
         if len(input_ids) < 2: continue
@@ -98,20 +80,23 @@ def train_chat_data():
             dm = student._direct_map[sdr_k]
             actual = input_ids[i+1]
             
-            # チャットの記憶は優先して引き出せるよう、重みを強烈(500.0)に設定する
-            dm[actual] = dm.get(actual, 0.0) + 500.0
+            dm[actual] = dm.get(actual, 0.0) + 100.0
             
             top_probs, top_indices = torch.topk(probs[i], 5)
             for rank in range(5):
                 t_idx = top_indices[rank].item()
                 if t_idx != actual:
                     dm[t_idx] = dm.get(t_idx, 0.0) + 50.0 * top_probs[rank].item()
-                    
-            for tok_id in list(dm.keys()):
-                if tok_id != actual:
-                    dm[tok_id] *= 0.8  
-                if dm[tok_id] > 1000.0:
-                    dm[tok_id] = 1000.0
+            
+            # 生物学的恒常性による正規化（一律な減衰を廃止し、容量を超えた場合のみスケールダウン）
+            total_weight = sum(dm.values())
+            capacity_limit = 2000.0
+            if total_weight > capacity_limit:
+                decay = capacity_limit / total_weight
+                for tok_id in list(dm.keys()):
+                    dm[tok_id] *= decay
+                    if dm[tok_id] < 1.0:
+                        del dm[tok_id]
 
     print("Saving updated memory...")
     state = {
