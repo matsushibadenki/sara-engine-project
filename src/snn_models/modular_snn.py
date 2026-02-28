@@ -5,7 +5,7 @@
 # 201ノードから数千ノードへのスケールアップ、および多層化を容易にする。
 
 class LIFLayer:
-    def __init__(self, n_nodes, label=""):
+    def __init__(self, n_nodes: int, label: str = ""):
         self.n = n_nodes
         self.v = [0.0] * n_nodes
         self.spikes = [False] * n_nodes
@@ -13,14 +13,17 @@ class LIFLayer:
         # 各層固有のパラメータ設定が可能
 
 class STDPConnection:
-    def __init__(self, pre_layer, post_layer, conn_type="all_to_all"):
+    def __init__(self, pre_layer: LIFLayer, post_layer: LIFLayer, conn_type: str = "all_to_all"):
         self.pre = pre_layer
         self.post = post_layer
         # 行列を使わず、(pre_idx, post_idx) のペアと重みをリストで管理
-        self.synapses = [] 
+        self.synapses: list[tuple[int, int, float]] = [] 
         self._initialize_weights(conn_type)
 
-    def update_weights(self):
+    def _initialize_weights(self, conn_type: str) -> None:
+        pass
+
+    def update_weights(self) -> None:
         # 発火したニューロンに関連するインデックスだけをループ
         # STDPロジックをここに集約
         pass

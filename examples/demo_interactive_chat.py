@@ -1,3 +1,6 @@
+# [配置するディレクトリのパス]: ./examples/demo_interactive_chat.py
+# [ファイルの日本語タイトル]: インタラクティブSNNチャット
+# [ファイルの目的や内容]: 学習フェーズをスキップし、TransformersライクなAutoクラスとパイプラインを利用して事前学習済みSNNモデルと即座に対話するデモ。
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_interactive_chat.py",
     "//": "ファイルの日本語タイトル: インタラクティブSNNチャット",
@@ -10,7 +13,7 @@ import sys
 # Ensure src is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from sara_engine import AutoSpikeTokenizer, pipeline
+from sara_engine import AutoSpikeTokenizer, pipeline # type: ignore
 
 def main():
     print("=== SNN Interactive Chat (Zero-shot Inference) ===")

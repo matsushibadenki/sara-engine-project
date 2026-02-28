@@ -47,8 +47,8 @@ def run_demo():
         memory_size=10
     )
 
-    prev_active_hidden = []
-    feedback_active = []
+    prev_active_hidden: list[int] = []
+    feedback_active: list[int] = []
     
     start_time = time.time()
     
@@ -58,7 +58,7 @@ def run_demo():
         active_inputs = generate_random_spikes(input_size, probability=0.05)
         
         # 2. Liquid Layerへのフォワードパス（状態更新とSTDP学習）
-        attention_signal = []
+        attention_signal: list[int] = []
         active_hidden = layer.forward(
             active_inputs=active_inputs,
             prev_active_hidden=prev_active_hidden,

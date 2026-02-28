@@ -28,8 +28,8 @@ def run_benchmark():
     start_time = time.time()
     
     print(f"Executing {steps} steps...")
-    input_spikes = list(range(10)) 
-    prev_spikes = []
+    input_spikes: list[int] = list(range(10)) 
+    prev_spikes: list[int] = []
     
     for i in range(steps):
         if i % 10 == 0:

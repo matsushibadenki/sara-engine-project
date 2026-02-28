@@ -1,3 +1,6 @@
+# [配置するディレクトリのパス]: ./src/sara_engine/models/spiking_sequence_classifier.py
+# [ファイルの日本語タイトル]: スパイキング・シーケンス分類器
+# [ファイルの目的や内容]: nn.SNNModuleを継承し、内部状態をstate_dictで管理するようにリファクタリング。
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/spiking_sequence_classifier.py",
     "//": "ファイルの日本語タイトル: スパイキング・シーケンス分類器",
@@ -8,7 +11,7 @@ import json
 import os
 import random
 import pickle
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 
 from sara_engine import nn
 
@@ -47,7 +50,7 @@ class SpikingSequenceClassifier(nn.SNNModule):
         self.class_synapses: List[Dict[int, float]] = [{} for _ in range(config.num_classes)]
         self.register_state("class_synapses")
         
-        self.active_reservoir_neurons = set()
+        self.active_reservoir_neurons: Set[int] = set()
         self.delay_buffer: List[int] = []
 
     def reset_state(self):

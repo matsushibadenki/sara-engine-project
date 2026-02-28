@@ -1,3 +1,6 @@
+# [配置するディレクトリのパス]: ./scripts/old/chat_rust_core.py
+# [ファイルの日本語タイトル]: Rustコア推論スクリプト (ソフト・ペナルティ修正版)
+# [ファイルの目的や内容]: 8192ニューロンのまま、助詞のハブ化のみを安全な対数ペナルティで抑制し、ワードサラダを完全に防ぐ。
 {
     "//": "ディレクトリパス: scripts/chat_rust_core.py",
     "//": "ファイルの日本語タイトル: Rustコア推論スクリプト (ソフト・ペナルティ修正版)",
@@ -13,7 +16,7 @@ from transformers import AutoTokenizer
 from sara_engine.models.spiking_llm import SpikingLLM
 
 try:
-    from sara_engine import sara_rust_core
+    from sara_engine import sara_rust_core # type: ignore
 except ImportError:
     print("❌ sara_rust_core が見つかりません。")
     exit(1)
@@ -36,13 +39,13 @@ def run_rust_chat():
     items = list(state.get("direct_map", {}).items())
     
     print("Analyzing neural pathways (Applying Safe Soft-Penalty)...")
-    token_freq = {}
+    token_freq: dict[int, int] = {}
     for str_sdr_k, next_tokens in items:
         for str_tok_id, count in next_tokens.items():
             tok_id = int(str_tok_id)
             token_freq[tok_id] = token_freq.get(tok_id, 0) + 1
 
-    weights = [{} for _ in range(sdr_size)]
+    weights: list[dict[int, float]] = [{} for _ in range(sdr_size)]
     
     for str_sdr_k, next_tokens in tqdm.tqdm(items, desc="Transferring to Rust Core"):
         sdr_k = eval(str_sdr_k)

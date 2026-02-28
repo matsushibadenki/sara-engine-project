@@ -1,3 +1,6 @@
+# [配置するディレクトリのパス]: ./examples/visualize_stdp.py
+# [ファイルの日本語タイトル]: STDP学習と内部状態の可視化デモ
+# [ファイルの目的や内容]: 廃止されたget_state()の代わりに、レイヤーの膜電位(v)と動的閾値(dynamic_thresh)へ直接アクセスして可視化を行う。
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/visualize_stdp.py",
     "//": "タイトル: STDP学習と内部状態の可視化デモ",
@@ -52,9 +55,9 @@ def run_visualization():
             dummy_attn = np.random.choice(60, 3, replace=False).tolist()
             attention_history.append(dummy_attn)
 
-    # get_state()が廃止されたため、直接プロパティから状態を取得する
-    v = l2.v
-    thresh = l2.dynamic_thresh
+    # get_state()が廃止されたため、直接プロパティから状態を取得し、numpy配列化する
+    v = np.array(l2.v)
+    thresh = np.array(l2.dynamic_thresh)
     
     print("Generating plots...")
     viz.plot_raster(spike_history_l2, title="Layer 2 Spike Raster (Liquid State)", filename="raster_l2.png")

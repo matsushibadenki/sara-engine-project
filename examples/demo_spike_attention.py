@@ -15,7 +15,7 @@ from sara_engine.core.coincidence_attention import SpikeDrivenAttention
 def word_to_spikes(word: str, seed_offset: int = 0) -> set[int]:
     """デモ用: 単語を疑似的なSDR(疎分散表現)スパイクセットに変換する"""
     import hashlib
-    spikes = set()
+    spikes: set[int] = set()
     hash_obj = hashlib.md5((word + str(seed_offset)).encode())
     hash_bytes = hash_obj.digest()
     for i in range(10):
@@ -37,7 +37,7 @@ def main():
     ]
     
     for key_word, value_word in context_pairs:
-        q_spikes = set()
+        q_spikes: set[int] = set()
         k_spikes = word_to_spikes(key_word)
         v_spikes = word_to_spikes(value_word)
         

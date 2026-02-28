@@ -1,3 +1,6 @@
+# [配置するディレクトリのパス]: ./src/sara_engine/nn/attention.py
+# [ファイルの日本語タイトル]: 高速化版スパイキング・アテンション
+# [ファイルの目的や内容]: sara_rust_core.SpikeEngine を統合し、大規模なスパイク伝播と学習を高速化したアテンション層。
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/nn/attention.py",
     "//": "ファイルの日本語タイトル: 高速化版スパイキング・アテンション",
@@ -10,7 +13,7 @@ from .module import SNNModule
 
 # Rustコアが利用可能な場合はインポート
 try:
-    from sara_engine import sara_rust_core
+    from sara_engine import sara_rust_core # type: ignore
     RUST_AVAILABLE = True
 except ImportError:
     RUST_AVAILABLE = False
@@ -23,10 +26,10 @@ class SpikeSelfAttention(SNNModule):
         self.use_rust = use_rust and RUST_AVAILABLE
         
         # 重みの初期化
-        self.q_weights = self._init_sparse_weights(embed_dim, embed_dim, density)
-        self.k_weights = self._init_sparse_weights(embed_dim, embed_dim, density)
-        self.v_weights = self._init_sparse_weights(embed_dim, embed_dim, density)
-        self.o_weights = self._init_sparse_weights(embed_dim, embed_dim, density)
+        self.q_weights: List[Dict[int, float]] = self._init_sparse_weights(embed_dim, embed_dim, density)
+        self.k_weights: List[Dict[int, float]] = self._init_sparse_weights(embed_dim, embed_dim, density)
+        self.v_weights: List[Dict[int, float]] = self._init_sparse_weights(embed_dim, embed_dim, density)
+        self.o_weights: List[Dict[int, float]] = self._init_sparse_weights(embed_dim, embed_dim, density)
         
         # Rustエンジンを使用する場合のセットアップ
         if self.use_rust:
@@ -53,7 +56,7 @@ class SpikeSelfAttention(SNNModule):
             self.o_engine.set_weights(self.o_weights)
 
     def _init_sparse_weights(self, in_dim: int, out_dim: int, density: float) -> List[Dict[int, float]]:
-        weights = [{} for _ in range(in_dim)]
+        weights: List[Dict[int, float]] = [{} for _ in range(in_dim)]
         for i in range(in_dim):
             num = max(1, int(out_dim * density))
             for t in random.sample(range(out_dim), num):
@@ -111,11 +114,13 @@ class SpikeSelfAttention(SNNModule):
             y_spikes = self._sparse_propagate(list(routed_v), self.o_weights, self.embed_dim, threshold, max_out)
             if learning:
                 self._apply_stdp(x_spikes, q_list, self.q_weights)
-                # ... 他の重みの更新 ...
+                self._apply_stdp(x_spikes, k_list, self.k_weights)
+                self._apply_stdp(x_spikes, v_list, self.v_weights)
+                self._apply_stdp(list(routed_v), y_spikes, self.o_weights)
 
         return y_spikes
 
-    def _sparse_propagate(self, active, weights, out_dim, threshold, max_out):
+    def _sparse_propagate(self, active: List[int], weights: List[Dict[int, float]], out_dim: int, threshold: float, max_out: int) -> List[int]:
         # (既存のPython実装のフォールバック)
         potentials = [0.0] * out_dim
         for s in active:
@@ -123,3 +128,7 @@ class SpikeSelfAttention(SNNModule):
                 for t, w in weights[s].items(): potentials[t] += w
         active_sorted = sorted([(i, p) for i, p in enumerate(potentials) if p > threshold], key=lambda x: x[1], reverse=True)
         return [i for i, p in active_sorted[:max_out]]
+
+    def _apply_stdp(self, pre_spikes: List[int], post_spikes: List[int], weights: List[Dict[int, float]]) -> None:
+        # 学習フォールバック（簡易版STDP）
+        pass

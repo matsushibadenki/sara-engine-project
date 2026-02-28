@@ -1,4 +1,6 @@
-# ファイルメタ情報
+# [配置するディレクトリのパス]: ./examples/demo_advanced_snn.py
+# [ファイルの日本語タイトル]: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / Extreme Sparsity & Dropout)
+# [ファイルの目的や内容]: 極限のスパース化（発火率1.5%）と強烈なSpike Dropout（35%）を組み合わせ、高次元空間での直交性を最大化。誤差逆伝播を一切用いずにFashion-MNISTで精度90%超えを達成する。
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_advanced_snn.py",
     "//": "タイトル: SARA-Engine 高度なSNN学習デモ (Fashion-MNIST / Extreme Sparsity & Dropout)",
@@ -20,7 +22,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.sara_engine.core.layers import DynamicLiquidLayer
 from src.sara_engine.models.readout_layer import SpikeReadoutLayer
 
-def download_data(filename, source_url, data_dir="data"):
+def download_data(filename: str, source_url: str, data_dir: str = "data") -> str:
     filepath = os.path.join(data_dir, filename)
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
@@ -29,24 +31,24 @@ def download_data(filename, source_url, data_dir="data"):
         urllib.request.urlretrieve(source_url, filepath)
     return filepath
 
-def load_images(filepath):
+def load_images(filepath: str) -> list[list[int]]:
     with gzip.open(filepath, 'rb') as f:
         magic, num, rows, cols = struct.unpack(">IIII", f.read(16))
         data = f.read()
-        images = []
+        images: list[list[int]] = []
         for i in range(num):
             start = i * rows * cols
             end = start + rows * cols
             images.append([int(b) for b in data[start:end]])
     return images
 
-def load_labels(filepath):
+def load_labels(filepath: str) -> list[int]:
     with gzip.open(filepath, 'rb') as f:
         magic, num = struct.unpack(">II", f.read(8))
         data = f.read()
         return [int(b) for b in data]
 
-def prepare_dataset(dataset_name="fashion_mnist"):
+def prepare_dataset(dataset_name: str = "fashion_mnist") -> tuple[list[list[int]], list[int], list[list[int]], list[int]]:
     if dataset_name == "fashion_mnist":
         base_url = "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
     else:
@@ -69,10 +71,10 @@ def prepare_dataset(dataset_name="fashion_mnist"):
     
     return train_images, train_labels, test_images, test_labels
 
-def apply_spatial_receptive_fields(layer, width, height, patch_sizes):
+def apply_spatial_receptive_fields(layer: DynamicLiquidLayer, width: int, height: int, patch_sizes: list[int]) -> None:
     if layer.use_rust and hasattr(layer.core, 'apply_spatial_receptive_fields'):
         print(f"  -> 局所受容野（Spatial Receptive Fields: Gabor）をRustコア内に構築中... (層サイズ: {layer.size}, パッチ: {patch_sizes})")
-        layer.core.apply_spatial_receptive_fields(width, height, patch_sizes)
+        layer.core.apply_spatial_receptive_fields(width, height, patch_sizes) # type: ignore
         return
 
     print(f"  -> 局所受容野（Spatial Receptive Fields: Gabor）をPythonで構築中... (層サイズ: {layer.size})")
@@ -111,14 +113,14 @@ def apply_spatial_receptive_fields(layer, width, height, patch_sizes):
                     
                     layer.in_weights[inp_idx][hidden_idx] = w
 
-def preprocess_images(images, thresholds):
+def preprocess_images(images: list[list[int]], thresholds: list[int]) -> list[list[list[int]]]:
     print(f"  -> Rank-Order エンコーディングの事前計算中 (閾値: {thresholds})...")
-    preprocessed = []
+    preprocessed: list[list[list[int]]] = []
     min_thresh = thresholds[-1]
     num_steps = len(thresholds)
     
     for img in images:
-        active_per_step = [[] for _ in range(num_steps)]
+        active_per_step: list[list[int]] = [[] for _ in range(num_steps)]
         for idx, pixel in enumerate(img):
             if pixel > min_thresh:
                 for step in range(num_steps):
@@ -129,7 +131,7 @@ def preprocess_images(images, thresholds):
         
     return preprocessed
 
-def save_snn_model(readout_layer, filepath):
+def save_snn_model(readout_layer: SpikeReadoutLayer, filepath: str) -> None:
     print(f"\n[Model] 学習済みシナプス重みを保存中: {filepath}")
     data = {
         "W": readout_layer.W,
@@ -139,7 +141,7 @@ def save_snn_model(readout_layer, filepath):
         json.dump(data, f)
     print("  -> 保存完了")
 
-def load_snn_model(readout_layer, filepath):
+def load_snn_model(readout_layer: SpikeReadoutLayer, filepath: str) -> None:
     print(f"\n[Model] シナプス重みをファイルから復元中: {filepath}")
     with open(filepath, 'r') as f:
         data = json.load(f)
@@ -147,7 +149,7 @@ def load_snn_model(readout_layer, filepath):
     readout_layer.b = data["b"]
     print("  -> 復元完了")
 
-def run_advanced_snn():
+def run_advanced_snn() -> None:
     print("="*65)
     print("SARA-Engine: Advanced SNN (Fashion-MNIST / Extreme Sparsity & Dropout)")
     print("="*65)
@@ -170,24 +172,27 @@ def run_advanced_snn():
         {"size": 6000, "decay": 0.90, "patch_sizes": [9, 12, 16]}  # マクロシルエット
     ]
     
-    liquid_layers = []
+    liquid_layers: list[DynamicLiquidLayer] = []
     for cfg in layer_configs:
+        size_val = int(cfg["size"]) # type: ignore
+        decay_val = float(cfg["decay"]) # type: ignore
+        patch_sizes_val = cfg["patch_sizes"] # type: ignore
         layer = DynamicLiquidLayer(
             input_size=num_inputs, 
-            hidden_size=cfg["size"], 
-            decay=cfg["decay"], 
+            hidden_size=size_val, 
+            decay=decay_val, 
             target_rate=0.015, # 【重要】極限まで発火を絞り込み、表現の直交性を最大化
             density=0.0,
             input_scale=0.0
         )
-        apply_spatial_receptive_fields(layer, 28, 28, cfg["patch_sizes"])
+        apply_spatial_receptive_fields(layer, 28, 28, patch_sizes_val) # type: ignore
         liquid_layers.append(layer)
     
     # 閾値をシンプルにして情報過多を防ぐ
     thresholds = [200, 130, 60, 20]
     num_steps = len(thresholds)
     
-    total_hidden = sum(cfg["size"] for cfg in layer_configs)
+    total_hidden = sum(int(cfg["size"]) for cfg in layer_configs) # type: ignore
     feature_dim_per_step = num_inputs + total_hidden
     temporal_spatial_size = feature_dim_per_step * num_steps
     
@@ -213,7 +218,10 @@ def run_advanced_snn():
         
         combined = list(zip(train_encoded, train_labels))
         random.shuffle(combined)
-        train_encoded_shuffled, train_labels_shuffled = zip(*combined)
+        
+        # zip(*) 展開時の曖昧なジェネレータ型推論を回避するため、明示的リスト内包を使用
+        train_encoded_shuffled: list[list[list[int]]] = [item[0] for item in combined]
+        train_labels_shuffled: list[int] = [item[1] for item in combined]
         
         # エポックごとに学習率を緩やかに減衰
         if epoch > 0:
@@ -225,22 +233,26 @@ def run_advanced_snn():
             
             for l in liquid_layers:
                 if l.use_rust and hasattr(l.core, 'reset_potentials'):
-                    l.core.reset_potentials()
+                    l.core.reset_potentials() # type: ignore
                 else:
                     l.v = [0.0] * l.size
                     l.refractory = [0.0] * l.size
-                    l.dynamic_thresh = [5.0 if t > 5.0 else t for t in l.dynamic_thresh]
+                    new_thresh: list[float] = []
+                    for t in l.dynamic_thresh:
+                        new_thresh.append(5.0 if t > 5.0 else t)
+                    l.dynamic_thresh = new_thresh
             
-            accumulated_fired = set()
-            prev_fired = [[] for _ in range(len(liquid_layers))]
-            hidden_already_fired = [set() for _ in range(len(liquid_layers))]
+            accumulated_fired: set[int] = set()
+            prev_fired: list[list[int]] = [[] for _ in range(len(liquid_layers))]
+            hidden_already_fired: list[set[int]] = [set() for _ in range(len(liquid_layers))]
             
             for step, active_inputs in enumerate(encoded_image):
                 if not active_inputs:
                     continue
                 
                 step_base_offset = step * feature_dim_per_step
-                accumulated_fired.update(inp + step_base_offset for inp in active_inputs)
+                for inp in active_inputs:
+                    accumulated_fired.add(inp + step_base_offset)
                 
                 hidden_offset = num_inputs
                 for l_idx, l in enumerate(liquid_layers):
@@ -250,17 +262,25 @@ def run_advanced_snn():
                     )
                     prev_fired[l_idx] = fired_hidden
                     
-                    first_fired = [f for f in fired_hidden if f not in hidden_already_fired[l_idx]]
+                    first_fired: list[int] = []
+                    for f in fired_hidden:
+                        if f not in hidden_already_fired[l_idx]:
+                            first_fired.append(f)
+                            
                     if first_fired:
                         hidden_already_fired[l_idx].update(first_fired)
-                        accumulated_fired.update(f + step_base_offset + hidden_offset for f in first_fired)
+                        for f in first_fired:
+                            accumulated_fired.add(f + step_base_offset + hidden_offset)
                         
                     hidden_offset += l.size
                 
             if accumulated_fired:
                 # 【重要】強烈な Spike Dropout (35%欠落)
                 # これにより単一ピクセルや局所的な特徴への過度な依存を断ち切る
-                train_spikes = [s for s in accumulated_fired if random.random() > 0.35]
+                train_spikes: list[int] = []
+                for s in accumulated_fired:
+                    if random.random() > 0.35:
+                        train_spikes.append(s)
                 readout_layer.forward(train_spikes, target_token=target_label, learning=True)
                 
             if (i + 1) % 10000 == 0:
@@ -273,7 +293,11 @@ def run_advanced_snn():
     total_count = 0
     prune_rate = 0.005 
     for s_idx in range(len(readout_layer.W)):
-        to_delete = [t_id for t_id, weight in readout_layer.W[s_idx].items() if abs(weight) < prune_rate]
+        to_delete: list[int] = []
+        for t_id, weight in readout_layer.W[s_idx].items():
+            if abs(weight) < prune_rate:
+                to_delete.append(t_id)
+                
         for t_id in to_delete:
             del readout_layer.W[s_idx][t_id]
             pruned_count += 1
@@ -305,7 +329,7 @@ def run_advanced_snn():
         
         for l in liquid_layers:
             if l.use_rust and hasattr(l.core, 'reset_potentials'):
-                l.core.reset_potentials()
+                l.core.reset_potentials() # type: ignore
             else:
                 l.v = [0.0] * l.size
                 l.refractory = [0.0] * l.size
@@ -319,7 +343,8 @@ def run_advanced_snn():
                 continue
             
             step_base_offset = step * feature_dim_per_step
-            accumulated_fired.update(inp + step_base_offset for inp in active_inputs)
+            for inp in active_inputs:
+                accumulated_fired.add(inp + step_base_offset)
             
             hidden_offset = num_inputs
             for l_idx, l in enumerate(liquid_layers):
@@ -329,10 +354,15 @@ def run_advanced_snn():
                 )
                 prev_fired[l_idx] = fired_h
                 
-                first_fired = [f for f in fired_h if f not in hidden_already_fired[l_idx]]
+                first_fired = []
+                for f in fired_h:
+                    if f not in hidden_already_fired[l_idx]:
+                        first_fired.append(f)
+                        
                 if first_fired:
                     hidden_already_fired[l_idx].update(first_fired)
-                    accumulated_fired.update(f + step_base_offset + hidden_offset for f in first_fired)
+                    for f in first_fired:
+                        accumulated_fired.add(f + step_base_offset + hidden_offset)
                     
                 hidden_offset += l.size
             

@@ -1,3 +1,6 @@
+# [配置するディレクトリのパス]: ./src/sara_engine/core/hal.py
+# [ファイルの日本語タイトル]: ハードウェア抽象化層 (HAL)
+# [ファイルの目的や内容]: Pythonリファレンス、Rustマルチコア、および将来のニューロモルフィック専用ハードウェアを透過的に切り替えてスパイク伝播を実行するためのインターフェース。
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/hal.py",
     "//": "ファイルの日本語タイトル: ハードウェア抽象化層 (HAL)",
@@ -20,13 +23,13 @@ class SpikeBackend:
 class PythonBackend(SpikeBackend):
     """ピュアPythonによるリファレンス実装。依存関係なしにどこでも動く。"""
     def __init__(self):
-        self.weights = []
+        self.weights: List[Dict[int, float]] = []
         
     def set_weights(self, weights: List[Dict[int, float]]):
         self.weights = weights
         
     def propagate(self, active_spikes: List[int], threshold: float, max_out: int) -> List[int]:
-        potentials = {}
+        potentials: Dict[int, float] = {}
         for pre in active_spikes:
             if pre < len(self.weights):
                 for post, w in self.weights[pre].items():
@@ -43,7 +46,7 @@ class RustBackend(SpikeBackend):
     """Rayonを用いたマルチコアCPU最適化バックエンド。"""
     def __init__(self):
         try:
-            from sara_engine import sara_rust_core
+            from sara_engine import sara_rust_core # type: ignore
             self.engine = sara_rust_core.SpikeEngine()
             self.available = True
         except ImportError:
@@ -69,6 +72,7 @@ class MockNeuromorphicBackend(SpikeBackend):
     """
     def __init__(self):
         self.weights_mapped = False
+        self.cores_used = 0
         
     def set_weights(self, weights: List[Dict[int, float]]):
         # シミュレーション：重みの量子化とオンチップメモリ・クロスバーアレイへのマッピング

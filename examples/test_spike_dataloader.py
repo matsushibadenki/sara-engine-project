@@ -1,3 +1,6 @@
+# [配置するディレクトリのパス]: ./examples/test_spike_dataloader.py
+# [ファイルの日本語タイトル]: スパイクデータローダーとロガーの動作テスト
+# [ファイルの目的や内容]: 新規実装したTextSpikeDataset, SpikeDataLoader, SaraBoardLoggerが連動して正しくイベント駆動型データを処理・記録できるかを確認するテストスクリプト。
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/test_spike_dataloader.py",
     "//": "ファイルの日本語タイトル: スパイクデータローダーとロガーの動作テスト",
@@ -6,9 +9,9 @@ _FILE_INFO = {
 
 import os
 import shutil
-from sara_engine.utils.data.dataset import TextSpikeDataset
-from sara_engine.utils.data.dataloader import SpikeDataLoader
-from sara_engine.utils.sara_board import SaraBoardLogger
+from sara_engine.utils.data.dataset import TextSpikeDataset # type: ignore
+from sara_engine.utils.data.dataloader import SpikeDataLoader # type: ignore
+from sara_engine.utils.sara_board import SaraBoardLogger # type: ignore
 
 def main():
     print("=== SARA Engine: Spike DataLoader & Logger Test ===\n")

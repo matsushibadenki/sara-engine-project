@@ -39,7 +39,7 @@ class HierarchicalSNN:
 
     def _build_sparse_conn(self, n_pre, n_post, rf_size):
         weights = [[0.0 for _ in range(n_post)] for _ in range(n_pre)]
-        conn_pre_to_post = [[] for _ in range(n_pre)]
+        conn_pre_to_post: list[list[int]] = [[] for _ in range(n_pre)]
         for j in range(n_post):
             start = int(j * (n_pre - rf_size) / max(1, n_post - 1))
             for i in range(start, min(n_pre, start + rf_size)):
@@ -49,7 +49,7 @@ class HierarchicalSNN:
 
     def _build_full_conn(self, n_pre, n_post, self_conn=True):
         weights = [[random.uniform(0.1, 0.3) for _ in range(n_post)] for _ in range(n_pre)]
-        conn_pre_to_post = [[] for _ in range(n_pre)]
+        conn_pre_to_post: list[list[int]] = [[] for _ in range(n_pre)]
         for i in range(n_pre):
             for j in range(n_post):
                 if not self_conn and i == j:

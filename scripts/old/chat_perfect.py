@@ -81,7 +81,7 @@ def run_perfect_chat():
                             
                             weights = np.array([w for _, w in top_candidates])
                             probs = weights ** 2
-                            probs /= probs.sum()
+                            probs = probs / probs.sum() # mypy __itruediv__ エラー修正
                             
                             chosen_index = np.random.choice(len(top_candidates), p=probs)
                             next_id = top_candidates[chosen_index][0]
@@ -118,7 +118,7 @@ def run_perfect_chat():
                             
                             weights = np.array([w for _, w in top_candidates])
                             probs = weights ** 2
-                            probs /= probs.sum()
+                            probs = probs / probs.sum() # mypy __itruediv__ エラー修正
                             
                             chosen_index = np.random.choice(len(top_candidates), p=probs)
                             next_id = top_candidates[chosen_index][0]
