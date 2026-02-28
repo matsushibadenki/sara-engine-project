@@ -1,13 +1,14 @@
 # ファイルメタ情報
 _FILE_INFO = {
     "//": "配置するディレクトリのパス: src/sara_engine/agent/sara_agent.py",
-    "//": "ファイルの日本語タイトル: 統合マルチモーダル・エージェント (Retrieval-Augmented MoE 実装版)",
-    "//": "ファイルの目的や内容: 論文「Agentic Context Engineering (ACE)」と「Retrieval-Augmented Mixture of Experts (MoE)」の概念を統合。PFCのコンパートメントをExpertと見なし、上位K個のExpertで並列して海馬（外部記憶）を検索し、文脈を動的にブレンドする。"
+    "//": "ファイルの日本語タイトル: 統合マルチモーダル・エージェント (Retrieval-Augmented MoE + Function Calling 実装版)",
+    "//": "ファイルの目的や内容: 論文「Agentic Context Engineering (ACE)」と「Retrieval-Augmented Mixture of Experts (MoE)」の概念を統合。さらに、SNNの特定の出力スパイクを「運動コマンド」として捉え、Python側で外部ツールを実行して結果を「感覚入力」として差し戻す生体模倣型のエージェンティックループを実装。"
 }
 
 import os
 import random
 import hashlib
+import re
 from typing import List, Dict, Any, Optional
 
 from ..memory.sdr import SDREncoder
@@ -62,7 +63,40 @@ class SaraAgent:
         self.dialogue_history: List[Dict[str, Any]] = []
         self.max_history_turns = 5
 
+        # ツール定義（キーワードに対する関数マッピング）
+        self.tools = {
+            "<CALC>": self._execute_calc,
+            "<SEARCH>": self._execute_search
+        }
+
         self._bootstrap()
+
+    def _execute_calc(self, context: str) -> str:
+        """直前の文脈から数式を抽出し、計算結果を返すツール"""
+        target_context = context.split("<CALC>")[0] if "<CALC>" in context else context
+        match = re.search(r'([0-9\+\-\*\/\s\(\)\.]+)(?:は|の計算|はいくつ|の答え|)$', target_context.strip())
+        
+        if not match:
+            words = target_context.split()
+            expression = words[-1] if words else ""
+        else:
+            expression = match.group(1).strip()
+
+        allowed_chars = set("0123456789+-*/(). ")
+        if not expression or not all(c in allowed_chars for c in expression):
+            return "[CALC_ERROR]"
+            
+        try:
+            result = eval(expression)
+            if isinstance(result, float) and result.is_integer():
+                result = int(result)
+            return str(result)
+        except Exception:
+            return "[CALC_ERROR]"
+
+    def _execute_search(self, context: str) -> str:
+        """直前の文脈から検索クエリを抽出し、ダミーの検索結果を返すツール"""
+        return "検索結果: SARAエンジンはスパイクのみで動作する次世代AIです。"
 
     def _bootstrap(self):
         corpus = [
@@ -71,6 +105,8 @@ class SaraAgent:
             "vision 画像 視覚 リンゴ 果物 赤く みかん",
             "audio 音声 音楽 聴覚 音",
             "general 挨拶 日常 会話 こんにちは おはよう 猫 犬 かわいい です ます",
+            "calc 計算 ツール <CALC> = ",
+            "search 検索 調べる <SEARCH>",
             "リスト 内包 表記 を 使う と コード は 簡潔 に 書け ます",
             "ミトコンドリア は 細胞 の エネルギー を 作り ます",
             "リンゴ は 赤く て 美味しい 果物 です",
@@ -79,7 +115,7 @@ class SaraAgent:
             self.encoder.tokenizer.train(corpus)
         self.encoder.train_semantic_network(corpus, window_size=3, epochs=2)
 
-        for text in corpus[5:]:
+        for text in corpus[7:]:
             self.gpt.learn_sequence(text, weight=1.0)
 
         original_vsa = self.encoder.apply_vsa
@@ -297,26 +333,21 @@ class SaraAgent:
             routing_sdr.update(routing_sample)
 
         # --- Retrieval-Augmented MoE Routing (SDR Base) ---
-        # 1. 各Expert(コンパートメント)との関連度(overlap)を計算
         overlaps = {}
         for comp, anchor in self.prefrontal.context_anchors.items():
             overlap = len(routing_sdr.intersection(set(anchor)))
-            # general以外の専門コンパートメントにはバイアスをかけて発火しやすくする
             if comp != "general":
                 overlap += 2
             overlaps[comp] = overlap
 
-        # 2. Top-K Routing: 上位2つのExpertを選出
         sorted_experts = sorted(overlaps.items(), key=lambda x: x[1], reverse=True)
         top_k = 2
         active_experts = [comp for comp, score in sorted_experts[:top_k] if score > 0]
         
-        # どこにも引っかからない場合はgeneralをデフォルトExpertにする
         if not active_experts or sorted_experts[0][1] < 5:
             active_experts = ["general"]
 
         if teaching_mode:
-            # 教示モード: 指定がない場合は最もスコアの高かった(Top-1)Expertに記憶させる
             context = active_experts[0]
             if ":" in user_text:
                 parts = user_text.split(":", 1)
@@ -375,7 +406,6 @@ class SaraAgent:
             if associated_sdr:
                 search_sdr.update(associated_sdr)
 
-            # --- Expertごとに海馬（外部記憶）を並列検索 ---
             all_retrieved_memories = []
             for comp in active_experts:
                 res = self.brain.in_context_inference(
@@ -383,10 +413,8 @@ class SaraAgent:
                 )
                 all_retrieved_memories.extend(res)
 
-            # 全Expertの結果をスコアで統合（Aggregation）
             if all_retrieved_memories:
                 all_retrieved_memories.sort(key=lambda x: x["score"], reverse=True)
-                # 上位の関連記憶を最大2つまでブレンドする
                 best_memories = [m["content"] for m in all_retrieved_memories[:2]]
                 blended_memory = " | ".join(best_memories)
                 best_memory_for_gen = best_memories[0]
@@ -407,24 +435,52 @@ class SaraAgent:
                 self.encoder.apply_vsa = original_vsa
 
                 generation_context_sdr = set(memory_sdr)
-
-                if best_memory_for_gen != "なし":
-                    final_generated_text = best_memory_for_gen.replace(" ", "")
-                else:
-                    if associated_text:
-                        seed_prompt = associated_text.split()[0]
-                        prompt_for_gpt = seed_prompt
-                    else:
-                        seed_prompt = user_text[-1]
-                        prompt_for_gpt = user_text
-
-                    generated_text = self.gpt.generate(
-                        prompt=prompt_for_gpt,
+                prompt_for_gpt = user_text
+                
+                # --- Agentic Loop (Action Spikes) ---
+                max_agent_steps = 3
+                current_prompt = prompt_for_gpt
+                generated_segments = []
+                
+                for step in range(max_agent_steps):
+                    gen_text = self.gpt.generate(
+                        prompt=current_prompt,
                         context_sdr=list(generation_context_sdr),
                         max_tokens=15,
                         temperature=0.1,
                     )
-                    final_generated_text = seed_prompt + generated_text
+                    generated_segments.append(gen_text)
+                    current_full = prompt_for_gpt + "".join(generated_segments)
+                    
+                    # 運動コマンド（アクションスパイク）の検知と実行
+                    if "<CALC>" in gen_text or ("<CALC>" in current_prompt and "=" not in current_full.split("<CALC>")[-1]):
+                        print(f"\n[AGENT] Action Spike Fired: <CALC>")
+                        calc_res = self._execute_calc(current_full)
+                        print(f"[AGENT] Tool Executed. Result -> {calc_res}")
+                        feedback = f" {calc_res} = "
+                        generated_segments.append(feedback)
+                        current_prompt = current_full + feedback
+                        
+                        # 外部入力を文脈（SDR）に差し戻す
+                        self.encoder.apply_vsa = False
+                        generation_context_sdr.update(self.encoder.encode(feedback))
+                        self.encoder.apply_vsa = True
+                        
+                    elif "<SEARCH>" in gen_text or ("<SEARCH>" in current_prompt and "]" not in current_full.split("<SEARCH>")[-1]):
+                        print(f"\n[AGENT] Action Spike Fired: <SEARCH>")
+                        search_res = self._execute_search(current_full)
+                        print(f"[AGENT] Tool Executed. Result -> {search_res}")
+                        feedback = f" [{search_res}] "
+                        generated_segments.append(feedback)
+                        current_prompt = current_full + feedback
+                        
+                        self.encoder.apply_vsa = False
+                        generation_context_sdr.update(self.encoder.encode(feedback))
+                        self.encoder.apply_vsa = True
+                    else:
+                        break  # 発火がない場合は終了
+                        
+                final_generated_text = prompt_for_gpt + "".join(generated_segments)
             else:
                 final_generated_text = (
                     "関連する明確なエピソード記憶が海馬に見つかりませんでした。"
