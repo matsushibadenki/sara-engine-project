@@ -1,0 +1,930 @@
+ニューラルネットワーク - Wikipedia
+Bahasa Indonesia
+Srpskohrvatski / српскохрватски
+Oʻzbekcha / ўзбекча
+閩南語 / Bân-lâm-gí
+出典: フリー百科事典『ウィキペディア（Wikipedia）』
+スパイキングニューラルネットワーク
+されています。インターネットサービスについては「
+サポートベクトルマシン (SVM)
+Category:データマイニング
+手法として広く知られているものであり
+」と呼ばれる計算ユニットをもち、生物の
+のメカニズムを模倣しているものである
+。人間の脳の神経網を模した数理モデル
+。模倣対象となった生物のニューラルネットワーク（神経網）とはっきり区別する場合は、
+artificial neural network
+、人工的なニューラルネットワークのほうは「人工ニューラルネットワーク」あるいは単に「ニューラルネットワーク」と呼び、生物のそれは「生物のニューラルネットワーク」あるいは「生物の神経網」、ヒトの頭脳のそれは「ヒトのニューラルネットワーク」あるいは「ヒトの神経網」と表記することにする。
+人工ニューラルネットワークを理解するには、そもそもそれがどのようなものを
+しようとしているのかを知っておく必要があるので説明する。ヒトの神経系には
+という細胞があり、ニューロン同士は互いに
+(dendrite) を介して繋がっている。ニューロンは樹状突起で他の神経細胞から情報を受け取り、細胞内で情報処理してから、軸索で他のニューロンに情報を伝達する
+。そして、軸索と樹状突起が結合する部分を
+（右図も参照。クリックして拡大して見ていただきたい。紫色の部分がひとつのニューロンであり、Dendrite, Axonなどが示されている。）。　このシナプスの結合強度というのは、外的な刺激に反応してちょくちょく変化する。このシナプス結合強度の変化こそが生物における「学習」のメカニズムである
+ヒトの神経網を模した人工ニューラルネットワークでは、計算ユニットが《重み》を介して繋がり、この《重み》がヒトの神経網のシナプス結合の「強度」と似た役割を担っている
+。各ユニットへの入力は《重み》によって強さが変化するように作られており、ユニットにおける関数計算に影響を与える。ニューラルネットワークというのは、入力用ニューロンから出力用ニューロンへと向かって計算値を伝播させてゆくが、その過程で《重み》をパラメータとして利用し、入力の関数を計算する。（ただし計算値が出力用ニューロンへと伝播されてゆくというだけでは入力パターンからある決まった出力パターンが出るだけなので、さほど有益というわけではない
+。）《重み》が変化することで「学習」が起きる
+（右図も参照のこと。右図で「weights」や、丸で囲まれた「w」が縦に並んでいるのが《重み》である。）
+生物のニューラルネットワークに与えられる外的刺激に相当するものとして、人工ニューラルネットワークでは「訓練データ」が与えられる
+。いくつか方法があるが、たとえば訓練データとして入力データと出力ラベルが与えられ、たとえば何かの画像データとそれについての正しいラベルが与えられる（たとえばリンゴの画像データとappleというラベル、オレンジの画像データとorangeというラベルが与えられる）。ある入力に対して予測される出力が本当のラベルとどの程度一致するかを計算することで、ニューラルネットワークの《重み》についてフィードバックを得られ
+、ニューロン間の《重み》は誤差（予測誤差）に応じて、誤差が減少するように調整される
+。多数のニューロン間で《重み》の調整を繰り返し行うことで次第に計算関数が改善され、より正確な予測をできるようになる。（たとえばオレンジの画像データを提示されると「orange」と正しいラベルを答えられるようになる
+。） この《重み》の調整方法は、数学的には
+なお、ヒトのニューロンを模したユニットは
+相互作用ニューラルネットワークモデルの一例
+右図の、多数のユニットが結合しネットワークを構成している数理モデルは、ニューラルネットワークのほんの一例である。（実際にはニューロンの数もさまざまに設定可能であるし、結合のしかたもさまざまに設定可能である。右図はあくまで、とりあえず説明にとりかかるための "一例" と理解いただきたい。
+ユニットの構成（例: 線形変換の次元、非線形変換の有無・種類）やネットワークの構造（例: ユニットの数・階層構造・相互結合、入出力の再帰）に関して様々な選択肢があり、様々なモデルが提唱されている。）
+を必ず含み、多くの場合それに後続する非線形変換を含む（
+{\displaystyle unit({\boldsymbol {x}})=\sigma ({\boldsymbol {w}}{\boldsymbol {x}}+{\boldsymbol {b}})}
+のモデルとして利用され、分類・回帰・生成など様々なクラスのタスクに
+（例: 画像認識、レコメンデーション）が挙げられる。学習法は
+は微分可能で連続な任意の関数を近似できることが証明されている（
+など研究の源流としては生物の神経系の探求であるが、その当初から、それが実際に生物の神経系の
+であるか否かについては議論がある
+。生物学と相互の進展により、相違点なども研究されている。
+今日のディープニューラルネットワークは、200年以上前の
+における初期の研究に基づいている。最も単純な種類の
+フィードフォワードニューラルネットワーク
+（FNN）は線形ネットワークであり、これは線形の活性化関数を持つ出力ノードの単一層で構成される。入力は一連の重みを介して直接出力に供給される。各ノードで重みと入力の積の合計が計算される。これらの計算された出力と与えられた目標値との間の
+は、重みを調整することによって最小化される。この技術は2世紀以上にわたって
+として知られている。これは、惑星の動きを予測するために
+（1795年）によって、点集合に対する良好な近似線形フィットを見つける手段として使用された
+のようなデジタルコンピュータは、多数のプロセッサによるメモリへのアクセスを伴う明示的な命令の実行を介して動作する。一方、一部のニューラルネットワークは、
+の枠組みを通じて生物学的システムにおける情報処理をモデル化しようとする試みから生まれた。ノイマン型とは異なり、コネクショニストの計算ではメモリと処理が分離されない
+は、ニューラルネットワークのための学習しない計算モデルである「神経回路網理論」を考察した（
+。このモデルは、研究を2つのアプローチに分岐させる道を開いた。1つのアプローチは生物学的プロセスに焦点を当て、もう1つのアプローチはニューラルネットワークの人工知能への応用に焦点を当てた。
+として知られるようになった「シナプスの可塑性の理論」という
+など、多くの初期のニューラルネットワークで使用された
+1954年、ファーリーとクラーク
+は、計算機を使用してヘッブ型ネットワークをシミュレートした。1956年、ロチェスター、ホランド、ハビット、デューダによって他のニューラルネットワーク計算機が作成された
+は、最初に実装された人工ニューラルネットワークの1つである
+。これは米国海軍研究局によって資金提供された
+。 R. D. ジョセフ（1960年）
+は、ファーリーとクラークによるさらに初期のパーセプトロンのような装置について言及している
+。「MITリンカーン研究所のファーリーとクラークは、パーセプトロンのような装置の開発において、実際にはローゼンブラットに先行していた」。しかし、「彼らはその主題を断念した」
+パーセプトロンは人工ニューラルネットワークの研究に対する世間の興奮を高め、米国政府は資金を大幅に増加させた。これは、パーセプトロンが人間の知能を模倣する能力に関する計算機科学者による楽観的な主張によって煽られた「AIの黄金時代」に貢献した
+。単純パーセプトロンには適応的な隠れ層がなかった。しかし、ジョセフ（1960年）
+についても議論した。1962年、ローゼンブラット
+は、H. D. ブロックと B. W. ナイトの研究も引用し、これらのアイデアを引用し採用した。残念ながら、これらの初期の取り組みは、隠れ層のための実用的な学習アルゴリズム、すなわち
+1960年代と1970年代のディープラーニングのブレークスルー
+1960年代と1970年代に人工ニューラルネットワークに関する基礎研究が行われた。
+のアレクシー・イヴァネンコとラパによって、最初の実用的なディープラーニングアルゴリズムが示された。これは、任意に深いニューラルネットワークを訓練するための手法であるデータ処理のグループ手法であった。彼らはそれを多項式回帰の一形態
+、あるいはローゼンブラットのパーセプトロンの一般化と見なした
+。1971年の論文では、この手法で訓練された8層のディープネットワークが記述されており
+、これは回帰分析による層ごとの訓練に基づいている。余分な隠れユニットは、別の検証セットを使用して刈り込まれる。ノードの活性化関数はKolmogorov-Gabor. の多項式であるため、これらは乗法ユニットまたは「ゲート」を持つ最初のディープネットワークでもあった
+による学習を理論的に解析した論文を発表した
+。甘利の学生である斎藤庄司によるコンピュータ実験では、2つの修正可能な層を持つ2層の多層パーセプトロンが、線形分離不可能なパターンクラスを分類するために
+を学習し、日本語の修士論文で発表した
+。甘利俊一は1968年に書籍『情報理論II ―情報の幾何学的理論―』
+を出版し手法を解説した。扱っていたのは、入力が2次元ベクトル、出力がスカラーの二値分類問題で、1966年のR. O. Duda等の手書き文字認識のモデル
+{\displaystyle w^{(5)}\max\{W^{(1)}x,W^{(2)}x\}+w^{(6)}\min\{W^{(3)}x,W^{(4)}x\}}
+識別関数のモデルである。甘利俊一は2023年の書籍『深層学習と統計神経力学』
+のp.69で、これを5層と数えているのだが、一般的なニューラルネットワークの層の数を数える際は、入力層は数えず、更に、甘利俊一は線形変換と活性化関数で2層と数えているが、普通はこれを1層と数え、よって、一般的な数え方では5層ではなく2層である。確率的勾配降下法は1951年に開発されたものであるが、『深層学習と統計神経力学』のp.7によると、甘利俊一は1967年当時その研究を知らなくて、確率的勾配降下法を再発見している。その後のハードウェアの発展とハイパーパラメータの調整により、エンドツーエンドの確率的勾配降下法は現在主流の訓練手法となっている。
+が単純パーセプトロンの限界（線形分離不可能なデータの判別問題を扱えないこと、排他的論理和回路を処理できないこと）を数学的に証明し、書籍『パーセプトロン』
+でそのことを記載したことで、1970年代になると神経回路網的手法に対する期待が一気にしぼみ、その研究者の数が急激に減ってしまった
+。なお、この単純パーセプトロンの限界は、上述の単純パーセプトロンではないイヴァフネンコと甘利が発表したニューラルネットワークには存在しなかった
+。甘利俊一の書籍『深層学習と統計神経力学』のp.9によると、彼らの書籍が原因というより、当時、東京大学の大型コンピューターを用いて計算していたが、256KiBしかメモリがなく、当時のコンピューターの性能が低すぎたのがニューラルネットワークが流行らなかった原因であると述べている
+（なお、書籍には256KiBではなく256Kワードと書かれているが、1966年11月1日に東京大学に納入された
+5020Eをさしているはずだが、これは64Kiワードで1ワード32ビットのため、256KiBである
+（正規化線形ユニット）活性化関数を導入した
+。ReLUは、ディープラーニングで最も人気のある活性化関数となっている
+1976年、ニューラルネットワーク学習に転移学習が導入された
+誤差逆伝播法（バックプロパゲーション）の導入
+（誤差逆伝播法）とは、出力側から偏微分することで効率よく計算する手法である。1673年に
+ゴットフリート・ヴィルヘルム・ライプニッツ
+ではトップダウン型（リバース・モード）と呼ばれる。
+1962年、ローゼンブラットによって「back-propagating error correction procedure（誤差逆伝播訂正手順）」という用語が初めて用いられた
+。しかし、その時点ではこれを実装する方法を知らなかった。そして、これは言葉は似ているが、出力側からの偏微分の話ではない。
+1960年、ヘンリー・J・ケリーはに
+の文脈で、誤差逆伝播法（バックプロパゲーション）の連続的な前駆体を発表していた
+、その際発表されたのは入力側から偏微分する方法だが、1960年代後半に出力側から自動微分にて偏微分する方法が文章では発表されていなかったが提案はされていた
+。1970年、セッポ・リンナインマーは修士
+で誤差逆伝播法（バックプロパゲーション）の現代的な形式を発表し、文章で発表したのはこれが最初とされる
+。1971年、G.M. オストロフスキーらはそれを再発表した
+。1982年、ポール・ワーボスはニューラルネットワークに誤差逆伝播法（バックプロパゲーション）を適用した
+（彼の1974年の博士論文、1994年の著書で再版
+は、まだアルゴリズムを記述していなかった
+で学習する方法も定着する。確率的勾配降下法により、それまでの限界を突破する道がとうとう開け、「ニューラルネットワーク」として多くの研究者の注目を浴びるようになった
+畳み込みニューラルネットワーク（CNN）の導入
+1979年、福島邦彦は、畳み込み層とダウンサンプリング層、および重み複製を備えた
+（CNN）のディープラーニングアーキテクチャを導入した
+を開発。畳み込みニューラルネットワークの一般的なダウンサンプリング手順であるmaxプーリング
+法も導入された。しかし、この時点では確率的勾配降下法による学習は行われていなかった
+。畳み込みニューラルネットワークは
+1987年、アレックス・ウェイベルによって、音素認識にCNNを適用するための時間遅延ニューラルネットワーク（TDNN）が導入された。これは畳み込み、重み共有、およびバックプロパゲーションを使用した
+。 1988年、ウェイ・チャンはバックプロパゲーションで訓練されたCNNをアルファベット認識に適用した
+らは、郵便物の手書きZIPコードを認識するために
+と呼ばれるCNNを作成した。訓練には3日を要した
+-5という、7層のCNNは、数字を分類するもので、いくつかの銀行で32×32ピクセルの画像にデジタル化された小切手の手書き数字を認識するために適用された
+ハードウェア上にCNNを実装した
+1991年には、CNNが医用画像オブジェクトのセグメンテーション
+およびマンモグラムにおける乳がん検出に応用された
+、特に最初のカスケードネットワークが複数の
+によって生成された「プロファイル」（行列）で訓練されたとき、ニューラルネットワークの使用は
+リカレントニューラルネットワーク（RNN）の導入
+リカレントニューラルネットワーク
+（RNN）は、2つの学問から見出された手法である。1つ目は
+のモデルとして、学習の要素を加えて、
+（1982年）によってホップフィールド・ネットワークとして普及した
+2つ目は神経科学であった。1901年、
+皮質に「リカレント半円」を観察した
+は、短期記憶の説明として「反響回路」を考察した
+。1943年、マカロックとピッツの論文では、サイクルを含むニューラルネットワークを考察し、そのようなネットワークの活動は、過去に無限に遡る活動の影響を受ける可能性がある、つまり
+リカレントニューラルネットワーク
+（RNN）、すなわちクロスバー適応アレイ（Crossbar Adaptive Array）
+が導入された。このリカレントニューラルネットワークは、出力から教師（教示）入力への直接的な再帰接続を使用した。行動や決定を計算することに加えて、結果の状況の内部状態評価を計算した。外部教師を排除し、ニューラルネットワークに自己学習法を導入した
+1980年代初頭、認知心理学において、学術誌「American Psychologist」で、認知と感情の関係についての議論が行われた。1980年、ザイアンスは感情は最初に計算され、認知とは独立していると述べたが、1982年、ラザルスは、認知が最初に計算され、感情とは不可分であると述べた
+。1982年、クロスバー適応アレイは、認知と感情の関係のニューラルネットワークモデルを提示した
+。これは、AIシステムであるリカレントニューラルネットワーク（RNN）が、認知心理学によって同時に取り組まれた問題に貢献した議論の一例であった。
+（1990年）という2つの研究は、リカレントニューラルネットワーク（RNN）を
+1980年代、誤差逆伝播法（バックプロパゲーション）は深いリカレントニューラルネットワーク（RNN）に対してうまく機能しなかった。この問題を克服するために、1991年、ユルゲン・シュミットフーバーは「ニューラルシーケンスチャンカー」または「ニューラルヒストリーコンプレッサー」
+を提案し、自己教師あり事前学習（
+の「P：Pre-trained」）と
+。1993年、ニューラルヒストリーコンプレッサーは、時間展開されたリカレントニューラルネットワーク（RNN）で1000以上の後続層を必要とする「超深層学習」タスクを解決した
+1991年、ゼップ・ホフレイターの論文
+接続を提案した。彼とシュミットフーバーは、複数の応用領域で精度の記録を打ち立てた
+。これはまだ現代版のLSTMではなく忘却機能が必要とされた
+。これらの技術はRNNアーキテクチャのデフォルトとなった
+1985年から1995年の間、統計力学の影響で、テリー・セジュノウスキー、ピーター・デイアン、
+、およびウェイク-スリープアルゴリズム
+など、いくつかのアーキテクチャと手法が開発された。これらは深層生成モデルの教師なし学習のために設計された
+2006年、ジェフリー・ヒントンらにより
+およびディープ・ビリーフ・ネットワーク
+は、ニューラルネットにおいて、入力層と出力層に同じデータを用いて
+させたものである。もともとは、次元削減や特徴抽出といった小さい次元に落とし込む作業を効率的に行うために開発された。実用上では、入力と出力の差分をとることで、
+2009年から2012年にかけて、人工ニューラルネットワークは画像認識コンテストで賞を獲得し始め、さまざまなタスクで人間レベルのパフォーマンスに近づき、当初は
+2011年、ダン・シレサン、ウエリ・マイヤー、ジョナサン・マッシ、ルカ・マリア・ガンバルデッラ、ユルゲン・シュミットフーバーによるCNN「
+は、視覚パターン認識コンテストで初めて超人的なパフォーマンスを達成し、従来の方法を3倍上回った
+。その後、さらに多くのコンテストで優勝した
+上のマックスプーリングCNNがパフォーマンスを大幅に向上させることを示した
+。 2012年10月、アレックス・クリジェフスキー、
+が開催する大規模な画像認識技術コンテストILSVRC(the ImageNet Large Scale Visual Recognition Challenge)で、既存の機械学習手法に大差をつけて勝利した。さらに、カレン・シモニャンとアンドリュー・ジサーマンによるVGG-16ネットワーク
+やGoogleのInceptionv3
+が開発され飛躍的に性能が向上した。
+は、ラベルのない画像を見るだけで、猫などの高レベルの概念を認識することを学習するネットワークを作成した
+。教師なし事前学習と、GPUおよび
+による計算能力の向上により、特に画像および視覚認識の問題でより大規模なネットワークを使用できるようになり、これが「ディープラーニング」として知られるようになった
+2013年、動径基底関数ネットワークとウェーブレットネットワークが導入された。これらは最良の近似特性を提供することが示されており、非線形システム同定および分類アプリケーションで適用されている
+が導入され、2014年から2018年の期間に生成モデリングの最先端となった。GANの原理はもともと1991年にユルゲン・シュミットフーバーによって発表され、「人工的好奇心」と呼ばれた。2つのニューラルネットワークが
+の形で互いに競い合い、一方のネットワークの利得がもう一方のネットワークの損失となる
+。最初のネットワークは、出力パターンに対する
+である。2番目のネットワークは、
+によって、これらのパターンに対する環境の反応を予測することを学習する。優れた画質は、テロ・カラスらによるプログレッシブGAN
+のStyleGAN（2018年）
+によって達成される。ここでは、GANジェネレータはピラミッド方式で小規模から大規模に成長させられる。GANによる画像生成は広く成功を収め、
+が発表された。拡散モデルは、DALL-E 2（2022年）や
+Stable Diffusion
+（2022年）に用いられGANを凌駕した。 当時、20～30層の「超深層ニューラルネットワーク」を訓練する必要があったが
+、あまりにも多くの層を重ねると、訓練精度が急激に低下する、いわゆる「劣化」問題が発生した
+2015年、それらの問題を解決するために、超深層ネットワークを訓練するために、2015年5月にハイウェイネットワークが発表され
+、2015年12月に残差ニューラルネットワーク（
+が開発され、アテンションメカニズムが追加された。Seq2Seqは、情報理論のエンコード・デコードの考え方を機械翻訳に応用したもので、2014年に発表された2つの論文をもとに開発された。
+と呼ばれるニューラルネットワークが入力シーケンス（文章など）を固定長の数値ベクトルに変換し、デコーダーと呼ばれる別のニューラルネットワークがそのベクトルから出力シーケンスを生成する。当初のモデルでは、エンコーダーとデコーダーの両方に
+が使用されていた。このseq2seqには主に2つの問題点があった。一つ目は、ボトルネック問題と呼ばれる問題であり、入力情報を固定長のベクトルに圧縮するため、長い文章では情報が失われやすいという問題があった
+。二つ目は、リカレントニューラルネットワーク（RNN）をベースにしているため、計算の並列化が難しく、処理に時間がかかるという問題があった
+Attention Is All You Need
+」により、seq2seqが抱えている問題を解決した
+につながった。1992年に発表されたユルゲン・シュミットフーバーの「高速重みコントローラー」は線形にスケールし
+、後に非正規化線形Transformerと等価であることが示された
+のモデルとしてますます選択されるようになっている
+がこのアーキテクチャを使用している。
+より第1次AIブームが発生する。
+を発表した。単純パーセプトロンの学習方法を発表した。
+1960年 - バーナード・ヴィドローと
+の単純パーセプトロン）を、内側のアフィン変換 Wx + b の部分を確率的勾配降下法で学習させた
+1964年 - R.E. Wengertが
+。最初に提案した人は不明であるが、
+と同じく、自動微分にて出力側から偏微分する方法が1960年代後半には提案されていた
+。線形分離不可能なパターンが学習できることを書籍『情報理論II ―情報の幾何学的理論―』
+の中で、単純パーセプトロンは線形分離不可能なパターンを識別できない事を示した。
+を発表し、文字認識に使用し、後にこれが畳み込みニューラルネットワークへと発展する。
+、ジェフリー・ヒントンらにより出力側から偏微分する方法が
+を使用していたのだが、確率的勾配降下法が学習方法として定着した。第2次AIブームが発生する。
+。畳み込みニューラルネットワークは
+ディープ・ビリーフ・ネットワーク
+2012年 - ジェフリー・ヒントンの研究室の
+ImageNet Large Scale Visual Recognition Challenge
+代表的な人工ニューラルネットワーク
+が全く示されていないか、不十分です。
+して記事の信頼性向上にご協力ください。
+（フィードフォワードニューラルネットワーク、
+Feed-forward Neural Network
+ニューラルネットワークの総称・クラスである
+ニューラルネットワークではしばしば層（レイヤ）の概念を取り入れる。FFNでは入力レイヤ→中間レイヤ→出力レイヤというように単一方向/
+と対比される。層間の結合様式により様々なニューラルネットワークが存在するが、結合様式に関わらず回帰結合を持たないものはすべてFFNに属する。以下はFFNの一例である。
+: 1-layer 層間全結合ネットワーク
+: N-layer 層間全結合ネットワーク
+: N-layer 層間局所結合ネットワーク（c.f. recurrent CNN; RCNN）
+FFNがもつ特徴に並列計算がある。回帰結合をもつネットワークはシーケンシャルに処理を繰り返す必要があるため、1データに対して時間方向に並列計算できない
+。FFNは層内で並列計算が可能であり、RNNと比較して容易に並列計算機（例:
+）の計算能力を上限まで引き出せる
+（GRNN、General Regression Neural Network）- 正規化したRBFネットワーク
+、可視化などに用いられる。自己組織化マップ、コホネンマップとも呼ばれる。
+とは層間が全結合ではない順伝播型ニューラルネットワークの一種。画像を対象とするために用いられることが多い。
+再帰型ニューラルネットワーク（リカレントニューラルネット、フィードバックニューラルネット）
+フィードフォワードニューラルネットと違い、双方向に信号が伝播するモデル。すべてのノードが他の全てのノードと結合を持っている場合、全結合リカレントニューラルネットと呼ぶ。シーケンシャルなデータに対して有効で、
+Transformer (機械学習モデル)
+Self-Attention機構（自己注意機構）を利用したモデルである
+。再帰型ニューラルネットワークの代替として考案された
+従来の自然言語処理用モデルに比べ計算量が少なく構造も単純なため、自然言語処理に使われることが多い
+乱数による確率的な動作を導入した人工ニューラルネットワークモデル。
+のような統計的標本抽出手法と考えることができる。
+スパイキングニューラルネットワーク
+ニューラルネットワークをより生物学的な脳の働きに近づけるため、
+（スパイク）を重視して作られた人工ニューラルネットワークモデル。スパイクが発生するタイミングを情報と考える。ディープラーニングよりも扱える問題の範囲が広い次世代技術と言われている。ニューラルネットワークの処理は逐次処理のノイマン型コンピュータでは処理効率が低く、活動電位まで模倣する場合には処理効率がさらに低下するため、実用する際には専用プロセッサとして実装される場合が多い。
+2015年現在、スパイキングNN処理ユニットを積んだコンシューマー向けのチップとしては、
+値であるようなニューラルネットワークで
+入力信号と出力信号が複素数（2次元）であるため、複素数で表現された信号はもとより、2次元情報を自然に表現可能
+。また特に波動情報（複素振幅）を扱うのに適した汎化能力（回転と拡大縮小）を持ち、エレクトロニクスや量子計算の分野に好適である。四元数ニューラルネットワークは3次元の回転の扱いに優れるなど、高次複素数ニューラルネットワークの利用も進む。
+階層型の複素ニューラルネットワークの学習速度は、実ニューラルネットワークに比べて2〜3倍速く、しかも必要とするパラメータ（重みと閾値）の総数が約半分で済む
+。学習結果は波動情報（複素振幅）を表現することに整合する汎化特性を示す
+生成モデル（統計モデルとも）は、
+データが母集団の確率分布に従って生成される
+と仮定しそのパラメータを学習するニューラルネットワークの総称である。統計的機械学習の一種といえる。モデル（＝母集団）からのサンプリングによりデータ生成が可能な点が特徴である（詳しくは
+{\displaystyle series\sim p(x_{t},x_{t-1},...,t_{0})=\prod _{i=0}^{N}p(x_{t}|x_{<t})=\prod _{i=0}^{N}NeuralNetwork(x_{t}|x_{<t})}
+自己回帰型生成ネット（Autoregressive Generative Network）とは、系列データの生成過程（同時確率分布）を系列の過去データに対する条件付分布の積と考え条件付分布をニューラルネットワークで表現するモデルである。非線形自己回帰生成モデルの一種、詳しくは
+自己回帰モデル § 非線形自己回帰生成モデル
+。画像生成におけるPixelCNN、音声生成におけるWaveNet・WaveRNNがその例である。学習時は学習データを条件付け（=入力）にできるため、ニューラルネットワーク自体が再帰性を持っていなければ並列学習が容易である（CNN型のWaveNetなど）。ニューラルネットワーク自体に再帰性がある場合は学習時も系列に沿った逐次計算が必要となる（RNN型のWaveRNNなど）。
+) とは、ネットワークA（エンコーダ）が確率分布のパラメータを出力し、ネットワークＢ（デコーダ）が確率分布から得られた表現をデータへと変換するモデルである。画像・音楽生成におけるVQ-VAE-2がその例である。
+敵対的生成ネットワーク (Generative Adversarial Network,
+) とは、ガウシアン等の確率分布から得られたノイズをネットワークA (Generator) がデータへ変換し、ネットワークBが母集団からサンプリングされたデータとネットワークＡの出力を見分けるように学習するモデルである。
+やStyleGAN、BigGANがその例である。
+flow-based生成モデルはFlow、Glow、NICE、realNVP等が存在する。
+Graph neural networks (GNN)
+グラフを入力とするニューラル・ネットワークである
+ニューラルネットワークは様々な要素を組み合わせからなる。各構成要素は経験的・理論的に示された特徴をニューラルネットワークへもたらしている。
+Table. ニューラルネットワークの構成要素
+middle(x) = f(x + bottom(x))
+D(G(z)) = D(G(z+Δ))
+D(Aug(x)) = D(x)
+D(G(z)) = D(Aug(G(z)))
+Input Complexity t
+y = σ(s) Norm(c) + μ(s)
+バッチ正規化（英: Batch Normalization）は学習時のミニ
+。バッチ正規化レイヤー/BNでは学習時にバッチ内統計量（平均μ, 分散σ）を計算し、この統計量により各データを正規化する。その上で学習可能パラメータ (β, γ) を用いて y = γX+βの線形変換をおこなう。これにより値を一定のバラツキに押し込めた上で柔軟に線形変換することができる。
+CNNの場合、各チャネルごとにバッチ正規化処理がおこなわれる。バッチ方向ではない正規化手法も様々提案されており、Layer Norm・Instance Norm・Group Normなどがある。また正規化時のβ・γを計算から求めたりNN(β)・NN(γ)で表現する手法も存在する。
+ニューラルネットワークにおいて、各
+は線形変換を施した後、非線形関数を通すが、これを
+ニューラルネットワークの学習は、
+が最もよく用いられている。確率的勾配降下法の計算方法は AdaGrad, AdaDelta, Adam など様々な変種が作られている。詳細は
+確率的勾配降下法を使用するには、
+を計算する必要がある。その際、出力側から偏微分を計算すると効率よく計算できる。この手法は1986年に
+と命名された。1960年代に開発された
+のトップダウン型（リバース・モード）と同一の手法であり、現在では、手作業で式変形をするのではなく自動微分が通常は使われる。手作業で式変形する方法は
+を参照。入力側よりも出力側から偏微分を計算すると計算効率が良いのは損失関数の出力がスカラーだからであり、詳細は
+1986年のバックプロパゲーション命名以前は、
+以外の学習方法(gradient-free method)が主に使われていて、様々な方法が提案されてきて、現在でも研究が進められている
+）ニューラルネットワークモデルを素早く・最適解へ収束させるために様々なテクニックが提唱されている。
+、2010年に Xavier Glorot らが追証・発展させている
+。以下に要約する。詳細はそれぞれの論文を参照。
+を取り除き、分散が1になるように線形変換する。面倒だったら主成分分析は省略しても良い。
+目標値（出力）は活性化関数を通す場合は、二次導関数が最大になる範囲内を使用するべきである。
+{\displaystyle 1.7159\tanh(2x/3)}
+の場合は −1〜1 で、tanh(
+{\displaystyle -0.5\cosh ^{-1}(2)}
+{\displaystyle 0.5\cosh ^{-1}(2)}
+= −0.65848 〜 0.65848 である。
+重みは乱数で初期化し、バイアスは0で初期化する。重みの初期化には以下の方法などがある。
+{\displaystyle U(-{\sqrt {3/{{\text{fan}}_{\text{in}}}}},{\sqrt {3/{{\text{fan}}_{\text{in}}}}})}
+{\displaystyle U(-{\sqrt {6/{{\text{fan}}_{\text{in}}+{\text{fan}}_{\text{out}}}}},{\sqrt {6/{{\text{fan}}_{\text{in}}+{\text{fan}}_{\text{out}}}}})}
+by Xavier Glorot
+{\displaystyle U(-{\text{gain}}{\sqrt {3/{{\text{fan}}_{\text{in}}}}},{\text{gain}}{\sqrt {3/{{\text{fan}}_{\text{in}}}}})}
+{\displaystyle N(0,{\text{gain}}^{2}/{\text{fan}}_{\text{in}})}
+{\displaystyle {\sqrt {2}}}
+PyTorch では gain は ReLU なら
+{\displaystyle {\sqrt {2}}}
+{\displaystyle 5/3}
+オンライン学習において訓練データが一周したら毎回シャッフルし直す。
+様々なパラメータ更新法が提案され利用されている（
+{\displaystyle f(0)=0}
+{\displaystyle \tanh(x)}
+{\displaystyle {\frac {x}{1+|x|}}}
+(0) = 0.5 のため不適切
+{\displaystyle f(\pm 1)=\pm 1}
+{\displaystyle 1.7159\tanh(2x/3)}
+analog threshold element
+) を持ちうるため、勾配法では広域最適解 (
+) に収束する保証がない (Remelhart, 1986
+を起こすとそれより下層は学習が進まなくなるため、層数が増えるほど勾配消失を起こす確率が増大していく
+勾配が0に近い部分が存在する活性化関数を使っていると勾配消失を起こしやすい
+各次元の分散に差がありすぎると分散の小さいところに重みが集中しやすい
+ニューラルネットワークの学習と対比して、学習したニューラルネットワークで出力を計算することは
+{\displaystyle y=\sigma ({\boldsymbol {w}}{\boldsymbol {x}}+{\boldsymbol {b}})}
+」を基本単位とするため、実装の基礎は
+。またレイヤー概念によりスカラ出力を束ねた出力ベクトルとなり（
+{\displaystyle {\boldsymbol {y}}=\sigma (W{\boldsymbol {x}}+{\boldsymbol {b}})}
+が基礎となる。入力のバッチ化は入出力の行列化と同義であり（
+{\displaystyle Y=\sigma (WX+B)}
+ニューラルネットワークの学習と推論を高速化する様々な
+が得意としており、高速に計算できる。
+などのライブラリおよびそれを間接的に使用してる機械学習のライブラリなどがある。
+やSIMDを有効活用する簡単な方法は行列演算ライブラリを使用する方法である。行列演算ライブラリとしては、例えばインテルのCPU向けでは
+Intel Math Kernel Library
+バックプロパゲーションは完了までに非常に時間のかかる反復処理である。
+技法を使えば、収斂までにかかる時間を大幅に短縮することができる。バッチ学習を行う場合、マルチスレッドでバックプロパゲーションのアルゴリズムを実行するのが比較的簡単である。
+訓練データをそれぞれのスレッド毎に同程度の大きさに分割して割り当てる。それぞれのスレッドで順方向と逆方向のプロパゲーションを行う。重みとしきい値のデルタをスレッド毎に合計していく。反復の周回毎に全スレッドを一時停止させて、重みとしきい値のデルタを合計し、ニューラルネットワークに適用する。これを反復毎に繰り返す。このようなバックプロパゲーションのマルチスレッド技法が
+Encog Neural Network Framework
+）はニューラルネットワークの重み（weight）および演算入出力（activation）の
+。例えば8-bit量子化では通常FP32で表現される数値をINT8で表現する。
+量子化の効果は以下の要素から生み出される
+: FP32より高効率なINT8命令の利用（例:IPC、1命令あたりの演算数（
+キャッシュ: 容量低下によるキャッシュへ乗るデータ量増加 → キャッシュヒット率向上
+メモリ: 容量低下によるメモリ消費とメモリ転送量の減少
+数値精度: 計算精度の低下によるモデル出力精度の低下
+計算量: 量子化-脱量子化の導入による計算量の増加
+量子化が最終的にメリットをもたらすかは上記の要素の組み合わせで決定される。効率的な命令セットを持たない場合、出力精度が下がりさらにQDQの計算負荷が勝って速度が悪化する場合もある
+。このように、量子化の効果はモデルとハードウェアに依存する
+量子化手法にはいくつかのバリエーションがある。
+Static Quantization
+）: 代表的データを用いた量子化パラメータの事前算出
+Dynamic Quantization
+）: 各実行ステップのactivation値に基づくactivation用量子化パラメータの動的な算出
+fake quantization (
+Quantize and DeQuantize
+; QDQ): 量子化+脱量子化（
+{\displaystyle y=dequant(quant(x))}
+が全く示されていないか、不十分です。
+して記事の信頼性向上にご協力ください。
+）はニューラルネットワークの重みを
+とする最適化である。スパース化は精度の低下と速度の向上をもたらす。
+スパース化の効果は以下の要素から生み出される。
+キャッシュ: 容量低下によるキャッシュへ乗るデータ量増加 → キャッシュヒット率向上
+メモリ: 容量低下によるメモリ消費とメモリ転送量の減少
+数値精度: 小さい値のゼロ近似によるモデル出力精度の低下
+計算量: ゼロ重みとの積省略による計算量の減少
+スパース化の恩恵を受けるためにはそのためのフォーマットや演算が必要になる。ゼロ要素を省略する
+、疎行列形式に対応した演算実装などが挙げられる。またスパース化を前提として精度低下を防ぐよう学習する手法が存在する。
+）と呼ばれる。枝刈りでは行列のスパース化のみでなく、チャネルやモジュール自体の削除（ゼロ近似）を含む。
+{\displaystyle x=[-1,1]}
+{\displaystyle y=2x^{2}-1}
+のモデルの数式は以下の通り。X が入力、Y が出力、T が訓練データで全て数式では縦ベクトル。
+{\displaystyle \psi }
+{\displaystyle W_{1},W_{2},B_{1},B_{2}}
+{\displaystyle B_{1},B_{2}}
+{\displaystyle Y=W_{2}\psi (W_{1}X+B_{1})+B_{2}}
+誤差関数は以下の通り。誤差関数は出力と訓練データの間の二乗和誤差を使用。
+{\displaystyle E={\frac {1}{2}}\|Y-T\|^{2}}
+{\displaystyle E}
+をパラメータで偏微分した数式は以下の通り。肩についてる T は
+{\displaystyle \circ }
+{\displaystyle {\begin{aligned}{\frac {\partial E}{\partial W_{1}}}&=\left(\left((Y-T)^{\mathrm {T} }W_{2}\right)^{\mathrm {T} }\circ \psi '(W_{1}X+B_{1})\right)X^{\mathrm {T} }\\{\frac {\partial E}{\partial B_{1}}}&=\left((Y-T)^{\mathrm {T} }W_{2}\right)^{\mathrm {T} }\circ \psi '(W_{1}X+B_{1})\\{\frac {\partial E}{\partial W_{2}}}&=(Y-T)\psi (W_{1}X+B_{1})^{\mathrm {T} }\\{\frac {\partial E}{\partial B_{2}}}&=Y-T\end{aligned}}}
+3.5 によるソースコード。Python において、@ は
+# 訓練データは x は -1～1、y は 2 * x ** 2 - 1
+# 重みパラメータ。-0.5 〜 0.5 でランダムに初期化。この行列の値を学習する。
+# 確率的勾配降下法のため、エポックごとにランダムにシャッフルする
+# 順方向で x から y を計算する
+# エポックごとに二乗和誤差を出力。徐々に減衰して0に近づく。
+ニューラルネットワークという用語はもともとは生物の
+（神経系）を指している。網（ネットワーク）と形容されるのは、実際、網のように広がっているからである。1つの
+で重み付けして受け取り、細胞体等での処理を介して、次の複数の神経細胞へと出力する。これらの結合により神経細胞群は全体としてネットワークを形成する。
+を含む1つの処理単位であり、これがネットワークを形成しているということになる。
+2020年現在のところ、「小脳パーセプトロン説」が支持されるなど、「全く無関係」ではない、とされている。
+RNNの場合、巨大バッチを用いて1stepの計算量を巨大にすればGPUを使いきれるが、実践的にはメモリ上限等の制約が厳しい。
+複素逆誤差伝播学習アルゴリズム（複素BP）を使用した場合。
+Charu C.Aggarwal著『ニューラルネットワークとディープラーニング』（データサイエンス大系シリーズ）、
+, 第一章「ニューラルネットワークとは」「はじめに」、pp.1-2
+『2020年版 基本情報技術者 標準教科書』オーム社、p.55
+平塚秀雄『よくわかる脳神経外科学』金原出版、1996, pp.14-15「神経細胞とニューロン」
+平野廣美「学習することは重みが変わること」『C++とJavaでつくるニューラルネットワーク』パーソナルメディア株式会社、2008年、27頁。
+978-4-89362-247-1
+Mansfield Merriman, "A List of Writings Relating to the Method of Least Squares"
+Stigler, Stephen M. (1981). “Gauss and the Invention of Least Squares”.
+10.1214/aos/1176345451
+Bretscher, Otto (1995).
+Linear Algebra With Applications
+(3rd ed.). Upper Saddle River, NJ: Prentice Hall
+Schmidhuber, Jürgen
+(2022). “Annotated History of Modern AI and Deep Learning”.
+Stigler, Stephen M.
+The History of Statistics: The Measurement of Uncertainty before 1900
+. Cambridge: Harvard.
+https://archive.org/details/historyofstatist00stig
+McCulloch, Warren S.; Pitts, Walter (December 1943).
+“A logical calculus of the ideas immanent in nervous activity”
+The Bulletin of Mathematical Biophysics
+10.1007/BF02478259
+の2024-10-12時点におけるアーカイブ。
+https://archive.today/20241012221923/http://link.springer.com/10.1007/BF02478259
+Kleene, S.C. (1956年).
+“Representation of Events in Nerve Nets and Finite Automata”
+Annals of Mathematics Studies
+(Princeton University Press) (34):  pp. 3–41.
+の2024年5月19日時点におけるアーカイブ。
+https://web.archive.org/web/20240519081121/https://www.degruyter.com/view/books/9781400882618/9781400882618-002/9781400882618-002.xml
+Hebb, Donald (1949).
+The Organization of Behavior
+. New York: Wiley.
+978-1-135-63190-1
+https://books.google.co.jp/books?id=ddB4AgAAQBAJ
+平野廣美『C++とJavaでつくるニューラルネットワーク』パーソナルメディア株式会社、2008、pp.9-10「はじめに」
+Farley, B.G.; W.A. Clark (1954). “Simulation of Self-Organizing Systems by Digital Computer”.
+IRE Transactions on Information Theory
+10.1109/TIT.1954.1057468
+Rochester, N.; J.H. Holland; L.H. Habit; W.L. Duda (1956). “Tests on a cell assembly theory of the action of the brain, using a large digital computer”.
+IRE Transactions on Information Theory
+10.1109/TIT.1956.1056810
+Haykin (2008) Neural Networks and Learning Machines, 3rd edition
+Rosenblatt, F. (1958). “The Perceptron: A Probabilistic Model For Information Storage And Organization in the Brain”.
+Psychological Review
+10.1037/h0042519
+Werbos, P.J. (1975).
+Beyond Regression: New Tools for Prediction and Analysis in the Behavioral Sciences
+https://books.google.co.jp/books?id=z81XmgEACAAJ
+Rosenblatt, Frank (1957). “The Perceptron—a perceiving and recognizing automaton”.
+(Cornell Aeronautical Laboratory).
+Olazaran, Mikel (1996). “A Sociological Study of the Official History of the Perceptrons Controversy”.
+Social Studies of Science
+10.1177/030631296026003005
+Joseph, R. D. (1960).
+Contributions to Perceptron Theory, Cornell Aeronautical Laboratory Report No. VG-11 96--G-7, Buffalo
+Russel, Stuart; Norvig, Peter (2010) (英語).
+Artificial Intelligence A Modern Approach
+(3rd ed.). United States of America: Pearson Education. pp. 16–28.
+978-0-13-604259-4
+https://people.engr.tamu.edu/guni/csce421/files/AI_Russell_Norvig.pdf
+Rosenblatt, Frank
+Principles of Neurodynamics
+. Spartan, New York
+Ivakhnenko, A. G.; Lapa, V. G. (1967).
+Cybernetics and Forecasting Techniques
+. American Elsevier Publishing Co..
+978-0-444-00020-0
+https://books.google.co.jp/books?id=rGFgAAAAMAAJ
+Ivakhnenko, A.G. (March 1970).
+“Heuristic self-organization in problems of engineering cybernetics”
+10.1016/0005-1098(70)90092-0
+の2024-08-12時点におけるアーカイブ。
+https://web.archive.org/web/20240812123448/https://linkinghub.elsevier.com/retrieve/pii/0005109870900920
+Ivakhnenko, Alexey (1971).
+“Polynomial theory of complex systems”
+IEEE Transactions on Systems, Man, and Cybernetics
+10.1109/TSMC.1971.4308320
+の2017-08-29時点におけるアーカイブ。
+https://web.archive.org/web/20170829230621/http://www.gmdh.net/articles/history/polynomial.pdf
+; Monro, S. (1951). “A Stochastic Approximation Method”.
+The Annals of Mathematical Statistics
+10.1214/aoms/1177729586
+Amari, Shun'ichi
+(1967). “A theory of adaptive pattern classifier”.
+IEEE Transactions
+「第5章 学習識別の理論」『情報理論II ―情報の幾何学的理論―』共立出版、1968年1月5日。
+Duda, R. O.; Fossum, H. (1966). “Pattern Classification by Iteratively Determined Linear and Piecewise Linear Discriminant Functions”.
+IEEE Transactions on Electronic Computers
+10.1109/PGEC.1966.264302
+『深層学習と統計神経力学』サイエンス社、2023年。
+Minsky, Marvin; Papert, Seymour (1969).
+Perceptrons: An Introduction to Computational Geometry
+978-0-262-63022-1
+https://books.google.co.jp/books?id=Ow1OAQAAIAAJ
+過去のシステム | 東京大学情報基盤センター スーパーコンピューティング部門
+cc.u-tokyo.ac.jp
+東大のHITAC 5020 交換 - 情報処理 Vol.8 No.2 March 1967
+” (2025年12月9日). 2025年12月9日閲覧。
+» 新HPCの歩み（第36回）－1965年(b)－
+Fukushima, K. (1969). “Visual feature extraction by a multilayered network of analog threshold elements”.
+IEEE Transactions on Systems Science and Cybernetics
+10.1109/TSSC.1969.300225
+Sonoda, Sho; Murata, Noboru (2017). “Neural network with unbounded activation functions is universal approximator”.
+Applied and Computational Harmonic Analysis
+10.1016/j.acha.2015.12.005
+Ramachandran, Prajit; Barret, Zoph; Quoc, V. Le (16 October 2017). “Searching for Activation Functions”.
+Bozinovski S. and Fulgosi A. (1976). "The influence of pattern similarity and transfer learning on the base perceptron training" (original in Croatian) Proceedings of Symposium Informatica 3-121-5, Bled.
+Bozinovski S.(2020) "Reminder of the first paper on transfer learning in neural networks, 1976". Informatica 44: 291–302.
+Leibniz, Gottfried Wilhelm Freiherr von (1920) (英語).
+The Early Mathematical Manuscripts of Leibniz: Translated from the Latin Texts Published by Carl Immanuel Gerhardt with Critical and Historical Notes (Leibniz published the chain rule in a 1676 memoir)
+. Open court publishing Company.
+https://books.google.com/books?id=bOIGAAAAYAAJ&q=leibniz+altered+manuscripts&pg=PA90
+Kelley, Henry J.
+(1960). “Gradient theory of optimal flight paths”.
+R.E. Wengert (1964).
+“A simple automatic derivative evaluation program”
+10.1145/355586.364791
+https://dl.acm.org/doi/10.1145/355586.364791
+Andreas Griewank (2012).
+“Who Invented the Reverse Mode of Differentiation”
+Optimization Stories, Documenta Matematica
+Extra Volume ISMP
+https://www.math.uni-bielefeld.de/documenta/vol-ismp/52_griewank-andreas-b.pdf
+Linnainmaa, Seppo
+The representation of the cumulative rounding error of an algorithm as a Taylor expansion of the local rounding errors
+(Masters) (フィンランド語). University of Helsinki. p. 6–7.
+Linnainmaa, Seppo
+(1976). “Taylor expansion of the accumulated rounding error”.
+BIT Numerical Mathematics
+10.1007/bf01931367
+Ostrovski, G.M., Volin,Y.M., and Boris, W.W. (1971). On the computation of derivatives. Wiss. Z. Tech. Hochschule for Chemistry, 13:382–384.
+Schmidhuber, Juergen
+(2014年10月25日). “
+Who Invented Backpropagation?
+”.   IDSIA, Switzerland. 2024年7月30日時点のオリジナルより
+“Applications of advances in nonlinear sensitivity analysis”
+System modeling and optimization
+. Springer. pp. 762–770.  オリジナルの2016-04-14時点におけるアーカイブ。
+http://werbos.com/Neural/SensitivityIFIPSeptember1981.pdf
+Anderson, James A., ed (2000) (英語).
+Talking Nets: An Oral History of Neural Networks
+. The MIT Press.
+10.7551/mitpress/6626.003.0016
+978-0-262-26715-1
+の2024-10-12時点におけるアーカイブ。
+https://archive.today/20241012223136/https://direct.mit.edu/books/book/4886/Talking-NetsAn-Oral-History-of-Neural-Networks
+Werbos, Paul J. (1994).
+The Roots of Backpropagation : From Ordered Derivatives to Neural Networks and Political Forecasting
+. New York: John Wiley & Sons.
+ニューラルネット研究の温故知新と最適化手法の研究動向
+」『電気学会論文誌Ｃ』第130巻第1号、2010年、2-5頁。
+」『科学技術社会論研究』第16巻、2018年、15-29頁。
+Rumelhart, David E.; Hinton, Geoffrey E.; Williams, Ronald J. (October 1986).
+“Learning representations by back-propagating errors”
+(6088):  533–536.
+1986Natur.323..533R
+10.1038/323533a0
+の2021-03-08時点におけるアーカイブ。
+https://web.archive.org/web/20210308045630/https://www.nature.com/articles/323533a0
+Fukushima, Kunihiko; Miyake, Sei (1 January 1982).
+“Neocognitron: A new algorithm for pattern recognition tolerant of deformations and shifts in position”
+Pattern Recognition
+1982PatRe..15..455F
+10.1016/0031-3203(82)90024-3
+の2024-10-12時点におけるアーカイブ。
+https://archive.today/20241012232918/https://www.sciencedirect.com/science/article/abs/pii/0031320382900243
+Fukushima, K. (1979). “Neural network model for a mechanism of pattern recognition unaffected by shift in position—Neocognitron”.
+Trans. IECE (In Japanese)
+10.1007/bf00344251
+Fukushima, K. (1980). “Neocognitron: A self-organizing neural network model for a mechanism of pattern recognition unaffected by shift in position”.
+10.1007/bf00344251
+Schmidhuber, J. (2015). “Deep Learning in Neural Networks: An Overview”.
+10.1016/j.neunet.2014.09.003
+Waibel, Alex (December 1987).
+Phoneme Recognition Using Time-Delay Neural Networks
+. Meeting of the Institute of Electrical, Information and Communication Engineers (IEICE). Tokyo, Japan. 2024年9月17日時点のオリジナルより
+Alexander Waibel
+Phoneme Recognition Using Time-Delay Neural Networks
+2024-12-11 at the
+IEEE Transactions on Acoustics, Speech, and Signal Processing, Volume 37, No. 3, pp. 328. – 339 March 1989.
+Zhang, Wei (1988).
+“Shift-invariant pattern recognition neural network and its optical architecture”
+Proceedings of Annual Conference of the Japan Society of Applied Physics
+の2020-06-23時点におけるアーカイブ。
+https://web.archive.org/web/20200623051222/https://drive.google.com/file/d/1nN_5odSG_QVae54EsQN_qSz-0ZsX6wA0/view?usp=sharing
+, "Backpropagation Applied to Handwritten Zip Code Recognition",
+Neural Computation
+, 1, pp. 541–551, 1989.
+LeCun, Yann; Léon Bottou; Yoshua Bengio; Patrick Haffner (1998).
+“Gradient-based learning applied to document recognition”
+Proceedings of the IEEE
+(11):  2278–2324.
+10.1109/5.726791
+の2023-10-30時点におけるアーカイブ。
+https://web.archive.org/web/20231030100650/http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf
+Zhang, Wei (1990).
+“Parallel distributed processing model with local space-invariant interconnections and its optical architecture”
+1990ApOpt..29.4790Z
+10.1364/AO.29.004790
+の2017-02-06時点におけるアーカイブ。
+https://web.archive.org/web/20170206111407/https://drive.google.com/file/d/0B65v6Wo67Tk5ODRzZmhSR29VeDg/view?usp=sharing
+Zhang, Wei (1991).
+“Image processing of human corneal endothelium based on a learning network”
+1991ApOpt..30.4211Z
+10.1364/AO.30.004211
+の2024-06-19時点におけるアーカイブ。
+https://web.archive.org/web/20240619084309/https://drive.google.com/file/d/0B65v6Wo67Tk5cm5DTlNGd0NPUmM/view?usp=sharing
+Zhang, Wei (1994).
+“Computerized detection of clustered microcalcifications in digital mammograms using a shift-invariant artificial neural network”
+1994MedPh..21..517Z
+10.1118/1.597177
+の2024-06-20時点におけるアーカイブ。
+https://web.archive.org/web/20240620055642/https://drive.google.com/file/d/0B65v6Wo67Tk5Ml9qeW5nQ3poVTQ/view?usp=sharing
+Qian, Ning, and Terrence J. Sejnowski. "Predicting the secondary structure of globular proteins using neural network models."
+Journal of molecular biology
+202, no. 4 (1988): 865–884.
+Bohr, Henrik, Jakob Bohr, Søren Brunak, Rodney MJ Cotterill, Benny Lautrup, Leif Nørskov, Ole H. Olsen, and Steffen B. Petersen. "Protein secondary structure and homology by neural networks The α-helices in rhodopsin."
+241, (1988): 223–228
+Rost, Burkhard, and Chris Sander. "Prediction of protein secondary structure at better than 70% accuracy."
+Journal of molecular biology
+232, no. 2 (1993): 584–599.
+Amari, S.-I. (November 1972).
+“Learning Patterns and Pattern Sequences by Self-Organizing Nets of Threshold Elements”
+IEEE Transactions on Computers
+(11):  1197–1206.
+10.1109/T-C.1972.223477
+の2024-10-12時点におけるアーカイブ。
+https://archive.today/20241012222852/https://ieeexplore.ieee.org/document/1672070
+Hopfield, J. J. (1982).
+“Neural networks and physical systems with emergent collective computational abilities”
+Proceedings of the National Academy of Sciences
+(8):  2554–2558.
+1982PNAS...79.2554H
+10.1073/pnas.79.8.2554
+https://pmc.ncbi.nlm.nih.gov/articles/PMC346238/
+Espinosa-Sanchez, Juan Manuel; Gomez-Marin, Alex; de Castro, Fernando (5 July 2023).
+“The Importance of Cajal's and Lorente de Nó's Neuroscience to the Birth of Cybernetics”
+The Neuroscientist
+10.1177/10738584231179932
+の2024-10-12時点におけるアーカイブ。
+https://archive.today/20241012221924/http://journals.sagepub.com/doi/10.1177/10738584231179932
+reverberating circuit
+Oxford Reference
+. 2024年10月12日時点のオリジナルより
+Bozinovski, S. (1982). "A self-learning system using secondary reinforcement". In Trappl, Robert (ed.). Cybernetics and Systems Research: Proceedings of the Sixth European Meeting on Cybernetics and Systems Research. North-Holland. pp. 397–402.
+ISBN 978-0-444-86488-8
+Bozinovski S. (1995) "Neuro genetic agents and structural theory of self-reinforcement learning systems". CMPSCI Technical Report 95-107, University of Massachusetts at Amherst
+2024-10-08 at the
+R. Zajonc (1980) "Feeling and thinking: Preferences need no inferences". American Psychologist 35 (2): 151-175
+Lazarus R. (1982) "Thoughts on the relations between emotion and cognition" American Psychologist 37 (9): 1019-1024
+Bozinovski, S. (2014) "Modeling mechanisms of cognition-emotion interaction in artificial neural networks, since 1981" Procedia Computer Science p. 255-263 (
+https://core.ac.uk/download/pdf/81973924.pdf
+2019-03-23 at the
+Schmidhuber, Jürgen
+“Neural Sequence Chunkers”
+TR FKI-148, TU Munich
+の2024-09-14時点におけるアーカイブ。
+https://web.archive.org/web/20240914162750/https://people.idsia.ch/~juergen/FKI-148-91ocr.pdf
+Schmidhuber, Jürgen (1992).
+“Learning complex, extended sequences using the principle of history compression (based on TR FKI-148, 1991)”
+Neural Computation
+10.1162/neco.1992.4.2.234
+の2024-09-14時点におけるアーカイブ。
+https://web.archive.org/web/20240914162750/https://sferics.idsia.ch/pub/juergen/chunker.pdf
+Schmidhuber, Jürgen (1993).
+Habilitation thesis: System modeling and optimization
+の2024-08-07時点におけるアーカイブ。
+https://web.archive.org/web/20240807084323/https://sferics.idsia.ch/pub/juergen/habilitation.pdf
+Page 150 ff demonstrates credit assignment across the equivalent of 1,200 layers in an unfolded RNN.
+S. Hochreiter., "
+Untersuchungen zu dynamischen neuronalen Netzen
+2015-03-06 at the
+Diploma thesis. Institut f. Informatik, Technische Univ. Munich. Advisor: J. Schmidhuber
+Hochreiter, S. (15 January 2001).
+“Gradient flow in recurrent nets: the difficulty of learning long-term dependencies”
+A Field Guide to Dynamical Recurrent Networks
+. John Wiley & Sons.
+978-0-7803-5369-5
+.  オリジナルの2024-05-19時点におけるアーカイブ。
+https://books.google.com/books?id=NWOcMVA64aAC
+(21 August 1995),
+Long Short Term Memory
+Hochreiter, Sepp
+; Schmidhuber, Jürgen (1 November 1997). “Long Short-Term Memory”.
+Neural Computation
+(8):  1735–1780.
+10.1162/neco.1997.9.8.1735
+Gers, Felix; Schmidhuber, Jürgen; Cummins, Fred (1999). “Learning to forget: Continual prediction with LSTM”.
+9th International Conference on Artificial Neural Networks: ICANN '99
+10.1049/cp:19991218
+Ackley, David H.; Hinton, Geoffrey E.; Sejnowski, Terrence J. (1 January 1985).
+“A learning algorithm for boltzmann machines”
+Cognitive Science
+10.1016/S0364-0213(85)80012-4
+の2024-09-17時点におけるアーカイブ。
+https://web.archive.org/web/20240917124802/https://www.sciencedirect.com/science/article/pii/S0364021385800124
+Smolensky, Paul (1986).
+“Chapter 6: Information Processing in Dynamical Systems: Foundations of Harmony Theory”
+. In Rumelhart, David E.; McLelland, James L..
+Parallel Distributed Processing: Explorations in the Microstructure of Cognition, Volume 1: Foundations
+. MIT Press. pp.
+.  オリジナルの2023-07-14時点におけるアーカイブ。
+https://stanford.edu/~jlmcc/papers/PDP/Volume%201/Chap6_PDP86.pdf
+Peter, Dayan; Hinton, Geoffrey E.; Neal, Radford M.; Zemel, Richard S. (1995). “The Helmholtz machine.”.
+Neural Computation
+10.1162/neco.1995.7.5.889
+21.11116/0000-0002-D6D3-E
+Hinton, Geoffrey E.
+; Dayan, Peter; Frey, Brendan J.; Neal, Radford (26 May 1995). “The wake-sleep algorithm for unsupervised neural networks”.
+(5214):  1158–1161.
+1995Sci...268.1158H
+10.1126/science.7761831
+Reducing the Dimensionality of Data with Neural Networks
+A fast learning algorithm for deep belief nets
+2012 Kurzweil AI Interview
+2018-08-31 at the
+. with Juergen Schmidhuber on the eight competitions won by his Deep Learning team 2009–2012
+How bio-inspired deep learning keeps winning competitions
+よりアーカイブ。2025年6月20日閲覧。
+Cireşan, Dan Claudiu; Meier, Ueli; Gambardella, Luca Maria; Schmidhuber, Jürgen (21 September 2010). “Deep, Big, Simple Neural Nets for Handwritten Digit Recognition”.
+Neural Computation
+(12):  3207–3220.
+10.1162/neco_a_00052
+Ciresan, D. C.; Meier, U.; Masci, J.; Gambardella, L.M.; Schmidhuber, J. (2011).
+“Flexible, High Performance Convolutional Neural Networks for Image Classification”
+International Joint Conference on Artificial Intelligence
+10.5591/978-1-57735-516-8/ijcai11-210
+の2014-09-29時点におけるアーカイブ。
+https://web.archive.org/web/20140929094040/http://ijcai.org/papers11/Papers/IJCAI11-210.pdf
+Ciresan, Dan; Giusti, Alessandro; Gambardella, Luca M.; Schmidhuber, Jürgen (2012). Pereira, F.. ed.
+Advances in Neural Information Processing Systems 25
+. Curran Associates, Inc.. pp. 2843–2851.
+の2017-08-09時点におけるアーカイブ。
+https://web.archive.org/web/20170809081713/http://papers.nips.cc/paper/4741-deep-neural-networks-segment-neuronal-membranes-in-electron-microscopy-images.pdf
+Ciresan, D.; Giusti, A.; Gambardella, L.M.; Schmidhuber, J. (2013). “Mitosis Detection in Breast Cancer Histology Images with Deep Neural Networks”.
+Medical Image Computing and Computer-Assisted Intervention – MICCAI 2013
+. Lecture Notes in Computer Science.
+10.1007/978-3-642-40763-5_51
+978-3-642-38708-1
+Ciresan, D.; Meier, U.; Schmidhuber, J. (2012). “Multi-column deep neural networks for image classification”.
+2012 IEEE Conference on Computer Vision and Pattern Recognition
+. pp. 3642–3649.
+10.1109/cvpr.2012.6248110
+978-1-4673-1228-8
+Krizhevsky, Alex; Sutskever, Ilya; Hinton, Geoffrey (2012).
+“ImageNet Classification with Deep Convolutional Neural Networks”
+NIPS 2012: Neural Information Processing Systems, Lake Tahoe, Nevada
+の2017-01-10時点におけるアーカイブ。
+https://web.archive.org/web/20170110123024/http://www.cs.toronto.edu/~kriz/imagenet_classification_with_deep_convolutional.pdf
+Simonyan, Karen; Andrew, Zisserman (2014). “Very Deep Convolution Networks for Large Scale Image Recognition”.
+Szegedy, Christian (2015).
+“Going deeper with convolutions”
+の2024-09-30時点におけるアーカイブ。
+https://web.archive.org/web/20240930225513/https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/43022.pdf
+Ng, Andrew; Dean, Jeff (2012). “Building High-level Features Using Large Scale Unsupervised Learning”.
+Ian Goodfellow and Yoshua Bengio and Aaron Courville (2016).
+の16 April 2016時点におけるアーカイブ。
+https://web.archive.org/web/20160416111010/http://www.deeplearningbook.org/
+Billings, S. A. (2013).
+Nonlinear System Identification: NARMAX Methods in the Time, Frequency, and Spatio-Temporal Domains
+978-1-119-94359-4
+Goodfellow, Ian; Pouget-Abadie, Jean; Mirza, Mehdi; Xu, Bing; Warde-Farley, David; Ozair, Sherjil; Courville, Aaron; Bengio, Yoshua (2014).
+Generative Adversarial Networks
+. Proceedings of the International Conference on Neural Information Processing Systems (NIPS 2014). pp.
+2680. 2019年11月22日時点のオリジナルより
+Schmidhuber, Jürgen
+(1991). “A possibility for implementing curiosity and boredom in model-building neural controllers”.
+. MIT Press/Bradford Books. pp.
+Schmidhuber, Jürgen
+(2020). “Generative Adversarial Networks are Special Cases of Artificial Curiosity (1990) and also Closely Related to Predictability Minimization (1991)” (英語).
+10.1016/j.neunet.2020.04.008
+Karras, T.; Aila, T.; Laine, S.; Lehtinen, J. (26 February 2018). “Progressive Growing of GANs for Improved Quality, Stability, and Variation”.
+GAN 2.0: NVIDIA's Hyperrealistic Face Generator
+SyncedReview.com
+(2018年12月14日). 2024年9月12日時点のオリジナルより
+Prepare, Don't Panic: Synthetic Media and Deepfakes
+”.   witness.org. 2020年12月2日時点のオリジナルより
+Sohl-Dickstein, Jascha; Weiss, Eric; Maheswaranathan, Niru; Ganguli, Surya (1 June 2015).
+“Deep Unsupervised Learning using Nonequilibrium Thermodynamics”
+Proceedings of the 32nd International Conference on Machine Learning
+の2024-09-21時点におけるアーカイブ。
+https://web.archive.org/web/20240921065319/http://proceedings.mlr.press/v37/sohl-dickstein15.pdf
+Simonyan, Karen; Zisserman, Andrew (10 April 2015),
+Very Deep Convolutional Networks for Large-Scale Image Recognition
+He, Kaiming; Zhang, Xiangyu; Ren, Shaoqing; Sun, Jian (2016). “Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification”.
+He, Kaiming; Zhang, Xiangyu; Ren, Shaoqing; Sun, Jian (10 December 2015).
+Deep Residual Learning for Image Recognition
+Srivastava, Rupesh Kumar; Greff, Klaus; Schmidhuber, Jürgen (2 May 2015). “Highway Networks”.
+He, Kaiming; Zhang, Xiangyu; Ren, Shaoqing; Sun, Jian (2016).
+“Deep Residual Learning for Image Recognition”
+2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)
+. IEEE. pp. 770–778.
+10.1109/CVPR.2016.90
+978-1-4673-8851-1
+.  オリジナルの2024-10-07時点におけるアーカイブ。
+https://ieeexplore.ieee.org/document/7780459
+Linn, Allison (2015年12月10日). “
+Microsoft researchers win ImageNet computer vision challenge
+. 2023年5月21日時点のオリジナルより
+Sutskever, Ilya; Vinyals, Oriol; Le, Quoc Viet (2014). “Sequence to sequence learning with neural networks”.
+Cho, Kyunghyun; van Merrienboer, Bart; Gulcehre, Caglar; Bahdanau, Dzmitry; Bougares, Fethi; Schwenk, Holger; Bengio, Yoshua (3 June 2014). “Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation”.
+Vaswani, Ashish; Shazeer, Noam; Parmar, Niki; Uszkoreit, Jakob; Jones, Llion; Gomez, Aidan N.; Kaiser, Lukasz; Polosukhin, Illia (12 June 2017). “Attention Is All You Need”.
+Schmidhuber, Jürgen (1992).
+“Learning to control fast-weight memories: an alternative to recurrent nets.”
+Neural Computation
+10.1162/neco.1992.4.1.131
+https://archive.org/download/wikipedia-scholarly-sources-corpus/10.1162.zip/10.1162%252Fneco.1992.4.1.131.pdf
+Katharopoulos, Angelos; Vyas, Apoorv; Pappas, Nikolaos; Fleuret, François (2020).
+“Transformers are RNNs: Fast autoregressive Transformers with linear attention”
+5165. 2023年7月11日時点のオリジナルより
+Schlag, Imanol; Irie, Kazuki;
+Schmidhuber, Jürgen
+(2021). “Linear Transformers Are Secretly Fast Weight Programmers”.
+Wolf, Thomas; Debut, Lysandre; Sanh, Victor; Chaumond, Julien; Delangue, Clement; Moi, Anthony; Cistac, Pierric; Rault, Tim et al. (2020). “Transformers: State-of-the-Art Natural Language Processing”.
+Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing: System Demonstrations
+10.18653/v1/2020.emnlp-demos.6
+Benerard Widrow; M.E. Hoff, Jr. (August 1960).
+“Adaptive Switching Circuits”
+IRE WESCON Convention Record
+http://www-isl.stanford.edu/people/widrow/papers/c1960adaptiveswitching.pdf
+意識の宿る機械をつくる ─甘利俊一の取り損ねたノーベル賞と今後の課題─
+」『科学哲学』第57巻第2号、2024年、13-20頁。
+」『認知科学の発展』第4巻、1991年、51-77頁。
+Homma, Toshiteru; Les Atlas; Robert Marks II (1988).
+“An Artificial Neural Network for Spatio-Temporal Bipolar Patters: Application to Phoneme Classification”
+Advances in Neural Information Processing Systems 1
+http://papers.nips.cc/paper/20-an-artificial-neural-network-for-spatio-temporal-bipolar-patterns-application-to-phoneme-classification.pdf
+Yann Le Cun (June 1989).
+Generalization and Network Design Strategies
+http://yann.lecun.com/exdb/publis/pdf/lecun-89.pdf
+Y. LeCun; B. Boser; J. S. Denker; D. Henderson; R. E. Howard; W. Hubbard; L. D. Jackel (1989). “Backpropagation applied to handwritten zip code recognition”.
+Neural Computation
+映像検索におけるディープラーニング
+」『日本神経回路学会誌』第24巻第1号、2017年、13-26頁。
+」『岡山医学会雑誌』第132巻第3号、2020年、144-147頁。
+"A nonrecurrent network has no cycles. Nonrecurrent networks can be thought of as computing an input-output function." Jordan, M.I. (1986).
+Serial order: A parallel distributed processing approach
+. (Tech. Rep. No. 8604). San Diego: University of California, Institute for Cognitive Science.
+Vaswani et al. 2017
+Yu, Yong; Si, Xiaosheng; Hu, Changhua; Zhang, Jianxun (2019-07-01).
+“A Review of Recurrent Neural Networks: LSTM Cells and Network Architectures”
+Neural Computation
+(7):  1235–1270.
+10.1162/neco_a_01199
+https://doi.org/10.1162/neco_a_01199
+Vaswani, Ashish; Shazeer, Noam; Parmar, Niki; Uszkoreit, Jakob; Jones, Llion; Gomez, Aidan N.; Kaiser, Lukasz; Polosukhin, Illia (2017-12-05).
+“Attention Is All You Need”
+arXiv:1706.03762 [cs]
+https://arxiv.org/abs/1706.03762
+Neuromorphic Processing : A New Frontier in Scaling Computer Architecture
+Qualcomm’s cognitive compute processors are coming to Snapdragon 820
+ExtremeTech 2015年3月2日
+Akira Hirose, Shotaro Yoshida (2012). “Generalization Characteristics of Complex-valued Feedforward Neural Networks in Relation to Signal Coherence”.
+村田剛志『グラフニューラルネットワーク ― Pytorchによる実装』
+978-4-274-22887-2
+The proposed U-Net based architecture allows to provide
+detailed per-pixel feedback
+to the generator
+while maintaining the global coherence
+of synthesized images
+starting from a low resolution, we add new layers that model increasingly fine details as training progresses. This both
+speeds the training up
+"making normalization a part of the model architecture and performing the normalization for each training mini-batch."
+Sergey Ioffe, et. al.. (2015)
+MINAMI, Kentaro (2018年3月4日). “
+Backpropしないニューラルネット入門 (2/2)
+. 2025年11月24日閲覧。
+Yann LeCun; Leon Bottou; Genevieve B. Orr; Klaus-Robert Muller (1998).
+Efficient BackProp
+http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf
+Xavier Glorot; Yoshua Bengio (2010).
+Understanding the difficulty of training deep feedforward neural networks
+https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf
+Multilayer Perceptron — DeepLearning 0.1 documentation
+Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification
+. 2025年12月16日閲覧。
+torch.nn.init — PyTorch 2.9 documentation
+docs.pytorch.org
+. 2025年12月16日閲覧。
+福島邦彦『神経回路と情報処理』朝倉書店、1989年。
+Xavier Glorot; Antoine Bordes; Yoshua Bengio.
+“Deep Sparse Rectifier Neural Networks”
+Proceedings of the Fourteenth International Conference on Artificial Intelligence and Statistics (AISTATS-11)
+http://jmlr.csail.mit.edu/proceedings/papers/v15/glorot11a/glorot11a.pdf
+Yann LeCun; Yoshua Bengio; Geoffrey Hinton (2015-05-28). “Deep learning”.
+(7553):  436-444.
+10.1038/nature14539
+"The most obvious drawback of the learning procedure is that the error-surface may contain local minima so that gradient descent is not guaranteed to find a global minimum." p.536 of  Rumelhart, et al. (1986).
+Learning representations by back-propagating errors
+"ニューラルネットワークの演算の基本は、多入力の積和演算である。" 百瀬 (2016).
+第2章：ディープ・ニューラルネットワークのニューロチップへの実装～その勘所は!!
+. semiconportal.
+"深層学習の…フレームワーク中では, 計算時間の多くが畳み込み計算などの密行列積に費やされており … 計算時間の約90%が畳み込み層での計算時間であることが知られている" p.1 of 関谷, et al. (2017).
+低ランク近似を用いた深層学習の行列積の高速化
+. 情報処理学会研究報告. Vol2017-HPC-158, No.24.
+Optimize and Accelerate Machine Learning Inferencing and Training
+CUDA Deep Neural Network
+NVIDIA Developer
+. 2025年11月25日閲覧。
+Intel® oneAPI Deep Neural Network Library (oneDNN)
+. 2025年11月25日閲覧。
+http://www.heatonresearch.com/encog/mprop/compare.html
+Applying Multithreading to Resilient Propagation and Backpropagation
+"Quantization works by reducing the precision of the numbers used to represent a model's parameters, which by default are 32-bit floating point numbers."
+Model optimization
+"Quantizing a network means converting it to use a reduced precision integer representation for the weights and/or activations."
+DYNAMIC QUANTIZATION
+"Quantization performance gain comes in 2 part: instruction and cache."
+Quantize ONNX Models
+"Less memory usage: Smaller models use less RAM when they are run, which frees up memory for other parts of your application to use, and can translate to better performance and stability."
+Model optimization
+"Old hardware doesn’t have or has few instruction support for byte computation. And quantization has overhead (quantize and dequantize), so it is not rare to get worse performance on old devices."
+Quantize ONNX Models
+"Performance improvement depends on your model and hardware."
+Quantize ONNX Models
+"Static quantization quantizes the weights and activations of the model. ... It requires calibration with a representative dataset to determine optimal quantization parameters for activations."
+"with dynamic quantization ... determine the scale factor for activations dynamically based on the data range observed at runtime."
+DYNAMIC QUANTIZATION
+"The model parameters ... are converted ahead of time and stored in INT8 form."
+DYNAMIC QUANTIZATION
+"Simulate the quantize and dequantize operations in training time."
+. PyTorch. 2022-03-15閲覧.
+"There are 2 ways to represent quantized ONNX models: ... Tensor Oriented, aka Quantize and DeQuantize (QDQ)."
+Quantize ONNX Models
+. ONNX RUNTIME. 2022-03-15閲覧.
+『ニューロコンピューティングの数学的基礎』
+斎藤康毅『ゼロから作るDeep Learning - Pythonで学ぶディープラーニングの理論と実装』
+Vaswani, Ashish; Shazeer, Noam; Parmar, Niki; Uszkoreit, Jakob; Jones, Llion; Gomez, Aidan N.; Kaiser, Łukasz; Polosukhin, Illia (2017-12-04).
+“Attention is all you need”
+Proceedings of the 31st International Conference on Neural Information Processing Systems
+(Red Hook, NY, USA: Curran Associates Inc.):  6000–6010.
+10.5555/3295222.3295349
+978-1-5108-6096-4
+https://dl.acm.org/doi/10.5555/3295222.3295349
+山内康一郎『作って学ぶニューラルネットワーク ― 機械学習の基礎から追加学習まで』
+978-4-339-02911-6
+ニューロモルフィック・エンジニアリング
+ブレイン・マシン・インタフェース
+ブレイン・マシン・インタフェース
+https://ja.wikipedia.org/w/index.php?title=ニューラルネットワーク&oldid=108187884#スパイキングニューラルネットワーク
+Webarchiveテンプレートのウェイバックリンク
+ISBNマジックリンクを使用しているページ
+日本語版記事がリダイレクトの仮リンクを含む記事
+出典を必要とする記述のある記事/2025年7月
+出典を必要とする節のある記事/2025年7月
+出典を必要とする記述のある記事/2022年6月
