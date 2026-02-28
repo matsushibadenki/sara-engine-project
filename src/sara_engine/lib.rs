@@ -346,6 +346,19 @@ impl CausalSynapses {
         }
         potentials
     }
+    /// 各トークンIDへの受容結合重みの合計（ファンイン）を返す。
+    /// ハブトークンの影響を正規化するために使用する。
+    pub fn get_token_fan_in(&self) -> HashMap<usize, f32> {
+        let mut fan_in: HashMap<usize, f32> = HashMap::new();
+        for delay_weights in &self.weights {
+            for (_src, targets) in delay_weights.iter() {
+                for (&t_id, &weight) in targets.iter() {
+                    *fan_in.entry(t_id).or_insert(0.0) += weight;
+                }
+            }
+        }
+        fan_in
+    }
 }
 
 #[pymodule]

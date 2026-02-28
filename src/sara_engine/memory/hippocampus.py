@@ -1,6 +1,7 @@
 from snn_models.spatiotemporal_stdp import SpatioTemporalSNN
 from sara_engine.memory.ltm import SparseMemoryStore
 from sara_engine.core.cortex import CorticalColumn
+
 import time
 import random
 from collections import deque
@@ -22,7 +23,7 @@ class CorticoHippocampalSystem:
 
         self.snn_input_size = snn_input_size
         self.st_snn = SpatioTemporalSNN(
-            n_in=snn_input_size, n_sensory=200, n_cortex=100)
+            n_in=snn_input_size, n_low=200, n_high=100)
 
     def experience_and_memorize(self, sensory_sdr: List[int], content: str, context: str, learning: bool = True) -> List[int]:
         self.cortex.reset_short_term_memory()

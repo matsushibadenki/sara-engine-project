@@ -109,3 +109,10 @@ class SpikeTokenizer:
             self.vocab_to_id = data.get("vocab_to_id", {})
             self.id_to_vocab = {int(v): k for k, v in self.vocab_to_id.items()}
             self.vocab_size = len(self.vocab_to_id)
+            
+    def get_vocab(self) -> Dict[str, int]:
+        """現在の語彙（単語からIDへのマッピング）を返す"""
+        if self.has_tokenizers:
+            return self.tokenizer.get_vocab()
+        else:
+            return self.vocab_to_id

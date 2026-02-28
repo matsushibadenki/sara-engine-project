@@ -9,7 +9,7 @@ import math
 import random
 from typing import List
 
-class HierarchicalSNN:
+class SpatioTemporalSNN:
     def __init__(self, n_in=201, n_low=100, n_high=40, n_ctx=20, dt=1.0):
         self.n = {"in": n_in, "low": n_low, "high": n_high, "ctx": n_ctx}
         self.dt = dt
