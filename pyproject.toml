@@ -41,6 +41,10 @@ python-source = "src"
 module-name = "sara_engine.sara_rust_core"
 features = ["pyo3/extension-module"]
 
+[tool.pytest.ini_options]
+# scripts/old/ 配下の古いテストファイルを収集対象から除外
+addopts = "--ignore=scripts/old"
+
 [tool.mypy]
 # src を唯一のモジュール探索ルートに設定
 mypy_path = "src"

@@ -1,7 +1,7 @@
 {
-    "//": "ディレクトリパス: sara_engine/inference.py",
-    "//": "ファイルの日本語タイトル: SARA汎用推論エンジンクラス (終了条件カスタマイズ対応版)",
-    "//": "ファイルの目的や内容: ユーザーが終了条件（改行や特定の文字）を引数で指定できるようにし、汎用性を高める。"
+    "//": "ディレクトリパス: src/sara_engine/inference.py",
+    "//": "ファイルの日本語タイトル: SARA汎用推論エンジンクラス",
+    "//": "ファイルの目的や内容: SNNベースの汎用推論エンジン。Transformersライクな生成パラメータ(repetition_penalty等)をサポートし、生物学的な不応期をシミュレートする。"
 }
 
 import msgpack
@@ -11,9 +11,10 @@ from transformers import AutoTokenizer
 from .models.spiking_llm import SpikingLLM
 
 class SaraInference:
-    def __init__(self, model_path="models/distilled_sara_llm.msgpack", sdr_size=8192):
+    def __init__(self, model_path="models/distilled_sara_llm.msgpack", sdr_size=8192, tokenizer_name="google/gemma-2-2b"):
         self.model_path = model_path
-        self.tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b")
+        # Support multilingual tokenizer dynamically
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.student = SpikingLLM(num_layers=2, sdr_size=sdr_size, vocab_size=256000)
         self.direct_map = {}
         self.refractory_buffer = []
@@ -22,17 +23,20 @@ class SaraInference:
 
     def _load_memory(self):
         if not os.path.exists(self.model_path):
-            raise FileNotFoundError(f"Memory file not found: {self.model_path}")
-        
+            print(f"[Warning] Memory file not found: {self.model_path}. Starting with an empty brain.")
+            self.direct_map = {}
+            return
+            
         with open(self.model_path, "rb") as f:
             state = msgpack.unpack(f, raw=False)
         self.direct_map = state.get("direct_map", {})
 
-    def generate(self, prompt, max_length=50, top_k=3, temperature=0.5, stop_conditions=None):
+    def generate(self, prompt, max_length=50, top_k=3, temperature=0.5, stop_conditions=None, repetition_penalty=1.2):
         if stop_conditions is None:
-            stop_conditions = ["。", "！", "？", "!", "?", "\n"]
+            # Multilingual stop conditions support
+            stop_conditions = ["。", "！", "？", "!", "?", "\n", ".", "!", "?"]
             
-        string_variations = [prompt, "　" + prompt, "「" + prompt]
+        string_variations = [prompt, " " + prompt, "　" + prompt, "「" + prompt]
         
         current_tokens = []
         next_id = None
@@ -50,7 +54,7 @@ class SaraInference:
                     sdr_k = str(self.student._sdr_key(self.student._encode_to_sdr(context)))
                     
                     if sdr_k in self.direct_map:
-                        next_id = self._sample_next_token(sdr_k, top_k, temperature)
+                        next_id = self._sample_next_token(sdr_k, top_k, temperature, repetition_penalty)
                         if next_id is not None:
                             current_tokens = search_tokens
                             break
@@ -70,7 +74,7 @@ class SaraInference:
                     sdr_k = str(self.student._sdr_key(self.student._encode_to_sdr(context)))
                     
                     if sdr_k in self.direct_map:
-                        next_id = self._sample_next_token(sdr_k, top_k, temperature)
+                        next_id = self._sample_next_token(sdr_k, top_k, temperature, repetition_penalty)
                         if next_id is not None: break
                 
                 if next_id is None: break
@@ -79,21 +83,28 @@ class SaraInference:
             word = self.tokenizer.decode([next_id])
             generated_text += word
             
+            # Biological refractory period mechanism (Memory of recent firings)
             self.refractory_buffer.append(next_id)
-            if len(self.refractory_buffer) > 3:
+            if len(self.refractory_buffer) > 10:
                 self.refractory_buffer.pop(0)
                 
-            # 💡 指定された終了条件（文字列）のいずれかが生成されたテキストの末尾に含まれていれば終了
             if any(generated_text.endswith(stop_word) for stop_word in stop_conditions):
                 break
                 
         return generated_text
 
-    def _sample_next_token(self, sdr_k, top_k, temperature):
-        valid_candidates = [
-            (int(cid), w) for cid, w in self.direct_map[sdr_k].items() 
-            if int(cid) not in self.refractory_buffer
-        ]
+    def _sample_next_token(self, sdr_k, top_k, temperature, repetition_penalty):
+        valid_candidates = []
+        for cid_str, w in self.direct_map[sdr_k].items():
+            cid = int(cid_str)
+            weight = w
+            
+            # Apply biological refractory penalty for recently fired tokens
+            if cid in self.refractory_buffer:
+                count = self.refractory_buffer.count(cid)
+                weight = weight / (repetition_penalty ** count)
+                
+            valid_candidates.append((cid, weight))
         
         if not valid_candidates:
             return None
