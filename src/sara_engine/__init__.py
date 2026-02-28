@@ -1,13 +1,17 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/__init__.py",
-    "//": "ファイルの日本語タイトル: パッケージ初期化モジュール",
-    "//": "ファイルの目的や内容: ユーザーがSARA Engineを利用する際の最上位APIエントリーポイント。pipelineとAutoクラス群を最優先で公開。"
-}
-
-__version__ = "0.3.0"  # PyPIリリースに向けたバージョンアップ
-
-# --- Hugging Face Transformers-like API (Main Public Interface) ---
-from .pipelines import pipeline
+from .models.gpt import SaraGPT
+from .models.rlm import StatefulRLMAgent
+from .memory.sdr import SDREncoder
+from .memory.ltm import SparseMemoryStore
+from .utils.visualizer import SaraVisualizer
+from .encoders.audio import AudioSpikeEncoder
+from .encoders.vision import ImageSpikeEncoder
+from .core.transformer import SpikeTransformerBlock, SpikeTransformerModel
+from .core.spike_attention import SpikeSelfAttention
+from .core.layers import DynamicLiquidLayer, SpikeNormalization, SpikeFeedForward
+from .core.data_loader import SpikeStreamDataLoader, TextToSpikeEncoder, SemanticSpikeEncoder
+from .inference import SaraInference
+from .agent.sara_agent import SaraAgent
+from .models.spiking_llm import SpikingLLM
 from .auto import (
     AutoTokenizer,
     AutoSpikingLM,            # 追加
@@ -18,24 +22,20 @@ from .auto import (
     AutoSNNModelForImageClassification,
     AutoSNNModelForTokenClassification
 )
+from .pipelines import pipeline
+_FILE_INFO = {
+    "//": "ディレクトリパス: src/sara_engine/__init__.py",
+    "//": "ファイルの日本語タイトル: パッケージ初期化モジュール",
+    "//": "ファイルの目的や内容: ユーザーがSARA Engineを利用する際の最上位APIエントリーポイント。pipelineとAutoクラス群を最優先で公開。"
+}
+
+__version__ = "0.3.1"  # PyPIリリースに向けたバージョンアップ
+
+# --- Hugging Face Transformers-like API (Main Public Interface) ---
 
 # --- Core Components ---
-from .models.spiking_llm import SpikingLLM
-from .agent.sara_agent import SaraAgent
-from .inference import SaraInference
-from .core.data_loader import SpikeStreamDataLoader, TextToSpikeEncoder, SemanticSpikeEncoder
-from .core.layers import DynamicLiquidLayer, SpikeNormalization, SpikeFeedForward
-from .core.spike_attention import SpikeSelfAttention
-from .core.transformer import SpikeTransformerBlock, SpikeTransformerModel
 
 # --- Legacy & Memory ---
-from .encoders.vision import ImageSpikeEncoder
-from .encoders.audio import AudioSpikeEncoder
-from .utils.visualizer import SaraVisualizer
-from .memory.ltm import SparseMemoryStore
-from .memory.sdr import SDREncoder
-from .models.rlm import StatefulRLMAgent
-from .models.gpt import SaraGPT
 
 __all__ = [
     # Transformers-like API
@@ -48,12 +48,12 @@ __all__ = [
     "AutoSNNModelForFeatureExtraction",
     "AutoSNNModelForImageClassification",
     "AutoSNNModelForTokenClassification",
-    
+
     # Core & Agent
     "SpikingLLM",
     "SaraAgent",
     "SaraInference",
-    
+
     # Neural Components
     "SpikeTransformerBlock",
     "SpikeTransformerModel",
@@ -61,7 +61,7 @@ __all__ = [
     "SpikeNormalization",
     "SpikeFeedForward",
     "DynamicLiquidLayer",
-    
+
     # Encoders & Data Loaders
     "SpikeStreamDataLoader",
     "TextToSpikeEncoder",
@@ -69,7 +69,7 @@ __all__ = [
     "SDREncoder",
     "AudioSpikeEncoder",
     "ImageSpikeEncoder",
-    
+
     # Legacy & Utils
     "SaraGPT",
     "StatefulRLMAgent",

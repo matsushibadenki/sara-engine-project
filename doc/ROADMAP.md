@@ -16,7 +16,7 @@ SARA（Spiking Artificial Reasoning Architecture）は、既存のLLMが依存�
 
 ## **🚀 今後の開発フェーズ (Future Roadmap)**
 
-### **Phase 1: PyPIライブラリとしての完成（v0.3.0 \~ v1.0.0）**
+### **Phase 1: PyPIライブラリとしての完成（v0.3.1 \~ v1.0.0）**
 
 SARAを「一個人の実験」から「世界中の開発者が手軽に使えるツール」へと昇華させます。
 

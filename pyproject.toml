@@ -8,7 +8,7 @@ build-backend = "maturin"
 
 [project]
 name = "sara_engine"
-version = "0.3.0"
+version = "0.3.1"
 description = "A bio-inspired Spiking Neural Network engine with Hugging Face-like pipeline APIs (CPU-only, Backprop-free)."
 authors = [
     { name = "matsushibadenki", email = "apple.darwin@gmail.com" }
