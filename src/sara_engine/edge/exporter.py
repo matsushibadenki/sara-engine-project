@@ -5,16 +5,17 @@ _FILE_INFO = {
 }
 
 import json
-from typing import Any
+from typing import Any, Dict, List
 
-def export_for_edge(model: Any, filepath: str):
+def export_for_edge(model: Any, filepath: str) -> None:
     """
     Extracts essential inference parameters (e.g., readout synapses, context length)
     from a SpikingTransformerModel and saves it as a lightweight JSON for Sara-Edge.
     """
-    edge_data = {
+    # mypy対応: 辞書の型を明示
+    edge_data: Dict[str, Any] = {
         "context_length": getattr(model, "context_length", 64),
-        "embed_dim": model.config.embed_dim if hasattr(model, "config") else 64,
+        "embed_dim": getattr(model.config, "embed_dim", 64) if hasattr(model, "config") else 64,
         "total_readout_size": getattr(model, "total_readout_size", 8192 + 64),
         "readout_synapses": []
     }

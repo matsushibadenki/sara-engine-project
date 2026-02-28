@@ -65,7 +65,7 @@ class DynamicLiquidLayer:
                             self.rec_weights[i][t] = random.uniform(-rec_scale, rec_scale)
             self.feedback_map: List[List[int]] = [random.sample(range(hidden_size), int(hidden_size * 0.05)) for _ in range(hidden_size)]
 
-    def state_dict(self) -> Dict:
+    def state_dict(self) -> Dict[str, Any]:
         if self.use_rust: return {}
         return {
             "in_weights": self.in_weights,
@@ -75,7 +75,7 @@ class DynamicLiquidLayer:
             "refractory": self.refractory
         }
 
-    def load_state_dict(self, state: Dict):
+    def load_state_dict(self, state: Dict[str, Any]) -> None:
         if self.use_rust or not state: return
         self.in_weights = [{int(k): float(v) for k, v in l.items()} for l in state["in_weights"]]
         self.rec_weights = [{int(k): float(v) for k, v in l.items()} for l in state["rec_weights"]]
@@ -141,7 +141,7 @@ class DynamicLiquidLayer:
                             self.rec_weights[pre_id][target_id] = max(-2.0, self.rec_weights[pre_id][target_id] - 0.005 * reward)
         return fired_indices
 
-    def reset(self):
+    def reset(self) -> None:
         if self.use_rust: self.core.reset()
         else:
             self.v = [0.0] * self.size
@@ -155,10 +155,10 @@ class SpikeNormalization:
         self.adaptation_rate = adaptation_rate
         self.threshold_offsets: Dict[int, float] = {}
 
-    def state_dict(self) -> Dict:
+    def state_dict(self) -> Dict[str, Any]:
         return {"threshold_offsets": self.threshold_offsets}
 
-    def load_state_dict(self, state: Dict):
+    def load_state_dict(self, state: Dict[str, Any]) -> None:
         self.threshold_offsets = {int(k): float(v) for k, v in state["threshold_offsets"].items()}
 
     def forward(self, spikes: List[int], dim: int, learning: bool = True) -> List[int]:
@@ -167,29 +167,25 @@ class SpikeNormalization:
         if learning:
             for s in spikes:
                 offset = self.threshold_offsets.get(s, 0.0)
-                # 学習時は確率的にスパイクをドロップダウンさせる
                 if random.random() > offset: 
                     normalized_spikes.append(s)
             
-            # 発火率の誤差からオフセット（抑制）を更新
             current_rate = len(spikes) / max(1, dim)
             error = current_rate - self.target_rate
             for s in spikes:
                 curr = self.threshold_offsets.get(s, 0.0)
                 self.threshold_offsets[s] = max(0.0, min(0.9, curr + self.adaptation_rate * error))
         else:
-            # 推論時: Target Rateに基づくk-WTA（上位K個の勝者独占）的な足切りを行う
             valid_spikes = []
             for s in spikes:
                 offset = self.threshold_offsets.get(s, 0.0)
                 valid_spikes.append((s, offset))
             
-            # オフセットが低い（抑制されにくい）順にソート
             valid_spikes.sort(key=lambda x: x[1])
-            max_allowed = max(1, int(dim * self.target_rate * 1.5)) # スパース性を担保する許容上限
+            max_allowed = max(1, int(dim * self.target_rate * 1.5))
             
             for s, offset in valid_spikes[:max_allowed]:
-                if offset < 0.9: # 抑制限界を超えていないものだけを通過
+                if offset < 0.9:
                     normalized_spikes.append(s)
 
         return normalized_spikes
@@ -203,15 +199,16 @@ class SpikeFeedForward:
         self.w1 = self._init_sparse_weights(embed_dim, hidden_dim, density)
         self.w2 = self._init_sparse_weights(hidden_dim, embed_dim, density)
 
-    def state_dict(self) -> Dict:
+    def state_dict(self) -> Dict[str, Any]:
         return {"w1": self.w1, "w2": self.w2}
 
-    def load_state_dict(self, state: Dict):
+    def load_state_dict(self, state: Dict[str, Any]) -> None:
         self.w1 = [{int(k): float(v) for k, v in l.items()} for l in state["w1"]]
         self.w2 = [{int(k): float(v) for k, v in l.items()} for l in state["w2"]]
 
     def _init_sparse_weights(self, in_dim: int, out_dim: int, density: float) -> List[Dict[int, float]]:
-        weights = [{} for _ in range(in_dim)]
+        # mypy対応: 変数の型を明示
+        weights: List[Dict[int, float]] = [{} for _ in range(in_dim)]
         for i in range(in_dim):
             num = max(1, int(out_dim * density))
             for t in random.sample(range(out_dim), num): weights[i][t] = random.uniform(-1.0, 1.0)
@@ -228,7 +225,7 @@ class SpikeFeedForward:
                 for t, w in weights[s].items(): potentials[t] += w * gain
         return [i for i, p in enumerate(potentials) if p > threshold]
 
-    def _apply_stdp(self, pre_spikes: List[int], post_spikes: List[int], weights: List[Dict[int, float]], lr: float = 0.05):
+    def _apply_stdp(self, pre_spikes: List[int], post_spikes: List[int], weights: List[Dict[int, float]], lr: float = 0.05) -> None:
         post_set = set(post_spikes)
         for pre in pre_spikes:
             if pre < len(weights):
@@ -250,12 +247,9 @@ class SpikeFeedForward:
                             weights[pre][target] = 0.5
 
     def forward(self, spikes: List[int], learning: bool = True) -> List[int]:
-        # 推論時の異常発火（12.0）を防ぐため、gainを1.2に引き下げる
         gain = 1.0 if learning else 1.2
-        
         h = self._sparse_propagate(spikes, self.w1, self.hidden_dim, threshold=0.5, gain=gain)
         
-        # 中間層のスパイク数にも上限を設ける（全体の15%まで）
         max_h_spikes = int(self.hidden_dim * 0.15)
         if len(h) > max_h_spikes:
             h = random.sample(h, max_h_spikes) if learning else h[:max_h_spikes]

@@ -7,7 +7,7 @@ _FILE_INFO = {
 import json
 import os
 import pickle
-from typing import List, Dict
+from typing import List, Dict, Optional, Any
 
 from sara_engine import nn
 
@@ -18,7 +18,7 @@ class SNNTokenClassifierConfig:
         self.context_length = context_length
         self.reservoir_size = vocab_size * context_length
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "vocab_size": self.vocab_size,
             "num_classes": self.num_classes,
@@ -27,7 +27,7 @@ class SNNTokenClassifierConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data: dict) -> 'SNNTokenClassifierConfig':
         return cls(**data)
 
 
@@ -39,13 +39,14 @@ class SpikingTokenClassifier(nn.SNNModule):
         self.register_state("class_synapses")
         self.class_potentials = [0.0] * config.num_classes
 
-    def reset_state(self):
+    def reset_state(self) -> None:
         super().reset_state()
         self.class_potentials = [0.0] * self.config.num_classes
 
-    def forward(self, token_ids: List[int], learning: bool = False, target_classes: List[int] = None) -> List[int]:
+    # mypy対応: target_classesにOptionalを追加
+    def forward(self, token_ids: List[int], learning: bool = False, target_classes: Optional[List[int]] = None) -> List[int]:
         self.reset_state()
-        predictions = []
+        predictions: List[int] = []
         delay_buffer: List[int] = []
         
         for step, tok in enumerate(token_ids):
@@ -94,7 +95,7 @@ class SpikingTokenClassifier(nn.SNNModule):
 
         return predictions
 
-    def save_pretrained(self, save_directory: str):
+    def save_pretrained(self, save_directory: str) -> None:
         os.makedirs(save_directory, exist_ok=True)
         with open(os.path.join(save_directory, "config.json"), "w", encoding="utf-8") as f:
             json.dump(self.config.to_dict(), f, indent=4)
@@ -104,7 +105,7 @@ class SpikingTokenClassifier(nn.SNNModule):
             pickle.dump(self.state_dict(), f)
 
     @classmethod
-    def from_pretrained(cls, save_directory: str):
+    def from_pretrained(cls, save_directory: str) -> 'SpikingTokenClassifier':
         config_path = os.path.join(save_directory, "config.json")
         with open(config_path, "r", encoding="utf-8") as f:
             config = SNNTokenClassifierConfig.from_dict(json.load(f))

@@ -12,8 +12,9 @@ import os
 import random
 import hashlib
 
+# Mypy対応: 絶対インポートに変更
 try:
-    from ..utils.tokenizer import SaraTokenizer
+    from sara_engine.utils.tokenizer import SaraTokenizer
 except ImportError:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
     from utils.tokenizer import SaraTokenizer  # type: ignore[import-not-found, no-redef]

@@ -4,7 +4,7 @@ _FILE_INFO = {
     "//": "ファイルの目的や内容: 生の音声波形(float配列)をSNNに入力し、カテゴリを推論・学習する。"
 }
 
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Any
 from .base import Pipeline
 
 class AudioClassificationPipeline(Pipeline):
@@ -12,16 +12,20 @@ class AudioClassificationPipeline(Pipeline):
     Audio classification pipeline using pure SNN.
     Accepts raw audio waveforms (List of floats).
     """
-    def __init__(self, model, feature_extractor=None, **kwargs):
+    def __init__(self, model: Any, feature_extractor: Any = None, **kwargs: Any):
         super().__init__(model, tokenizer=feature_extractor, **kwargs)
         self.id2label = kwargs.get("id2label", {0: "CLASS_0", 1: "CLASS_1"})
 
-    def __call__(self, waveforms: Union[List[float], List[List[float]]], **kwargs) -> Union[Dict[str, float], List[Dict[str, float]]]:
-        if isinstance(waveforms[0], (int, float)):
-            waveforms = [waveforms]
+    def __call__(self, waveforms: Union[List[float], List[List[float]]], **kwargs: Any) -> Union[Dict[str, float], List[Dict[str, float]]]:
+        # mypyエラー対策: 明示的な型付きリストを作成
+        waveform_list: List[List[float]]
+        if waveforms and isinstance(waveforms[0], (int, float)):
+            waveform_list = [waveforms] # type: ignore
+        else:
+            waveform_list = waveforms # type: ignore
 
         results = []
-        for wave in waveforms:
+        for wave in waveform_list:
             predicted_class_id = self.model.forward(wave, learning=False)
             label = self.id2label.get(predicted_class_id, f"LABEL_{predicted_class_id}")
             results.append({"label": label, "score": 1.0})

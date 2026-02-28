@@ -5,7 +5,7 @@ _FILE_INFO = {
 }
 
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union, Any
 from sara_engine.core.spike_attention import SpikeSelfAttention
 from sara_engine.core.layers import SpikeFeedForward, SpikeNormalization
 
@@ -33,7 +33,7 @@ class LIFSpikeAttention:
             self.weights: Dict[int, Dict[int, float]] = {}
             self.potentials: Dict[int, float] = {}
             
-    def state_dict(self) -> Dict:
+    def state_dict(self) -> Dict[str, Any]:
         if self.use_rust:
             w_list = self.engine.get_weights()
             weights_dict = {str(i): {str(k): v for k, v in layer.items()} for i, layer in enumerate(w_list) if layer}
@@ -41,7 +41,7 @@ class LIFSpikeAttention:
         else:
             return {"weights": self.weights, "decay_rate": self.decay_rate}
 
-    def load_state_dict(self, state: Dict):
+    def load_state_dict(self, state: Dict[str, Any]):
         self.decay_rate = state.get("decay_rate", 0.9)
         weights_data = state.get("weights", {})
         
@@ -49,7 +49,8 @@ class LIFSpikeAttention:
             self.engine = SpikeEngine(decay_rate=self.decay_rate)
             if weights_data:
                 max_idx = max(int(k) for k in weights_data.keys())
-                w_list = [{} for _ in range(max_idx + 1)]
+                # mypy対応: w_listの型を明示
+                w_list: List[Dict[int, float]] = [{} for _ in range(max_idx + 1)]
                 for k, v in weights_data.items():
                     w_list[int(k)] = {int(post): float(val) for post, val in v.items()}
                 self.engine.set_weights(w_list)
@@ -64,14 +65,12 @@ class LIFSpikeAttention:
 
     def forward(self, x_spikes: List[int], learning: bool = True, threshold: float = 0.5, max_out: int = 64) -> List[int]:
         if self.use_rust:
-            # Multi-core Rust LIF Engine
             out_spikes = self.engine.propagate(x_spikes, threshold, max_out)
             if learning and out_spikes:
                 self.engine.apply_stdp(x_spikes, out_spikes, 0.05)
                 self.engine.normalize_weights(1.0)
             return out_spikes
         else:
-            # Python fallback LIF
             for k in list(self.potentials.keys()):
                 self.potentials[k] *= self.decay_rate
                 if self.potentials[k] < 0.01:
@@ -106,15 +105,20 @@ class SpikeTransformerBlock:
     def __init__(self, embed_dim: int, hidden_dim: int, density: float = 0.05, context_size: int = 64, use_lif: bool = False):
         self.embed_dim = embed_dim
         self.use_lif = use_lif
+        
+        # mypy対応: どちらの型も受け入れることを明示
+        self.attention: Union[LIFSpikeAttention, SpikeSelfAttention]
+        
         if use_lif:
             self.attention = LIFSpikeAttention(embed_dim, density)
         else:
             self.attention = SpikeSelfAttention(embed_dim, density, context_size)
+            
         self.norm1 = SpikeNormalization(target_rate=0.1)
         self.ffn = SpikeFeedForward(embed_dim, hidden_dim, density)
         self.norm2 = SpikeNormalization(target_rate=0.1)
 
-    def state_dict(self) -> Dict:
+    def state_dict(self) -> Dict[str, Any]:
         return {
             "embed_dim": self.embed_dim,
             "use_lif": self.use_lif,
@@ -124,7 +128,7 @@ class SpikeTransformerBlock:
             "norm2": self.norm2.state_dict(),
         }
 
-    def load_state_dict(self, state: Dict):
+    def load_state_dict(self, state: Dict[str, Any]):
         self.embed_dim = state["embed_dim"]
         self.use_lif = state.get("use_lif", False)
         
@@ -139,7 +143,8 @@ class SpikeTransformerBlock:
         self.norm2.load_state_dict(state["norm2"])
 
     def reset_state(self):
-        self.attention.reset_state()
+        if hasattr(self.attention, 'reset_state'):
+            self.attention.reset_state()
 
     def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
         attn_out = self.attention.forward(x_spikes, learning=learning)
@@ -173,7 +178,7 @@ class SpikeTransformerModel:
             current_spikes = layer.forward(current_spikes, learning=learning)
         return current_spikes
 
-    def state_dict(self) -> Dict:
+    def state_dict(self) -> Dict[str, Any]:
         return {
             "num_layers": self.num_layers,
             "embed_dim": self.embed_dim,
@@ -184,7 +189,7 @@ class SpikeTransformerModel:
             "layers": [layer.state_dict() for layer in self.layers]
         }
 
-    def load_state_dict(self, state: Dict):
+    def load_state_dict(self, state: Dict[str, Any]):
         self.num_layers = state["num_layers"]
         self.embed_dim = state["embed_dim"]
         self.hidden_dim = state["hidden_dim"]

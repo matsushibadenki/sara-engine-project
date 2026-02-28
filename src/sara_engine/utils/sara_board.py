@@ -6,7 +6,7 @@ _FILE_INFO = {
 
 import os
 import json
-from typing import List
+from typing import List, Dict, Any
 
 class SaraBoard:
     """
@@ -17,10 +17,11 @@ class SaraBoard:
     def __init__(self, log_dir: str):
         self.log_dir = log_dir
         os.makedirs(log_dir, exist_ok=True)
-        self.spike_history = []
-        self.scalar_history = []
+        # mypy対応: 変数の型を明示
+        self.spike_history: List[Dict[str, Any]] = []
+        self.scalar_history: List[Dict[str, Any]] = []
         
-    def log_spikes(self, step: int, layer_name: str, spikes: List[int]):
+    def log_spikes(self, step: int, layer_name: str, spikes: List[int]) -> None:
         """Log spike occurrences for a specific layer at a given time step."""
         self.spike_history.append({
             "step": step,
@@ -28,7 +29,7 @@ class SaraBoard:
             "spikes": list(spikes)
         })
         
-    def log_scalar(self, step: int, tag: str, value: float):
+    def log_scalar(self, step: int, tag: str, value: float) -> None:
         """Log macro metrics like homeostasis threshold or reward."""
         self.scalar_history.append({
             "step": step,

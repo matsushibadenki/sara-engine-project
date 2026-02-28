@@ -13,7 +13,7 @@ class TokenClassificationPipeline:
     Used for Named Entity Recognition (NER), POS tagging, etc.
     Evaluates spike rates sequentially without backpropagation.
     """
-    def __init__(self, model: Any, tokenizer: Any, **kwargs):
+    def __init__(self, model: Any, tokenizer: Any, **kwargs: Any):
         self.model = model
         self.tokenizer = tokenizer
         # デフォルトのNER用ラベル（必要に応じてkwargsから上書き可能）
@@ -22,12 +22,13 @@ class TokenClassificationPipeline:
             5: "B-LOC", 6: "I-LOC", 7: "B-MISC", 8: "I-MISC"
         })
 
-    def __call__(self, text: Union[str, List[str]], **kwargs) -> Union[List[Dict[str, Any]], List[List[Dict[str, Any]]]]:
+    def __call__(self, text: Union[str, List[str]], **kwargs: Any) -> Union[List[Dict[str, Any]], List[List[Dict[str, Any]]]]:
         """
         Classifies each token in the provided text(s) sequentially using SNN dynamics.
         """
         is_batched = isinstance(text, list)
-        texts = text if is_batched else [text]
+        # mypyエラー対策: strのリストであることを明示的に定義
+        texts: List[str] = text if isinstance(text, list) else [text]
         
         all_results = []
         for t in texts:

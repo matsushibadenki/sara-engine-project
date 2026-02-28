@@ -5,11 +5,15 @@ _FILE_INFO = {
 }
 
 import collections
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 import copy
 
 class SNNModule:
-    def __init__(self):
+    # mypyのための型宣言
+    _modules: Dict[str, Any]
+    _state_vars: List[str]
+
+    def __init__(self) -> None:
         # __setattr__の無限ループを防ぐため辞書に直接初期化
         self.__dict__['_modules'] = collections.OrderedDict()
         self.__dict__['_state_vars'] = []
@@ -19,25 +23,27 @@ class SNNModule:
             self._modules[name] = value
         super().__setattr__(name, value)
 
-    def register_state(self, name: str):
+    def register_state(self, name: str) -> None:
         """
         内部状態(膜電位、不応期、シナプス重みなど)をstate_dictの保存対象として登録する。
         """
         if name not in self._state_vars:
             self._state_vars.append(name)
 
-    def forward(self, *args, **kwargs):
+    def forward(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.forward(*args, **kwargs)
 
-    def reset_state(self):
+    def reset_state(self) -> None:
         """SNN特有の動的状態(膜電位など)を初期化する"""
         for module in self._modules.values():
-            module.reset_state()
+            if hasattr(module, 'reset_state'):
+                module.reset_state()
 
-    def state_dict(self, destination=None, prefix=''):
+    # mypy対応: Optionalを追加
+    def state_dict(self, destination: Optional[Dict[str, Any]] = None, prefix: str = '') -> Dict[str, Any]:
         """PyTorchライクにネットワーク全体の状態を辞書として返す"""
         if destination is None:
             destination = collections.OrderedDict()
@@ -51,11 +57,12 @@ class SNNModule:
         
         # サブモジュールの状態を再帰的に取得
         for name, module in self._modules.items():
-            module.state_dict(destination, prefix + name + '.')
+            if hasattr(module, 'state_dict'):
+                module.state_dict(destination, prefix + name + '.')
             
         return destination
 
-    def load_state_dict(self, state_dict: Dict[str, Any], strict: bool = False):
+    def load_state_dict(self, state_dict: Dict[str, Any], strict: bool = False) -> None:
         """保存された状態を復元する"""
         for var_name in self._state_vars:
             if var_name in state_dict:
@@ -64,5 +71,5 @@ class SNNModule:
         for name, module in self._modules.items():
             # サブモジュール用のキーを抽出
             sub_dict = {k[len(name)+1:]: v for k, v in state_dict.items() if k.startswith(name + '.')}
-            if sub_dict:
+            if sub_dict and hasattr(module, 'load_state_dict'):
                 module.load_state_dict(sub_dict, strict)

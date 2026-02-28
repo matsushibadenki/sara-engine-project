@@ -7,7 +7,7 @@ _FILE_INFO = {
 import json
 import random
 import operator
-from typing import List, Dict
+from typing import List, Dict, Optional, Any
 
 class SaraEdgeRuntime:
     """
@@ -22,8 +22,7 @@ class SaraEdgeRuntime:
         self.embed_dim = data.get("embed_dim", 64)
         self.total_readout_size = data.get("total_readout_size", 8192 + 64)
         
-        # Keys in JSON are converted to strings, cast them back to ints
-        self.readout_synapses = []
+        self.readout_synapses: List[Dict[int, float]] = []
         for syn_dict in data.get("readout_synapses", []):
             converted = {int(k): float(v) for k, v in syn_dict.items()}
             self.readout_synapses.append(converted)
@@ -31,7 +30,7 @@ class SaraEdgeRuntime:
         self.reservoir_size = self.total_readout_size - self.embed_dim
         self.delay_buffer: List[int] = []
 
-    def reset_state(self):
+    def reset_state(self) -> None:
         self.delay_buffer.clear()
 
     def _get_sdr(self, delay: int, tok: int) -> List[int]:
@@ -41,7 +40,8 @@ class SaraEdgeRuntime:
         random.seed()
         return spikes
 
-    def forward_step(self, token_id: int, refractory_tokens: List[int] = None) -> int:
+    # mypy対応: Optionalを追加
+    def forward_step(self, token_id: int, refractory_tokens: Optional[List[int]] = None) -> int:
         self.delay_buffer.insert(0, token_id)
         if len(self.delay_buffer) > self.context_length:
             self.delay_buffer.pop()
@@ -56,7 +56,6 @@ class SaraEdgeRuntime:
                 for v_idx, w in self.readout_synapses[s].items():
                     out_potentials[v_idx] = out_potentials.get(v_idx, 0.0) + w
 
-        # Apply biological refractory penalty to prevent repetition
         if refractory_tokens:
             decay_factor = 0.4
             for r_tok in reversed(refractory_tokens):
@@ -71,7 +70,7 @@ class SaraEdgeRuntime:
             if max_val > 0.1:
                 return max(out_potentials.items(), key=operator.itemgetter(1))[0]
                 
-        return 32 # Fallback to Space character
+        return 32 
 
     def generate(self, text: str, max_length: int = 50) -> str:
         input_ids = [ord(c) for c in text]
@@ -83,7 +82,7 @@ class SaraEdgeRuntime:
 
         generated_chars = []
         current_token = first_pred
-        refractory_buffer = []
+        refractory_buffer: List[int] = []
 
         for _ in range(max_length):
             if current_token == 0:

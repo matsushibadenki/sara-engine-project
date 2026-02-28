@@ -4,7 +4,7 @@ _FILE_INFO = {
     "//": "ファイルの目的や内容: 異なる感覚（テキスト、画像等）からのスパイクを同期させ、STDPによって相関を学習することで、クロスモーダルな想起を可能にするモジュール。"
 }
 
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 from .module import SNNModule
 
 class CrossModalAssociator(SNNModule):
@@ -25,41 +25,41 @@ class CrossModalAssociator(SNNModule):
         self.register_state("weights_a2b")
         self.register_state("weights_b2a")
 
-    def forward(self, spikes_a: List[int] = None, spikes_b: List[int] = None, learning: bool = False) -> Dict[str, List[int]]:
+    def forward(self, spikes_a: Optional[List[int]] = None, spikes_b: Optional[List[int]] = None, learning: bool = False) -> Dict[str, List[int]]:
         """
         片方の入力からもう一方を想起するか、両方の入力がある場合は連合を学習する。
         """
-        spikes_a = spikes_a or []
-        spikes_b = spikes_b or []
+        spikes_a_list: List[int] = spikes_a or []
+        spikes_b_list: List[int] = spikes_b or []
         
-        recall_b = []
-        recall_a = []
+        recall_b: List[int] = []
+        recall_a: List[int] = []
 
         # AからBを想起
-        if spikes_a:
-            potentials_b = {}
-            for s in spikes_a:
+        if spikes_a_list:
+            potentials_b: Dict[int, float] = {}
+            for s in spikes_a_list:
                 if s in self.weights_a2b:
                     for target, w in self.weights_a2b[s].items():
                         potentials_b[target] = potentials_b.get(target, 0.0) + w
             recall_b = [k for k, v in sorted(potentials_b.items(), key=lambda x: x[1], reverse=True) if v > 0.5]
 
         # BからAを想起
-        if spikes_b:
-            potentials_a = {}
-            for s in spikes_b:
+        if spikes_b_list:
+            potentials_a: Dict[int, float] = {}
+            for s in spikes_b_list:
                 if s in self.weights_b2a:
                     for target, w in self.weights_b2a[s].items():
                         potentials_a[target] = potentials_a.get(target, 0.0) + w
             recall_a = [k for k, v in sorted(potentials_a.items(), key=lambda x: x[1], reverse=True) if v > 0.5]
 
         # 学習 (STDP)
-        if learning and spikes_a and spikes_b:
-            self._update_associative_weights(spikes_a, spikes_b)
+        if learning and spikes_a_list and spikes_b_list:
+            self._update_associative_weights(spikes_a_list, spikes_b_list)
 
         return {"recall_a": recall_a, "recall_b": recall_b}
 
-    def _update_associative_weights(self, spikes_a: List[int], spikes_b: List[int]):
+    def _update_associative_weights(self, spikes_a: List[int], spikes_b: List[int]) -> None:
         # A -> B の結合強化
         for a in spikes_a:
             if a not in self.weights_a2b: self.weights_a2b[a] = {}

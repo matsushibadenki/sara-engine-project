@@ -1,4 +1,3 @@
-# ファイルメタ情報
 _FILE_INFO = {
     "//": "配置するディレクトリのパス: src/sara_engine/models/rlm.py",
     "//": "ファイルの日本語タイトル: 強化学習モジュール (Stateful RLM) - RLAnything実装版",
@@ -13,12 +12,13 @@ from collections import deque, OrderedDict
 import sys
 import os
 
-from ..core.layers import DynamicLiquidLayer
-from ..core.attention import SpikeAttention
-from ..memory.sdr import SDREncoder
+# Mypy対応: 絶対インポートに変更
+from sara_engine.core.layers import DynamicLiquidLayer
+from sara_engine.core.attention import SpikeAttention
+from sara_engine.memory.sdr import SDREncoder
 
 try:
-    from ..memory.ltm import SparseMemoryStore
+    from sara_engine.memory.ltm import SparseMemoryStore
 except ImportError:
     pass
 
@@ -109,7 +109,6 @@ class DynamicRewardModel:
 
     def predict(self, active_spikes: List[int]) -> float:
         val = 0.0
-        # 行列の積を使わず、シンプルなループで重み積算
         for idx in active_spikes:
             if idx < self.sdr_size:
                 val += self.weights[idx]
@@ -122,14 +121,12 @@ class DynamicRewardModel:
                 self.eligibility_trace[idx] += 1.0
 
     def learn(self, td_error: float):
-        # 誤差逆伝播を使わず、TD誤差と適格度トレースの積に基づくHebbianルール
         for idx in range(self.sdr_size):
             if self.eligibility_trace[idx] > 0:
                 self.weights[idx] += self.lr * td_error * self.eligibility_trace[idx]
         
     def reset_traces(self):
         self.eligibility_trace.fill(0)
-
 
 class StatefulSaraGPT:
     def __init__(self, sdr_size: int = 1024):
@@ -169,7 +166,6 @@ class StatefulSaraGPT:
         self.readout_refractory = np.zeros(sdr_size, dtype=np.float32)
         self.step_counter = 0
         
-        # RLAnything: 動的報酬モデル(Critic)のインスタンス化
         self.reward_model = DynamicRewardModel(sdr_size)
 
     def reset_state(self):
@@ -266,7 +262,6 @@ class StatefulSaraGPT:
         return predicted_sdr, all_hidden_spikes, current_state_name
 
     def reinforce(self, trajectory: List[Dict[str, Any]], final_env_reward: float):
-        # 1. Criticによる予測とTD誤差の計算
         active_spikes_in_episode = []
         for step_data in trajectory:
             if 'spikes' in step_data:
@@ -276,10 +271,8 @@ class StatefulSaraGPT:
         predicted_value = self.reward_model.predict(unique_spikes)
         td_error = final_env_reward - predicted_value
         
-        # 2. Critic(報酬モデル)を適格度トレースを用いて更新
         self.reward_model.learn(td_error)
 
-        # 3. Policy(遷移モデル)の更新 (RLAnything: ステップごとの内在的シグナル統合)
         gamma = 0.9
         running_reward = final_env_reward + td_error
         
@@ -288,7 +281,6 @@ class StatefulSaraGPT:
             next_state_name = step_data['next_state']
             step_reward = step_data.get('reward', 0.0)
             
-            # 内在的報酬: 環境からの報酬 + CriticのTD誤差による自己評価
             intrinsic_reward = step_reward + (td_error * 0.1)
             running_reward = running_reward + intrinsic_reward
             
@@ -323,10 +315,10 @@ class StatefulRLMAgent:
         if model_path and os.path.exists(model_path):
             self.brain.load_model(model_path)
         
-        self.difficulty_level = 1.0  # RLAnything: 環境(Environment)の自己カリキュラム難易度
-        self.ltm: Optional[SparseMemoryStore] = None
+        self.difficulty_level = 1.0
+        self.ltm: Optional[Any] = None
         try:
-            from ..memory.ltm import SparseMemoryStore
+            from sara_engine.memory.ltm import SparseMemoryStore
             self.ltm = SparseMemoryStore(filepath="sara_ltm.pkl")
         except ImportError:
             pass
@@ -339,8 +331,6 @@ class StatefulRLMAgent:
         for w in q_words:
             self.brain.working_memory.store(self.brain.encoder.encode(w), importance=2.0)
             
-        # RLAnything: 環境の動的生成/カリキュラム適応
-        # 難易度が高いほど細かくチャンクを切り、情報の文脈を見失わせやすくする
         current_chunk_size = max(20, int(100 / self.difficulty_level))
         chunks = [document[i:i+current_chunk_size] for i in range(0, len(document), current_chunk_size)] if document else []
         
@@ -360,7 +350,6 @@ class StatefulRLMAgent:
             
             input_sdr = self.brain.encoder.encode(visual_input_text)
             
-            # 難易度(difficulty_level)に応じたノイズ注入による動的環境変化（行列演算を使わずループ処理）
             if self.difficulty_level > 1.5:
                 noise_count = int(len(input_sdr) * 0.1 * (self.difficulty_level - 1.0))
                 for _ in range(noise_count):
@@ -370,7 +359,6 @@ class StatefulRLMAgent:
                         
             predicted_sdr, _, state_name = self.brain.forward_step(input_sdr)
             
-            # Critic（報酬モデル）の適格度トレースの更新
             self.brain.reward_model.update_traces(predicted_sdr)
             
             if step > 0:
@@ -414,11 +402,9 @@ class StatefulRLMAgent:
             reward = 0.0
             if found_info and found_info not in query: 
                 reward = 1.0
-                # 成功: カリキュラムの難易度を上げる(環境の共進化)
                 self.difficulty_level = min(3.0, self.difficulty_level + 0.1)
             else: 
                 reward = -0.5
-                # 失敗: カリキュラムの難易度を下げる
                 self.difficulty_level = max(1.0, self.difficulty_level - 0.2)
                 
             self.brain.reinforce(trajectory, reward)
