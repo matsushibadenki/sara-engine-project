@@ -1,9 +1,17 @@
+# ディレクトリパス: .gitignore
+# ファイル名: .gitignore
+# 内容: sara-engine-project用のGit除外設定ファイル
+
+# ============================================
 # Python compiled files
+# ============================================
 __pycache__/
 *.py[cod]
 *$py.class
 
+# ============================================
 # Distribution / Packaging
+# ============================================
 build/
 develop-eggs/
 dist/
@@ -21,50 +29,29 @@ wheels/
 *.egg
 MANIFEST
 
-# Rust関連 (追加)
+# ============================================
+# Rust関連
+# ============================================
 sara_rust_core/target/
 target/
 Cargo.lock
 
+# コンパイル済み共有ライブラリ
+*.so
+*.dylib
+
+# ============================================
 # Virtual Environments
-venv/
-env/
-# Python compiled files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Distribution / Packaging
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Rust関連 (追加)
-sara_rust_core/target/
-target/
-Cargo.lock
-
-# Virtual Environments
+# ============================================
 venv/
 env/
 .env/
 .venv/
 ENV/
 
-# Unit Test / Coverage / Type Check
+# ============================================
+# Unit Test / Coverage / Type Check / Lint
+# ============================================
 htmlcov/
 .tox/
 .nox/
@@ -78,39 +65,57 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 
+# ============================================
 # Jupyter Notebook
+# ============================================
 .ipynb_checkpoints
 
+# ============================================
 # IDE / Editor
+# ============================================
 .vscode/
 .idea/
 *.swp
-.DS_Store
+*.swo
+*~
 
+# ============================================
+# OS generated files
+# ============================================
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Gemini AI
+# ============================================
+.gemini/
+
+# ============================================
 # Project Specific
-# データセット (examples/train_mnist.py でダウンロードされる場所)
+# ============================================
+
+# データセット
 examples/data/
 
 # data area
-# data/*.gz
-# data/*.csv
+data/*.gz
+data/*.csv
+data/*.db
 
-# 学習済みモデル (保存されたpklファイルなど)
+# 学習済みモデル
 *.pkl
-models/*.msgpack
+*.msgpack
 
 # Logs
 *.log
 
 # 作業領域
 workspace/
-.DS_Store
-src/.DS_Store
-src/sara_engine/.DS_Store
 
-# 古いけど残すもの
+# 整理・分類された古いファイル群
 scripts/old/
 data/old/
 examples/old/
-test/old/
+tests/old/

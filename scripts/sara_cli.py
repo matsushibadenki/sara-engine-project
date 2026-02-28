@@ -15,6 +15,7 @@ from data.collect_all import CorpusIntegrator
 from data.collect_docs import process_document
 from train.train_chat import train_chat_data
 from eval.test_math_chat import run_math_chat
+from train.train_vision import train_vision_association
 
 def main():
     parser = argparse.ArgumentParser(description="SARA Engine 統合管理CLI")
@@ -46,6 +47,12 @@ def main():
     parser_chat = subparsers.add_parser("chat", help="学習したSNNモデルと対話テストを行います。")
     parser_chat.add_argument("--model", default="models/distilled_sara_llm.msgpack", help="読み込むSNNモデル")
 
+    # 6. 視覚学習コマンド (新規追加)
+    parser_vision = subparsers.add_parser("train-vision", help="画像とテキストの連想学習を行います。")
+    parser_vision.add_argument("--csv", default="data/raw/visual/text/captions.csv", help="キャプションCSVのパス")
+    parser_vision.add_argument("--img_dir", default="data/raw/visual/images", help="画像ディレクトリのパス")
+    parser_vision.add_argument("--model", default="models/distilled_sara_llm.msgpack", help="モデルの保存先")
+
     args = parser.parse_args()
 
     if args.command == "generate-math":
@@ -63,8 +70,8 @@ def main():
             with open(args.docs_src, "r", encoding="utf-8") as f:
                 integrator.add_source(f.read(), source_type="document")
                 
-    elif args.command == "train-chat":
-        train_chat_data(args.sources, args.model)
+    elif args.command == "train-vision":
+        train_vision_association(args.csv, args.img_dir, args.model)
     elif args.command == "chat":
         run_math_chat(args.model)
     else:
