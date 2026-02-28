@@ -1,6 +1,6 @@
 # ディレクトリパス: scripts/collect_all.py
 # ファイルの日本語タイトル: SARA統合コーパス・コレクター（重複排除機能付き）
-# ファイルの目的や内容: 異なるソースのクリーニングを一手に引き受け、一貫性のある学習データを作成する。
+# ファイルの目的や内容: 異なるソースのクリーニングを一手に引き受け、一貫性のある学習データを作成する。数式コーパスの統合処理も追加。
 
 import os
 import re
@@ -32,19 +32,27 @@ class CorpusIntegrator:
         return text
 
     def clean_arxiv(self, text):
-        # arXiv：LaTeX数式・コマンド削除
+        # arXiv：LaTeX数式・コマンド削除 (通常のテキスト抽出用)
         text = re.sub(r'\$.*?\$', '', text)
         text = re.sub(r'\\[a-zA-Z]+', '', text)
         text = re.sub(r'\{.*?\}', '', text)
         return text
+        
+    def clean_math(self, text):
+        # 数式コーパス用: LaTeXのバックスラッシュや数式記号を保持するため、過度なクリーニングは行わない
+        text = re.sub(r'[ \t]+', ' ', text)
+        return text.strip()
 
     def add_source(self, raw_text, source_type="generic"):
-        text = self.clean_generic(raw_text)
-        
-        if source_type == "wikipedia":
-            text = self.clean_wikipedia(text)
-        elif source_type == "arxiv":
-            text = self.clean_arxiv(text)
+        if source_type == "math":
+            text = self.clean_math(raw_text)
+        else:
+            text = self.clean_generic(raw_text)
+            
+            if source_type == "wikipedia":
+                text = self.clean_wikipedia(text)
+            elif source_type == "arxiv":
+                text = self.clean_arxiv(text)
         
         # 1行1文に分割
         text = text.replace('。', '。\n').replace('！', '！\n').replace('？', '？\n')
@@ -66,4 +74,15 @@ class CorpusIntegrator:
 
 if __name__ == "__main__":
     integrator = CorpusIntegrator()
-    # ここに各コレクターからの出力を流し込んでいきます
+    
+    # 既存の青空文庫などのデータ流し込み処理がある場合はここに記述
+    
+    # 数式コーパスの読み込みと結合
+    math_corpus_path = "data/math_corpus.txt"
+    if os.path.exists(math_corpus_path):
+        print(f"--- 数式コーパス ({math_corpus_path}) を統合中 ---")
+        with open(math_corpus_path, "r", encoding="utf-8") as f:
+            math_text = f.read()
+        integrator.add_source(math_text, source_type="math")
+    else:
+        print(f"⚠️ {math_corpus_path} が見つかりません。")

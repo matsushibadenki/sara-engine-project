@@ -1,8 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: scripts/train_chat.py",
-    "//": "ファイルの日本語タイトル: 対話データ蒸留スクリプト",
-    "//": "ファイルの目的や内容: 煩雑なデータ管理を避けるため、JSONLから対話パターンのみを独立してSNNに学習させる。"
-}
+# ディレクトリパス: scripts/train_chat.py
+# ファイルの日本語タイトル: 対話データ蒸留スクリプト
+# ファイルの目的や内容: 煩雑なデータ管理を避けるため、JSONLから対話パターンのみを独立してSNNに学習させる。複数のチャットソース統合に対応。
 
 import torch
 import msgpack
@@ -14,15 +12,18 @@ from sara_engine.models.spiking_llm import SpikingLLM
 
 def train_chat_data():
     model_path = "models/distilled_sara_llm.msgpack"
-    data_path = "data/chat_data.jsonl"
     
-    if not os.path.exists(data_path):
-        print(f"❌ '{data_path}' が見つかりません。")
-        return
-        
+    # 学習対象のJSONLファイルをリストで定義
+    data_paths = [
+        "data/chat_data.jsonl",
+        "data/math_corpus.jsonl"
+    ]
+    
     print("Initializing SNN Student Model (8192 neurons)...")
     student = SpikingLLM(num_layers=2, sdr_size=8192, vocab_size=256000)
-    device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # GPUに依存しないようCPUに固定
+    device = "cpu"
     
     print(f"Loading teacher model: google/gemma-2-2b on {device}")
     tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b")
@@ -48,18 +49,34 @@ def train_chat_data():
         print("⚠️ 既存の記憶がありません。")
         student._direct_map = {}
 
+    # JSONLファイル群からのデータ抽出とフォーマット統一
     chat_lines = []
-    with open(data_path, "r", encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
-                chat_lines.append(json.loads(line))
+    for dp in data_paths:
+        if os.path.exists(dp):
+            print(f"読み込み中: {dp}")
+            with open(dp, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        item = json.loads(line)
+                        # chat_data.jsonl と math_corpus.jsonl のフォーマット差異を吸収
+                        if "user" in item and "sara" in item:
+                            text = f"You: {item['user']}\nSARA: {item['sara']}\n"
+                            chat_lines.append(text)
+                        elif "text" in item:
+                            # ユーザー/システムの表記をYou/SARAに統一して影響を抑える
+                            text = item["text"]
+                            text = text.replace("ユーザー:", "You:").replace("システム:", "SARA:") + "\n"
+                            chat_lines.append(text)
+        else:
+            print(f"⚠️ '{dp}' が見つかりません。スキップします。")
                 
+    if not chat_lines:
+        print("❌ 学習できるデータがありません。")
+        return
+
     print(f"🚀 {len(chat_lines)}件の対話データを学習します...")
     
-    for item in tqdm.tqdm(chat_lines, desc="Chat Training"):
-        # 💡 SARAに「会話の型」を教え込むフォーマット
-        text = f"You: {item['user']}\nSARA: {item['sara']}\n"
-        
+    for text in tqdm.tqdm(chat_lines, desc="Chat Training"):
         inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128).to(device)
         input_ids = inputs["input_ids"][0].tolist()
         if len(input_ids) < 2: continue
@@ -81,7 +98,7 @@ def train_chat_data():
             dm = student._direct_map[sdr_k]
             actual = input_ids[i+1]
             
-            # 💡 チャットの記憶は優先して引き出せるよう、重みを強烈(500.0)に設定する
+            # チャットの記憶は優先して引き出せるよう、重みを強烈(500.0)に設定する
             dm[actual] = dm.get(actual, 0.0) + 500.0
             
             top_probs, top_indices = torch.topk(probs[i], 5)
