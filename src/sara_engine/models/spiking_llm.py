@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//1": "ディレクトリパス: src/sara_engine/models/spiking_llm.py",
-    "//2": "ファイルの日本語タイトル: スパイキング・大規模言語モデル（MoEとLIF長文脈統合版）",
-    "//3": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。恒常性を導入して記憶の上書きを防ぐ。"
+    "//2": "ファイルの日本語タイトル: スパイキング・大規模言語モデル（MoEとLIF長文脈統合版 + Fuzzy Recall）",
+    "//3": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。恒常性を導入して記憶の上書きを防ぎ、さらにFuzzy Recall（曖昧検索）を実装。"
 }
 
 import math
@@ -68,6 +68,7 @@ class SpikingLayerNorm:
                 0.01, min(self.thresholds[i], self.base_threshold * 3.0))
 
         return sorted(spikes)
+
 
 class SpikingTransformerBlock:
     def __init__(self, sdr_size: int, enable_learning: bool = True):
@@ -361,3 +362,64 @@ class SpikingLLM:
                 context_tokens.pop(0)
 
         return generated_sequence
+        
+    def load_memory(self, filepath: str) -> int:
+        """
+        ファイルから連想記憶（direct_map）を安全に読み込む
+        """
+        import msgpack
+        import os
+        if not os.path.exists(filepath):
+            self._direct_map = {}
+            return 0
+            
+        with open(filepath, "rb") as f:
+            state = msgpack.unpack(f, raw=False)
+            
+        raw_map = state.get("direct_map", {})
+        # 保存用に文字列化されているキーをタプル(int型)に復元
+        self._direct_map = {eval(k): {int(tk): float(tv) for tk, tv in v.items()} for k, v in raw_map.items()}
+        return len(self._direct_map)
+
+    def recall(self, input_sdr_key: tuple, threshold: float = 0.75) -> tuple:
+        """
+        💡 SDR Overlap (Fuzzy Recall)
+        行列演算を使わず、Pythonの積集合によって記憶の類似度を計算し連想を引き出す。
+        戻り値: (連想されたトークン重み辞書, 類似度スコア)
+        """
+        if getattr(self, "_direct_map", None) is None:
+            self._direct_map = {}
+            
+        # 1. 完全一致チェック (O(1)で超高速)
+        if input_sdr_key in self._direct_map:
+            return self._direct_map[input_sdr_key], 1.0
+            
+        # 2. ファジー検索 (SDR Overlap計算)
+        input_set = set(input_sdr_key)
+        input_len = len(input_set)
+        if input_len == 0:
+            return None, 0.0
+            
+        best_match_key = None
+        best_overlap_ratio = 0.0
+        
+        # 記憶されている全パターンのキーをスキャン
+        for stored_key in self._direct_map.keys():
+            stored_set = set(stored_key)
+            # 積集合の要素数（重なり具合）を計算
+            overlap = len(input_set.intersection(stored_set))
+            ratio = overlap / input_len
+            
+            if ratio > best_overlap_ratio:
+                best_overlap_ratio = ratio
+                best_match_key = stored_key
+                
+            # 閾値より高ければ早期リターンして高速化
+            if best_overlap_ratio >= 0.95:
+                break
+                
+        # 見つかった最高の類似度が閾値を超えていれば、その記憶を引き出す
+        if best_overlap_ratio >= threshold and best_match_key is not None:
+            return self._direct_map[best_match_key], best_overlap_ratio
+            
+        return None, best_overlap_ratio

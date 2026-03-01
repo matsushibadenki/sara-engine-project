@@ -1,7 +1,6 @@
 # ディレクトリパス: scripts/sara_cli.py
 # ファイルの日本語タイトル: SARA統合コマンドラインインターフェース
-# ファイルの目的や内容: データ収集、統合、学習、推論テストなどの各処理を一元管理する。
-# 修正内容: integrate-corpusの自動スキャン化、環境クリーンアップコマンドの追加。
+# ファイルの目的や内容: データ収集、統合、学習、推論テスト、そして記憶の刈り込み（プルーニング）などの処理を一元管理する。
 
 import argparse
 import sys
@@ -18,6 +17,7 @@ from train.train_chat import train_chat_data
 from train.train_vision import train_vision_association
 from eval.test_math_chat import run_math_chat
 from eval.test_vision_inference import run_vision_inference
+from utils.prune_memory import prune_model_memory  # 💡 新規追加
 
 def main():
     parser = argparse.ArgumentParser(description="SARA Engine 統合管理CLI - Professional Edition")
@@ -28,7 +28,7 @@ def main():
     parser_math.add_argument("--out_txt", default="data/interim/math_corpus.txt")
     parser_math.add_argument("--out_jsonl", default="data/interim/math_corpus.jsonl")
 
-    # 2. ドキュメント抽出 (PDF, CSV, HTML)
+    # 2. ドキュメント抽出
     parser_docs = subparsers.add_parser("extract-docs", help="多様なドキュメントからテキストを抽出します。")
     parser_docs.add_argument("type", choices=["pdf", "csv", "html"], help="ファイル形式")
     parser_docs.add_argument("source", help="パスまたはURL")
@@ -59,7 +59,12 @@ def main():
     parser_vtest.add_argument("image", help="テスト画像パス")
     parser_vtest.add_argument("--model", default="models/distilled_sara_llm.msgpack")
 
-    # 8. クリーンアップコマンド (新規追加)
+    # 8. 記憶の刈り込み (新規追加)
+    parser_prune = subparsers.add_parser("prune", help="重みの低い不要な記憶を削除し、モデルを軽量化します。")
+    parser_prune.add_argument("--model", default="models/distilled_sara_llm.msgpack", help="対象のモデルファイル")
+    parser_prune.add_argument("--threshold", type=float, default=50.0, help="削除する重みの閾値（デフォルト: 50.0）")
+
+    # 9. クリーンアップコマンド
     parser_clean = subparsers.add_parser("clean", help="中間データやキャッシュを削除して環境をリセットします。")
     parser_clean.add_argument("--all", action="store_true", help="processedデータもすべて削除します。")
 
@@ -67,15 +72,11 @@ def main():
 
     if args.command == "generate-math":
         generate_math_corpus(default_math_database, args.out_txt, args.out_jsonl)
-
     elif args.command == "extract-docs":
         process_document(args.type, args.source, args.out_txt)
-
     elif args.command == "integrate-corpus":
         print(f"--- コーパス統合を開始します ({args.dir} -> {args.out_corpus}) ---")
         integrator = CorpusIntegrator(output_path=args.out_corpus)
-        
-        # 💡 自動スキャン: data/interim 内のすべての .txt ファイルを自動的に読み込む
         if os.path.exists(args.dir):
             files = [f for f in os.listdir(args.dir) if f.endswith(".txt")]
             for filename in sorted(files):
@@ -86,25 +87,21 @@ def main():
                     integrator.add_source(content, source_type=source_type)
         else:
             print(f"❌ ディレクトリが見つかりません: {args.dir}")
-
     elif args.command == "train-chat":
         train_chat_data(args.sources, args.model)
-
     elif args.command == "chat":
         run_math_chat(args.model)
-
     elif args.command == "train-vision":
         train_vision_association(args.csv, args.img_dir, args.model)
-
     elif args.command == "vision-test":
         run_vision_inference(args.image, args.model)
-
+    elif args.command == "prune":
+        prune_model_memory(args.model, args.threshold)
     elif args.command == "clean":
         print("--- 環境のリセットを開始します ---")
         targets = ["data/interim"]
         if args.all:
             targets.append("data/processed")
-        
         for target in targets:
             if os.path.exists(target):
                 for item in os.listdir(target):
