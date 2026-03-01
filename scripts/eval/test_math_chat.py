@@ -1,6 +1,6 @@
 # ディレクトリパス: scripts/eval/test_math_chat.py
-# ファイルの日本語タイトル: 数式・一般知識ファジー推論テストスクリプト（フォールバック対応版）
-# ファイルの目的や内容: 曖昧検索の閾値を調整し、連想記憶が見つからない場合は無言にならずにMoE/LIF汎化ネットワークに推論を委ねる。
+# ファイルの日本語タイトル: 数式・一般知識ファジー推論テストスクリプト（確率分布ブレンド版）
+# ファイルの目的や内容: 記憶と汎化ネットワークの出力をそれぞれ確率分布（合計1.0）に変換してからブレンドすることで、スケールの不一致によるノイズの暴走を完全に防ぐ。
 
 import torch
 import msgpack
@@ -18,7 +18,7 @@ def run_math_chat(model_path):
         print(f"❌ '{model_path}' が見つかりません。")
         return
         
-    print("Initializing Advanced SNN Model with Fuzzy Recall...")
+    print("Initializing Advanced SNN Model with Probability Blend Inference...")
     student = SpikingLLM(num_layers=2, sdr_size=8192, vocab_size=256000)
     tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b")
     
@@ -36,7 +36,7 @@ def run_math_chat(model_path):
     print(f"✅ Loaded {loaded_count} patterns.")
 
     print("\n=======================================================")
-    print("🤖 SARA Engine ファジー推論テスト (フォールバック対応)")
+    print("🤖 SARA Engine ハイブリッド推論テスト (確率分布ブレンド版)")
     print("=======================================================\n")
     
     while True:
@@ -50,33 +50,60 @@ def run_math_chat(model_path):
         confidence_printed = False
         refractory_counters = {}
         
-        for _ in range(100):
+        for step_idx in range(100):
             ctx = context_tokens[-24:] if len(context_tokens) > 24 else context_tokens
             current_spikes = student._encode_to_sdr(ctx)
             sdr_k = student._sdr_key(current_spikes)
             
             vocab_potentials = [0.0] * student.vocab_size
             
-            # 💡 修正1: 閾値を 30% (0.30) まで下げて位置ズレに強くする
             recalled_data, overlap_ratio = student.recall(sdr_k, threshold=0.30)
             
+            # 1. 連想記憶を確率分布（合計1.0）に変換
+            mem_probs = [0.0] * student.vocab_size
             if recalled_data:
-                if not confidence_printed and overlap_ratio < 1.0:
-                    print(f"\n[💡 連想記憶発動: 一致度 {overlap_ratio*100:.1f}%] ", end="")
-                    confidence_printed = True
-                for tok_id, weight in recalled_data.items():
-                    if tok_id < student.vocab_size:
-                        vocab_potentials[tok_id] += weight * 10.0
-            else:
-                # 💡 修正2: 記憶がない場合は break せず、MoEとLIFを使って「考えて予測」する
                 if not confidence_printed:
-                    print(f"\n[🧠 汎化ネットワーク(MoE)による推論中...] ", end="")
+                    if overlap_ratio >= 0.99:
+                        print(f"\n[💡 完全記憶発動: 一致度 {overlap_ratio*100:.1f}%] ", end="")
+                    else:
+                        print(f"\n[🔄 ハイブリッド推論: 記憶一致度 {overlap_ratio*100:.1f}%] ", end="")
                     confidence_printed = True
                 
-                lm_potentials, _ = student.forward(current_spikes, t_step=student.global_t)
-                student.global_t += 1
+                sum_mem = sum(recalled_data.values())
+                if sum_mem > 0:
+                    for tok_id, raw_weight in recalled_data.items():
+                        if tok_id < student.vocab_size:
+                            mem_probs[tok_id] = raw_weight / sum_mem
+
+            # 2. 汎化ネットワーク(MoE/LIF)を確率分布（合計1.0）に変換
+            if not recalled_data and not confidence_printed:
+                print(f"\n[🧠 汎化ネットワーク(MoE)単独推論中...] ", end="")
+                confidence_printed = True
+                
+            lm_potentials, _ = student.forward(current_spikes, t_step=student.global_t)
+            student.global_t += 1
+            
+            moe_probs = [0.0] * student.vocab_size
+            # 電位がマイナスのノイズは0として切り捨てる
+            valid_lm = [p if p > 0 else 0.0 for p in lm_potentials]
+            sum_moe = sum(valid_lm)
+            if sum_moe > 0:
                 for i in range(student.vocab_size):
-                    vocab_potentials[i] += lm_potentials[i]
+                    moe_probs[i] = valid_lm[i] / sum_moe
+
+            # 3. 確率分布同士のブレンド
+            # 記憶の強さに応じて比率を分ける（例: 一致度50%なら 0.5 : 0.5 の割合でブレンド）
+            mem_weight = overlap_ratio if recalled_data else 0.0
+            moe_weight = 1.0 - mem_weight
+
+            for i in range(student.vocab_size):
+                vocab_potentials[i] = (mem_probs[i] * mem_weight) + (moe_probs[i] * moe_weight)
+
+            # 最初の2トークンは改行を禁止（無言終了防止）
+            if step_idx < 2:
+                for nl_token in [tokenizer.encode("\n", add_special_tokens=False)[-1], 108, 13]:
+                    if nl_token < student.vocab_size:
+                        vocab_potentials[nl_token] = 0.0
 
             # 不応期（同じ言葉の繰り返し防止）
             for vocab_id in range(student.vocab_size):
@@ -91,8 +118,9 @@ def run_math_chat(model_path):
             top_k_indices = valid_indices[:5]
             top_potentials = [vocab_potentials[i] for i in top_k_indices]
             
-            # 確率的なサンプリング（Temperature = 0.8）
-            top_potentials = [p ** (1.0 / 0.8) for p in top_potentials]
+            # Temperature (0.5でシャープに)
+            temperature = 0.5
+            top_potentials = [p ** (1.0 / temperature) for p in top_potentials]
             sum_p = sum(top_potentials)
             if sum_p <= 0.0: break
             
@@ -118,6 +146,8 @@ def run_math_chat(model_path):
             refractory_counters[next_token] = 1
             
             if next_token == tokenizer.encode("\n", add_special_tokens=False)[-1] or "\n" in text_chunk:
+                if step_idx < 2:
+                    continue
                 break
         print()
 
