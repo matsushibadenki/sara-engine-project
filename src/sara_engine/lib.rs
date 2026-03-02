@@ -1,6 +1,6 @@
 // ディレクトリパス: src/sara_engine/lib.rs
-// ファイルの日本語タイトル: Rustハイブリッド SNNコア (フェーズ2予測符号化統合版)
-// ファイルの目的や内容: 既存のWTAやSDR機能に加え、Predictive Routing(予測ルーティング)による誤差主導の自律学習機能を追加。
+// ファイルの日本語タイトル: Rustハイブリッド SNNコア (フェーズ2予測符号化・スケーラブルLTM統合版)
+// ファイルの目的や内容: 既存のWTAやSDR機能に加え、Predictive Routing(予測ルーティング)による誤差主導の自律学習機能と、数百万トークン規模の高速SDR連想メモリ(ScalableSDRMemory)を追加。
 
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
@@ -337,9 +337,7 @@ impl CausalSynapses {
         fan_in
     }
 
-    /// [Phase 2] Predictive Routing: トップダウン予測による抑制と、誤差主導の自律STDP学習
     pub fn predict_and_learn(&mut self, spike_history: Vec<Vec<usize>>, actual_next_spikes: Vec<usize>, learning_rate: f32, threshold: f32) -> (Vec<usize>, f32) {
-        // 1. 履歴からの事前予測 (Top-down expectation)
         let potentials = self.calculate_potentials(spike_history.clone());
         let mut predicted_set: HashSet<usize> = HashSet::new();
         for (&target, &pot) in potentials.iter() {
@@ -347,8 +345,6 @@ impl CausalSynapses {
         }
         
         let actual_set: HashSet<usize> = actual_next_spikes.into_iter().collect();
-        
-        // 2. 抑制 (Inhibition): 実際の入力から予測を引く。残ったものが「予測誤差(サプライズ)」
         let error_spikes: Vec<usize> = actual_set.difference(&predicted_set).cloned().collect();
         
         let error_rate = if actual_set.is_empty() { 
@@ -357,7 +353,6 @@ impl CausalSynapses {
             error_spikes.len() as f32 / actual_set.len() as f32 
         };
 
-        // 3. 誤差主導STDP (Error-Driven STDP): 予測が外れた部分のみ重みを強化する
         if !error_spikes.is_empty() {
             for (delay, active_spikes) in spike_history.iter().enumerate() {
                 if delay > self.max_delay { break; }
@@ -366,7 +361,6 @@ impl CausalSynapses {
                 
                 for &s in active_spikes.iter() {
                     let targets = self.weights[delay].entry(s).or_insert_with(HashMap::new);
-                    // 誤差スパイクに対してのみ結合を強化
                     for &err_spike in &error_spikes {
                         let old_w = *targets.get(&err_spike).unwrap_or(&0.0);
                         targets.insert(err_spike, old_w + eff_lr * (1.0 - old_w));
@@ -375,8 +369,63 @@ impl CausalSynapses {
             }
         }
         
-        // 予測が完璧だった場合、error_spikesは空になり上位への伝播は停止される
         (error_spikes, error_rate)
+    }
+}
+
+// =====================================================================
+// [5] Scalable SDR Memory (Phase 3: Million-token LTM)
+// =====================================================================
+
+#[pyclass]
+pub struct ScalableSDRMemory {
+    records: Vec<(usize, HashSet<usize>)>, // (memory_id, sdr_set)
+    threshold: f32,
+}
+
+#[pymethods]
+impl ScalableSDRMemory {
+    #[new]
+    #[pyo3(signature = (threshold=0.1))]
+    pub fn new(threshold: f32) -> Self {
+        ScalableSDRMemory {
+            records: Vec::new(),
+            threshold,
+        }
+    }
+
+    /// メモリの追加 (行列演算なしの疎な格納)
+    pub fn add_memory(&mut self, mem_id: usize, sdr: Vec<usize>) {
+        let set: HashSet<usize> = sdr.into_iter().collect();
+        self.records.push((mem_id, set));
+    }
+
+    /// ファジー検索 (Intersectionを活用した高速連想)
+    pub fn search(&self, query_sdr: Vec<usize>, top_k: usize) -> Vec<(usize, f32)> {
+        let query_set: HashSet<usize> = query_sdr.into_iter().collect();
+        let query_len = query_set.len() as f32;
+        if query_len == 0.0 { return Vec::new(); }
+
+        let mut results = Vec::new();
+        for (id, mem_set) in &self.records {
+            let overlap = query_set.intersection(mem_set).count() as f32;
+            let score = overlap / query_len;
+            if score >= self.threshold {
+                results.push((*id, score));
+            }
+        }
+
+        // スコア降順ソート
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        results.into_iter().take(top_k).collect()
+    }
+    
+    pub fn clear(&mut self) {
+        self.records.clear();
+    }
+
+    pub fn memory_count(&self) -> usize {
+        self.records.len()
     }
 }
 
@@ -388,5 +437,6 @@ fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<SpikeWTARouter>()?;
     m.add_class::<LIFNetwork>()?;
     m.add_class::<CausalSynapses>()?;
+    m.add_class::<ScalableSDRMemory>()?; // 新規追加
     Ok(())
 }
