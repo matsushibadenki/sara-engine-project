@@ -5,21 +5,23 @@
 #     "//": "SpikingLLMの統合API（fit, learn_sequence, generate）の動作をテストします。"
 # }
 
+from sara_engine.models.spiking_llm import SpikingLLM
 import os
 import sys
 import time
 
 # プロジェクトルートのsrcをパスに追加
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '../../src')))
 
-from sara_engine.models.spiking_llm import SpikingLLM
 
 def main():
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+    project_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '../../'))
     corpus_path = os.path.join(project_root, 'data/processed/corpus.txt')
     workspace_dir = os.path.join(project_root, 'workspace/logs/integrated_llm')
     os.makedirs(workspace_dir, exist_ok=True)
-    
+
     # 1. モデルの初期化
     print("[INFO] Initializing SpikingLLM...")
     llm = SpikingLLM(sdr_size=128, vocab_size=65536, context_window=15)
@@ -29,13 +31,15 @@ def main():
         print(f"\n[INFO] Loading corpus from {corpus_path}")
         with open(corpus_path, 'r', encoding='utf-8', errors='ignore') as f:
             text_data = f.read()
-        
+
         print("[INFO] Starting Direct Wiring Pre-training...")
         start_time = time.time()
         llm.fit(text_data)
-        print(f"[INFO] Pre-training completed in {time.time() - start_time:.2f} seconds.")
+        print(
+            f"[INFO] Pre-training completed in {time.time() - start_time:.2f} seconds.")
     else:
-        print(f"\n[WARNING] Corpus not found at {corpus_path}. Running without pre-training.")
+        print(
+            f"\n[WARNING] Corpus not found at {corpus_path}. Running without pre-training.")
 
     # 3. リアルタイム対話とオンライン学習 (STDP)
     print("\n" + "="*50)
@@ -58,7 +62,8 @@ def main():
 
             # b. モデルの推論 (事前知識 + オンライン記憶のハイブリッド)
             print("SARA > ", end="", flush=True)
-            output = llm.generate(prompt=prompt, max_new_tokens=60, temperature=0.7)
+            output = llm.generate(
+                prompt=prompt, max_new_tokens=80, temperature=0.3)
             print(output)
 
         except KeyboardInterrupt:
@@ -68,6 +73,7 @@ def main():
     # 4. 学習結果の保存
     save_dir = os.path.join(workspace_dir, "saved_model")
     llm.save_pretrained(save_dir)
+
 
 if __name__ == "__main__":
     main()

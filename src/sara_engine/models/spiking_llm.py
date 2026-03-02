@@ -3,7 +3,7 @@
 # 目的: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。さらに「Direct Synaptic Wiring」を統合し、超高速な事前コーパス学習と、Fuzzy Recallによるリアルタイム適応（STDP）を同時に実現する。
 # {
 #     "//": "行列演算、誤差逆伝播法(BP)、GPU依存を完全に排除した純粋なSNN言語モデルです。",
-#     "//": "AHP（後過分極）と強力なALIF、Softmax発火を導入し、ループを完全に破壊して文脈を前へ進めます。"
+#     "//": "ALIFの疲労(閾値)の蓄積を強化し回復を遅らせることで、N文字ループの局所最適を回避し新しい概念の探索を促します。"
 # }
 
 import os
@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Set, Tuple, Optional
 
 from sara_engine.core.transformer import LIFSpikeAttention
 from sara_engine.core.cortical_columns import SpikingCorticalColumns
+
 
 class SpikingLayerNorm:
     def __init__(
@@ -79,15 +80,17 @@ class SpikingTransformerBlock:
     def __init__(self, sdr_size: int, enable_learning: bool = True):
         self.sdr_size = sdr_size
         self.enable_learning = enable_learning
-        
-        self.attention = LIFSpikeAttention(embed_dim=sdr_size, density=0.05, decay_rate=0.95)
+
+        self.attention = LIFSpikeAttention(
+            embed_dim=sdr_size, density=0.05, decay_rate=0.95)
 
         self.layer_norm1 = SpikingLayerNorm(
             sdr_size, base_threshold=1.0, target_active_ratio=0.02)
         self.layer_norm2 = SpikingLayerNorm(
             sdr_size, base_threshold=1.2, target_active_ratio=0.02)
 
-        self.moe_ffn = SpikingCorticalColumns(embed_dim=sdr_size, num_experts=4, top_k=1, density=0.1)
+        self.moe_ffn = SpikingCorticalColumns(
+            embed_dim=sdr_size, num_experts=4, top_k=1, density=0.1)
 
     def reset_state(self) -> None:
         if hasattr(self.attention, "reset_state"):
@@ -104,7 +107,8 @@ class SpikingTransformerBlock:
             res_potentials_1[s] += 1.0
         norm1_spikes = self.layer_norm1.forward(res_potentials_1)
 
-        ffn_spikes = self.moe_ffn.forward(norm1_spikes, learning=self.enable_learning)
+        ffn_spikes = self.moe_ffn.forward(
+            norm1_spikes, learning=self.enable_learning)
 
         res_potentials_2 = [0.0] * self.sdr_size
         for s in set(norm1_spikes).union(set(ffn_spikes)):
@@ -138,7 +142,7 @@ class SpikingLLM:
     Rustコアによる超高速事前学習（Direct Wiring）の静的知識と、
     SDRやSTDPによる動的な会話記憶（Fuzzy Recall）を融合して推論を行う。
     """
-    _SDR_BITS_PER_TOKEN: int = 32
+    _SDR_BITS_PER_TOKEN: int = 5
 
     def __init__(
         self,
@@ -153,7 +157,7 @@ class SpikingLLM:
         self.vocab_size: int = vocab_size
         self.enable_learning: bool = enable_learning
         self.context_window = context_window
-        
+
         self.transformer = MultiLayerSpikingTransformer(
             num_layers, self.sdr_size, enable_learning)
         self.lm_head_w: List[Dict[int, float]] = []
@@ -162,7 +166,7 @@ class SpikingLLM:
         self._direct_map: Dict[Tuple[int, ...], Dict[int, float]] = {}
 
         self.pretrained_synapses: Dict[int, Dict[int, Dict[int, float]]] = {}
-        
+
         self.char_to_id: Dict[str, int] = {}
         self.id_to_char: Dict[int, str] = {}
         self.next_id = 0
@@ -191,13 +195,15 @@ class SpikingLLM:
     def fit(self, text_data: str) -> 'SpikingLLM':
         tokens = self.encode_text(text_data)
         total_tokens = len(tokens)
-        print(f"[SpikingLLM] Processing {total_tokens} characters for delay-line direct wiring...")
-        
+        print(
+            f"[SpikingLLM] Processing {total_tokens} characters for delay-line direct wiring...")
+
         try:
             from sara_engine import sara_rust_core
             print("[SpikingLLM] Utilizing Rust core for ultra-fast synaptic wiring...")
-            rust_synapses = sara_rust_core.build_direct_synapses(tokens, self.context_window)
-            
+            rust_synapses = sara_rust_core.build_direct_synapses(
+                tokens, self.context_window)
+
             self.pretrained_synapses.clear()
             for delay_key, pre_dict in rust_synapses.items():
                 delay = int(delay_key)
@@ -206,14 +212,19 @@ class SpikingLLM:
                     pre = int(pre_key)
                     self.pretrained_synapses[delay][pre] = {}
                     for post_key, weight in post_dict.items():
-                        self.pretrained_synapses[delay][pre][int(post_key)] = float(weight)
-                        
-            total_connections = sum(len(post_dict) for delay_dict in self.pretrained_synapses.values() for post_dict in delay_dict.values())
-            print(f"[SpikingLLM] Training completed via Rust. Established {total_connections} delay-line connections.")
-            
+                        self.pretrained_synapses[delay][pre][int(
+                            post_key)] = float(weight)
+
+            total_connections = sum(len(post_dict) for delay_dict in self.pretrained_synapses.values(
+            ) for post_dict in delay_dict.values())
+            print(
+                f"[SpikingLLM] Training completed via Rust. Established {total_connections} delay-line connections.")
+
         except ImportError:
-            print("[WARNING] sara_rust_core not found. Falling back to standard Python implementation...")
-            co_occurrence = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+            print(
+                "[WARNING] sara_rust_core not found. Falling back to standard Python implementation...")
+            co_occurrence = defaultdict(
+                lambda: defaultdict(lambda: defaultdict(float)))
             unigram_counts = defaultdict(int)
 
             for i in range(total_tokens):
@@ -236,7 +247,7 @@ class SpikingLLM:
                         weight = count / math.sqrt(pre_count * post_count)
                         self.pretrained_synapses[delay][pre_token][post_token] = weight
             print("[SpikingLLM] Training completed via Python fallback.")
-            
+
         return self
 
     def forward(self, input_spikes: list[int], t_step: int = 0) -> tuple[list[float], list[int]]:
@@ -258,9 +269,10 @@ class SpikingLLM:
 
         spikes: Set[int] = set()
         for i, tok in enumerate(context_tokens):
-            pos = len(context_tokens) - i 
+            pos = len(context_tokens) - i
             for j in range(self._SDR_BITS_PER_TOKEN):
-                spike_id = (tok * 104729 + pos * 7919 + j * 2741) % self.sdr_size
+                spike_id = (tok * 104729 + pos * 7919 +
+                            j * 2741) % self.sdr_size
                 spikes.add(spike_id)
 
         result = sorted(spikes)
@@ -277,7 +289,7 @@ class SpikingLLM:
         self.reset_state()
         context_window = 64
         context_tokens: List[int] = []
-        
+
         for t in range(len(token_ids) - 1):
             current_token = token_ids[t]
             next_token = token_ids[t + 1]
@@ -294,7 +306,7 @@ class SpikingLLM:
             dm = self._direct_map[sdr_k]
 
             dm[next_token] = dm.get(next_token, 0.0) + 1.0
-            
+
             total_w = sum(dm.values())
             limit = 10.0
             if total_w > limit:
@@ -304,13 +316,15 @@ class SpikingLLM:
                     if dm[post_id] < 0.1:
                         del dm[post_id]
 
-            _, combined_spikes = self.forward(input_spikes, t_step=self.global_t)
+            _, combined_spikes = self.forward(
+                input_spikes, t_step=self.global_t)
             self.global_t += 1
 
             ltp_amount = 1.0
             for pre_id in combined_spikes:
                 if pre_id < len(self.lm_head_w):
-                    self.lm_head_w[pre_id][next_token] = self.lm_head_w[pre_id].get(next_token, 0.0) + ltp_amount
+                    self.lm_head_w[pre_id][next_token] = self.lm_head_w[pre_id].get(
+                        next_token, 0.0) + ltp_amount
                     total_synapse_weight = sum(self.lm_head_w[pre_id].values())
                     capacity_limit = 10.0
                     if total_synapse_weight > capacity_limit:
@@ -320,153 +334,162 @@ class SpikingLLM:
                             if self.lm_head_w[pre_id][post_id] < 0.1:
                                 del self.lm_head_w[pre_id][post_id]
 
+    # 句読点・改行などrepetition penaltyを免除する文字
+    _PENALTY_EXEMPT_CHARS: Set[str] = {
+        '。', '、', '\n', '　', ' ', '（', '）', '「', '」', '・',
+        ')', '(', ',', '.', ':', ';',
+    }
+
     def generate(
         self,
         prompt: Optional[str] = None,
         prompt_tokens: Optional[List[int]] = None,
         max_new_tokens: int = 50,
-        top_k: int = 3,
-        temperature: float = 0.8,
+        top_k: int = 8,
+        temperature: float = 0.3,
+        repetition_penalty: float = 1.5,
         **kwargs: Any,
     ) -> str | List[int]:
+        """
+        N-gram条件付き確率サンプリングによるテキスト生成。
+        Direct Wiringの共起統計（PMI重み）を直接活用し、
+        repetition penaltyで繰り返しを抑制する。
+        """
         return_string = False
         if prompt is not None:
-            prompt_tokens = [self.char_to_id[c] for c in prompt if c in self.char_to_id]
+            prompt_tokens = [self.char_to_id[c]
+                             for c in prompt if c in self.char_to_id]
             return_string = True
         elif prompt_tokens is None:
             prompt_tokens = list(kwargs.get("input_spikes", []))
-            
+
         max_new_tokens = int(kwargs.get("max_length", max_new_tokens))
         generated_sequence: List[int] = []
         if not prompt_tokens:
             return "" if return_string else generated_sequence
 
-        self.reset_state()
-        context_window = 64
-        context_tokens: List[int] = []
-        
-        for tok in prompt_tokens[:-1]:
-            context_tokens.append(tok)
-            if len(context_tokens) > context_window:
-                context_tokens.pop(0)
-            dummy_spikes = self._encode_to_sdr(context_tokens)
-            self.forward(dummy_spikes, t_step=self.global_t)
-            self.global_t += 1
+        # penalty免除トークンIDのセットを事前構築
+        exempt_ids: Set[int] = {
+            self.char_to_id[c] for c in self._PENALTY_EXEMPT_CHARS
+            if c in self.char_to_id
+        }
 
-        context_tokens = list(prompt_tokens[-context_window:])
-        
-        # --- 真の生物学的な出力層 (LIF + AHP + ALIF) ---
-        potentials = defaultdict(float)
-        thresholds = defaultdict(lambda: 1.0)
-        last_spike_times = defaultdict(lambda: -100)
-
-        # プロンプトのトークンに対してAHPと強力な疲労（ALIF）を適用し、直後のオウム返しを防ぐ
-        for idx, tok in enumerate(prompt_tokens):
-            last_spike_times[tok] = -len(prompt_tokens) + idx
-            potentials[tok] = -15.0  # AHP: 強力なマイナス電位
-            thresholds[tok] += 30.0 * (0.95 ** (len(prompt_tokens) - idx))
+        context_tokens: List[int] = list(prompt_tokens)
+        recent_window = max(self.context_window, 20)
 
         for _t in range(max_new_tokens):
-            current_spikes = self._encode_to_sdr(context_tokens)
-            sdr_k = self._sdr_key(current_spikes)
-            
-            currents = defaultdict(float)
+            scores: Dict[int, float] = defaultdict(float)
 
-            # 1. Direct Wiring (事前学習) からの電流
-            recent_spikes = context_tokens[-self.context_window:]
-            for reversed_idx, pre_token in enumerate(reversed(recent_spikes)):
-                delay = reversed_idx + 1
-                if delay in self.pretrained_synapses and pre_token in self.pretrained_synapses[delay]:
-                    for post_token, weight in self.pretrained_synapses[delay][pre_token].items():
+            # === 1. Direct Wiring (事前学習N-gram) からのスコア集計 ===
+            recent = context_tokens[-self.context_window:]
+
+            # Step 1a: delay=1（直前文字）から基本スコアを構築
+            # log(1 + w*10) でPMIの希少共起バイアスを圧縮
+            if recent:
+                last_token = recent[-1]
+                if 1 in self.pretrained_synapses and last_token in self.pretrained_synapses[1]:
+                    post_weights = self.pretrained_synapses[1][last_token]
+                    for post_token, weight in post_weights.items():
                         if post_token < self.vocab_size:
-                            temporal_decay = 0.85 ** (delay - 1)
-                            # 電流スケールを適正値に抑える
-                            currents[post_token] += weight * temporal_decay * 3.0
+                            scores[post_token] = math.log1p(weight * 10.0)
 
-            # 2. SDR Fuzzy Recall (短期記憶)
-            direct_hit = sdr_k in self._direct_map
-            if direct_hit:
-                for tok_id, count in self._direct_map[sdr_k].items():
+            # Step 1b: delay=2〜nでコンテキスト補強（緩やかな減衰）
+            # delay=2,3: 新規候補も追加可能（短距離の文脈は重要）
+            # delay≧4: 既存候補のブーストのみ（遠距離は補助的）
+            for reversed_idx in range(1, len(recent)):
+                pre_token = recent[-(reversed_idx + 1)]
+                delay = reversed_idx + 1
+                if delay not in self.pretrained_synapses:
+                    continue
+                if pre_token not in self.pretrained_synapses[delay]:
+                    continue
+
+                post_weights = self.pretrained_synapses[delay][pre_token]
+                if not post_weights:
+                    continue
+
+                # 緩やかな減衰: delay=2→0.80, delay=3→0.60, delay=4→0.45...
+                context_factor = 0.80 ** (delay - 1)
+                allow_new = delay <= 3
+
+                for post_token, weight in post_weights.items():
+                    if post_token < self.vocab_size:
+                        contribution = math.log1p(
+                            weight * 10.0) * context_factor
+                        if post_token in scores:
+                            scores[post_token] += contribution
+                        elif allow_new:
+                            scores[post_token] = contribution
+
+            # === 2. SDR Fuzzy Recall (オンライン学習の短期記憶) ===
+            sdr_context = context_tokens[-min(5, len(context_tokens)):]
+            current_spikes = self._encode_to_sdr(sdr_context)
+            sdr_k = self._sdr_key(current_spikes)
+
+            recalled, confidence = self.recall(sdr_k, threshold=0.85)
+            if recalled is not None:
+                for tok_id, count in recalled.items():
                     if tok_id < self.vocab_size:
-                        currents[tok_id] += count * 2.0
+                        scores[tok_id] += count * confidence * 0.2
 
-            # 3. Transformer / LIFMoE
-            if not direct_hit:
-                lm_potentials, _ = self.forward(current_spikes, t_step=self.global_t)
-                self.global_t += 1
-                for i in range(self.vocab_size):
-                    if lm_potentials[i] > 0:
-                        currents[i] += lm_potentials[i] * 0.5
-
-            # --- 生物学的な積分発火 (Integrate and Fire) ---
-            # 1. 膜電位の自然減衰 (Leak)
-            for k in list(potentials.keys()):
-                potentials[k] *= 0.8  # 記憶を少し長持ちさせるための緩やかな減衰
-                if abs(potentials[k]) < 0.01:
-                    del potentials[k]
-                    
-            # 2. 閾値のホメオスタシス回復 (ALIF)
-            for k in list(thresholds.keys()):
-                thresholds[k] = 1.0 + (thresholds[k] - 1.0) * 0.95  # ゆっくり回復
-                if thresholds[k] <= 1.01:
-                    del thresholds[k]
-
-            # 3. 電流の注入
-            for k, current_val in currents.items():
-                if _t - last_spike_times[k] <= 2:  # 絶対不応期 (2ターン完全ブロック)
+            # スコアが全くない場合はフォールバック
+            if not scores:
+                known_ids = list(self.id_to_char.keys())
+                if known_ids:
+                    best_id = random.choice(known_ids)
+                    generated_sequence.append(best_id)
+                    context_tokens.append(best_id)
                     continue
-                potentials[k] += current_val
-
-            # 4. 発火判定 (Softmax-WTA)
-            valid_candidates = []
-            for k, pot in potentials.items():
-                if _t - last_spike_times[k] <= 2:
-                    continue
-                # 膜電位から疲労（閾値）を引いた値を実質的なスコアとする
-                score = pot - thresholds[k]
-                valid_candidates.append((k, score))
-
-            if not valid_candidates:
-                # 完全に沈黙した場合は、自然発火（ランダムノイズ）により探索を強制する
-                fallback_pool = [i for i in range(self.vocab_size) if _t - last_spike_times.get(i, -100) > 3]
-                if fallback_pool:
-                    best_vocab_id = random.choice(fallback_pool)
-                    valid_candidates = [(best_vocab_id, 0.0)]
                 else:
                     break
 
-            valid_candidates.sort(key=lambda x: x[1], reverse=True)
-            top_k_candidates = valid_candidates[:top_k]
-            
-            # Softmaxによる確率的選択（スコアがマイナスでも相対的な確率で選べる）
-            max_score = top_k_candidates[0][1]
+            # === 3. Repetition Penalty ===
+            # 直近の文字に対してスコアをペナルティで割る
+            # 句読点・改行は自然な文のためペナルティ免除
+            recent_generated = context_tokens[-recent_window:]
+            recent_counts: Dict[int, int] = defaultdict(int)
+            for tok in recent_generated:
+                recent_counts[tok] += 1
+
+            for tok_id in list(scores.keys()):
+                if tok_id in recent_counts and tok_id not in exempt_ids:
+                    count = recent_counts[tok_id]
+                    penalty = repetition_penalty ** count
+                    scores[tok_id] /= penalty
+
+            # === 4. Top-k フィルタリング + Temperature サンプリング ===
+            sorted_candidates = sorted(
+                scores.items(), key=lambda x: x[1], reverse=True)
+            top_k_candidates = sorted_candidates[:top_k]
+
+            if not top_k_candidates:
+                break
+
             if temperature > 0.0:
-                top_scores = [math.exp((x[1] - max_score) / max(0.1, temperature)) for x in top_k_candidates]
-                sum_s = sum(top_scores)
-                probs = [s / sum_s for s in top_scores]
-                
-                r = random.random()
-                cumulative = 0.0
-                best_vocab_id = top_k_candidates[0][0]
-                for idx, prob in zip([x[0] for x in top_k_candidates], probs):
-                    cumulative += prob
-                    if r <= cumulative:
-                        best_vocab_id = idx
-                        break
+                max_score = top_k_candidates[0][1]
+                exp_scores = []
+                for tok_id, score in top_k_candidates:
+                    exp_val = math.exp((score - max_score) /
+                                       max(0.05, temperature))
+                    exp_scores.append((tok_id, exp_val))
+
+                sum_exp = sum(v for _, v in exp_scores)
+                if sum_exp <= 0:
+                    best_id = top_k_candidates[0][0]
+                else:
+                    r = random.random()
+                    cumulative = 0.0
+                    best_id = exp_scores[0][0]
+                    for tok_id, exp_val in exp_scores:
+                        cumulative += exp_val / sum_exp
+                        if r <= cumulative:
+                            best_id = tok_id
+                            break
             else:
-                best_vocab_id = top_k_candidates[0][0]
+                best_id = top_k_candidates[0][0]
 
-            generated_sequence.append(best_vocab_id)
-
-            # 5. 勝者の状態リセット (AHP: 後過分極) と疲労（ALIF）の蓄積
-            # 実質的に -45.0 (-15.0 - 30.0) のペナルティを課し、同じ文字の反復を完全に破壊する
-            potentials[best_vocab_id] = -15.0  
-            last_spike_times[best_vocab_id] = _t
-            thresholds[best_vocab_id] += 30.0  
-
-            context_tokens.append(best_vocab_id)
-            if len(context_tokens) > context_window:
-                context_tokens.pop(0)
+            generated_sequence.append(best_id)
+            context_tokens.append(best_id)
 
         if return_string:
             return self.decode_text(generated_sequence)
@@ -475,14 +498,16 @@ class SpikingLLM:
     def save_pretrained(self, save_directory: str) -> None:
         os.makedirs(save_directory, exist_ok=True)
         model_path = os.path.join(save_directory, "spiking_llm_weights.json")
-        
+
         serializable_synapses = {}
         for delay, pre_dict in self.pretrained_synapses.items():
             serializable_synapses[str(delay)] = {}
             for pre, post_dict in pre_dict.items():
-                serializable_synapses[str(delay)][str(pre)] = {str(post): w for post, w in post_dict.items()}
-                
-        raw_direct_map = {str(k): {str(tk): float(tv) for tk, tv in v.items()} for k, v in self._direct_map.items()}
+                serializable_synapses[str(delay)][str(pre)] = {
+                    str(post): w for post, w in post_dict.items()}
+
+        raw_direct_map = {str(k): {str(tk): float(tv) for tk, tv in v.items()}
+                          for k, v in self._direct_map.items()}
 
         model_data = {
             "pretrained_synapses": serializable_synapses,
@@ -503,20 +528,21 @@ class SpikingLLM:
         model_path = os.path.join(load_directory, "spiking_llm_weights.json")
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"モデルファイルが見つかりません: {model_path}")
-            
+
         with open(model_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            
+
         instance = cls(
             sdr_size=data.get("sdr_size", 128),
             vocab_size=data.get("vocab_size", 65536),
             context_window=data.get("context_window", 15)
         )
-        
+
         instance.char_to_id = data.get("char_to_id", {})
-        instance.id_to_char = {int(k): v for k, v in data.get("id_to_char", {}).items()}
+        instance.id_to_char = {
+            int(k): v for k, v in data.get("id_to_char", {}).items()}
         instance.next_id = data.get("next_id", 0)
-        
+
         synapses = data.get("pretrained_synapses", {})
         for delay_str, pre_dict in synapses.items():
             delay = int(delay_str)
@@ -525,16 +551,19 @@ class SpikingLLM:
                 pre = int(pre_str)
                 instance.pretrained_synapses[delay][pre] = {}
                 for post_str, w in post_dict.items():
-                    instance.pretrained_synapses[delay][pre][int(post_str)] = float(w)
-                    
+                    instance.pretrained_synapses[delay][pre][int(
+                        post_str)] = float(w)
+
         def parse_tuple(s: str) -> Tuple[int, ...]:
             s = s.strip("()")
-            if not s: return ()
+            if not s:
+                return ()
             return tuple(int(x.strip()) for x in s.split(",") if x.strip())
-            
+
         raw_direct_map = data.get("direct_map", {})
-        instance._direct_map = {parse_tuple(k): {int(tk): float(tv) for tk, tv in v.items()} for k, v in raw_direct_map.items()}
-        
+        instance._direct_map = {parse_tuple(k): {int(tk): float(
+            tv) for tk, tv in v.items()} for k, v in raw_direct_map.items()}
+
         print(f"[SpikingLLM] モデルをロードしました: {model_path}")
         return instance
 
