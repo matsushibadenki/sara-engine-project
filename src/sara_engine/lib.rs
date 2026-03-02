@@ -1,6 +1,6 @@
 // ディレクトリパス: src/sara_engine/lib.rs
-// ファイルの日本語タイトル: Rustハイブリッド SNNコア (フェーズ2予測符号化・スケーラブルLTM統合版)
-// ファイルの目的や内容: 既存のWTAやSDR機能に加え、Predictive Routing(予測ルーティング)による誤差主導の自律学習機能と、数百万トークン規模の高速SDR連想メモリ(ScalableSDRMemory)を追加。
+// ファイルの日本語タイトル: Rustハイブリッド SNNコア (フェーズ2予測符号化・スケーラブルLTM・Direct Synaptic Wiring統合版)
+// ファイルの目的や内容: 既存のWTAやSDR機能、Predictive Routingによる誤差主導の自律学習機能、数百万トークン規模の高速SDR連想メモリに加え、コーパスから直接シナプス結線を高速に構築するDirect Synaptic Wiring機能を統合。遅延シナプス（Polychronization）とPMIによるOne-Shot学習を超高速で処理する。
 
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
@@ -394,13 +394,11 @@ impl ScalableSDRMemory {
         }
     }
 
-    /// メモリの追加 (行列演算なしの疎な格納)
     pub fn add_memory(&mut self, mem_id: usize, sdr: Vec<usize>) {
         let set: HashSet<usize> = sdr.into_iter().collect();
         self.records.push((mem_id, set));
     }
 
-    /// ファジー検索 (Intersectionを活用した高速連想)
     pub fn search(&self, query_sdr: Vec<usize>, top_k: usize) -> Vec<(usize, f32)> {
         let query_set: HashSet<usize> = query_sdr.into_iter().collect();
         let query_len = query_set.len() as f32;
@@ -415,28 +413,80 @@ impl ScalableSDRMemory {
             }
         }
 
-        // スコア降順ソート
         results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         results.into_iter().take(top_k).collect()
     }
     
-    pub fn clear(&mut self) {
-        self.records.clear();
-    }
+    pub fn clear(&mut self) { self.records.clear(); }
+    pub fn memory_count(&self) -> usize { self.records.len() }
+}
 
-    pub fn memory_count(&self) -> usize {
-        self.records.len()
+// =====================================================================
+// [6] Direct Synaptic Wiring (One-Shot Corpus Learning)
+// =====================================================================
+
+/// テキストコーパスから抽出された文字IDリスト（tokens）を走査し、
+/// 遅延時間（Polychronization）とPMI（Pointwise Mutual Information）による重み正規化を用いて、
+/// 高速にシナプス結線を構築します。
+#[pyfunction]
+fn build_direct_synapses(tokens: Vec<usize>, context_window: usize) -> PyResult<HashMap<usize, HashMap<usize, HashMap<usize, f32>>>> {
+    // delay -> pre_token -> post_token -> count
+    let mut co_occurrence: HashMap<usize, HashMap<usize, HashMap<usize, f64>>> = HashMap::new();
+    let mut unigram_counts: HashMap<usize, usize> = HashMap::new();
+    
+    let total_tokens = tokens.len();
+    
+    // 1パス目: ウィンドウ内の遅延距離ごとの共起カウント
+    for i in 0..total_tokens {
+        let current = tokens[i];
+        *unigram_counts.entry(current).or_insert(0) += 1;
+        
+        let end_idx = std::cmp::min(i + context_window + 1, total_tokens);
+        for j in (i + 1)..end_idx {
+            let delay = j - i;
+            let next_token = tokens[j];
+            
+            let delay_map = co_occurrence.entry(delay).or_insert_with(HashMap::new);
+            let targets = delay_map.entry(current).or_insert_with(HashMap::new);
+            *targets.entry(next_token).or_insert(0.0) += 1.0;
+        }
     }
+    
+    // 2パス目: カウントを確率的重みに正規化（PMI的アプローチ）
+    let mut synapses: HashMap<usize, HashMap<usize, HashMap<usize, f32>>> = HashMap::new();
+    for (delay, pre_dict) in co_occurrence.iter() {
+        let mut delay_synapses = HashMap::new();
+        for (pre, posts) in pre_dict.iter() {
+            if let Some(&pre_count) = unigram_counts.get(pre) {
+                let pre_count_f64 = pre_count as f64;
+                let mut target_map = HashMap::new();
+                
+                for (post, count) in posts.iter() {
+                    if let Some(&post_count) = unigram_counts.get(post) {
+                        let post_count_f64 = post_count as f64;
+                        // 無限ループを防ぐため、出現頻度の高い文字（空白など）への偏りを補正
+                        let weight = count / (pre_count_f64 * post_count_f64).sqrt();
+                        target_map.insert(*post, weight as f32);
+                    }
+                }
+                delay_synapses.insert(*pre, target_map);
+            }
+        }
+        synapses.insert(*delay, delay_synapses);
+    }
+    
+    Ok(synapses)
 }
 
 #[pymodule]
 fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calculate_sdr_overlap, m)?)?;
     m.add_function(wrap_pyfunction!(sparse_propagate_threshold, m)?)?;
+    m.add_function(wrap_pyfunction!(build_direct_synapses, m)?)?;
     m.add_class::<SpikeEngine>()?;
     m.add_class::<SpikeWTARouter>()?;
     m.add_class::<LIFNetwork>()?;
     m.add_class::<CausalSynapses>()?;
-    m.add_class::<ScalableSDRMemory>()?; // 新規追加
+    m.add_class::<ScalableSDRMemory>()?;
     Ok(())
 }

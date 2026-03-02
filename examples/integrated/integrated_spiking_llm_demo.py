@@ -1,111 +1,73 @@
-from src.sara_engine.encoders.spike_tokenizer import SpikeTokenizer
-from src.sara_engine.models.spiking_causal_lm import SpikingCausalLM
-import json
-import time
-import sys
+# examples/integrated/integrated_spiking_llm_demo.py
+# 日本語タイトル: スパイキングLLM 統合デモ（事前学習＋オンライン対話）
+# 目的: 統合されたSpikingLLMを用いて、大規模コーパスの事前学習と、STDPを用いたリアルタイムのオンライン学習・対話を行う。
+# {
+#     "//": "SpikingLLMの統合API（fit, learn_sequence, generate）の動作をテストします。"
+# }
+
 import os
-_FILE_INFO = {
-    "//": "ディレクトリパス: examples/integrated_spiking_llm_demo.py",
-    "//": "ファイルの日本語タイトル: 統合スパイキングLLMデモ (学習・生成・保存・チャット)",
-    "//": "ファイルの目的や内容: 複数のLLM関連デモを統合。BPEトークナイズ、STDP/Hebbian学習、自己回帰生成、モデルの保存・復元、および停止トークンによる制御を網羅する。"
-}
+import sys
+import time
 
+# プロジェクトルートのsrcをパスに追加
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
 
-# プロジェクトルートをパスに追加
-sys.path.insert(0, os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..')))
-
+from sara_engine.models.spiking_llm import SpikingLLM
 
 def main():
-    print("=== SARA Engine: Integrated Spiking LLM Demonstration ===\n")
-
-    workspace_dir = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), '../workspace/integrated_llm'))
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+    corpus_path = os.path.join(project_root, 'data/processed/corpus.txt')
+    workspace_dir = os.path.join(project_root, 'workspace/logs/integrated_llm')
     os.makedirs(workspace_dir, exist_ok=True)
-    model_path = os.path.join(workspace_dir, "model_state.json")
+    
+    # 1. モデルの初期化
+    print("[INFO] Initializing SpikingLLM...")
+    llm = SpikingLLM(sdr_size=128, vocab_size=65536, context_window=15)
 
-    # 1. データとトークナイザーの準備
-    corpus = [
-        "SARA Engine is a brain-inspired AI .",
-        "It uses Spiking Neural Networks for efficiency .",
-        "人工知能 の 未来 は スパイク に あります 。",
-        "User: こんにちは Assistant: こんにちは！SARAです。＜終＞"
-    ]
+    # 2. 事前学習 (Direct Wiring)
+    if os.path.exists(corpus_path):
+        print(f"\n[INFO] Loading corpus from {corpus_path}")
+        with open(corpus_path, 'r', encoding='utf-8', errors='ignore') as f:
+            text_data = f.read()
+        
+        print("[INFO] Starting Direct Wiring Pre-training...")
+        start_time = time.time()
+        llm.fit(text_data)
+        print(f"[INFO] Pre-training completed in {time.time() - start_time:.2f} seconds.")
+    else:
+        print(f"\n[WARNING] Corpus not found at {corpus_path}. Running without pre-training.")
 
-    tokenizer = SpikeTokenizer()
-    tokenizer.train(corpus)
-    vocab_size = tokenizer.vocab_size
-    print(f"[1] Tokenizer trained. Vocab size: {vocab_size}")
+    # 3. リアルタイム対話とオンライン学習 (STDP)
+    print("\n" + "="*50)
+    print("SARA Engine Interactive Mode (SpikingLLM Integrated)")
+    print("Type 'quit' or 'exit' to stop.")
+    print("="*50)
 
-    # 2. モデルの初期化 (LIFモデル採用)
-    # embed_dimを拡大して衝突を抑制
-    model = SpikingCausalLM(
-        vocab_size=vocab_size,
-        embed_dim=512,
-        hidden_dim=1024,
-        use_lif=True
-    )
-    print("[2] SpikingCausalLM initialized with LIF neurons.")
+    while True:
+        try:
+            prompt = input("\nUser > ")
+            if prompt.strip().lower() in ['quit', 'exit']:
+                break
+            if not prompt.strip():
+                continue
 
-    # 3. 学習フェーズ (STDP & Hebbian)
-    print("\n[3] Starting Training Phase...")
-    epochs = 20
-    start_time = time.time()
-    for epoch in range(epochs):
-        for text in corpus:
-            token_ids = tokenizer.encode(text)
-            # BOS(2)とEOS(3)を付与して学習
-            full_ids = [2] + token_ids + [3]
-            model.train_step(full_ids, learning_rate=0.3)
+            # a. ユーザーの入力をオンライン学習 (STDP / Fuzzy Recallに登録)
+            # これにより、会話の中で教えられた新しい概念をすぐに覚えます
+            prompt_tokens = llm.encode_text(prompt)
+            llm.learn_sequence(prompt_tokens)
 
-        if (epoch + 1) % 5 == 0:
-            print(f"  Epoch {epoch+1}/{epochs} completed.")
-    print(f"Training finished in {time.time() - start_time:.2f}s")
+            # b. モデルの推論 (事前知識 + オンライン記憶のハイブリッド)
+            print("SARA > ", end="", flush=True)
+            output = llm.generate(prompt=prompt, max_new_tokens=60, temperature=0.7)
+            print(output)
 
-    # 4. モデルの保存
-    print(f"\n[4] Saving model to {model_path}...")
-    # 既存のsave_pretrained互換の処理 (簡易版)
-    model.save_pretrained(model_path)
+        except KeyboardInterrupt:
+            print("\n[INFO] Exiting...")
+            break
 
-    # 5. 推論テスト (生成)
-    print("\n[5] Testing Generation...")
-    # 停止トークンの設定
-    # get_vocab() は { "文字列": ID } を返すため、条件に一致するトークンの "値(ID)" を取得する
-    vocab = tokenizer.get_vocab()
-    stop_ids = [tid for token,
-                tid in vocab.items() if "終" in token or "。" in token]
-
-    prompts = ["SARA Engine", "人工知能 の", "User: こんにちは"]
-
-    for prompt_text in prompts:
-        print(f"Prompt: '{prompt_text}'")
-        prompt_ids = [2] + tokenizer.encode(prompt_text)
-
-        # 自己回帰生成
-        generated_ids = model.generate(
-            prompt_ids,
-            max_new_tokens=15,
-            temperature=0.1,
-            stop_token_ids=stop_ids
-        )
-
-        result_text = tokenizer.decode(generated_ids)
-        print(f"Generated: '{result_text}'\n")
-
-    # 6. 復元テスト
-    print("[6] Verifying Save/Load...")
-    new_model = SpikingCausalLM(
-        vocab_size=vocab_size, embed_dim=512, hidden_dim=1024, use_lif=True)
-    new_model.load_pretrained(model_path)
-
-    # 同一入力で出力を比較
-    check_ids = new_model.generate(
-        [2] + tokenizer.encode("SARA Engine"), max_new_tokens=5)
-    if check_ids:
-        print("Success: Loaded model produced output.")
-
-    print("\n=== Integrated Demo Completed Successfully ===")
-
+    # 4. 学習結果の保存
+    save_dir = os.path.join(workspace_dir, "saved_model")
+    llm.save_pretrained(save_dir)
 
 if __name__ == "__main__":
     main()
