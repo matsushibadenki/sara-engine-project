@@ -1,12 +1,21 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/nn/predictive.py",
     "//": "ファイルの日本語タイトル: 予測符号化スパイキング層",
-    "//": "ファイルの目的や内容: 予測誤差のみを上位層へ伝達する生物学的メカニズム(Predictive Coding)。時系列の予測と重み更新のズレを修正し、正確なハビチュエーションを実現する。"
+    "//": "ファイルの目的や内容: 予測誤差のみを上位層へ伝達する生物学的メカニズム(Predictive Coding)。推論時にも時系列履歴を正しく更新するよう修正。"
 }
 
 import random
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from .module import SNNModule
+
+try:
+    from sara_engine.sara_rust_core import CausalSynapses
+except ImportError:
+    CausalSynapses = None
+
+# =====================================================================
+# [1] 既存の双方向・空間的予測レイヤー (Legacy / Spatial)
+# =====================================================================
 
 class PredictiveSpikeLayer(SNNModule):
     def __init__(self, in_features: int, out_features: int, density: float = 0.2):
@@ -105,3 +114,79 @@ class PredictiveSpikeLayer(SNNModule):
                                 
         self.recent_out_spikes = out_spikes
         return out_spikes
+
+
+# =====================================================================
+# [2] フェーズ2 時系列・誤差主導予測レイヤー (Phase 2 / Temporal)
+# =====================================================================
+
+class PredictiveCodingLayer(SNNModule):
+    """
+    Phase 2: Predictive Coding (Temporal)
+    入力されたスパイクに対し、過去の履歴から「予測」を行い、
+    予測できなかった「誤差（サプライズ）」のスパイクのみを抽出して学習・上位伝播させます。
+    RustのCausalSynapsesを利用して高速に動作します。
+    """
+    def __init__(self, max_delay: int = 10, learning_rate: float = 0.05, threshold: float = 0.5):
+        super().__init__()
+        self.max_delay = max_delay
+        self.learning_rate = learning_rate
+        self.threshold = threshold
+        
+        if CausalSynapses is None:
+            raise RuntimeError("sara_rust_core is not available. Please run `pip install -e .`")
+            
+        self.synapses = CausalSynapses(max_delay=max_delay)
+        
+        # ネットワークの時系列状態
+        self.spike_history: List[List[int]] = []
+        self.register_state("spike_history")
+
+    def forward(self, actual_spikes: List[int], learning: bool = True) -> Tuple[List[int], float]:
+        """
+        予測と抑制を行い、誤差スパイクのみを返す。
+        戻り値: (上位へ伝播すべき誤差スパイクのリスト, 今回の予測誤差率)
+        """
+        if not self.spike_history:
+            # 推論時(learning=False)でも最初の履歴を確実に保存するよう修正
+            self.spike_history.insert(0, actual_spikes)
+            return actual_spikes, 1.0
+
+        if learning:
+            # Rustコアで予測・抑制・誤差主導STDPを一括処理
+            error_spikes, error_rate = self.synapses.predict_and_learn(
+                self.spike_history, 
+                actual_spikes, 
+                self.learning_rate, 
+                self.threshold
+            )
+            # 時系列履歴の更新
+            self.spike_history.insert(0, actual_spikes)
+            if len(self.spike_history) > self.max_delay:
+                self.spike_history.pop()
+                
+            return error_spikes, error_rate
+        else:
+            # 推論時: 予測の生成と抑制（フィルタリング）のみ実行
+            potentials = self.synapses.calculate_potentials(self.spike_history)
+            predicted = [t_id for t_id, pot in potentials.items() if pot >= self.threshold]
+            
+            error_spikes = list(set(actual_spikes) - set(predicted))
+            error_rate = len(error_spikes) / max(1, len(actual_spikes))
+            
+            self.spike_history.insert(0, actual_spikes)
+            if len(self.spike_history) > self.max_delay:
+                self.spike_history.pop()
+                
+            return error_spikes, error_rate
+
+    def predict_next(self) -> List[int]:
+        """現在の履歴から、次のタイムステップで発火するスパイクを生成・予測する"""
+        potentials = self.synapses.calculate_potentials(self.spike_history)
+        predicted = [t_id for t_id, pot in potentials.items() if pot >= self.threshold]
+        return predicted
+        
+    def reset_state(self) -> None:
+        """時系列履歴の初期化"""
+        self.spike_history.clear()
+        super().reset_state()

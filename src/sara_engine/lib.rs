@@ -1,14 +1,23 @@
 // ディレクトリパス: src/sara_engine/lib.rs
-// ファイルの日本語タイトル: Rustハイブリッド SNNコア (ホメオスタシス対応版)
-// ファイルの目的や内容: SpikeWTARouterに生物学的なSpike Frequency Adaptation(発火頻度適応)を導入し、特定のエキスパートが一人勝ちするのを防ぐ。
+// ファイルの日本語タイトル: Rustハイブリッド SNNコア (フェーズ2予測符号化統合版)
+// ファイルの目的や内容: 既存のWTAやSDR機能に加え、Predictive Routing(予測ルーティング)による誤差主導の自律学習機能を追加。
 
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
 use std::collections::{HashMap, HashSet};
 
 // =====================================================================
-// [1] SpikeEngine & Sparse Propagation (Transformer / Attention Core)
+// [1] 基本演算 & Fuzzy Recall (Phase 2)
 // =====================================================================
+
+#[pyfunction]
+fn calculate_sdr_overlap(sdr_a: Vec<usize>, sdr_b: Vec<usize>) -> PyResult<f32> {
+    let set_a: HashSet<_> = sdr_a.into_iter().collect();
+    let set_b: HashSet<_> = sdr_b.into_iter().collect();
+    let intersect = set_a.intersection(&set_b).count();
+    if set_a.is_empty() || set_b.is_empty() { return Ok(0.0); }
+    Ok(intersect as f32 / (set_a.len().max(set_b.len()) as f32))
+}
 
 #[pyfunction]
 fn sparse_propagate_threshold(
@@ -67,6 +76,10 @@ fn sparse_propagate_threshold(
     Ok(fired)
 }
 
+// =====================================================================
+// [2] SpikeEngine (Transformer / Attention Core)
+// =====================================================================
+
 #[pyclass]
 pub struct SpikeEngine {
     weights: Vec<HashMap<usize, f32>>,
@@ -86,17 +99,9 @@ impl SpikeEngine {
         }
     }
 
-    pub fn set_weights(&mut self, weights: Vec<HashMap<usize, f32>>) {
-        self.weights = weights;
-    }
-
-    pub fn get_weights(&self) -> Vec<HashMap<usize, f32>> {
-        self.weights.clone()
-    }
-
-    pub fn reset_potentials(&mut self) {
-        self.potentials.clear();
-    }
+    pub fn set_weights(&mut self, weights: Vec<HashMap<usize, f32>>) { self.weights = weights; }
+    pub fn get_weights(&self) -> Vec<HashMap<usize, f32>> { self.weights.clone() }
+    pub fn reset_potentials(&mut self) { self.potentials.clear(); }
 
     pub fn propagate(&mut self, active_spikes: Vec<usize>, threshold: f32, max_spikes: usize) -> Vec<usize> {
         for val in self.potentials.values_mut() { *val *= self.decay_rate; }
@@ -157,7 +162,7 @@ impl SpikeEngine {
 }
 
 // =====================================================================
-// [2] Cortical Columns (MoE) / Winner-Take-All Router with Homeostasis
+// [3] Cortical Columns (MoE) / Winner-Take-All Router with Homeostasis
 // =====================================================================
 
 #[pyclass]
@@ -165,7 +170,7 @@ pub struct SpikeWTARouter {
     weights: Vec<HashMap<usize, f32>>,
     num_experts: usize,
     top_k: usize,
-    thresholds: Vec<f32>, // ホメオスタシス用の疲労度（閾値）
+    thresholds: Vec<f32>,
 }
 
 #[pymethods]
@@ -174,29 +179,13 @@ impl SpikeWTARouter {
     pub fn new(input_dim: usize, num_experts: usize, top_k: usize) -> Self {
         let mut weights = Vec::with_capacity(input_dim);
         for _ in 0..input_dim { weights.push(HashMap::new()); }
-        SpikeWTARouter { 
-            weights, 
-            num_experts, 
-            top_k,
-            thresholds: vec![0.0; num_experts]
-        }
+        SpikeWTARouter { weights, num_experts, top_k, thresholds: vec![0.0; num_experts] }
     }
 
-    pub fn set_weights(&mut self, weights: Vec<HashMap<usize, f32>>) {
-        self.weights = weights;
-    }
-
-    pub fn get_weights(&self) -> Vec<HashMap<usize, f32>> {
-        self.weights.clone()
-    }
-    
-    pub fn get_thresholds(&self) -> Vec<f32> {
-        self.thresholds.clone()
-    }
-    
-    pub fn set_thresholds(&mut self, thresholds: Vec<f32>) {
-        self.thresholds = thresholds;
-    }
+    pub fn set_weights(&mut self, weights: Vec<HashMap<usize, f32>>) { self.weights = weights; }
+    pub fn get_weights(&self) -> Vec<HashMap<usize, f32>> { self.weights.clone() }
+    pub fn get_thresholds(&self) -> Vec<f32> { self.thresholds.clone() }
+    pub fn set_thresholds(&mut self, thresholds: Vec<f32>) { self.thresholds = thresholds; }
 
     pub fn route(&mut self, input_spikes: Vec<usize>, learning: bool) -> Vec<usize> {
         let mut potentials = vec![0.0; self.num_experts];
@@ -208,11 +197,8 @@ impl SpikeWTARouter {
             }
         }
         
-        // 疲労度（閾値）を引いてポテンシャルを調整
         let mut adjusted_potentials = potentials.clone();
-        for i in 0..self.num_experts {
-            adjusted_potentials[i] -= self.thresholds[i];
-        }
+        for i in 0..self.num_experts { adjusted_potentials[i] -= self.thresholds[i]; }
 
         let mut sorted: Vec<(usize, f32)> = adjusted_potentials.into_iter().enumerate().collect();
         sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -223,16 +209,10 @@ impl SpikeWTARouter {
             winners.push(exp_id);
         }
 
-        // 学習時は勝者の閾値を上げ（疲れさせ）、全体を減衰させる
         if learning {
-            for i in 0..self.num_experts {
-                self.thresholds[i] *= 0.95; // 疲労の回復（減衰）
-            }
-            for &w_id in &winners {
-                self.thresholds[w_id] += 2.0; // 勝つと疲労が溜まる
-            }
+            for i in 0..self.num_experts { self.thresholds[i] *= 0.95; }
+            for &w_id in &winners { self.thresholds[w_id] += 2.0; }
         }
-
         winners
     }
 
@@ -243,12 +223,8 @@ impl SpikeWTARouter {
                 let targets = &mut self.weights[spike];
                 let mut to_remove = Vec::new();
                 for (&exp_id, w) in targets.iter_mut() {
-                    if winner_set.contains(&exp_id) {
-                        *w = (*w + lr).min(3.0);
-                    } else {
-                        *w = (*w - lr * 0.1).max(0.0);
-                        if *w < 0.05 { to_remove.push(exp_id); }
-                    }
+                    if winner_set.contains(&exp_id) { *w = (*w + lr).min(3.0); }
+                    else { *w = (*w - lr * 0.1).max(0.0); if *w < 0.05 { to_remove.push(exp_id); } }
                 }
                 for t in to_remove { targets.remove(&t); }
                 for &exp_id in &winner_set {
@@ -271,7 +247,7 @@ impl SpikeWTARouter {
 }
 
 // =====================================================================
-// [3] Phase 3 Core
+// [4] LIF & Predictive Synapses
 // =====================================================================
 
 #[pyclass]
@@ -316,6 +292,7 @@ impl CausalSynapses {
         for _ in 0..=max_delay { weights.push(HashMap::new()); }
         CausalSynapses { weights, max_delay }
     }
+
     pub fn train_step(&mut self, spike_history: Vec<Vec<usize>>, next_token: usize, learning_rate: f32) {
         for (delay, active_spikes) in spike_history.iter().enumerate() {
             if delay > self.max_delay { break; }
@@ -331,6 +308,7 @@ impl CausalSynapses {
             }
         }
     }
+
     pub fn calculate_potentials(&self, spike_history: Vec<Vec<usize>>) -> HashMap<usize, f32> {
         let mut potentials: HashMap<usize, f32> = HashMap::new();
         for (delay, active_spikes) in spike_history.iter().enumerate() {
@@ -346,8 +324,7 @@ impl CausalSynapses {
         }
         potentials
     }
-    /// 各トークンIDへの受容結合重みの合計（ファンイン）を返す。
-    /// ハブトークンの影響を正規化するために使用する。
+
     pub fn get_token_fan_in(&self) -> HashMap<usize, f32> {
         let mut fan_in: HashMap<usize, f32> = HashMap::new();
         for delay_weights in &self.weights {
@@ -359,10 +336,53 @@ impl CausalSynapses {
         }
         fan_in
     }
+
+    /// [Phase 2] Predictive Routing: トップダウン予測による抑制と、誤差主導の自律STDP学習
+    pub fn predict_and_learn(&mut self, spike_history: Vec<Vec<usize>>, actual_next_spikes: Vec<usize>, learning_rate: f32, threshold: f32) -> (Vec<usize>, f32) {
+        // 1. 履歴からの事前予測 (Top-down expectation)
+        let potentials = self.calculate_potentials(spike_history.clone());
+        let mut predicted_set: HashSet<usize> = HashSet::new();
+        for (&target, &pot) in potentials.iter() {
+            if pot >= threshold { predicted_set.insert(target); }
+        }
+        
+        let actual_set: HashSet<usize> = actual_next_spikes.into_iter().collect();
+        
+        // 2. 抑制 (Inhibition): 実際の入力から予測を引く。残ったものが「予測誤差(サプライズ)」
+        let error_spikes: Vec<usize> = actual_set.difference(&predicted_set).cloned().collect();
+        
+        let error_rate = if actual_set.is_empty() { 
+            0.0 
+        } else { 
+            error_spikes.len() as f32 / actual_set.len() as f32 
+        };
+
+        // 3. 誤差主導STDP (Error-Driven STDP): 予測が外れた部分のみ重みを強化する
+        if !error_spikes.is_empty() {
+            for (delay, active_spikes) in spike_history.iter().enumerate() {
+                if delay > self.max_delay { break; }
+                let eff_lr = learning_rate * (1.0 - (delay as f32) * 0.08);
+                if eff_lr <= 0.0 { continue; }
+                
+                for &s in active_spikes.iter() {
+                    let targets = self.weights[delay].entry(s).or_insert_with(HashMap::new);
+                    // 誤差スパイクに対してのみ結合を強化
+                    for &err_spike in &error_spikes {
+                        let old_w = *targets.get(&err_spike).unwrap_or(&0.0);
+                        targets.insert(err_spike, old_w + eff_lr * (1.0 - old_w));
+                    }
+                }
+            }
+        }
+        
+        // 予測が完璧だった場合、error_spikesは空になり上位への伝播は停止される
+        (error_spikes, error_rate)
+    }
 }
 
 #[pymodule]
 fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(calculate_sdr_overlap, m)?)?;
     m.add_function(wrap_pyfunction!(sparse_propagate_threshold, m)?)?;
     m.add_class::<SpikeEngine>()?;
     m.add_class::<SpikeWTARouter>()?;
