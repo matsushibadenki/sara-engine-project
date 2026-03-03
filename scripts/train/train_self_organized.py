@@ -1,7 +1,7 @@
+# ファイルの日本語タイトル: 自己組織化学習スクリプト (SNN固有機能ベース)
+# ファイルの目的や内容: 外部のLLM（教師モデル）を使わず、STDPや予測符号化といったSNN固有のダイナミクスを用いてテキストコーパスから自律的にオンライン学習する。
 # {
-#     "//": "ディレクトリパス: scripts/train/train_self_organized.py",
-#     "//": "ファイルの日本語タイトル: 自己組織化学習スクリプト (SNN固有機能ベース)",
-#     "//": "ファイルの目的や内容: 外部のLLM（教師モデル）を使わず、STDPや予測符号化といったSNN固有のダイナミクスを用いてテキストコーパスから自律的にオンライン学習する。"
+#     "//": "古い形式のモデルファイルをロードする処理を整理し、fit()による事前学習を正しく実行するように修正"
 # }
 
 import os
@@ -28,17 +28,13 @@ def train_self_organized(corpus_path, save_dir, vocab_size=65536, sdr_size=128, 
     llm = SpikingLLM(sdr_size=sdr_size, vocab_size=vocab_size, context_window=context_window)
     
     # 既存の記憶（モデル）があれば読み込む
-    if os.path.exists(os.path.join(save_dir, "spiking_llm_weights.json")):
+    model_file_path = os.path.join(save_dir, "spiking_llm_weights.json")
+    if os.path.exists(model_file_path):
         try:
             print(f"[INFO] Found existing memory at {save_dir}. Restoring...")
             if hasattr(SpikingLLM, 'from_pretrained'):
                 llm = SpikingLLM.from_pretrained(save_dir)
                 print("[INFO] Successfully restored previous state.")
-            elif hasattr(llm, 'load_pretrained'):
-                llm.load_pretrained(save_dir)
-                print("[INFO] Successfully restored previous state.")
-            else:
-                print("[WARNING] Load method not found in SpikingLLM. Starting fresh.")
         except Exception as e:
             print(f"[WARNING] Failed to load existing model: {e}. Starting fresh.")
 
@@ -49,38 +45,31 @@ def train_self_organized(corpus_path, save_dir, vocab_size=65536, sdr_size=128, 
 
     print(f"[INFO] Reading corpus from {corpus_path}...")
     with open(corpus_path, "r", encoding="utf-8", errors="ignore") as f:
-        # 大規模データでも処理しやすいように行単位で読み込む
-        lines = f.readlines()
+        full_text = f.read()
 
-    if not lines:
+    if not full_text.strip():
         print("[WARNING] The corpus file is empty.")
         return
 
-    # 3. 自律学習 (Predictive Coding / STDP Sequence Learning)
-    print(f"[INFO] Learning {len(lines)} sequences via STDP / Local Plasticity...")
+    # 3. Direct Wiring (Rustコアによる高速な長期記憶の構築)
+    print(f"[INFO] Building Direct Synaptic Wiring (Long-term Memory)...")
     start_time = time.time()
+    if hasattr(llm, 'fit'):
+        llm.fit(full_text)
     
-    checkpoint_interval = max(1, len(lines) // 10) # 10%ごとにチェックポイント保存
+    # 4. SDR/STDP によるオンライン動的記憶の学習
+    lines = [line.strip() for line in full_text.split('\n') if line.strip()]
+    print(f"[INFO] Learning {len(lines)} sequences via STDP / Local Plasticity...")
+    
+    checkpoint_interval = max(1, len(lines) // 10)
     
     try:
         for i, line in enumerate(tqdm.tqdm(lines, desc="Self-Organizing")):
-            line = line.strip()
-            if not line:
-                continue
-                
-            # a. テキストをSNN用のトークンにエンコード
             tokens = llm.encode_text(line)
             
-            # b. SNN独自の系列学習（時間差に基づくシナプス更新）
-            # ここで誤差逆伝播法を使わず、ローカルな発火タイミングから因果関係を学習します
-            if len(tokens) > 1:
-                if hasattr(llm, 'learn_sequence'):
-                    llm.learn_sequence(tokens)
-                elif hasattr(llm, 'fit'):
-                    # フォールバック: fitメソッドが単一文字列を受け取る場合
-                    llm.fit(line)
+            if len(tokens) > 1 and hasattr(llm, 'learn_sequence'):
+                llm.learn_sequence(tokens)
                 
-            # c. 定期的なチェックポイント保存（メモリ揮発やクラッシュ対策）
             if (i + 1) % checkpoint_interval == 0:
                 if hasattr(llm, 'save_pretrained'):
                     llm.save_pretrained(save_dir)
@@ -88,12 +77,11 @@ def train_self_organized(corpus_path, save_dir, vocab_size=65536, sdr_size=128, 
     except KeyboardInterrupt:
         print("\n[WARNING] Training interrupted by user. Saving current progress...")
     
-    # 4. 最終保存とシナプス整理
+    # 5. 最終保存とシナプス整理
     print("[INFO] Saving final memory state...")
     if hasattr(llm, 'save_pretrained'):
         llm.save_pretrained(save_dir)
         
-    # もし Synaptic Pruning（忘却によるメモリ最適化）メソッドが実装されていれば実行する
     if hasattr(llm, 'prune_synapses'):
         print("[INFO] Pruning weak synapses for memory efficiency...")
         llm.prune_synapses(threshold=0.01)
@@ -103,7 +91,6 @@ def train_self_organized(corpus_path, save_dir, vocab_size=65536, sdr_size=128, 
     print(f"✨ Self-Organized Training completed in {elapsed:.2f} seconds.")
 
 if __name__ == "__main__":
-    # デフォルトのパス設定
     corpus_file = os.path.join(project_root, "data", "processed", "corpus.txt")
     model_dir = os.path.join(project_root, "workspace", "models", "self_organized_llm")
     

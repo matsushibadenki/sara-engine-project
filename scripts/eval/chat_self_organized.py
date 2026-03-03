@@ -46,6 +46,8 @@ def main():
     try:
         llm = SpikingLLM.from_pretrained(model_dir)
         print("[INFO] Successfully loaded self-organized memory.")
+        print("\n⚠️  [WARNING] 以前の文字ベースモデルの重みが残っている場合、推論品質が低下する場合があります。")
+        print("   SaraTokenizerを導入した単語ベースでの学習を推奨します。")
     except Exception as e:
         import traceback
         print(f"[ERROR] Failed to load model: {e}")

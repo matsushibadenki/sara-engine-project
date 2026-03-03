@@ -281,14 +281,11 @@ class SpikingLLM:
         return tuple(sdr)
 
     def learn_sequence(self, token_ids: List[int]) -> None:
-        """
-        時間差に基づくシナプス更新をオンラインで逐次実行する。
-        """
         if not self.enable_learning or len(token_ids) < 2:
             return
 
         self.reset_state()
-        context_window = self.context_window
+        context_window = 64
         context_tokens: List[int] = []
 
         for t in range(len(token_ids) - 1):
@@ -299,27 +296,6 @@ class SpikingLLM:
             if len(context_tokens) > context_window:
                 context_tokens.pop(0)
 
-            # --- 1. Direct Wiring (N-gram) のオンライン学習 ---
-            for delay_idx, past_tok in enumerate(reversed(context_tokens)):
-                delay = delay_idx + 1
-                if delay not in self.pretrained_synapses:
-                    self.pretrained_synapses[delay] = {}
-                if past_tok not in self.pretrained_synapses[delay]:
-                    self.pretrained_synapses[delay][past_tok] = {}
-                
-                # LTP (Long-Term Potentiation): 共起関係の強化
-                w = self.pretrained_synapses[delay][past_tok].get(next_token, 0.0)
-                self.pretrained_synapses[delay][past_tok][next_token] = min(1.0, w + 0.1)
-
-                # LTD (Long-Term Depression): シナプスの整理と忘却
-                if len(self.pretrained_synapses[delay][past_tok]) > 20:
-                    to_remove = [k for k, v in self.pretrained_synapses[delay][past_tok].items() if v < 0.05]
-                    for k in to_remove:
-                        del self.pretrained_synapses[delay][past_tok][k]
-                    for k in self.pretrained_synapses[delay][past_tok].keys():
-                        self.pretrained_synapses[delay][past_tok][k] *= 0.98
-
-            # --- 2. SDR / STDP 学習 ---
             input_spikes = self._encode_to_sdr(context_tokens)
             sdr_k = self._sdr_key(input_spikes)
 
@@ -356,9 +332,9 @@ class SpikingLLM:
                             if self.lm_head_w[pre_id][post_id] < 0.1:
                                 del self.lm_head_w[pre_id][post_id]
 
-    _PUNCTUATIONS: Set[str] = {
-        '。', '、', '（', '）', '「', '」', '・', '！', '？',
-        ')', '(', ',', '.', ':', ';', '\n', '　', ' '
+    _PENALTY_EXEMPT_CHARS: Set[str] = {
+        '。', '、', '\n', '　', ' ', '（', '）', '「', '」', '・',
+        ')', '(', ',', '.', ':', ';',
     }
 
     def _is_ascii_char(self, tok_id: int) -> bool:
@@ -372,180 +348,163 @@ class SpikingLLM:
         prompt: Optional[str] = None,
         prompt_tokens: Optional[List[int]] = None,
         max_new_tokens: int = 50,
-        top_k: int = 8,
+        top_k: int = 5,
         temperature: float = 0.3,
-        repetition_penalty: float = 1.5,
+        repetition_penalty: float = 1.2,
         **kwargs: Any,
     ) -> str | List[int]:
-        """
-        N-gram条件付き確率サンプリングによるテキスト生成。
-        Coincidence Detection（同時発火検出）により、文脈の連続性を非線形に評価する。
-        """
+        
         return_string = False
         if prompt is not None:
             prompt_tokens = [self.char_to_id[c]
                              for c in prompt if c in self.char_to_id]
             return_string = True
+            
+            if not prompt_tokens and prompt.strip():
+                return "（未知の入力スパイクです。記憶にありません）" if return_string else []
+                
         elif prompt_tokens is None:
             prompt_tokens = list(kwargs.get("input_spikes", []))
 
         max_new_tokens = int(kwargs.get("max_length", max_new_tokens))
         generated_sequence: List[int] = []
+        
         if not prompt_tokens:
             return "" if return_string else generated_sequence
 
-        punc_ids: Set[int] = {
-            self.char_to_id[c] for c in self._PUNCTUATIONS
+        exempt_ids: Set[int] = {
+            self.char_to_id[c] for c in self._PENALTY_EXEMPT_CHARS
+            if c in self.char_to_id
+        }
+        
+        # 💡文末記号（生成を終了するトリガー）を定義
+        end_of_sentence_ids: Set[int] = {
+            self.char_to_id[c] for c in ('。', '！', '？', '\n')
             if c in self.char_to_id
         }
 
+        # === 1. 厳格な「無知の自覚」（Hallucination防止） ===
+        if len(prompt_tokens) >= 2:
+            known_transitions = 0
+            for i in range(len(prompt_tokens) - 1):
+                pre = prompt_tokens[i]
+                post = prompt_tokens[i+1]
+                if 1 in self.pretrained_synapses and pre in self.pretrained_synapses[1] and post in self.pretrained_synapses[1][pre]:
+                    known_transitions += 1
+            
+            if known_transitions == 0:
+                return "（知識ネットワークにこの文脈に続く概念が見つかりません。別の言葉で試してください）" if return_string else []
+
         context_tokens: List[int] = list(prompt_tokens)
         recent_window = max(self.context_window, 20)
-        
+
         fatigue: Dict[int, float] = defaultdict(float)
 
         for _t in range(max_new_tokens):
             scores: Dict[int, float] = defaultdict(float)
-            # 同時発火（複数の過去文字から支持された回数）を記録
-            hit_counts: Dict[int, int] = defaultdict(int)
+            votes: Dict[int, List[int]] = defaultdict(list)
 
-            # === 1. Direct Wiring (事前学習N-gram) からのスコア集計 ===
-            raw_recent = context_tokens[-self.context_window:]
-            
-            # 発火リセット機構：直近に句読点があれば、それより前の文脈（スパイク）は遮断する
-            recent = []
-            for tok in reversed(raw_recent):
-                recent.insert(0, tok)
-                if tok in punc_ids and len(recent) > 1:
-                    break
+            active_recent = context_tokens[-self.context_window:]
 
-            if recent:
-                last_token = recent[-1]
-                if 1 in self.pretrained_synapses and last_token in self.pretrained_synapses[1]:
-                    post_weights = self.pretrained_synapses[1][last_token]
-                    for post_token, weight in post_weights.items():
-                        if post_token < self.vocab_size:
-                            scores[post_token] = math.log1p(weight * 10.0) * 1.5
-                            hit_counts[post_token] += 1
-
-            for reversed_idx in range(1, len(recent)):
-                pre_token = recent[-(reversed_idx + 1)]
+            # === 2. Direct Wiring (遅延シナプス) ===
+            for reversed_idx in range(len(active_recent)):
+                pre_token = active_recent[-(reversed_idx + 1)]
                 delay = reversed_idx + 1
-                if delay not in self.pretrained_synapses:
-                    continue
-                if pre_token not in self.pretrained_synapses[delay]:
-                    continue
+                
+                if delay in self.pretrained_synapses and pre_token in self.pretrained_synapses[delay]:
+                    context_factor = 0.75 ** (delay - 1)
+                    for post_token, weight in self.pretrained_synapses[delay][pre_token].items():
+                        if post_token < self.vocab_size:
+                            scores[post_token] += weight * context_factor
+                            votes[post_token].append(delay)
 
-                post_weights = self.pretrained_synapses[delay][pre_token]
-                if not post_weights:
-                    continue
-
-                context_factor = 0.65 ** (delay - 1)
-                for post_token, weight in post_weights.items():
-                    if post_token < self.vocab_size and post_token in scores:
-                        contribution = math.log1p(weight * 10.0) * context_factor
-                        scores[post_token] += contribution
-                        hit_counts[post_token] += 1
-
-            # === Coincidence Detection (同時発火による非線形増幅) ===
-            # 独立した文字の足し算ではなく、「連続したフレーズ」としての一致を圧倒的に評価する
+            # === 3. 樹状突起での同時発火検出 (Coincidence Detection) ===
             for tok_id in list(scores.keys()):
-                hits = hit_counts[tok_id]
+                hits = len(votes[tok_id])
                 if hits > 1:
-                    # 2文字以上から同時に予測された場合、スコアを指数関数的に倍増
-                    scores[tok_id] *= (2.0 ** (hits - 1))
+                    scores[tok_id] *= (3.0 ** (hits - 1)) # 指数関数的ブースト
 
-            # === 2. SDR Fuzzy Recall (オンライン学習の短期記憶) ===
+            # === 4. SDR Fuzzy Recall (エピソード記憶 / STDP) ===
             sdr_context = context_tokens[-min(5, len(context_tokens)):]
             current_spikes = self._encode_to_sdr(sdr_context)
             sdr_k = self._sdr_key(current_spikes)
 
-            recalled, confidence = self.recall(sdr_k, threshold=0.85)
+            recalled, confidence = self.recall(sdr_k, threshold=0.75)
             if recalled is not None:
                 for tok_id, count in recalled.items():
                     if tok_id < self.vocab_size:
-                        scores[tok_id] += count * confidence * 0.2
+                        scores[tok_id] += count * confidence * 2.0
 
-            # === 3. SNN動的疲労モデル（不応期）===
+            if not scores:
+                break
+
+            # 発話開始時の記号ニューロン抑制
+            if not generated_sequence:
+                for pid in exempt_ids:
+                    if pid in scores:
+                        scores[pid] = 0.0
+
+            # === 5. ALIF (適応的閾値) によるニューロンの疲労ペナルティ ===
             for tok_id in list(scores.keys()):
-                if fatigue[tok_id] > 0.1:
-                    scores[tok_id] /= (1.0 + fatigue[tok_id] * 2.5)
+                if fatigue[tok_id] > 0.0:
+                    if tok_id in exempt_ids:
+                        scores[tok_id] /= (1.0 + fatigue[tok_id] * 0.05)
+                    else:
+                        scores[tok_id] /= (1.0 + fatigue[tok_id] * 0.5)
 
-            # === 4. 記号スパムの抑制 ===
-            if len(context_tokens) >= 1:
-                last_tok = context_tokens[-1]
-                if last_tok in punc_ids:
-                    for pid in punc_ids:
-                        if pid in scores:
-                            scores[pid] *= 0.05
-                
-                recent_10 = context_tokens[-10:]
-                p_count = sum(1 for x in recent_10 if x in punc_ids)
-                if p_count >= 3:
-                    for pid in punc_ids:
-                        if pid in scores:
-                            scores[pid] *= 0.01
-
-            # === 5. N-gramフレーズ繰り返し防止 ===
+            # N-gram 堂々巡りの強力なブロック
             for ngram_len in (2, 3, 4, 5, 6):
-                if len(context_tokens) >= ngram_len + 1:
+                if len(context_tokens) >= ngram_len:
                     tail = tuple(context_tokens[-ngram_len:])
-                    search_range = context_tokens[:-ngram_len]
-                    for i in range(len(search_range) - ngram_len + 1):
-                        past_ngram = tuple(search_range[i:i + ngram_len])
-                        if past_ngram == tail:
-                            if i + ngram_len < len(search_range):
-                                repeat_tok = search_range[i + ngram_len]
+                    for i in range(len(context_tokens) - ngram_len):
+                        if tuple(context_tokens[i:i+ngram_len]) == tail:
+                            if i + ngram_len < len(context_tokens):
+                                repeat_tok = context_tokens[i+ngram_len]
                                 if repeat_tok in scores:
-                                    scores[repeat_tok] *= 0.01
+                                    scores[repeat_tok] = 0.0
 
-            # === 6. ASCII文字連続ペナルティ ===
+            # ASCIIペナルティ
             for tok_id in list(scores.keys()):
                 if self._is_ascii_char(tok_id):
-                    scores[tok_id] *= 0.3
+                    scores[tok_id] *= 0.1
 
-            if len(context_tokens) >= 1 and self._is_ascii_char(context_tokens[-1]):
-                ascii_penalty = 0.3
-                if len(context_tokens) >= 2 and self._is_ascii_char(context_tokens[-2]):
-                    ascii_penalty = 0.05
-                for tok_id in list(scores.keys()):
-                    if self._is_ascii_char(tok_id):
-                        scores[tok_id] *= ascii_penalty
-
-            # === 7. Repetition Penalty ===
+            # Repetition Penalty
             recent_generated = context_tokens[-recent_window:]
             recent_counts: Dict[int, int] = defaultdict(int)
             for tok in recent_generated:
                 recent_counts[tok] += 1
 
             for tok_id in list(scores.keys()):
-                if tok_id in recent_counts and tok_id not in punc_ids:
+                if tok_id in recent_counts and tok_id not in exempt_ids:
                     count = recent_counts[tok_id]
                     penalty = repetition_penalty ** count
                     scores[tok_id] /= penalty
 
-            # === スコアのクレンジングと強制終了 ===
+            # === 6. 低スコアノイズの絶対的カット（崩壊防止の強化） ===
+            max_score = max(scores.values()) if scores else 0.0
+            if max_score < 0.1:
+                break
+                
+            # 💡 トップ候補のスコアの20%未満、または絶対値0.2未満の候補は完全に切り捨てる
+            threshold = max(max_score * 0.2, 0.2)
             for tok_id in list(scores.keys()):
-                if scores[tok_id] <= 0.0001:
+                if scores[tok_id] < threshold:
                     del scores[tok_id]
 
             if not scores:
                 break
 
-            # === 8. Top-k フィルタリング + Temperature サンプリング ===
-            sorted_candidates = sorted(
-                scores.items(), key=lambda x: x[1], reverse=True)
+            sorted_candidates = sorted(scores.items(), key=lambda x: x[1], reverse=True)
             top_k_candidates = sorted_candidates[:top_k]
 
             if not top_k_candidates:
                 break
 
             if temperature > 0.0:
-                max_score = top_k_candidates[0][1]
+                max_score_topk = top_k_candidates[0][1]
                 exp_scores = []
                 for tok_id, score in top_k_candidates:
-                    exp_val = math.exp((score - max_score) /
-                                       max(0.05, temperature))
+                    exp_val = math.exp((score - max_score_topk) / max(0.05, temperature))
                     exp_scores.append((tok_id, exp_val))
 
                 sum_exp = sum(v for _, v in exp_scores)
@@ -563,12 +522,19 @@ class SpikingLLM:
             else:
                 best_id = top_k_candidates[0][0]
 
+            # 疲労の更新
             for k in list(fatigue.keys()):
-                fatigue[k] *= 0.85
+                fatigue[k] *= 0.5
+                if fatigue[k] < 0.05:
+                    del fatigue[k]
             fatigue[best_id] += 1.0
 
             generated_sequence.append(best_id)
             context_tokens.append(best_id)
+            
+            # 💡文末記号が出現した時点で、文章の生成を綺麗に終了する（後半の崩壊を未然に防ぐ）
+            if best_id in end_of_sentence_ids:
+                break
 
         if return_string:
             return self.decode_text(generated_sequence)
