@@ -1,7 +1,7 @@
-{
+_FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/nn/attention.py",
     "//": "ファイルの日本語タイトル: 高速化版スパイキング・アテンション",
-    "//": "ファイルの目的や内容: sara_rust_core.SpikeEngine を統合し、大規模なスパイク伝播と学習を高速化したアテンション層。Fuzzy Recall (SDR Overlap) による連想記憶を統合。"
+    "//": "ファイルの目的や内容: sara_rust_core.SpikeEngine を統合し、大規模なスパイク伝播と学習を高速化したアテンション層。Fuzzy Recall (SDR Overlap) による連想記憶を統合。Transformers代替となるSDRFuzzyAttentionを追記。"
 }
 
 import random
@@ -126,7 +126,25 @@ class SpikeSelfAttention(SNNModule):
         return [i for i, p in active_sorted[:max_out]]
 
     def _apply_stdp(self, pre_spikes: List[int], post_spikes: List[int], weights: List[Dict[int, float]]) -> None:
-        pass
+        # Dummy Python STDP fallback (not fully implemented to match Rust behavior exactly here)
+        post_set = set(post_spikes)
+        lr = 0.05
+        for pre in pre_spikes:
+            if pre < len(weights):
+                targets = weights[pre]
+                to_remove = []
+                for target, w in targets.items():
+                    if target in post_set:
+                        targets[target] = min(3.0, w + lr)
+                    else:
+                        targets[target] = max(0.0, w - lr * 0.05)
+                        if targets[target] < 0.01:
+                            to_remove.append(target)
+                for t in to_remove:
+                    del targets[t]
+                for post in post_set:
+                    if post not in targets:
+                        targets[post] = 0.2
 
 
 class SpikeFuzzyAttention(SNNModule):
@@ -204,3 +222,66 @@ class SpikeFuzzyAttention(SNNModule):
             self.current_mem_id += 1
             
         return list(out_spikes)
+
+
+class SDRFuzzyAttention(SNNModule):
+    """
+    Bio-plausible Attention Mechanism alternative to Transformers.
+    Uses SDR overlap (Fuzzy Recall) instead of dot-product matrix multiplication.
+    Supports multi-lingual processing implicitly through language-agnostic SDRs.
+    Transformersの Q, K, V の概念をSNNのスパイクオーバーラップ率で代替するクラスです。
+    """
+    def __init__(self, sdr_size: int, threshold: float = 0.3):
+        super().__init__()
+        self.sdr_size = sdr_size
+        self.threshold = threshold
+        # Memory states for Keys and Values (Episodic Buffer)
+        self.keys: List[List[int]] = []
+        self.values: List[List[int]] = []
+        self.register_state("keys")
+        self.register_state("values")
+
+    def forward(self, query: List[int], key: Optional[List[int]] = None, value: Optional[List[int]] = None) -> List[int]:
+        """
+        Routes spikes based on SDR similarity.
+        クエリとなるSDRスパイク列を受け取り、保持しているKeyとのFuzzy RecallによってValueを出力します。
+        """
+        if key is not None and value is not None:
+            self.keys.append(key)
+            self.values.append(value)
+            
+        if not self.keys:
+            return query
+            
+        # Evaluate similarities using Rust core (Fuzzy Recall) if available
+        scores = []
+        for i, k_sdr in enumerate(self.keys):
+            if RUST_AVAILABLE and hasattr(sara_rust_core, 'calculate_sdr_overlap'):
+                score = sara_rust_core.calculate_sdr_overlap(query, k_sdr)
+            else:
+                set_a, set_b = set(query), set(k_sdr)
+                if not set_a or not set_b:
+                    score = 0.0
+                else:
+                    score = len(set_a.intersection(set_b)) / float(max(len(set_a), len(set_b)))
+            scores.append((i, score))
+            
+        valid_scores = [item for item in scores if item[1] >= self.threshold]
+        
+        # Output is a union of values that passed the threshold, modulated by similarity score
+        output_spikes = set()
+        for i, score in valid_scores:
+            # Stochastic routing: higher overlap -> higher probability of spike transmission
+            # 確率的ルーティングによって、行列演算を使わずにAttentionの重み付けをシミュレート
+            for spike in self.values[i]:
+                if random.random() < score:
+                    output_spikes.add(spike)
+                    
+        result = list(output_spikes)
+        result.sort()
+        return result
+
+    def reset_state(self):
+        super().reset_state()
+        self.keys.clear()
+        self.values.clear()

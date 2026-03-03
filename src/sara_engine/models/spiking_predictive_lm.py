@@ -1,7 +1,7 @@
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/models/spiking_predictive_lm.py",
     "//": "ファイルの日本語タイトル: 予測符号化ベースのスパイク言語モデル",
-    "//": "ファイルの目的や内容: 階層モデルと予測符号化層を統合。系列学習とデコードのパスから抽象化ノイズを完全に分離し、純粋なSDRのみを用いることで厳密な順序の自己回帰生成を実現する。"
+    "//": "ファイルの目的や内容: 階層モデルと予測符号化層を統合。系列学習とデコードのパスから抽象化ノイズを完全に分離し、純粋なSDRのみを用いることで厳密な順序の自己回帰生成を実現する。不応期(Refractory Period)を実装し、反復生成を防止。"
 }
 
 import random
@@ -24,6 +24,7 @@ class SpikingPredictiveLM(SNNModule):
         self.encoder = HierarchicalSNN(layer_configs=layer_configs)
         
         # 2. 予測符号化モジュール (系列の学習と次状態の予測)
+        # 誤差逆伝播を用いず、予測誤差(Surprise)のみでシナプスを更新する
         self.predictive_core = PredictiveCodingLayer(
             max_delay=max_delay, 
             learning_rate=learning_rate, 
@@ -79,9 +80,23 @@ class SpikingPredictiveLM(SNNModule):
                     
         return error_spikes
 
+    def _predict_next_sdr(self) -> List[int]:
+        """
+        Rustコア(CausalSynapses)の内部状態から、次ステップで発火するスパイクを予測する。
+        """
+        if not self.predictive_core.spike_history:
+            return []
+            
+        # Rustエンジンの calculate_potentials を直接呼び出して予測電位を取得
+        if hasattr(self.predictive_core.synapses, 'calculate_potentials'):
+            potentials = self.predictive_core.synapses.calculate_potentials(self.predictive_core.spike_history)
+            return [t for t, p in potentials.items() if p >= self.predictive_core.threshold]
+        return []
+
     def generate(self, prompt_tokens: List[int], max_length: int = 10) -> List[int]:
         """
         与えられたプロンプト（初期トークン）から、続くトークンを自律的に生成する。
+        生物学的な不応期(Refractory Period)を利用し、同じトークンの無限ループを防ぐ。
         """
         generated_sequence = list(prompt_tokens)
         
@@ -95,7 +110,7 @@ class SpikingPredictiveLM(SNNModule):
         
         for _ in range(max_length):
             # 1. 現在の文脈履歴から、次の純粋なSDRを予測
-            predicted_sdr = self.predictive_core.predict_next()
+            predicted_sdr = self._predict_next_sdr()
             
             if not predicted_sdr:
                 break # 予測不能（文脈の終わり）
@@ -117,7 +132,7 @@ class SpikingPredictiveLM(SNNModule):
             if not valid_potentials:
                 break
                 
-            # 最も電位の蓄積が高かったトークンを選択 (WTA)
+            # 最も電位の蓄積が高かったトークンを選択 (WTA: Winner-Take-All)
             next_token = max(valid_potentials.items(), key=lambda x: x[1])[0]
             generated_sequence.append(next_token)
             
@@ -127,6 +142,7 @@ class SpikingPredictiveLM(SNNModule):
                 if refractory_penalties[t_id] < 1.0:
                     del refractory_penalties[t_id]
                     
+            # 発火したニューロンを再び不応期（疲労状態）に入れる
             refractory_penalties[next_token] = 1000.0
             
             # 3. 生成したトークンを次のステップの「入力」として自己回帰的にフィードバック
