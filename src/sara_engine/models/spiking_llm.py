@@ -1,7 +1,7 @@
 # {
 #     "//": "ディレクトリパス: src/sara_engine/models/spiking_llm.py",
 #     "//": "ファイルの日本語タイトル: スパイキング・大規模言語モデル（MoE, LIF, Direct Wiring統合版）",
-#     "//": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。さらに「Direct Synaptic Wiring」を統合し、超高速な事前コーパス学習と、Fuzzy Recallによるリアルタイム適応（STDP）を同時に実現する。"
+#     "//": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。さらに「Direct Synaptic Wiring」を統合し、超高速な事前コーパス学習と、Fuzzy Recallによるリアルタイム適応（STDP）を同時に実現する。SaraTokenizerを導入し、単語・形態素レベルの推論に対応。"
 # }
 
 import os
@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Set, Tuple, Optional
 
 from sara_engine.core.transformer import LIFSpikeAttention
 from sara_engine.core.cortical_columns import SpikingCorticalColumns
+from sara_engine.utils.tokenizer import SaraTokenizer
 
 
 class SpikingLayerNorm:
@@ -169,23 +170,24 @@ class SpikingLLM:
         self.id_to_char: Dict[int, str] = {}
         self.next_id = 0
 
+        self.tokenizer = SaraTokenizer(vocab_size=self.vocab_size)
+
         self._init_lm_head_weights()
 
     def _init_lm_head_weights(self, density: float = 0.3) -> None:
         self.lm_head_w = [{} for _ in range(self.sdr_size)]
 
-    def _get_or_add_id(self, char: str) -> int:
-        if char not in self.char_to_id:
-            self.char_to_id[char] = self.next_id
-            self.id_to_char[self.next_id] = char
-            self.next_id += 1
-        return self.char_to_id[char]
-
     def encode_text(self, text: str) -> List[int]:
-        return [self._get_or_add_id(c) for c in text]
+        words = self.tokenizer.split_text(text)
+        return [self.tokenizer._add_token(w) for w in words]
 
     def decode_text(self, token_ids: List[int]) -> str:
-        return "".join([self.id_to_char.get(tid, "") for tid in token_ids])
+        tokens = []
+        for tid in token_ids:
+            word = self.tokenizer.id_to_token.get(int(tid), "")
+            if word not in self.tokenizer.special_tokens:
+                tokens.append(word)
+        return "".join(tokens)
 
     def reset_state(self) -> None:
         self.transformer.reset_state()
@@ -194,7 +196,7 @@ class SpikingLLM:
         tokens = self.encode_text(text_data)
         total_tokens = len(tokens)
         print(
-            f"[SpikingLLM] Processing {total_tokens} characters for delay-line direct wiring...")
+            f"[SpikingLLM] Processing {total_tokens} tokens for delay-line direct wiring...")
 
         try:
             from sara_engine import sara_rust_core
@@ -338,10 +340,10 @@ class SpikingLLM:
     }
 
     def _is_ascii_char(self, tok_id: int) -> bool:
-        char = self.id_to_char.get(tok_id, "")
+        char = self.tokenizer.id_to_token.get(int(tok_id), "")
         if not char:
             return False
-        return ord(char) < 128 and char not in ('\n', '。', '、')
+        return all(ord(c) < 128 for c in char) and char not in ('\n', '。', '、')
 
     def generate(
         self,
@@ -356,9 +358,23 @@ class SpikingLLM:
         
         return_string = False
         if prompt is not None:
-            prompt_tokens = [self.char_to_id[c]
-                             for c in prompt if c in self.char_to_id]
+            prompt_words = self.tokenizer.split_text(prompt)
+            prompt_tokens = []
+            unk_word = None
+            unk_id = self.tokenizer.vocab.get("<unk>", 1)
+            
+            # 💡 修正点: 入力に未知語が含まれている場合、無視せずに検知して即時停止する
+            for w in prompt_words:
+                if w not in self.tokenizer.vocab or self.tokenizer.vocab[w] == unk_id:
+                    if w.strip(): # 空白や改行以外の実質的な未知語
+                        unk_word = w
+                        break
+                prompt_tokens.append(self.tokenizer.vocab.get(w, unk_id))
+                
             return_string = True
+            
+            if unk_word:
+                return f"（未知の単語「{unk_word}」が含まれているため、文脈を認識できません）" if return_string else []
             
             if not prompt_tokens and prompt.strip():
                 return "（未知の入力スパイクです。記憶にありません）" if return_string else []
@@ -373,17 +389,16 @@ class SpikingLLM:
             return "" if return_string else generated_sequence
 
         exempt_ids: Set[int] = {
-            self.char_to_id[c] for c in self._PENALTY_EXEMPT_CHARS
-            if c in self.char_to_id
+            self.tokenizer.vocab[c] for c in self._PENALTY_EXEMPT_CHARS
+            if c in self.tokenizer.vocab
         }
         
-        # 💡文末記号（生成を終了するトリガー）を定義
         end_of_sentence_ids: Set[int] = {
-            self.char_to_id[c] for c in ('。', '！', '？', '\n')
-            if c in self.char_to_id
+            self.tokenizer.vocab[c] for c in ('。', '！', '？', '\n')
+            if c in self.tokenizer.vocab
         }
 
-        # === 1. 厳格な「無知の自覚」（Hallucination防止） ===
+        # 💡 修正点: 知っている単語同士でも、コーパス内で繋がったことがない文脈なら推論を停止する
         if len(prompt_tokens) >= 2:
             known_transitions = 0
             for i in range(len(prompt_tokens) - 1):
@@ -406,7 +421,7 @@ class SpikingLLM:
 
             active_recent = context_tokens[-self.context_window:]
 
-            # === 2. Direct Wiring (遅延シナプス) ===
+            # === 1. Direct Wiring (遅延シナプス) ===
             for reversed_idx in range(len(active_recent)):
                 pre_token = active_recent[-(reversed_idx + 1)]
                 delay = reversed_idx + 1
@@ -418,13 +433,20 @@ class SpikingLLM:
                             scores[post_token] += weight * context_factor
                             votes[post_token].append(delay)
 
-            # === 3. 樹状突起での同時発火検出 (Coincidence Detection) ===
+            # === 2. 樹状突起での同時発火検出 (Coincidence Detection) ===
             for tok_id in list(scores.keys()):
                 hits = len(votes[tok_id])
                 if hits > 1:
-                    scores[tok_id] *= (3.0 ** (hits - 1)) # 指数関数的ブースト
+                    scores[tok_id] *= (3.0 ** (hits - 1))
 
-            # === 4. SDR Fuzzy Recall (エピソード記憶 / STDP) ===
+            # 💡 修正点: 最初の生成ステップで、複数文脈からの支持(hits>=2)が全く得られない場合は沈黙する
+            if not generated_sequence and len(prompt_tokens) >= 2:
+                valid_hits = [len(votes[t]) for t in scores.keys() if t not in exempt_ids and t not in end_of_sentence_ids]
+                max_hits = max(valid_hits) if valid_hits else 0
+                if max_hits < 2:
+                    return "（この文脈に続く明確な知識ネットワークが形成されていません）" if return_string else []
+
+            # === 3. SDR Fuzzy Recall (エピソード記憶 / STDP) ===
             sdr_context = context_tokens[-min(5, len(context_tokens)):]
             current_spikes = self._encode_to_sdr(sdr_context)
             sdr_k = self._sdr_key(current_spikes)
@@ -444,7 +466,7 @@ class SpikingLLM:
                     if pid in scores:
                         scores[pid] = 0.0
 
-            # === 5. ALIF (適応的閾値) によるニューロンの疲労ペナルティ ===
+            # === 4. ALIF (適応的閾値) によるニューロンの疲労ペナルティ ===
             for tok_id in list(scores.keys()):
                 if fatigue[tok_id] > 0.0:
                     if tok_id in exempt_ids:
@@ -480,12 +502,11 @@ class SpikingLLM:
                     penalty = repetition_penalty ** count
                     scores[tok_id] /= penalty
 
-            # === 6. 低スコアノイズの絶対的カット（崩壊防止の強化） ===
+            # === 5. 低スコアノイズの絶対的カット ===
             max_score = max(scores.values()) if scores else 0.0
             if max_score < 0.1:
                 break
                 
-            # 💡 トップ候補のスコアの20%未満、または絶対値0.2未満の候補は完全に切り捨てる
             threshold = max(max_score * 0.2, 0.2)
             for tok_id in list(scores.keys()):
                 if scores[tok_id] < threshold:
@@ -532,7 +553,7 @@ class SpikingLLM:
             generated_sequence.append(best_id)
             context_tokens.append(best_id)
             
-            # 💡文末記号が出現した時点で、文章の生成を綺麗に終了する（後半の崩壊を未然に防ぐ）
+            # 文末記号が出現した時点で、文章の生成を綺麗に終了する
             if best_id in end_of_sentence_ids:
                 break
 
@@ -543,6 +564,9 @@ class SpikingLLM:
     def save_pretrained(self, save_directory: str) -> None:
         os.makedirs(save_directory, exist_ok=True)
         model_path = os.path.join(save_directory, "spiking_llm_weights.json")
+
+        self.tokenizer.model_path = os.path.join(save_directory, "sara_vocab.json")
+        self.tokenizer.save()
 
         serializable_synapses = {}
         for delay, pre_dict in self.pretrained_synapses.items():
@@ -557,9 +581,6 @@ class SpikingLLM:
         model_data = {
             "pretrained_synapses": serializable_synapses,
             "direct_map": raw_direct_map,
-            "char_to_id": self.char_to_id,
-            "id_to_char": {str(k): v for k, v in self.id_to_char.items()},
-            "next_id": self.next_id,
             "context_window": self.context_window,
             "vocab_size": self.vocab_size,
             "sdr_size": self.sdr_size,
@@ -583,10 +604,14 @@ class SpikingLLM:
             context_window=data.get("context_window", 15)
         )
 
-        instance.char_to_id = data.get("char_to_id", {})
-        instance.id_to_char = {
-            int(k): v for k, v in data.get("id_to_char", {}).items()}
-        instance.next_id = data.get("next_id", 0)
+        vocab_path = os.path.join(load_directory, "sara_vocab.json")
+        if os.path.exists(vocab_path):
+            instance.tokenizer.model_path = vocab_path
+            instance.tokenizer.load()
+        else:
+            instance.tokenizer.vocab = data.get("char_to_id", {})
+            instance.tokenizer.id_to_token = {int(k): v for k, v in data.get("id_to_char", {}).items()}
+            instance.tokenizer.next_id = data.get("next_id", 0)
 
         synapses = data.get("pretrained_synapses", {})
         for delay_str, pre_dict in synapses.items():

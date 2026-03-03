@@ -1,116 +1,126 @@
-# ディレクトリパス: scripts/sara_cli.py
-# ファイルの日本語タイトル: SARA統合コマンドラインインターフェース
-# ファイルの目的や内容: データ収集、統合、学習、推論テスト、そして記憶の刈り込み（プルーニング）などの処理を一元管理する。
+# {
+#     "//": "ディレクトリパス: scripts/sara_cli.py",
+#     "//": "ファイルの日本語タイトル: SARA統合コマンドラインインターフェース",
+#     "//": "ファイルの目的や内容: データ収集、DB管理、そして【自己組織化学習】と【蒸留学習】の切り替えを一元管理する統合CLI。"
+# }
 
 import argparse
 import sys
 import os
 import shutil
+import subprocess
 
-# scriptsディレクトリ自体をシステムパスに追加し、サブディレクトリをモジュールとして認識させる
+# scriptsディレクトリ自体をシステムパスに追加
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from data.collect_math import generate_math_corpus, default_math_database
-from data.collect_all import CorpusIntegrator
 from data.collect_docs import process_document
 from train.train_chat import train_chat_data
-from train.train_vision import train_vision_association
 from eval.test_math_chat import run_math_chat
 from eval.test_vision_inference import run_vision_inference
-from utils.prune_memory import prune_model_memory  # 💡 新規追加
+from utils.prune_memory import prune_model_memory
+from utils.manage_db import SaraCorpusDB
 
 def main():
-    parser = argparse.ArgumentParser(description="SARA Engine 統合管理CLI - Professional Edition")
+    parser = argparse.ArgumentParser(description="SARA Engine 統合管理CLI - Data & Learning Pipeline")
     subparsers = parser.add_subparsers(dest="command", help="実行するコマンド")
 
-    # 1. 数式コーパス生成
-    parser_math = subparsers.add_parser("generate-math", help="数式のテキストとQ&Aコーパスを生成します。")
-    parser_math.add_argument("--out_txt", default="data/interim/math_corpus.txt")
-    parser_math.add_argument("--out_jsonl", default="data/interim/math_corpus.jsonl")
+    # --- 1. データ登録・管理 (Database) ---
+    parser_db_import = subparsers.add_parser("db-import", help="テキスト(.txt)や対話データ(.jsonl)をDBに取り込みます。")
+    parser_db_import.add_argument("file", help="取り込むファイルパス")
 
-    # 2. ドキュメント抽出
-    parser_docs = subparsers.add_parser("extract-docs", help="多様なドキュメントからテキストを抽出します。")
-    parser_docs.add_argument("type", choices=["pdf", "csv", "html"], help="ファイル形式")
-    parser_docs.add_argument("source", help="パスまたはURL")
-    parser_docs.add_argument("--out_txt", default="data/interim/docs_corpus.txt")
+    parser_db_status = subparsers.add_parser("db-status", help="現在のコーパスDBの登録件数を表示します。")
+    
+    parser_db_export = subparsers.add_parser("db-export", help="DBから自己組織化用(TXT)と蒸留用(JSONL)にデータを一括出力します。")
 
-    # 3. コーパス統合
-    parser_integrate = subparsers.add_parser("integrate-corpus", help="interim内の全データを統合して高品質な学習用コーパスを作成します。")
-    parser_integrate.add_argument("--out_corpus", default="data/processed/corpus.txt", help="出力先")
-    parser_integrate.add_argument("--dir", default="data/interim", help="スキャン対象のディレクトリ")
+    parser_db_reset = subparsers.add_parser("db-reset", help="コーパスDBを完全に初期化(空に)します。")
 
-    # 4. 対話学習 (テキスト)
-    parser_train = subparsers.add_parser("train-chat", help="チャット/数式データをSNNに蒸留学習させます。")
-    parser_train.add_argument("--sources", nargs="+", default=["data/raw/chat_data.jsonl", "data/interim/math_corpus.jsonl"])
-    parser_train.add_argument("--model", default="models/distilled_sara_llm.msgpack")
+    # --- 2. 学習の実行 (Training) ---
+    parser_train_self = subparsers.add_parser("train-self-org", help="【推奨】SNN固有の自己組織化学習(誤差逆伝播なし)を実行します。")
+    
+    parser_train_distill = subparsers.add_parser("train-distill", help="従来の蒸留(BPベース)による学習を実行します。")
+    parser_train_distill.add_argument("--model", default="workspace/models/distilled_sara_llm.msgpack")
 
-    # 5. 対話テスト (チャットUI風)
-    parser_chat = subparsers.add_parser("chat", help="学習済みSNNモデルと対話を行います。")
-    parser_chat.add_argument("--model", default="models/distilled_sara_llm.msgpack")
+    # --- 3. 推論・対話 (Inference/Chat) ---
+    parser_chat_self = subparsers.add_parser("chat-self-org", help="自己組織化学習したSNNモデルと対話します。")
+    
+    parser_chat_distill = subparsers.add_parser("chat-distill", help="蒸留学習したモデルと対話します。")
+    parser_chat_distill.add_argument("--model", default="workspace/models/distilled_sara_llm.msgpack")
 
-    # 6. 視覚連想学習
-    parser_vtrain = subparsers.add_parser("train-vision", help="画像とテキストのペアを連想記憶として学習します。")
-    parser_vtrain.add_argument("--csv", default="data/raw/visual/text/captions.csv")
-    parser_vtrain.add_argument("--img_dir", default="data/raw/visual/images")
-    parser_vtrain.add_argument("--model", default="models/distilled_sara_llm.msgpack")
-
-    # 7. 視覚推論テスト
-    parser_vtest = subparsers.add_parser("vision-test", help="画像からSARAの連想（認識）を確認します。")
-    parser_vtest.add_argument("image", help="テスト画像パス")
-    parser_vtest.add_argument("--model", default="models/distilled_sara_llm.msgpack")
-
-    # 8. 記憶の刈り込み (新規追加)
+    # --- 4. ユーティリティ ---
     parser_prune = subparsers.add_parser("prune", help="重みの低い不要な記憶を削除し、モデルを軽量化します。")
-    parser_prune.add_argument("--model", default="models/distilled_sara_llm.msgpack", help="対象のモデルファイル")
-    parser_prune.add_argument("--threshold", type=float, default=50.0, help="削除する重みの閾値（デフォルト: 50.0）")
+    parser_prune.add_argument("--model", default="workspace/models/distilled_sara_llm.msgpack")
+    parser_prune.add_argument("--threshold", type=float, default=50.0)
 
-    # 9. クリーンアップコマンド
-    parser_clean = subparsers.add_parser("clean", help="中間データやキャッシュを削除して環境をリセットします。")
-    parser_clean.add_argument("--all", action="store_true", help="processedデータもすべて削除します。")
+    parser_clean = subparsers.add_parser("clean", help="中間データを削除して環境をリセットします。")
 
     args = parser.parse_args()
+    db_path = "data/sara_corpus.db"
 
-    if args.command == "generate-math":
-        generate_math_corpus(default_math_database, args.out_txt, args.out_jsonl)
-    elif args.command == "extract-docs":
-        process_document(args.type, args.source, args.out_txt)
-    elif args.command == "integrate-corpus":
-        print(f"--- コーパス統合を開始します ({args.dir} -> {args.out_corpus}) ---")
-        integrator = CorpusIntegrator(output_path=args.out_corpus)
-        if os.path.exists(args.dir):
-            files = [f for f in os.listdir(args.dir) if f.endswith(".txt")]
-            for filename in sorted(files):
-                file_path = os.path.join(args.dir, filename)
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    source_type = "math" if "math" in filename else "document"
-                    integrator.add_source(content, source_type=source_type)
+    if args.command == "db-import":
+        db = SaraCorpusDB(db_path)
+        print(f"[DB] {args.file} をインポートしています...")
+        added = db.import_file(args.file)
+        print(f"✅ {added} 件のデータを新しくDBに登録しました。")
+
+    elif args.command == "db-status":
+        if not os.path.exists(db_path):
+            print("DBが存在しません。まだデータが登録されていません。")
         else:
-            print(f"❌ ディレクトリが見つかりません: {args.dir}")
-    elif args.command == "train-chat":
-        train_chat_data(args.sources, args.model)
-    elif args.command == "chat":
+            db = SaraCorpusDB(db_path)
+            stats = db.get_stats()
+            print("=== SARA Corpus Database Status ===")
+            total = 0
+            for t_type, count in stats:
+                print(f"- {t_type.capitalize()} データ: {count} 件")
+                total += count
+            print(f"合計: {total} 件")
+
+    elif args.command == "db-export":
+        db = SaraCorpusDB(db_path)
+        print("[DB] 自己組織化学習用コーパス(corpus.txt)を出力しています...")
+        c_count = db.export_for_self_organized("data/processed/corpus.txt")
+        print(f"  -> {c_count} 件エクスポート完了")
+        
+        print("[DB] 蒸留学習用データ(chat_data.jsonl)を出力しています...")
+        d_count = db.export_for_distillation("data/raw/chat_data.jsonl")
+        print(f"  -> {d_count} 件エクスポート完了")
+        print("✅ エクスポートが完了しました。学習を開始できます。")
+
+    elif args.command == "db-reset":
+        if os.path.exists(db_path):
+            os.remove(db_path)
+            print("🗑️ データベースを初期化しました。")
+        else:
+            print("データベースは既に空です。")
+
+    elif args.command == "train-self-org":
+        print("🧠 自己組織化学習(Self-Organized SNN)を開始します...")
+        subprocess.run([sys.executable, "scripts/train/train_self_organized.py"])
+
+    elif args.command == "train-distill":
+        print("🔥 蒸留学習(Distillation)を開始します...")
+        train_chat_data(["data/raw/chat_data.jsonl"], args.model)
+
+    elif args.command == "chat-self-org":
+        subprocess.run([sys.executable, "scripts/eval/chat_self_organized.py"])
+
+    elif args.command == "chat-distill":
         run_math_chat(args.model)
-    elif args.command == "train-vision":
-        train_vision_association(args.csv, args.img_dir, args.model)
-    elif args.command == "vision-test":
-        run_vision_inference(args.image, args.model)
+
     elif args.command == "prune":
         prune_model_memory(args.model, args.threshold)
+
     elif args.command == "clean":
         print("--- 環境のリセットを開始します ---")
-        targets = ["data/interim"]
-        if args.all:
-            targets.append("data/processed")
+        targets = ["data/interim", "data/processed"]
         for target in targets:
             if os.path.exists(target):
                 for item in os.listdir(target):
                     if item == ".gitkeep": continue
                     path = os.path.join(target, item)
-                    if os.path.isdir(path):
-                        shutil.rmtree(path)
-                    else:
-                        os.remove(path)
+                    if os.path.isdir(path): shutil.rmtree(path)
+                    else: os.remove(path)
                 print(f"✅ {target} をクリーンアップしました。")
     else:
         parser.print_help()
