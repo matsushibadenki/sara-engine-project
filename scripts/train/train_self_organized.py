@@ -1,8 +1,8 @@
-{
-    "//": "ディレクトリパス: scripts/train/train_self_organized.py",
-    "//": "ファイルの日本語タイトル: 自己組織化学習スクリプト (SNN固有機能ベース)",
-    "//": "ファイルの目的や内容: 外部のLLM（教師モデル）を使わず、STDPや予測符号化といったSNN固有のダイナミクスを用いてテキストコーパスから自律的にオンライン学習する。"
-}
+# {
+#     "//": "ディレクトリパス: scripts/train/train_self_organized.py",
+#     "//": "ファイルの日本語タイトル: 自己組織化学習スクリプト (SNN固有機能ベース)",
+#     "//": "ファイルの目的や内容: 外部のLLM（教師モデル）を使わず、STDPや予測符号化といったSNN固有のダイナミクスを用いてテキストコーパスから自律的にオンライン学習する。"
+# }
 
 import os
 import sys
@@ -28,14 +28,17 @@ def train_self_organized(corpus_path, save_dir, vocab_size=65536, sdr_size=128, 
     llm = SpikingLLM(sdr_size=sdr_size, vocab_size=vocab_size, context_window=context_window)
     
     # 既存の記憶（モデル）があれば読み込む
-    if os.path.exists(os.path.join(save_dir, "model.msgpack")) or os.path.exists(os.path.join(save_dir, "config.json")):
+    if os.path.exists(os.path.join(save_dir, "spiking_llm_weights.json")):
         try:
             print(f"[INFO] Found existing memory at {save_dir}. Restoring...")
-            if hasattr(llm, 'load_pretrained'):
+            if hasattr(SpikingLLM, 'from_pretrained'):
+                llm = SpikingLLM.from_pretrained(save_dir)
+                print("[INFO] Successfully restored previous state.")
+            elif hasattr(llm, 'load_pretrained'):
                 llm.load_pretrained(save_dir)
                 print("[INFO] Successfully restored previous state.")
             else:
-                print("[WARNING] 'load_pretrained' method not found in SpikingLLM. Starting fresh.")
+                print("[WARNING] Load method not found in SpikingLLM. Starting fresh.")
         except Exception as e:
             print(f"[WARNING] Failed to load existing model: {e}. Starting fresh.")
 
@@ -101,8 +104,8 @@ def train_self_organized(corpus_path, save_dir, vocab_size=65536, sdr_size=128, 
 
 if __name__ == "__main__":
     # デフォルトのパス設定
-    corpus_file = os.path.join(project_root, "data/processed/corpus.txt")
-    model_dir = os.path.join(project_root, "workspace/models/self_organized_llm")
+    corpus_file = os.path.join(project_root, "data", "processed", "corpus.txt")
+    model_dir = os.path.join(project_root, "workspace", "models", "self_organized_llm")
     
     train_self_organized(
         corpus_path=corpus_file, 

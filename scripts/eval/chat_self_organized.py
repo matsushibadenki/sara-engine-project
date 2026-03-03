@@ -36,7 +36,9 @@ def main():
     # 3. 存在チェック
     if not os.path.exists(model_path):
         print(f"[ERROR] ファイルが見つかりません: {model_path}")
-        print("\n💡 解決策: ターミナルで以下のようにディレクトリを直接指定して実行してください。")
+        print("\n💡 解決策1: 必要なモデルファイルが存在しません。先にモデルの学習を行ってください。")
+        print("実行例: python scripts/train/train_self_organized.py")
+        print("\n💡 解決策2: すでに学習済みで保存場所が異なる場合は、ターミナルでディレクトリを直接指定して実行してください。")
         print("実行例: python scripts/eval/chat_self_organized.py workspace/models/self_organized_llm")
         return
 

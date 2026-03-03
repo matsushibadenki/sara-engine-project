@@ -1,9 +1,7 @@
-# src/sara_engine/models/spiking_llm.py
-# 日本語タイトル: スパイキング・大規模言語モデル（MoE, LIF, Direct Wiring統合版）
-# 目的: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。さらに「Direct Synaptic Wiring」を統合し、超高速な事前コーパス学習と、Fuzzy Recallによるリアルタイム適応（STDP）を同時に実現する。
 # {
-#     "//": "行列演算、誤差逆伝播法(BP)、GPU依存を完全に排除した純粋なSNN言語モデルです。",
-#     "//": "ALIFの疲労(閾値)の蓄積を強化し回復を遅らせることで、N文字ループの局所最適を回避し新しい概念の探索を促します。"
+#     "//": "ディレクトリパス: src/sara_engine/models/spiking_llm.py",
+#     "//": "ファイルの日本語タイトル: スパイキング・大規模言語モデル（MoE, LIF, Direct Wiring統合版）",
+#     "//": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。さらに「Direct Synaptic Wiring」を統合し、超高速な事前コーパス学習と、Fuzzy Recallによるリアルタイム適応（STDP）を同時に実現する。"
 # }
 
 import os
@@ -283,11 +281,14 @@ class SpikingLLM:
         return tuple(sdr)
 
     def learn_sequence(self, token_ids: List[int]) -> None:
+        """
+        時間差に基づくシナプス更新をオンラインで逐次実行する。
+        """
         if not self.enable_learning or len(token_ids) < 2:
             return
 
         self.reset_state()
-        context_window = 64
+        context_window = self.context_window
         context_tokens: List[int] = []
 
         for t in range(len(token_ids) - 1):
@@ -298,6 +299,27 @@ class SpikingLLM:
             if len(context_tokens) > context_window:
                 context_tokens.pop(0)
 
+            # --- 1. Direct Wiring (N-gram) のオンライン学習 ---
+            for delay_idx, past_tok in enumerate(reversed(context_tokens)):
+                delay = delay_idx + 1
+                if delay not in self.pretrained_synapses:
+                    self.pretrained_synapses[delay] = {}
+                if past_tok not in self.pretrained_synapses[delay]:
+                    self.pretrained_synapses[delay][past_tok] = {}
+                
+                # LTP (Long-Term Potentiation): 共起関係の強化
+                w = self.pretrained_synapses[delay][past_tok].get(next_token, 0.0)
+                self.pretrained_synapses[delay][past_tok][next_token] = min(1.0, w + 0.1)
+
+                # LTD (Long-Term Depression): シナプスの整理と忘却
+                if len(self.pretrained_synapses[delay][past_tok]) > 20:
+                    to_remove = [k for k, v in self.pretrained_synapses[delay][past_tok].items() if v < 0.05]
+                    for k in to_remove:
+                        del self.pretrained_synapses[delay][past_tok][k]
+                    for k in self.pretrained_synapses[delay][past_tok].keys():
+                        self.pretrained_synapses[delay][past_tok][k] *= 0.98
+
+            # --- 2. SDR / STDP 学習 ---
             input_spikes = self._encode_to_sdr(context_tokens)
             sdr_k = self._sdr_key(input_spikes)
 
@@ -334,14 +356,12 @@ class SpikingLLM:
                             if self.lm_head_w[pre_id][post_id] < 0.1:
                                 del self.lm_head_w[pre_id][post_id]
 
-    # 句読点・改行などrepetition penaltyを免除する文字
-    _PENALTY_EXEMPT_CHARS: Set[str] = {
-        '。', '、', '\n', '　', ' ', '（', '）', '「', '」', '・',
-        ')', '(', ',', '.', ':', ';',
+    _PUNCTUATIONS: Set[str] = {
+        '。', '、', '（', '）', '「', '」', '・', '！', '？',
+        ')', '(', ',', '.', ':', ';', '\n', '　', ' '
     }
 
     def _is_ascii_char(self, tok_id: int) -> bool:
-        """トークンIDがASCII英字・数字・記号かどうかを判定する。"""
         char = self.id_to_char.get(tok_id, "")
         if not char:
             return False
@@ -359,8 +379,7 @@ class SpikingLLM:
     ) -> str | List[int]:
         """
         N-gram条件付き確率サンプリングによるテキスト生成。
-        Direct Wiringの共起統計（PMI重み）を直接活用し、
-        repetition penaltyで繰り返しを抑制する。
+        Coincidence Detection（同時発火検出）により、文脈の連続性を非線形に評価する。
         """
         return_string = False
         if prompt is not None:
@@ -375,37 +394,40 @@ class SpikingLLM:
         if not prompt_tokens:
             return "" if return_string else generated_sequence
 
-        # penalty免除トークンIDのセットを事前構築
-        exempt_ids: Set[int] = {
-            self.char_to_id[c] for c in self._PENALTY_EXEMPT_CHARS
+        punc_ids: Set[int] = {
+            self.char_to_id[c] for c in self._PUNCTUATIONS
             if c in self.char_to_id
         }
 
         context_tokens: List[int] = list(prompt_tokens)
         recent_window = max(self.context_window, 20)
+        
+        fatigue: Dict[int, float] = defaultdict(float)
 
         for _t in range(max_new_tokens):
             scores: Dict[int, float] = defaultdict(float)
+            # 同時発火（複数の過去文字から支持された回数）を記録
+            hit_counts: Dict[int, int] = defaultdict(int)
 
             # === 1. Direct Wiring (事前学習N-gram) からのスコア集計 ===
-            recent = context_tokens[-self.context_window:]
+            raw_recent = context_tokens[-self.context_window:]
+            
+            # 発火リセット機構：直近に句読点があれば、それより前の文脈（スパイク）は遮断する
+            recent = []
+            for tok in reversed(raw_recent):
+                recent.insert(0, tok)
+                if tok in punc_ids and len(recent) > 1:
+                    break
 
-            # Step 1a: delay=1（直前文字）から基本スコアを構築
-            # log(1 + w*10) * 1.5 でPMIの希少共起バイアスを圧縮しつつ
-            # 直前文字の影響力を強化する
             if recent:
                 last_token = recent[-1]
                 if 1 in self.pretrained_synapses and last_token in self.pretrained_synapses[1]:
                     post_weights = self.pretrained_synapses[1][last_token]
                     for post_token, weight in post_weights.items():
                         if post_token < self.vocab_size:
-                            scores[post_token] = math.log1p(
-                                weight * 10.0) * 1.5
+                            scores[post_token] = math.log1p(weight * 10.0) * 1.5
+                            hit_counts[post_token] += 1
 
-            # Step 1b: delay=2〜nでコンテキスト補強
-            # delay=1で既にスコアがある候補のみブースト（新規追加しない）
-            # これにより直前文字からの候補リストが基軸となり、
-            # 遠距離コンテキストの無関係候補がスコアを歪めないようにする
             for reversed_idx in range(1, len(recent)):
                 pre_token = recent[-(reversed_idx + 1)]
                 delay = reversed_idx + 1
@@ -418,14 +440,20 @@ class SpikingLLM:
                 if not post_weights:
                     continue
 
-                # 急な減衰: delay=2→0.65, delay=3→0.42, delay=4→0.27...
                 context_factor = 0.65 ** (delay - 1)
-
                 for post_token, weight in post_weights.items():
                     if post_token < self.vocab_size and post_token in scores:
-                        contribution = math.log1p(
-                            weight * 10.0) * context_factor
+                        contribution = math.log1p(weight * 10.0) * context_factor
                         scores[post_token] += contribution
+                        hit_counts[post_token] += 1
+
+            # === Coincidence Detection (同時発火による非線形増幅) ===
+            # 独立した文字の足し算ではなく、「連続したフレーズ」としての一致を圧倒的に評価する
+            for tok_id in list(scores.keys()):
+                hits = hit_counts[tok_id]
+                if hits > 1:
+                    # 2文字以上から同時に予測された場合、スコアを指数関数的に倍増
+                    scores[tok_id] *= (2.0 ** (hits - 1))
 
             # === 2. SDR Fuzzy Recall (オンライン学習の短期記憶) ===
             sdr_context = context_tokens[-min(5, len(context_tokens)):]
@@ -438,75 +466,73 @@ class SpikingLLM:
                     if tok_id < self.vocab_size:
                         scores[tok_id] += count * confidence * 0.2
 
-            # スコアが全くない場合はフォールバック
-            if not scores:
-                known_ids = list(self.id_to_char.keys())
-                if known_ids:
-                    best_id = random.choice(known_ids)
-                    generated_sequence.append(best_id)
-                    context_tokens.append(best_id)
-                    continue
-                else:
-                    break
+            # === 3. SNN動的疲労モデル（不応期）===
+            for tok_id in list(scores.keys()):
+                if fatigue[tok_id] > 0.1:
+                    scores[tok_id] /= (1.0 + fatigue[tok_id] * 2.5)
 
-            # === 3. ループ防止 ===
-            # (a) 同一文字が3回以上連続していたらそのトークンのスコアを0に
-            if len(context_tokens) >= 3:
-                last3 = context_tokens[-3:]
-                if last3[0] == last3[1] == last3[2]:
-                    loop_tok = last3[0]
-                    if loop_tok in scores:
-                        scores[loop_tok] = 0.0
+            # === 4. 記号スパムの抑制 ===
+            if len(context_tokens) >= 1:
+                last_tok = context_tokens[-1]
+                if last_tok in punc_ids:
+                    for pid in punc_ids:
+                        if pid in scores:
+                            scores[pid] *= 0.05
+                
+                recent_10 = context_tokens[-10:]
+                p_count = sum(1 for x in recent_10 if x in punc_ids)
+                if p_count >= 3:
+                    for pid in punc_ids:
+                        if pid in scores:
+                            scores[pid] *= 0.01
 
-            # (b) N-gramフレーズ繰り返し防止
-            # 直近のN文字パターンが過去にも出現していたら、
-            # 過去の続きのトークンにペナルティをかける
-            for ngram_len in (3, 4, 5, 6):
+            # === 5. N-gramフレーズ繰り返し防止 ===
+            for ngram_len in (2, 3, 4, 5, 6):
                 if len(context_tokens) >= ngram_len + 1:
                     tail = tuple(context_tokens[-ngram_len:])
-                    # 過去のコンテキストで同じN-gramを探す
                     search_range = context_tokens[:-ngram_len]
-                    for i in range(len(search_range) - ngram_len):
-                        past_ngram = tuple(
-                            search_range[i:i + ngram_len])
+                    for i in range(len(search_range) - ngram_len + 1):
+                        past_ngram = tuple(search_range[i:i + ngram_len])
                         if past_ngram == tail:
-                            # 過去にこのN-gramの直後に来たトークンにペナルティ
                             if i + ngram_len < len(search_range):
                                 repeat_tok = search_range[i + ngram_len]
                                 if repeat_tok in scores:
-                                    scores[repeat_tok] *= 0.2
+                                    scores[repeat_tok] *= 0.01
 
-            # === 4. ASCII文字連続ペナルティ（URL汚染防止） ===
-            # 日本語コーパスにおいて、ASCII文字（URL, 英語参照）への脱線を防ぐ
-            # (a) ベースペナルティ: ASCII候補のスコアを常に抑制
+            # === 6. ASCII文字連続ペナルティ ===
             for tok_id in list(scores.keys()):
                 if self._is_ascii_char(tok_id):
                     scores[tok_id] *= 0.3
 
-            # (b) 直近がASCII文字なら段階的にさらに減衰
             if len(context_tokens) >= 1 and self._is_ascii_char(context_tokens[-1]):
-                ascii_penalty = 0.3  # 直前1文字がASCII
+                ascii_penalty = 0.3
                 if len(context_tokens) >= 2 and self._is_ascii_char(context_tokens[-2]):
-                    ascii_penalty = 0.05  # 直前2文字が連続ASCII
+                    ascii_penalty = 0.05
                 for tok_id in list(scores.keys()):
                     if self._is_ascii_char(tok_id):
                         scores[tok_id] *= ascii_penalty
 
-            # === 5. Repetition Penalty ===
-            # 直近の文字に対してスコアをペナルティで割る
-            # 句読点・改行は自然な文のためペナルティ免除
+            # === 7. Repetition Penalty ===
             recent_generated = context_tokens[-recent_window:]
             recent_counts: Dict[int, int] = defaultdict(int)
             for tok in recent_generated:
                 recent_counts[tok] += 1
 
             for tok_id in list(scores.keys()):
-                if tok_id in recent_counts and tok_id not in exempt_ids:
+                if tok_id in recent_counts and tok_id not in punc_ids:
                     count = recent_counts[tok_id]
                     penalty = repetition_penalty ** count
                     scores[tok_id] /= penalty
 
-            # === 6. Top-k フィルタリング + Temperature サンプリング ===
+            # === スコアのクレンジングと強制終了 ===
+            for tok_id in list(scores.keys()):
+                if scores[tok_id] <= 0.0001:
+                    del scores[tok_id]
+
+            if not scores:
+                break
+
+            # === 8. Top-k フィルタリング + Temperature サンプリング ===
             sorted_candidates = sorted(
                 scores.items(), key=lambda x: x[1], reverse=True)
             top_k_candidates = sorted_candidates[:top_k]
@@ -536,6 +562,10 @@ class SpikingLLM:
                             break
             else:
                 best_id = top_k_candidates[0][0]
+
+            for k in list(fatigue.keys()):
+                fatigue[k] *= 0.85
+            fatigue[best_id] += 1.0
 
             generated_sequence.append(best_id)
             context_tokens.append(best_id)
