@@ -1,10 +1,11 @@
-_FILE_INFO = {
-    "path": "src/sara_engine/models/snn_transformer.py",
-    "title": "スパイキング・トランスフォーマーモデル",
-    "purpose": "SNN版LayerNorm(恒常性)とDropoutを統合し、TransformerブロックのPre-Norm+Residual構造を生物学的に再現。",
+{
+    "//": "ディレクトリパス: src/sara_engine/models/snn_transformer.py",
+    "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル",
+    "//": "ファイルの目的や内容: SNN版LayerNorm(恒常性)とDropoutを統合し、TransformerブロックのPre-Norm+Residual構造を生物学的に再現。フェーズ2対応としてFuzzy Recallを統合。"
 }
 
 from sara_engine.core.spike_attention import SpikeMultiPathwayAttention
+from sara_engine.nn.attention import SpikeFuzzyAttention
 from sara_engine import nn
 from typing import List, Dict, Optional
 import operator
@@ -14,7 +15,7 @@ import os
 import json
 
 class SNNTransformerConfig:
-    def __init__(self, vocab_size: int = 65536, embed_dim: int = 128, num_layers: int = 2, ffn_dim: int = 256, num_pathways: int = 4, dropout_p: float = 0.1, target_spikes_ratio: float = 0.25):
+    def __init__(self, vocab_size: int = 65536, embed_dim: int = 128, num_layers: int = 2, ffn_dim: int = 256, num_pathways: int = 4, dropout_p: float = 0.1, target_spikes_ratio: float = 0.25, use_fuzzy: bool = False):
         self.vocab_size = vocab_size
         self.embed_dim = embed_dim
         self.num_layers = num_layers
@@ -22,6 +23,7 @@ class SNNTransformerConfig:
         self.num_pathways = num_pathways
         self.dropout_p = dropout_p
         self.target_spikes_ratio = target_spikes_ratio
+        self.use_fuzzy = use_fuzzy # New configuration for Phase 2 Fuzzy Recall
 
     def to_dict(self):
         return {
@@ -31,7 +33,8 @@ class SNNTransformerConfig:
             "ffn_dim": self.ffn_dim,
             "num_pathways": self.num_pathways,
             "dropout_p": self.dropout_p,
-            "target_spikes_ratio": self.target_spikes_ratio
+            "target_spikes_ratio": self.target_spikes_ratio,
+            "use_fuzzy": self.use_fuzzy
         }
 
     @classmethod
@@ -43,18 +46,26 @@ class SNNTransformerBlock(nn.SNNModule):
         super().__init__()
         self.config = config
 
-        # 目標発火数をエンベディング次元に対する割合で動的に決定
+        # Determine target firing rate based on embedding dimension
         target_spikes = max(1, int(config.embed_dim * config.target_spikes_ratio))
 
         # Pre-Norm & Dropout 1
         self.norm1 = nn.SpikeLayerNorm(target_spikes=target_spikes)
         self.dropout1 = nn.SpikeDropout(p=config.dropout_p)
 
-        self.attention = SpikeMultiPathwayAttention(
-            embed_dim=config.embed_dim,
-            num_pathways=config.num_pathways,
-            context_size=128
-        )
+        # Select Attention Mechanism
+        if config.use_fuzzy:
+            self.attention = SpikeFuzzyAttention(
+                embed_dim=config.embed_dim,
+                threshold=0.2,
+                top_k=3
+            )
+        else:
+            self.attention = SpikeMultiPathwayAttention(
+                embed_dim=config.embed_dim,
+                num_pathways=config.num_pathways,
+                context_size=128
+            )
         
         # Pre-Norm & Dropout 2
         self.norm2 = nn.SpikeLayerNorm(target_spikes=target_spikes)
@@ -81,7 +92,7 @@ class SNNTransformerBlock(nn.SNNModule):
         drop_ffn = self.dropout2(ffn_out, learning=learning)
         res2_spikes = list(set(res1_spikes + drop_ffn))
 
-        # ネットワーク全体でのスパイク爆発を抑える安全装置
+        # Global homeostasis to prevent spike explosion
         if len(res2_spikes) > self.max_block_spikes:
             res2_spikes = random.sample(res2_spikes, self.max_block_spikes)
 
@@ -112,9 +123,7 @@ class SpikingTransformerModel(nn.SNNModule):
                 layer.attention.reset_state()
 
     def _get_sdr(self, delay: int, tok: int) -> List[int]:
-        """動的ハッシュによるSDR生成。メモリを事前消費せず、無制限の語彙（Unicode全体）に対応。
-        スパイク数を増大（10->20）することでコンテキスト識別能を向上。
-        """
+        """Dynamic hashing SDR generation to support unbounded vocabulary (Unicode)."""
         seed_val = (delay * 73856093) ^ (tok * 19349663) ^ 42
         random.seed(seed_val)
         spikes = random.sample(range(self.reservoir_size), 20)
@@ -193,41 +202,32 @@ class SpikingTransformerModel(nn.SNNModule):
 
         return predicted_id
 
-    def learn_sequence(self, text: str):
-        input_ids = [ord(c) for c in text] + [0]
+    def learn_sequence(self, input_ids: List[int]):
+        """Updated to accept input_ids natively for broad compatibility."""
+        input_ids = input_ids + [0]
         for _replay in range(2):
             self.reset_state()
             for i in range(len(input_ids) - 1):
                 self.forward_step(
                     input_ids[i], learning=True, target_id=input_ids[i + 1])
 
-    def generate(self, text: str, max_length: int = 150) -> str:
-        input_ids = [ord(c) for c in text]
+    def generate(self, input_ids: List[int], max_length: int = 150) -> List[int]:
+        """Updated to accept and return Token IDs (Lists) to align with standard Transformers."""
         self.reset_state()
 
         first_pred = 32
         for token_id in input_ids:
             first_pred = self.forward_step(token_id, learning=False)
 
-        generated_chars = []
-        if first_pred == 0 or first_pred == 32:
-            current_token = first_pred
-        else:
-            current_token = first_pred
+        generated_ids = []
+        current_token = first_pred
         refractory_buffer = []
 
         for _ in range(max_length):
             if current_token == 0:
                 break
 
-            try:
-                char = chr(current_token)
-                if current_token < 32 and current_token != 0:
-                    char = ""
-            except ValueError:
-                char = ""
-
-            generated_chars.append(char)
+            generated_ids.append(current_token)
 
             refractory_buffer.append(current_token)
             if len(refractory_buffer) > 6:
@@ -236,7 +236,7 @@ class SpikingTransformerModel(nn.SNNModule):
             current_token = self.forward_step(
                 current_token, learning=False, refractory_tokens=refractory_buffer)
 
-        return text + "".join(generated_chars)
+        return generated_ids
 
     def save_pretrained(self, save_directory: str):
         os.makedirs(save_directory, exist_ok=True)

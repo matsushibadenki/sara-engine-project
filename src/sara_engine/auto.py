@@ -1,7 +1,7 @@
-_FILE_INFO = {
+{
     "//": "ディレクトリパス: src/sara_engine/auto.py",
     "//": "ファイルの日本語タイトル: 自動読み込みモジュール",
-    "//": "ファイルの目的や内容: Hugging Faceライクな Auto クラスを提供。SpikingLLM や SaraAgent をモデルパスから自動的に初期化・復元する機能に加え、PipelineAPIと階層モデルのサポートを追加。"
+    "//": "ファイルの目的や内容: Hugging Faceライクな Auto クラスを提供。強いAI(StrongSpikingLM)の自動読み込みとパイプラインにも対応。"
 }
 
 import os
@@ -12,16 +12,11 @@ from .models.spiking_feature_extractor import SpikingFeatureExtractor, SNNFeatur
 from .models.spiking_image_classifier import SpikingImageClassifier, SNNImageClassifierConfig
 from .models.spiking_audio_classifier import SpikingAudioClassifier, SNNAudioClassifierConfig
 from .models.spiking_token_classifier import SpikingTokenClassifier, SNNTokenClassifierConfig
-from .models.hierarchical_snn import HierarchicalSNN  # Phase 2: 階層的特徴抽出モデル
-from .encoders.spike_tokenizer import SpikeTokenizer
+from .models.hierarchical_snn import HierarchicalSNN
+from .utils.tokenizer import SaraTokenizer
 from .models.spiking_llm import SpikingLLM
 from .agent.sara_agent import SaraAgent
-
-class ByteLevelSNNTokenizer:
-    def encode(self, text: str) -> list[int]:
-        return list(text.encode('utf-8'))
-    def decode(self, token_ids: list[int]) -> str:
-        return bytes(token_ids).decode('utf-8', errors='ignore')
+from .models.strong_spiking_lm import StrongSpikingLM, StrongSpikingLMConfig
 
 class AutoTokenizer:
     @classmethod
@@ -32,10 +27,10 @@ class AutoTokenizer:
             tokenizer_path = os.path.join(save_directory, "tokenizer.json")
 
         if os.path.exists(tokenizer_path):
-            return SpikeTokenizer.from_pretrained(save_directory)
+            return SaraTokenizer(model_path=tokenizer_path)
         else:
-            print(f"Warning: Tokenizer not found at {tokenizer_path}, using ByteLevelSNNTokenizer.")
-            return ByteLevelSNNTokenizer()
+            print(f"Warning: Tokenizer not found at {tokenizer_path}, initializing a fresh SaraTokenizer (BPE Subword fallback).")
+            return SaraTokenizer(model_path=tokenizer_path)
 
 class AutoModelForCausalSNN:
     @classmethod
@@ -69,13 +64,11 @@ class AutoSNNModelForFeatureExtraction:
         return SpikingFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
 
 class AutoSNNModelForHierarchicalExtraction:
-    """Phase 2: 追加された階層モデル用のAutoクラス"""
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path: str):
         config_path = os.path.join(pretrained_model_name_or_path, "config.json")
         if not os.path.exists(pretrained_model_name_or_path) or not os.path.exists(config_path):
             print(f"Initializing a new HierarchicalSNN. No config at {pretrained_model_name_or_path}")
-            # デフォルトの階層構成
             configs = [
                 {"embed_dim": 128},
                 {"embed_dim": 64},
@@ -86,7 +79,6 @@ class AutoSNNModelForHierarchicalExtraction:
         if hasattr(HierarchicalSNN, 'from_pretrained'):
             return HierarchicalSNN.from_pretrained(pretrained_model_name_or_path)
         else:
-            # jsonからconfigを読み込み状態を復元する代替処理
             import json
             with open(config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
@@ -140,8 +132,14 @@ class AutoSpikingAgent:
             return SaraAgent()
         return SaraAgent.from_pretrained(pretrained_model_name_or_path)
 
-
-# --- Phase 2 追加: HuggingFace Pipeline APIの代替 ---
+class AutoStrongSpikingLM:
+    @classmethod
+    def from_pretrained(cls, pretrained_model_name_or_path: str):
+        config_path = os.path.join(pretrained_model_name_or_path, "config.json")
+        if not os.path.exists(pretrained_model_name_or_path) or not os.path.exists(config_path):
+            print(f"Initializing a new StrongSpikingLM. No config at {pretrained_model_name_or_path}")
+            return StrongSpikingLM(StrongSpikingLMConfig())
+        return StrongSpikingLM.from_pretrained(pretrained_model_name_or_path)
 
 class SaraPipeline:
     """タスク指向のパイプラインAPI。TransformersのpipelineをSNNで模倣する。"""
@@ -151,7 +149,7 @@ class SaraPipeline:
         self.tokenizer = tokenizer
 
     def __call__(self, input_data: Any, **kwargs) -> Any:
-        if self.task == "text-generation":
+        if self.task in ["text-generation", "strong-text-generation"]:
             if hasattr(self.model, "generate"):
                 return self.model.generate(input_data, **kwargs)
         elif self.task == "feature-extraction" or self.task == "hierarchical-extraction":
@@ -161,7 +159,6 @@ class SaraPipeline:
             if hasattr(self.model, "classify"):
                 return self.model.classify(input_data, **kwargs)
         
-        # フォールバック: __call__ が定義されていればそれを呼ぶ
         if hasattr(self.model, "__call__"):
             return self.model(input_data, **kwargs)
         return None
@@ -169,7 +166,6 @@ class SaraPipeline:
 def pipeline(task: str, model_path: Optional[str] = None, model: Optional[Any] = None, tokenizer: Optional[Any] = None) -> SaraPipeline:
     """
     Transformersライクなpipeline関数。
-    対応タスク: 'text-generation', 'feature-extraction', 'hierarchical-extraction', 'text-classification', 'image-classification'
     """
     if model is None:
         if model_path is None:
@@ -177,6 +173,8 @@ def pipeline(task: str, model_path: Optional[str] = None, model: Optional[Any] =
             
         if task == "text-generation":
             model = AutoSpikingLM.from_pretrained(model_path)
+        elif task == "strong-text-generation":
+            model = AutoStrongSpikingLM.from_pretrained(model_path)
         elif task == "feature-extraction":
             model = AutoSNNModelForFeatureExtraction.from_pretrained(model_path)
         elif task == "hierarchical-extraction":
@@ -186,7 +184,6 @@ def pipeline(task: str, model_path: Optional[str] = None, model: Optional[Any] =
         elif task == "image-classification":
             model = AutoSNNModelForImageClassification.from_pretrained(model_path)
         else:
-            # デフォルト
             model = AutoModelForCausalSNN.from_pretrained(model_path)
             
     if tokenizer is None and model_path is not None:
