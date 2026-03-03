@@ -8,7 +8,7 @@ import os
 # プロジェクトルートをパスに追加し、ローカルのsrcを参照させる
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.sara_engine.models.rlm import StatefulRLMAgent
+from sara_engine.models.rlm import StatefulRLMAgent
 
 def main():
     print("=== RLM 強化学習デモンストレーション ===")

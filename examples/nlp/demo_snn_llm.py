@@ -12,8 +12,8 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.sara_engine.encoders.spike_tokenizer import SpikeTokenizer
-from src.sara_engine.models.spiking_llm import SpikingTransformerBlock
+from sara_engine.encoders.spike_tokenizer import SpikeTokenizer
+from sara_engine.models.spiking_llm import SpikingTransformerBlock
 
 def main():
     print("Initializing SARA Spiking Transformer...")

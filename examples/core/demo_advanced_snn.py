@@ -19,8 +19,8 @@ import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.sara_engine.core.layers import DynamicLiquidLayer
-from src.sara_engine.models.readout_layer import SpikeReadoutLayer
+from sara_engine.core.layers import DynamicLiquidLayer
+from sara_engine.models.readout_layer import SpikeReadoutLayer
 
 def download_data(filename: str, source_url: str, data_dir: str = "data") -> str:
     filepath = os.path.join(data_dir, filename)

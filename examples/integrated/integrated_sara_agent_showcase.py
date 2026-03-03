@@ -12,7 +12,7 @@ import re
 # プロジェクトルートをパスに追加
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.sara_engine.agent.sara_agent import SaraAgent
+from sara_engine.agent.sara_agent import SaraAgent
 
 # --- 外部カスタムツールの定義 ---
 def simple_calculator(context: str) -> str:

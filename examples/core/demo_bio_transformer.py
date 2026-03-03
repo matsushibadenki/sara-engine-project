@@ -11,7 +11,7 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.sara_engine.models.bio_transformer import BioSpikingTransformer
+from sara_engine.models.bio_transformer import BioSpikingTransformer
 
 def text_to_spikes(text: str, seq_len: int, d_model: int) -> list[list[int]]:
     encoded = text.encode('utf-8')

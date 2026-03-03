@@ -17,8 +17,8 @@ def main():
     
     try:
         # src配下から明示的にインポートするように修正
-        from src.sara_engine.agent.sara_agent import SaraAgent
-        from src.sara_engine.core.cortex import CorticalColumn
+        from sara_engine.agent.sara_agent import SaraAgent
+        from sara_engine.core.cortex import CorticalColumn
     except ImportError as e:
         print(f"モジュールの読み込みに失敗しました: {e}")
         return

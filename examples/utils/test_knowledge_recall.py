@@ -11,7 +11,7 @@ import json
 # site-packagesの古いモジュールを回避し、ローカルのsrcを最優先にする
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.sara_engine.learning.stdp import STDPLayer
+from sara_engine.learning.stdp import STDPLayer
 
 def load_or_create_brain_state(filename="workspace/sara_vocab.json"):
     num_inputs = 10

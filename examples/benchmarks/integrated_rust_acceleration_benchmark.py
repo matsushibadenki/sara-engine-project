@@ -1,6 +1,6 @@
-from src.sara_engine.nn.attention import SpikeSelfAttention
-from src.sara_engine.core.layers import DynamicLiquidLayer
-from src.sara_engine.core.hal import HardwareManager
+from sara_engine.nn.attention import SpikeSelfAttention
+from sara_engine.core.layers import DynamicLiquidLayer
+from sara_engine.core.hal import HardwareManager
 import multiprocessing
 import random
 import time

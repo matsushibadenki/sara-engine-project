@@ -13,8 +13,8 @@ import json
 # プロジェクトルートをパスの先頭に追加し、ローカルのsrcを確実に優先させる
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.sara_engine.core.layers import DynamicLiquidLayer
-from src.sara_engine.models.readout_layer import SpikeReadoutLayer
+from sara_engine.core.layers import DynamicLiquidLayer
+from sara_engine.models.readout_layer import SpikeReadoutLayer
 
 def save_brain_state(readout_layer, filename="workspace/sara_readout_state.json"):
     """学習した読み出し層の重みをJSONとして保存する"""

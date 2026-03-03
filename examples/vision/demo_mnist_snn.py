@@ -16,10 +16,18 @@ import gzip
 import random
 import math
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# プロジェクトルートとsrcディレクトリをパスに追加
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
+src_path = os.path.join(project_root, 'src')
 
-from src.sara_engine.core.layers import DynamicLiquidLayer
-from src.sara_engine.models.readout_layer import SpikeReadoutLayer
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from sara_engine.core.layers import DynamicLiquidLayer
+from sara_engine.models.readout_layer import SpikeReadoutLayer
 
 def download_mnist(filename: str, source_url: str) -> str:
     filepath = os.path.join("data", filename)
@@ -135,23 +143,24 @@ def run_mnist_snn() -> None:
     
     num_inputs = 784
     num_classes = 10
-    epochs = 4  # Gaborフィルタ導入により早期の収束が可能に
+    epochs = 2  # テストのためエポックを短縮
     
-    train_samples_to_use = len(train_images)
-    test_samples_to_use = len(test_images)
+    # 動作確認のため、最初はサンプル数を絞る設定を可能にする（必要に応じて len(train_images) に戻してください）
+    train_samples_to_use = 10000 
+    test_samples_to_use = 1000
 
-    print("\n[Network] 生物学的マルチスケール・ネットワークを構築中...")
+    print(f"\n[Network] 生物学的マルチスケール・ネットワークを構築中... (学習データ: {train_samples_to_use}件)")
     
     layer_configs = [
-        {"size": 4000, "decay": 0.50, "patch_sizes": [4, 6, 8]},
-        {"size": 4000, "decay": 0.80, "patch_sizes": [12, 16, 20]}
+        {"size": 1000, "decay": 0.50, "patch_sizes": [4, 6, 8]}, # 速度向上のためサイズを一時的に縮小
+        {"size": 1000, "decay": 0.80, "patch_sizes": [12, 16, 20]}
     ]
     
     liquid_layers: list[DynamicLiquidLayer] = []
     for cfg in layer_configs:
-        size_val = int(cfg["size"]) # type: ignore
-        decay_val = float(cfg["decay"]) # type: ignore
-        patch_sizes_val = cfg["patch_sizes"] # type: ignore
+        size_val = int(cfg["size"])
+        decay_val = float(cfg["decay"])
+        patch_sizes_val = cfg["patch_sizes"]
         layer = DynamicLiquidLayer(
             input_size=num_inputs, 
             hidden_size=size_val, 
@@ -160,15 +169,14 @@ def run_mnist_snn() -> None:
             density=0.0,
             input_scale=0.0
         )
-        apply_spatial_receptive_fields(layer, 28, 28, patch_sizes_val) # type: ignore
+        apply_spatial_receptive_fields(layer, 28, 28, patch_sizes_val)
         liquid_layers.append(layer)
     
     thresholds = [220, 160, 100, 40]
     num_steps = len(thresholds)
     
-    total_hidden = sum(int(cfg["size"]) for cfg in layer_configs) # type: ignore
+    total_hidden = sum(int(cfg["size"]) for cfg in layer_configs)
     feature_dim_per_step = num_inputs + total_hidden
-    
     temporal_spatial_size = feature_dim_per_step * num_steps
     
     readout_layer = SpikeReadoutLayer(
@@ -179,100 +187,71 @@ def run_mnist_snn() -> None:
     )
 
     print("\n[Pre-process] 画像データの前処理...")
-    train_encoded = preprocess_images(train_images, thresholds)
-    test_encoded = preprocess_images(test_images, thresholds)
+    train_encoded = preprocess_images(train_images[:train_samples_to_use], thresholds)
+    test_encoded = preprocess_images(test_images[:test_samples_to_use], thresholds)
 
-    print(f"\n[Train] 学習開始 (データ数: {train_samples_to_use}件 x {epochs}エポック)...")
+    print(f"\n[Train] 学習開始...")
     start_time = time.time()
     
     for epoch in range(epochs):
+        epoch_start = time.time()
         print(f"\n--- Epoch {epoch + 1}/{epochs} ---")
         
-        combined = list(zip(train_encoded, train_labels))
+        combined = list(zip(train_encoded, train_labels[:train_samples_to_use]))
         random.shuffle(combined)
-        
-        # zip(*) 展開時の曖昧なジェネレータ型推論を回避するため、明示的リスト内包を使用
-        train_encoded_shuffled: list[list[list[int]]] = [item[0] for item in combined]
-        train_labels_shuffled: list[int] = [item[1] for item in combined]
         
         if epoch > 0:
             readout_layer.learning_rate *= 0.85
             
         for i in range(train_samples_to_use):
-            encoded_image = train_encoded_shuffled[i]
-            target_label = train_labels_shuffled[i]
+            encoded_image, target_label = combined[i]
             
+            # ニューロン状態のリセットを効率化
             for l in liquid_layers:
                 if l.use_rust and hasattr(l.core, 'reset_potentials'):
                     l.core.reset_potentials() # type: ignore
                 else:
                     l.v = [0.0] * l.size
                     l.refractory = [0.0] * l.size
-                    # ジェネレータ式を避けるための明示的ループ
-                    new_thresh: list[float] = []
-                    for t in l.dynamic_thresh:
-                        new_thresh.append(5.0 if t > 5.0 else t)
-                    l.dynamic_thresh = new_thresh
+                    # 閾値調整（リスト内包表記で高速化）
+                    l.dynamic_thresh = [5.0 if t > 5.0 else t for t in l.dynamic_thresh]
             
-            accumulated_fired: set[int] = set()
-            prev_fired: list[list[int]] = [[] for _ in range(len(liquid_layers))]
-            hidden_already_fired: list[set[int]] = [set() for _ in range(len(liquid_layers))]
+            accumulated_fired = []
+            prev_fired = [[] for _ in range(len(liquid_layers))]
+            hidden_already_fired = [set() for _ in range(len(liquid_layers))]
             
             for step, active_inputs in enumerate(encoded_image):
-                if not active_inputs:
-                    continue
+                if not active_inputs: continue
                 
                 step_base_offset = step * feature_dim_per_step
                 for inp in active_inputs:
-                    accumulated_fired.add(inp + step_base_offset)
+                    accumulated_fired.append(inp + step_base_offset)
                 
                 hidden_offset = num_inputs
                 for l_idx, l in enumerate(liquid_layers):
-                    fired_hidden = l.forward(
-                        active_inputs=active_inputs,
-                        prev_active_hidden=prev_fired[l_idx]
-                    )
+                    fired_hidden = l.forward(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
                     prev_fired[l_idx] = fired_hidden
                     
-                    first_fired: list[int] = []
                     for f in fired_hidden:
                         if f not in hidden_already_fired[l_idx]:
-                            first_fired.append(f)
-                            
-                    if first_fired:
-                        hidden_already_fired[l_idx].update(first_fired)
-                        for f in first_fired:
-                            accumulated_fired.add(f + step_base_offset + hidden_offset)
-                        
+                            hidden_already_fired[l_idx].add(f)
+                            accumulated_fired.append(f + step_base_offset + hidden_offset)
                     hidden_offset += l.size
                 
             if accumulated_fired:
-                readout_layer.forward(list(accumulated_fired), target_token=target_label, learning=True)
+                readout_layer.forward(accumulated_fired, target_token=target_label, learning=True)
                 
-            if (i + 1) % 10000 == 0:
-                print(f"  Processed {i + 1}/{train_samples_to_use} samples...")
+            # 進捗を100件ごとに表示するように変更
+            if (i + 1) % 100 == 0:
+                elapsed = time.time() - epoch_start
+                speed = (i + 1) / elapsed
+                print(f"\r  Progress: {i + 1}/{train_samples_to_use} ({speed:.2f} samples/sec)", end="")
 
-    print(f"学習完了 | 所要時間: {time.time() - start_time:.2f}秒")
+        print(f"\n  Epoch {epoch+1} 完了 | 所要時間: {time.time() - epoch_start:.2f}秒")
 
-    print("\n[Sleep] 睡眠フェーズ開始 (ノイズシナプスの枝刈り)...")
-    pruned_count = 0
-    total_count = 0
-    prune_rate = 0.005
-    for s_idx in range(len(readout_layer.W)):
-        to_delete: list[int] = []
-        for t_id, weight in readout_layer.W[s_idx].items():
-            if abs(weight) < prune_rate:
-                to_delete.append(t_id)
-                
-        for t_id in to_delete:
-            del readout_layer.W[s_idx][t_id]
-            pruned_count += 1
-            
-        total_count += len(readout_layer.W[s_idx]) + len(to_delete)
-        
-    print(f"睡眠フェーズ完了: 全 {total_count} シナプス中 {pruned_count} 個を枝刈りしました。")
+    print(f"\n学習完了 | 総計所要時間: {time.time() - start_time:.2f}秒")
 
-    print(f"\n[Test] 推推論テスト開始 (テストデータ数: {test_samples_to_use}件)...")
+    print("\n[Test] 推論テスト開始...")
     correct_count = 0
     test_start_time = time.time()
     
@@ -287,52 +266,41 @@ def run_mnist_snn() -> None:
                 l.v = [0.0] * l.size
                 l.refractory = [0.0] * l.size
             
-        accumulated_fired = set()
+        accumulated_fired = []
         prev_fired = [[] for _ in range(len(liquid_layers))]
         hidden_already_fired = [set() for _ in range(len(liquid_layers))]
         
         for step, active_inputs in enumerate(encoded_image):
-            if not active_inputs:
-                continue
+            if not active_inputs: continue
             
             step_base_offset = step * feature_dim_per_step
             for inp in active_inputs:
-                accumulated_fired.add(inp + step_base_offset)
+                accumulated_fired.append(inp + step_base_offset)
             
             hidden_offset = num_inputs
             for l_idx, l in enumerate(liquid_layers):
-                fired_h = l.forward(
-                    active_inputs=active_inputs,
-                    prev_active_hidden=prev_fired[l_idx]
-                )
+                fired_h = l.forward(active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
                 prev_fired[l_idx] = fired_h
                 
-                first_fired = []
                 for f in fired_h:
                     if f not in hidden_already_fired[l_idx]:
-                        first_fired.append(f)
-                        
-                if first_fired:
-                    hidden_already_fired[l_idx].update(first_fired)
-                    for f in first_fired:
-                        accumulated_fired.add(f + step_base_offset + hidden_offset)
-                    
+                        hidden_already_fired[l_idx].add(f)
+                        accumulated_fired.append(f + step_base_offset + hidden_offset)
                 hidden_offset += l.size
             
         if accumulated_fired:
-            predicted = readout_layer.forward(list(accumulated_fired), learning=False)
+            predicted = readout_layer.forward(accumulated_fired, learning=False)
             if predicted == true_label:
                 correct_count += 1
                 
-        if (i + 1) % 2000 == 0:
-            current_acc = (correct_count / (i + 1)) * 100
-            print(f"  Tested {i + 1}/{test_samples_to_use} | Current Accuracy: {current_acc:.1f}%")
+        if (i + 1) % 100 == 0:
+            print(f"\r  Testing {i + 1}/{test_samples_to_use}", end="")
 
     final_accuracy = (correct_count / test_samples_to_use) * 100
-    print("="*60)
+    print(f"\n{'='*60}")
     print(f"最終テスト精度: {final_accuracy:.2f}%")
     print(f"推論所要時間: {time.time() - test_start_time:.2f}秒")
-    print("="*60)
+    print(f"{'='*60}")
 
 if __name__ == "__main__":
     run_mnist_snn()

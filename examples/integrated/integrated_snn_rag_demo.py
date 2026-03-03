@@ -1,7 +1,7 @@
-from src.sara_engine.encoders.spike_tokenizer import SpikeTokenizer
-from src.sara_engine.memory.snn_vector_store import SNNVectorStore
-from src.sara_engine.models.spiking_causal_lm import SpikingCausalLM
-from src.sara_engine.models.spiking_feature_extractor import SpikingFeatureExtractor, SNNFeatureExtractorConfig
+from sara_engine.encoders.spike_tokenizer import SpikeTokenizer
+from sara_engine.memory.snn_vector_store import SNNVectorStore
+from sara_engine.models.spiking_causal_lm import SpikingCausalLM
+from sara_engine.models.spiking_feature_extractor import SpikingFeatureExtractor, SNNFeatureExtractorConfig
 import math
 import sys
 import os
