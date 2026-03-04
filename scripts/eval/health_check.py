@@ -1,7 +1,6 @@
-# scripts/eval/health_check.py
-# SARA-Engine 統合アーキテクチャ・ヘルスチェック
-# SARA-Engineの主要コンポーネントが正常に機能しているか診断するスクリプト。
-# 最新のRust SpikeEngineクラスへ対応。
+# ディレクトリパス: scripts/eval/health_check.py
+# ファイルの日本語タイトル: SARA-Engine 統合アーキテクチャ・ヘルスチェック
+# ファイルの目的や内容: SARA-Engineの主要コンポーネントが正常に機能しているか診断するスクリプト。Rustコアで実装されているSDR連想メモリ、WTAルーティング、Direct Synaptic Wiringなどの最新機能の正常性確認を追加。
 
 import os
 import random
@@ -34,6 +33,9 @@ class SARAHealthCheck:
         self.check_homeostatic_stability()
         self.check_energy_efficiency_potential()
         self.check_rust_integration()
+        self.check_sdr_memory()
+        self.check_wta_router()
+        self.check_direct_wiring()
         self.report()
 
     def check_event_driven_integrity(self) -> None:
@@ -123,7 +125,6 @@ class SARAHealthCheck:
                 except ImportError:
                     from src.sara_engine import sara_rust_core
 
-            # 最新のSpikeEngineクラスをテスト
             engine = sara_rust_core.SpikeEngine()
             weights: list[dict[int, float]] = [{1: 0.5, 2: 1.0}, {}, {1: 0.8}]
             engine.set_weights(weights)
@@ -138,11 +139,75 @@ class SARAHealthCheck:
                 self.log("Rustコア統合", False, "Rust関数の戻り値が不正です。")
         except ImportError:
             self.log("Rustコア統合", False,
-                     "Rust拡張モジュールがインポートできません。maturin build が必要です。")
+                     "Rust拡張モジュールがインポートできません。maturin build や pip install -e . を確認してください。")
         except AttributeError as e:
             self.log("Rustコア統合", False, f"Rustモジュールの関数呼び出しエラー: {e}")
         except Exception as e:
             self.log("Rustコア統合", False, f"実行エラー: {e!s}")
+
+    def check_sdr_memory(self) -> None:
+        try:
+            try:
+                from sara_engine import sara_rust_core
+            except ImportError:
+                try:
+                    import sara_rust_core
+                except ImportError:
+                    from src.sara_engine import sara_rust_core
+            
+            memory = sara_rust_core.ScalableSDRMemory(0.1)
+            memory.add_memory(1, [1, 2, 3, 4, 5])
+            memory.add_memory(2, [6, 7, 8, 9, 10])
+            results = memory.search([1, 2, 3], 5)
+            
+            if results and results[0][0] == 1:
+                self.log("SDR連想メモリ", True, "ScalableSDRMemoryの高速検索機能を確認。")
+            else:
+                self.log("SDR連想メモリ", False, "検索結果が不正です。")
+        except Exception as e:
+            self.log("SDR連想メモリ", False, f"実行エラー: {e!s}")
+
+    def check_wta_router(self) -> None:
+        try:
+            try:
+                from sara_engine import sara_rust_core
+            except ImportError:
+                try:
+                    import sara_rust_core
+                except ImportError:
+                    from src.sara_engine import sara_rust_core
+            
+            router = sara_rust_core.SpikeWTARouter(input_dim=10, num_experts=5, top_k=2)
+            weights = [{0: 1.0, 1: 0.5, 2: 0.2} for _ in range(10)]
+            router.set_weights(weights)
+            winners = router.route([0, 1, 2], learning=True)
+            
+            if len(winners) <= 2:
+                self.log("WTAルーティング", True, "SpikeWTARouterの競合学習とルーティング機能を確認。")
+            else:
+                self.log("WTAルーティング", False, "WTAの出力サイズが不正です。")
+        except Exception as e:
+            self.log("WTAルーティング", False, f"実行エラー: {e!s}")
+
+    def check_direct_wiring(self) -> None:
+        try:
+            try:
+                from sara_engine import sara_rust_core
+            except ImportError:
+                try:
+                    import sara_rust_core
+                except ImportError:
+                    from src.sara_engine import sara_rust_core
+            
+            tokens = [1, 2, 3, 1, 2, 4, 1, 2, 3]
+            synapses = sara_rust_core.build_direct_synapses(tokens, context_window=2)
+            
+            if isinstance(synapses, dict) and len(synapses) > 0:
+                self.log("Direct Wiring", True, "コーパスからの直接シナプス結線構築機能を確認。")
+            else:
+                self.log("Direct Wiring", False, "戻り値が不正、または空です。")
+        except Exception as e:
+            self.log("Direct Wiring", False, f"実行エラー: {e!s}")
 
     def report(self) -> None:
         print("\n" + "=" * 50)

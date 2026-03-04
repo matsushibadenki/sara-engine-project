@@ -1,8 +1,6 @@
-{
-    "//": "ディレクトリパス: src/sara_engine/models/snn_transformer.py",
-    "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル",
-    "//": "ファイルの目的や内容: SNN版LayerNorm(恒常性)とDropoutを統合し、TransformerブロックのPre-Norm+Residual構造を生物学的に再現。フェーズ2対応としてFuzzy Recallを統合。"
-}
+# ディレクトリパス: src/sara_engine/models/snn_transformer.py
+# ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル
+# ファイルの目的や内容: SNN版LayerNorm(恒常性)とDropoutを統合し、TransformerブロックのPre-Norm+Residual構造を生物学的に再現。フェーズ2対応としてFuzzy Recallを統合。さらに精度と速度の向上のため、SDR生成の高速化とシナプス更新の効率化を実施。
 
 from sara_engine.core.spike_attention import SpikeMultiPathwayAttention
 from sara_engine.nn.attention import SpikeFuzzyAttention
@@ -123,11 +121,13 @@ class SpikingTransformerModel(nn.SNNModule):
                 layer.attention.reset_state()
 
     def _get_sdr(self, delay: int, tok: int) -> List[int]:
-        """Dynamic hashing SDR generation to support unbounded vocabulary (Unicode)."""
-        seed_val = (delay * 73856093) ^ (tok * 19349663) ^ 42
-        random.seed(seed_val)
-        spikes = random.sample(range(self.reservoir_size), 20)
-        random.seed()
+        """Dynamic hashing SDR generation to support unbounded vocabulary (Unicode).
+        Optimized for speed by replacing random.seed() with deterministic lightweight hashing."""
+        spikes = []
+        state = (delay * 73856093) ^ (tok * 19349663) ^ 42
+        for _ in range(20):
+            state = (state * 1103515245 + 12345) & 0x7fffffff
+            spikes.append(state % self.reservoir_size)
         return spikes
 
     def _get_reservoir_spikes(self, token_id: int) -> List[int]:
@@ -183,22 +183,27 @@ class SpikingTransformerModel(nn.SNNModule):
 
             for s in active_subset:
                 if s < self.total_readout_size:
-                    current_w = self.readout_synapses[s].get(target_id, 0.0)
+                    synapses = self.readout_synapses[s]
+                    current_w = synapses.get(target_id, 0.0)
 
-                    self.readout_synapses[s][target_id] = min(
+                    synapses[target_id] = min(
                         20.0, current_w + (1.5 * reward_factor))
 
-                    if not is_correct and predicted_id in self.readout_synapses[s]:
-                        self.readout_synapses[s][predicted_id] -= (
-                            2.0 * punish_factor)
-                        if self.readout_synapses[s][predicted_id] <= 0:
-                            del self.readout_synapses[s][predicted_id]
+                    if not is_correct and predicted_id in synapses:
+                        synapses[predicted_id] -= (2.0 * punish_factor)
+                        if synapses[predicted_id] <= 0:
+                            del synapses[predicted_id]
 
-                    for vocab_id in list(self.readout_synapses[s].keys()):
+                    # 最適化: リストの完全なコピーを避け、削除対象キーのみを収集して後で削除する
+                    keys_to_delete = []
+                    for vocab_id in synapses:
                         if vocab_id != target_id and vocab_id != predicted_id:
-                            self.readout_synapses[s][vocab_id] -= 0.05
-                            if self.readout_synapses[s][vocab_id] <= 0:
-                                del self.readout_synapses[s][vocab_id]
+                            synapses[vocab_id] -= 0.05
+                            if synapses[vocab_id] <= 0:
+                                keys_to_delete.append(vocab_id)
+                    
+                    for k in keys_to_delete:
+                        del synapses[k]
 
         return predicted_id
 
