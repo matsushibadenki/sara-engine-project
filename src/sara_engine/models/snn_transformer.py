@@ -1,6 +1,6 @@
 # ディレクトリパス: src/sara_engine/models/snn_transformer.py
 # ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル
-# ファイルの目的や内容: 加算ノイズによる文字化けバグを修正し、生物学的な「乗算ノイズ（シナプス伝達確率のゆらぎ）」を導入。さらに、文字のスパイク混線（ハッシュ衝突）を完全に防ぐため、純Python実装の超高速XorShift32アルゴリズムを採用してSDRの直交性を担保した最終安定版。
+# ファイルの目的や内容: 加算ノイズによる文字化けバグを修正し、生物学的な「乗算ノイズ（シナプス伝達確率のゆらぎ）」を導入。さらに、文字のスパイク混線（ハッシュ衝突）を完全に防ぐため、純Python実装の超高速XorShift32アルゴリズムを採用してSDRの直交性を担保。推論時の発火閾値を大幅に引き上げ、ランダムサンプリングを廃止して暴走を完全に遮断した最終安定版。
 
 from sara_engine.core.spike_attention import SpikeMultiPathwayAttention
 from sara_engine.nn.attention import SpikeFuzzyAttention
@@ -194,18 +194,12 @@ class SpikingTransformerModel(nn.SNNModule):
             else:
                 # 推論時のTop-K選択
                 top_k = sorted_items[:5]
-                if top_k[0][1] > 0.1:
-                    total_pot = sum(p for _, p in top_k)
-                    if total_pot > 0:
-                        r = random.uniform(0, total_pot)
-                        accum = 0.0
-                        for tid, pot in top_k:
-                            accum += pot
-                            if r <= accum:
-                                predicted_id = tid
-                                break
-                    else:
-                        predicted_id = top_k[0][0]
+                # ここを修正：閾値を大幅に引き上げ、ランダムサンプリングを廃止して最も確信度の高い文字を出力
+                if top_k[0][1] > 150.0:
+                    predicted_id = top_k[0][0]
+                else:
+                    # 確信度が低い場合は即座に生成を停止し、連鎖的な文字化けを防ぐ
+                    predicted_id = 0
 
         if learning and target_id is not None:
             is_correct = (predicted_id == target_id)
