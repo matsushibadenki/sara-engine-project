@@ -1,6 +1,6 @@
 {
-    "model_version": "1.4.0",
-    "vocab_size": 1114112,
+    "model_version": "1.4.1",
+    "vocab_size": 4096,
     "embed_dim": 64,
     "num_layers": 1,
     "ffn_dim": 256,

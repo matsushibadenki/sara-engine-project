@@ -1,8 +1,8 @@
-{
-    "//": "ディレクトリパス: src/sara_engine/utils/tokenizer.py",
-    "//": "ファイルの日本語タイトル: SARA BPE トークナイザー",
-    "//": "ファイルの目的や内容: SNNの推論速度と精度を劇的に向上させるため、BPE (Byte-Pair Encoding) サブワードアルゴリズムをネイティブ実装。頻出する文字列を自動結合し、行列演算なしで高速なトークン化を行う。"
-}
+# {
+#     "//": "ディレクトリパス: src/sara_engine/utils/tokenizer.py",
+#     "//": "ファイルの日本語タイトル: SARA BPE トークナイザー",
+#     "//": "ファイルの目的や内容: SNNの推論速度と精度を劇的に向上させるため、BPE (Byte-Pair Encoding) サブワードアルゴリズムをネイティブ実装。頻出する文字列を自動結合し、行列演算なしで高速なトークン化を行う。正規表現のエスケープエラーを修正。"
+# }
 
 import json
 import os
@@ -72,7 +72,8 @@ class SaraTokenizer:
         p = re.compile(r'(?<!\S)' + bigram + r'(?!\S)')
         replacement = ''.join(pair)
         for word in v_in:
-            w_out = p.sub(replacement, word)
+            # 修正箇所: 文字列を直接渡さず lambda を使うことで、エスケープ文字のエラーを回避
+            w_out = p.sub(lambda _: replacement, word)
             v_out[w_out] = v_in[word]
         return v_out
 

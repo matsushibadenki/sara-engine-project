@@ -1,11 +1,14 @@
-# ディレクトリパス: src/sara_engine/models/snn_transformer.py
-# ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル v1.4.0
-# ファイルの目的や内容: 保守性と拡張性を高めるため、スパイク生成とシナプス管理のロジックを独立したヘルパークラスに分離。
+# {
+#     "//": "ディレクトリパス: src/sara_engine/models/snn_transformer.py",
+#     "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル v1.4.2",
+#     "//": "ファイルの目的や内容: BPEトークンでのループを抑制するため、生成履歴全体に対するRepetition Penaltyと直近トークンへの強力な不応期を実装。ハッシュの分散効率も向上。"
+# }
 
 from sara_engine.core.spike_attention import SpikeMultiPathwayAttention
 from sara_engine.nn.attention import SpikeFuzzyAttention
 from sara_engine import nn
 from typing import List, Dict, Optional, Tuple
+from collections import Counter
 import operator
 import pickle
 import random
@@ -14,18 +17,16 @@ import json
 import math
 
 # ---- 定数 ----------------------------------------------------------------
-_MODEL_VERSION: str = "1.4.0"          
-_UNICODE_MAX: int = 0x10FFFF           
+_MODEL_VERSION: str = "1.4.2"          
 _SYNAPSE_MAX_WEIGHT: float = 20.0      
 _SYNAPSE_PRUNE_THRESH: float = 1.0     
 _SYNAPSE_BUCKET_MAX: int = 8192        
 _SYNAPSE_PRUNE_TARGET: int = 4096      
 
-
 class SNNTransformerConfig:
     def __init__(
         self,
-        vocab_size: int = 1114112,
+        vocab_size: int = 4096,
         embed_dim: int = 64,
         num_layers: int = 1,
         ffn_dim: int = 256,
@@ -67,10 +68,7 @@ class SNNTransformerConfig:
         return cls(**filtered)
 
 
-# ---- モジュール化1: スパイク生成処理 ------------------------------------------------
 class NGramSpikeGenerator:
-    """N-gramに基づく決定論的なスパイク発火を管理するクラス"""
-    
     @staticmethod
     def generate_spikes(
         delay_buffer: List[int], 
@@ -82,11 +80,13 @@ class NGramSpikeGenerator:
         for n in range(1, min(num_ngram_levels + 1, len(delay_buffer) + 1)):
             ngram = tuple(delay_buffer[:n])
             
-            # FNV-1a ハッシュアルゴリズム
             h = 0x811C9DC5
-            for t in ngram:
-                h = (h ^ t) * 0x01000193
-                h &= 0xFFFFFFFF
+            for i, t in enumerate(ngram):
+                h ^= t
+                h = (h * 0x01000193) & 0xFFFFFFFF
+                # BPEのIDは値が偏りやすいため、位置情報とシードを混ぜて分散を強化
+                h ^= (i + 1) * 0x9E3779B9
+                h = (h * 0x01000193) & 0xFFFFFFFF
                 
             num_spikes = 8 + (n * 4) 
             state = h
@@ -104,10 +104,7 @@ class NGramSpikeGenerator:
         return list(spikes)
 
 
-# ---- モジュール化2: シナプス学習・推論処理 -----------------------------------------
 class SynapseManager:
-    """シナプスの重み更新、刈り込み、推論を管理するクラス"""
-    
     @staticmethod
     def prune(synapses: Dict[int, float], protect_id: int) -> None:
         if len(synapses) <= _SYNAPSE_BUCKET_MAX:
@@ -153,7 +150,6 @@ class SynapseManager:
             if synapses[predicted_id] <= 0.0:
                 del synapses[predicted_id]
 
-        # Synaptic Scaling
         total_weight = sum(synapses.values())
         if total_weight > _SYNAPSE_MAX_WEIGHT * 5.0:
             scale = (_SYNAPSE_MAX_WEIGHT * 5.0) / total_weight
@@ -177,7 +173,6 @@ class SynapseManager:
         return candidates[0][0]
 
 
-# ---- メインモデル ----------------------------------------------------------------
 class SNNTransformerBlock(nn.SNNModule):
     def __init__(self, config: SNNTransformerConfig) -> None:
         super().__init__()
@@ -281,15 +276,13 @@ class SpikingTransformerModel(nn.SNNModule):
     ) -> Tuple[int, Dict]:
         
         def _is_valid_output_token(tid: int) -> bool:
-            if tid <= 0 or tid > _UNICODE_MAX: return False
-            if 0xD800 <= tid <= 0xDFFF: return False
+            if tid <= 0 or tid >= self.config.vocab_size: return False
             return True
 
         self.delay_buffer.insert(0, token_id)
         if len(self.delay_buffer) > self.context_length:
             self.delay_buffer.pop()
 
-        # スパイク生成モジュールの呼び出し
         res_spikes = NGramSpikeGenerator.generate_spikes(
             self.delay_buffer, self.num_ngram_levels, self.reservoir_size
         )
@@ -315,14 +308,27 @@ class SpikingTransformerModel(nn.SNNModule):
                 fan_in = self.token_counts.get(v_idx, 1)
                 out_potentials[v_idx] /= (math.log1p(fan_in) * 0.15 + 1.0)
 
+        # 修正箇所: 繰り返しペナルティ (Repetition Penalty) と強力な不応期
         if not learning and refractory_tokens:
-            decay_factor = 0.6
-            for r_tok in reversed(refractory_tokens):
+            # 1. 直近のトークンへの強い不応期ペナルティ
+            recent_window = 10
+            recent_tokens = refractory_tokens[-recent_window:]
+            decay_factor = 0.1 # 最新のトークンはポテンシャルを10%まで下げる
+            step = 0.9 / recent_window
+            
+            for r_tok in reversed(recent_tokens):
                 if r_tok in out_potentials:
                     out_potentials[r_tok] *= decay_factor
-                decay_factor += 0.1
+                decay_factor += step
                 if decay_factor > 1.0:
                     decay_factor = 1.0
+
+            # 2. 生成履歴全体に対する繰り返しペナルティ (出現回数が多いほどペナルティ増加)
+            counts = Counter(refractory_tokens)
+            for r_tok, count in counts.items():
+                if r_tok in out_potentials:
+                    penalty = 0.85 ** count # 例: 1回=0.85, 2回=0.72...
+                    out_potentials[r_tok] *= penalty
 
         predicted_id = 0
         margin = 0.0
@@ -351,7 +357,6 @@ class SpikingTransformerModel(nn.SNNModule):
                         margin = sorted_items[0][1]
             else:
                 top_k = sorted_items[:5]
-                # 適応的閾値: 最初は厳しく、候補がなければ少し緩める
                 adaptive_threshold = fire_threshold
                 valid_candidates = [
                     (tid, pot) for tid, pot in top_k
@@ -359,7 +364,6 @@ class SpikingTransformerModel(nn.SNNModule):
                 ]
                 
                 if not valid_candidates and top_k:
-                    # 未知の単語などで閾値を下回った場合のフォールバック
                     adaptive_threshold *= 0.5
                     valid_candidates = [
                         (tid, pot) for tid, pot in top_k
@@ -383,7 +387,6 @@ class SpikingTransformerModel(nn.SNNModule):
             for s in readout_spikes:
                 if s >= self.total_readout_size:
                     continue
-                # シナプス管理モジュールの呼び出し
                 SynapseManager.update_weights(
                     self.readout_synapses[s], target_id, predicted_id, margin, lr_scale
                 )
@@ -405,8 +408,8 @@ class SpikingTransformerModel(nn.SNNModule):
         self,
         input_ids: List[int],
         max_length: int = 150,
-        temperature: float = 0.2,
-        fire_threshold: float = 1.0,
+        temperature: float = 0.6,
+        fire_threshold: float = 0.5,
         debug: bool = False
     ) -> Tuple[List[int], List[Dict]]:
         self.reset_state()
@@ -427,22 +430,19 @@ class SpikingTransformerModel(nn.SNNModule):
 
         generated_ids: List[int] = []
         current_token = first_pred
-        refractory_buffer: List[int] = []
 
         for _ in range(max_length):
-            if current_token == 0:
+            # 未知語(1)やパディング/EOS(0以下)で終了
+            if current_token <= 1:
                 break
 
             generated_ids.append(current_token)
-            refractory_buffer.append(current_token)
 
-            if len(refractory_buffer) > 6:
-                refractory_buffer.pop(0)
-
+            # 修正箇所: 過去の「全」生成履歴をrefractory_tokensとして渡す
             current_token, d_info = self.forward_step(
                 current_token,
                 learning=False,
-                refractory_tokens=refractory_buffer,
+                refractory_tokens=generated_ids,
                 temperature=temperature,
                 fire_threshold=fire_threshold,
                 debug=debug

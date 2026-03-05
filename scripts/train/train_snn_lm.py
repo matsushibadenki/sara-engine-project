@@ -1,6 +1,8 @@
-# ディレクトリパス: scripts/train/train_snn_lm.py
-# ファイルの日本語タイトル: SNN言語モデル 実データ事前学習スクリプト
-# ファイルの目的や内容: コーパスの末尾への過学習（Recency Bias）を防ぐため、テキストをチャンクに分割しランダムにシャッフルして学習（Experience Replay）するように修正。
+# {
+#     "//": "ディレクトリパス: scripts/train/train_snn_lm.py",
+#     "//": "ファイルの日本語タイトル: SNN言語モデル 実データ事前学習スクリプト",
+#     "//": "ファイルの目的や内容: SARA BPE トークナイザーを使用してサブワードレベルで学習。文脈を長く保つためにチャンクサイズを128に拡大。"
+# }
 
 import os
 import sys
@@ -9,29 +11,33 @@ import random
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
+from src.sara_engine.utils.tokenizer import SaraTokenizer
 
 def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 3):
     print("=" * 60)
-    print("SARA-Engine: SNN Language Model Pre-training (Character-Level)")
+    print("SARA-Engine: SNN Language Model Pre-training (Subword-Level)")
     print("=" * 60)
     
     if not os.path.exists(corpus_path):
         print(f"Error: Corpus file not found at {corpus_path}")
         return
 
-    config = SNNTransformerConfig(vocab_size=1114112)
-    model = SpikingTransformerModel(config)
-    
+    tokenizer = SaraTokenizer(vocab_size=4096)
     with open(corpus_path, "r", encoding="utf-8") as f:
         text = f.read()
     
-    encoded_tokens = [ord(c) for c in text]
+    print("Training tokenizer...")
+    tokenizer.train([text])
+    
+    encoded_tokens = tokenizer.encode(text)
     total_tokens = len(encoded_tokens)
     print(f"Total tokens to process: {total_tokens}")
 
-    # 修正箇所: コーパスを一筆書きで学習するのではなく、チャンクに分割する
-    # オーバーラップ（stride）させて文脈の繋がりを維持する
-    chunk_size = 64
+    config = SNNTransformerConfig(vocab_size=tokenizer.vocab_size)
+    model = SpikingTransformerModel(config)
+
+    # 修正箇所: チャンクサイズを広げて、文脈の繋がりを長く学習させる
+    chunk_size = 128
     stride = 32
     chunks = []
     for i in range(0, total_tokens - chunk_size, stride):
@@ -43,12 +49,10 @@ def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 3):
     for epoch in range(epochs):
         print(f"\n--- Epoch {epoch + 1}/{epochs} ---")
         
-        # 修正箇所: コーパス末尾への過学習を防ぐため、チャンクをランダムにシャッフルして学習
         random.shuffle(chunks)
         
         total_chunks = len(chunks)
         for i, chunk in enumerate(chunks):
-            # チャンクごとに文脈をリセットして学習
             model.learn_sequence(chunk)
             
             if (i + 1) % 100 == 0 or i == total_chunks - 1:
@@ -57,7 +61,10 @@ def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 3):
 
     elapsed_time = time.time() - start_time
     print(f"\nTraining completed in {elapsed_time:.2f} seconds.")
+    
     model.save_pretrained(save_dir)
+    tokenizer.model_path = os.path.join(save_dir, "sara_vocab.json")
+    tokenizer.save()
     print("=" * 60)
 
 if __name__ == "__main__":
