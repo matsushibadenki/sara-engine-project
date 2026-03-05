@@ -1,6 +1,6 @@
 # ディレクトリパス: scripts/eval/chat_snn_lm.py
 # ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト
-# ファイルの目的や内容: 文字単位で学習されたモデルに合わせて、入出力をUnicode文字単位で処理するよう修正。
+# ファイルの目的や内容: 文字単位で学習されたモデルに合わせて、入出力をUnicode文字単位で処理するよう修正。推論を安定化。
 
 import os
 import sys
@@ -38,12 +38,19 @@ def chat_loop(model_dir: str):
             if not user_input.strip():
                 continue
 
-            # 修正箇所: 入力文字列を文字のID（Unicodeコードポイント）に変換
+            # 入力文字列を文字のID（Unicodeコードポイント）に変換
             input_tokens = [ord(c) for c in user_input]
             
             print("SARA is thinking...", end="\r")
-            # ゆらぎを入れたことで長文になりすぎないよう、長さを少し調整
-            generated_tokens = model.generate(input_ids=input_tokens, max_length=100)
+            
+            # 修正箇所: temperatureを指定してサンプリングのランダム性を抑え、精度を向上
+            # fire_thresholdを調整して不十分な電位での生成を抑制
+            generated_tokens = model.generate(
+                input_ids=input_tokens, 
+                max_length=100,
+                temperature=0.15,
+                fire_threshold=10.0
+            )
             
             response_text = decode_tokens(generated_tokens)
             print(f"SARA: {user_input}{response_text}\n")
@@ -54,5 +61,5 @@ def chat_loop(model_dir: str):
             print(f"\nAn error occurred: {e}")
 
 if __name__ == "__main__":
-    SAVE_DIRECTORY = "data/models/snn_lm_pretrained"
+    SAVE_DIRECTORY = "models/snn_lm_pretrained"
     chat_loop(model_dir=SAVE_DIRECTORY)

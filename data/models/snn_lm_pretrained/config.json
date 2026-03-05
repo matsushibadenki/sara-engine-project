@@ -1,4 +1,5 @@
 {
+    "model_version": "1.3.2",
     "vocab_size": 1114112,
     "embed_dim": 64,
     "num_layers": 1,
@@ -6,5 +7,6 @@
     "num_pathways": 4,
     "dropout_p": 0.1,
     "target_spikes_ratio": 0.15,
-    "use_fuzzy": false
+    "use_fuzzy": false,
+    "replay_count": 2
 }
