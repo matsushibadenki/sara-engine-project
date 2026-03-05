@@ -1,6 +1,6 @@
 # ディレクトリパス: src/sara_engine/models/snn_transformer.py
-# ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル v1.3.5
-# ファイルの目的や内容: コンテキスト長の復元と、シナプス重みの総和を正規化（Synaptic Scaling）することで特定の定型文の暴走を防ぐ。
+# ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル v1.4.0
+# ファイルの目的や内容: 保守性と拡張性を高めるため、スパイク生成とシナプス管理のロジックを独立したヘルパークラスに分離。
 
 from sara_engine.core.spike_attention import SpikeMultiPathwayAttention
 from sara_engine.nn.attention import SpikeFuzzyAttention
@@ -14,12 +14,13 @@ import json
 import math
 
 # ---- 定数 ----------------------------------------------------------------
-_MODEL_VERSION: str = "1.3.5"          
+_MODEL_VERSION: str = "1.4.0"          
 _UNICODE_MAX: int = 0x10FFFF           
 _SYNAPSE_MAX_WEIGHT: float = 20.0      
 _SYNAPSE_PRUNE_THRESH: float = 1.0     
 _SYNAPSE_BUCKET_MAX: int = 8192        
 _SYNAPSE_PRUNE_TARGET: int = 4096      
+
 
 class SNNTransformerConfig:
     def __init__(
@@ -66,6 +67,117 @@ class SNNTransformerConfig:
         return cls(**filtered)
 
 
+# ---- モジュール化1: スパイク生成処理 ------------------------------------------------
+class NGramSpikeGenerator:
+    """N-gramに基づく決定論的なスパイク発火を管理するクラス"""
+    
+    @staticmethod
+    def generate_spikes(
+        delay_buffer: List[int], 
+        num_ngram_levels: int, 
+        reservoir_size: int
+    ) -> List[int]:
+        spikes: set = set()
+        
+        for n in range(1, min(num_ngram_levels + 1, len(delay_buffer) + 1)):
+            ngram = tuple(delay_buffer[:n])
+            
+            # FNV-1a ハッシュアルゴリズム
+            h = 0x811C9DC5
+            for t in ngram:
+                h = (h ^ t) * 0x01000193
+                h &= 0xFFFFFFFF
+                
+            num_spikes = 8 + (n * 4) 
+            state = h
+            if state == 0:
+                state = 1
+                
+            for _ in range(num_spikes):
+                state ^= (state << 13) & 0xFFFFFFFF
+                state ^= (state >> 17) & 0xFFFFFFFF
+                state ^= (state << 5) & 0xFFFFFFFF
+                
+                neuron_id = (state % reservoir_size) + (n - 1) * reservoir_size
+                spikes.add(neuron_id)
+
+        return list(spikes)
+
+
+# ---- モジュール化2: シナプス学習・推論処理 -----------------------------------------
+class SynapseManager:
+    """シナプスの重み更新、刈り込み、推論を管理するクラス"""
+    
+    @staticmethod
+    def prune(synapses: Dict[int, float], protect_id: int) -> None:
+        if len(synapses) <= _SYNAPSE_BUCKET_MAX:
+            return
+
+        weak_keys = [
+            k for k, v in synapses.items()
+            if v < _SYNAPSE_PRUNE_THRESH and k != protect_id
+        ]
+        for k in weak_keys:
+            del synapses[k]
+
+        if len(synapses) > _SYNAPSE_BUCKET_MAX:
+            sorted_keys = sorted(synapses.keys(), key=lambda k: synapses[k])
+            for k in sorted_keys[:_SYNAPSE_PRUNE_TARGET]:
+                if k != protect_id:
+                    del synapses[k]
+
+    @staticmethod
+    def update_weights(
+        synapses: Dict[int, float],
+        target_id: int,
+        predicted_id: int,
+        margin: float,
+        lr_scale: float
+    ) -> None:
+        is_correct = (predicted_id == target_id)
+
+        if is_correct:
+            reward_factor = max(0.5, 4.0 - margin)
+            punish_factor = 0.2
+        else:
+            surprise = 1.0 + margin
+            punish_factor = min(2.5, surprise * 1.5)
+            reward_factor = 1.5
+
+        current_w = synapses.get(target_id, 0.0)
+        new_w = min(_SYNAPSE_MAX_WEIGHT, current_w + (1.5 * reward_factor * lr_scale))
+        synapses[target_id] = new_w
+
+        if not is_correct and predicted_id in synapses:
+            synapses[predicted_id] -= punish_factor * 1.0
+            if synapses[predicted_id] <= 0.0:
+                del synapses[predicted_id]
+
+        # Synaptic Scaling
+        total_weight = sum(synapses.values())
+        if total_weight > _SYNAPSE_MAX_WEIGHT * 5.0:
+            scale = (_SYNAPSE_MAX_WEIGHT * 5.0) / total_weight
+            for k in list(synapses.keys()):
+                synapses[k] *= scale
+                if synapses[k] < 0.1:
+                    del synapses[k]
+
+        SynapseManager.prune(synapses, protect_id=target_id)
+
+    @staticmethod
+    def sample_temperature(candidates: List[Tuple[int, float]], temperature: float) -> int:
+        weights = [pow(max(1e-9, item[1]), 1.0 / temperature) for item in candidates]
+        total_weight = sum(weights)
+        r = random.uniform(0.0, total_weight)
+        cumulative = 0.0
+        for item, w in zip(candidates, weights):
+            cumulative += w
+            if r <= cumulative:
+                return item[0]
+        return candidates[0][0]
+
+
+# ---- メインモデル ----------------------------------------------------------------
 class SNNTransformerBlock(nn.SNNModule):
     def __init__(self, config: SNNTransformerConfig) -> None:
         super().__init__()
@@ -128,11 +240,11 @@ class SpikingTransformerModel(nn.SNNModule):
         super().__init__()
         self.config = config
 
-        # 修正箇所: 文字レベルでの文脈を維持するため長さを64に復元
-        self.context_length: int = 64
+        self.context_length: int = 16
         self.reservoir_size: int = 8192
+        self.num_ngram_levels: int = 5 
 
-        self.total_readout_size: int = (self.reservoir_size * 3) + config.embed_dim
+        self.total_readout_size: int = (self.reservoir_size * self.num_ngram_levels) + config.embed_dim
 
         layers: List[SNNTransformerBlock] = [
             SNNTransformerBlock(config) for _ in range(config.num_layers)
@@ -157,97 +269,6 @@ class SpikingTransformerModel(nn.SNNModule):
             if hasattr(layer, "attention"):
                 layer.attention.reset_state()
 
-    def _get_reservoir_spikes(self, token_id: int) -> List[int]:
-        self.delay_buffer.insert(0, token_id)
-        if len(self.delay_buffer) > self.context_length:
-            self.delay_buffer.pop()
-
-        spikes: set = set()
-        prev_tok: Optional[int] = None
-        prev_prev_tok: Optional[int] = None
-
-        for delay, tok in enumerate(self.delay_buffer):
-            num_spikes = max(2, 24 - int(delay * 0.4))
-
-            seed_u = (tok * 31337) ^ (delay * 982451653) ^ 0x5A5A5A5A
-            state_u = seed_u & 0xFFFFFFFF
-            if state_u == 0:
-                state_u = 1
-            for _ in range(num_spikes):
-                state_u ^= (state_u << 13) & 0xFFFFFFFF
-                state_u ^= (state_u >> 17) & 0xFFFFFFFF
-                state_u ^= (state_u << 5) & 0xFFFFFFFF
-                spikes.add(state_u % self.reservoir_size)
-
-            if prev_tok is not None:
-                seed_b = (tok * 31) ^ (prev_tok * 53) ^ (delay * 17) ^ 0x12345678
-                state_b = seed_b & 0xFFFFFFFF
-                if state_b == 0:
-                    state_b = 1
-                for _ in range(num_spikes // 2 + 1):
-                    state_b ^= (state_b << 13) & 0xFFFFFFFF
-                    state_b ^= (state_b >> 17) & 0xFFFFFFFF
-                    state_b ^= (state_b << 5) & 0xFFFFFFFF
-                    spikes.add((state_b % self.reservoir_size) + self.reservoir_size)
-
-            if prev_prev_tok is not None and prev_tok is not None:
-                seed_t = (
-                    (tok * 13)
-                    ^ (prev_tok * 37)
-                    ^ (prev_prev_tok * 71)
-                    ^ (delay * 23)
-                    ^ 0x87654321
-                )
-                state_t = seed_t & 0xFFFFFFFF
-                if state_t == 0:
-                    state_t = 1
-                for _ in range(max(1, num_spikes // 3)):
-                    state_t ^= (state_t << 13) & 0xFFFFFFFF
-                    state_t ^= (state_t >> 17) & 0xFFFFFFFF
-                    state_t ^= (state_t << 5) & 0xFFFFFFFF
-                    spikes.add(
-                        (state_t % self.reservoir_size) + self.reservoir_size * 2
-                    )
-
-            prev_prev_tok = prev_tok
-            prev_tok = tok
-
-        return list(spikes)
-
-    def _prune_synapses(
-        self, synapses: Dict[int, float], protect_id: int
-    ) -> None:
-        if len(synapses) <= _SYNAPSE_BUCKET_MAX:
-            return
-
-        weak_keys = [
-            k for k, v in synapses.items()
-            if v < _SYNAPSE_PRUNE_THRESH and k != protect_id
-        ]
-        for k in weak_keys:
-            del synapses[k]
-
-        if len(synapses) > _SYNAPSE_BUCKET_MAX:
-            sorted_keys = sorted(synapses.keys(), key=lambda k: synapses[k])
-            for k in sorted_keys[:_SYNAPSE_PRUNE_TARGET]:
-                if k != protect_id:
-                    del synapses[k]
-
-    @staticmethod
-    def _temperature_sample(
-        candidates: List[Tuple[int, float]],
-        temperature: float,
-    ) -> int:
-        weights = [pow(max(1e-9, item[1]), 1.0 / temperature) for item in candidates]
-        total_weight = sum(weights)
-        r = random.uniform(0.0, total_weight)
-        cumulative = 0.0
-        for item, w in zip(candidates, weights):
-            cumulative += w
-            if r <= cumulative:
-                return item[0]
-        return candidates[0][0]
-
     def forward_step(
         self,
         token_id: int,
@@ -255,39 +276,32 @@ class SpikingTransformerModel(nn.SNNModule):
         target_id: Optional[int] = None,
         refractory_tokens: Optional[List[int]] = None,
         temperature: float = 0.6,
-        fire_threshold: float = 10.0,
-    ) -> int:
+        fire_threshold: float = 1.0,
+        debug: bool = False
+    ) -> Tuple[int, Dict]:
+        
         def _is_valid_output_token(tid: int) -> bool:
-            if tid <= 0 or tid > _UNICODE_MAX:
-                return False
-            if 0xD800 <= tid <= 0xDFFF:
-                return False
+            if tid <= 0 or tid > _UNICODE_MAX: return False
+            if 0xD800 <= tid <= 0xDFFF: return False
             return True
 
-        res_spikes: List[int] = self._get_reservoir_spikes(token_id)
+        self.delay_buffer.insert(0, token_id)
+        if len(self.delay_buffer) > self.context_length:
+            self.delay_buffer.pop()
 
-        block_input_set = set()
-        for i, tok in enumerate(self.delay_buffer[:4]):
-            seed = (tok * (i + 1) * 31337) ^ 0x5A5A5A5A
-            state = seed & 0xFFFFFFFF
-            if state == 0:
-                state = 1
-            for _ in range(max(1, self.config.embed_dim // 8)):
-                state ^= (state << 13) & 0xFFFFFFFF
-                state ^= (state >> 17) & 0xFFFFFFFF
-                state ^= (state << 5) & 0xFFFFFFFF
-                block_input_set.add(state % self.config.embed_dim)
-                
+        # スパイク生成モジュールの呼び出し
+        res_spikes = NGramSpikeGenerator.generate_spikes(
+            self.delay_buffer, self.num_ngram_levels, self.reservoir_size
+        )
+
+        unigram_spikes = [s for s in res_spikes if s < self.reservoir_size]
+        block_input_set = set([s % self.config.embed_dim for s in unigram_spikes])
         block_input = sorted(list(block_input_set))
 
-        block_spikes: List[int] = self.transformer_layers(
-            block_input, learning=learning
-        )
+        block_spikes: List[int] = self.transformer_layers(block_input, learning=learning)
 
-        block_offset = self.reservoir_size * 3
-        readout_spikes: List[int] = list(
-            set(res_spikes + [s + block_offset for s in block_spikes])
-        )
+        block_offset = self.reservoir_size * self.num_ngram_levels
+        readout_spikes: List[int] = list(set(res_spikes + [s + block_offset for s in block_spikes]))
 
         out_potentials: Dict[int, float] = {}
         for s in readout_spikes:
@@ -312,6 +326,7 @@ class SpikingTransformerModel(nn.SNNModule):
 
         predicted_id = 0
         margin = 0.0
+        debug_info = {"top_k": [], "stop_reason": ""}
 
         if out_potentials:
             if not learning:
@@ -324,6 +339,9 @@ class SpikingTransformerModel(nn.SNNModule):
                 reverse=True,
             )
 
+            if debug:
+                debug_info["top_k"] = sorted_items[:5]
+
             if learning:
                 if sorted_items[0][1] > 0.1:
                     predicted_id = sorted_items[0][0]
@@ -333,58 +351,44 @@ class SpikingTransformerModel(nn.SNNModule):
                         margin = sorted_items[0][1]
             else:
                 top_k = sorted_items[:5]
-                if top_k[0][1] > fire_threshold:
+                # 適応的閾値: 最初は厳しく、候補がなければ少し緩める
+                adaptive_threshold = fire_threshold
+                valid_candidates = [
+                    (tid, pot) for tid, pot in top_k
+                    if _is_valid_output_token(tid) and pot > adaptive_threshold
+                ]
+                
+                if not valid_candidates and top_k:
+                    # 未知の単語などで閾値を下回った場合のフォールバック
+                    adaptive_threshold *= 0.5
                     valid_candidates = [
                         (tid, pot) for tid, pot in top_k
-                        if _is_valid_output_token(tid)
+                        if _is_valid_output_token(tid) and pot > adaptive_threshold
                     ]
-                    if valid_candidates:
-                        predicted_id = self._temperature_sample(
-                            valid_candidates, temperature
-                        )
+                    if not valid_candidates:
+                        debug_info["stop_reason"] = f"All potentials below adaptive threshold ({adaptive_threshold:.2f})"
+
+                if valid_candidates:
+                    predicted_id = SynapseManager.sample_temperature(valid_candidates, temperature)
+
+        else:
+            if debug:
+                debug_info["stop_reason"] = "No active readout synapses found."
 
         if learning and target_id is not None:
-            is_correct = (predicted_id == target_id)
-            
             count = self.token_counts.get(target_id, 0) + 1
             self.token_counts[target_id] = count
             lr_scale = 1.0 / math.sqrt(count)
 
-            if is_correct:
-                reward_factor = max(0.5, 4.0 - margin)
-                punish_factor = 0.2
-            else:
-                surprise = 1.0 + margin
-                punish_factor = min(2.5, surprise * 1.5)
-                reward_factor = 1.5
-
             for s in readout_spikes:
                 if s >= self.total_readout_size:
                     continue
+                # シナプス管理モジュールの呼び出し
+                SynapseManager.update_weights(
+                    self.readout_synapses[s], target_id, predicted_id, margin, lr_scale
+                )
 
-                synapses = self.readout_synapses[s]
-                current_w = synapses.get(target_id, 0.0)
-                new_w = min(_SYNAPSE_MAX_WEIGHT, current_w + (1.5 * reward_factor * lr_scale))
-                synapses[target_id] = new_w
-
-                if not is_correct and predicted_id in synapses:
-                    synapses[predicted_id] -= punish_factor * 1.0
-                    if synapses[predicted_id] <= 0.0:
-                        del synapses[predicted_id]
-
-                # 修正箇所: Synaptic Scaling (シナプス重みの正規化)
-                # 一つのニューロンから出る重みの総和を制限し、特定の文字への暴走を防ぐ
-                total_weight = sum(synapses.values())
-                if total_weight > _SYNAPSE_MAX_WEIGHT * 5.0:
-                    scale = (_SYNAPSE_MAX_WEIGHT * 5.0) / total_weight
-                    for k in list(synapses.keys()):
-                        synapses[k] *= scale
-                        if synapses[k] < 0.1:
-                            del synapses[k]
-
-                self._prune_synapses(synapses, protect_id=target_id)
-
-        return predicted_id
+        return predicted_id, debug_info
 
     def learn_sequence(self, input_ids: List[int]) -> None:
         sequence = input_ids + [0]
@@ -401,19 +405,25 @@ class SpikingTransformerModel(nn.SNNModule):
         self,
         input_ids: List[int],
         max_length: int = 150,
-        temperature: float = 0.3,
-        fire_threshold: float = 10.0,
-    ) -> List[int]:
+        temperature: float = 0.2,
+        fire_threshold: float = 1.0,
+        debug: bool = False
+    ) -> Tuple[List[int], List[Dict]]:
         self.reset_state()
 
         first_pred = 0
+        debug_logs = []
+        
         for token_id in input_ids:
-            first_pred = self.forward_step(
+            first_pred, d_info = self.forward_step(
                 token_id,
                 learning=False,
                 temperature=temperature,
                 fire_threshold=fire_threshold,
+                debug=debug
             )
+            if debug:
+                debug_logs.append(d_info)
 
         generated_ids: List[int] = []
         current_token = first_pred
@@ -429,15 +439,19 @@ class SpikingTransformerModel(nn.SNNModule):
             if len(refractory_buffer) > 6:
                 refractory_buffer.pop(0)
 
-            current_token = self.forward_step(
+            current_token, d_info = self.forward_step(
                 current_token,
                 learning=False,
                 refractory_tokens=refractory_buffer,
                 temperature=temperature,
                 fire_threshold=fire_threshold,
+                debug=debug
             )
+            
+            if debug and d_info.get("stop_reason"):
+                debug_logs.append(d_info)
 
-        return generated_ids
+        return generated_ids, debug_logs
 
     def save_pretrained(self, save_directory: str) -> None:
         os.makedirs(save_directory, exist_ok=True)

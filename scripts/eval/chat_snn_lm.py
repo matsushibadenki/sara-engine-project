@@ -1,6 +1,6 @@
 # ディレクトリパス: scripts/eval/chat_snn_lm.py
-# ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト
-# ファイルの目的や内容: 文字単位で学習されたモデルに合わせて、入出力をUnicode文字単位で処理するよう修正。推論を安定化。
+# ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (デバッグ対応版)
+# ファイルの目的や内容: ターミナル上のゴミ文字が残るUIバグを完全に排除し、原因究明のためのデバッグモードを追加。
 
 import os
 import sys
@@ -9,17 +9,17 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from src.sara_engine.models.snn_transformer import SpikingTransformerModel
 
 def decode_tokens(tokens: list[int]) -> str:
-    """Unicodeコードポイントのリストを文字列に変換する"""
     chars = []
     for t in tokens:
-        # 有効なUnicodeコードポイントの範囲内かチェック
         if 0 <= t <= 0x10FFFF:
             chars.append(chr(t))
     return "".join(chars)
 
-def chat_loop(model_dir: str):
+def chat_loop(model_dir: str, debug_mode: bool = False):
     print("=" * 60)
     print("SARA-Engine: SNN Language Model Inference (Character-Level)")
+    if debug_mode:
+        print("[DEBUG MODE ENABLED] Model will output internal potentials.")
     print("=" * 60)
     
     if not os.path.exists(model_dir):
@@ -38,23 +38,29 @@ def chat_loop(model_dir: str):
             if not user_input.strip():
                 continue
 
-            # 入力文字列を文字のID（Unicodeコードポイント）に変換
             input_tokens = [ord(c) for c in user_input]
             
-            print("SARA is thinking...", end="\r")
-            
-            # 修正箇所: temperatureを指定してサンプリングのランダム性を抑え、精度を向上
-            # fire_thresholdを調整して不十分な電位での生成を抑制
-            generated_tokens = model.generate(
+            # UIバグの元凶だった「thinking...」のアニメーションを削除し、純粋に待機する
+            generated_tokens, debug_logs = model.generate(
                 input_ids=input_tokens, 
-                max_length=100,
-                temperature=0.15,
-                fire_threshold=10.0
+                max_length=150,
+                temperature=0.2,
+                fire_threshold=0.8, # 少し閾値を下げて生成を繋がりやすくする
+                debug=debug_mode
             )
             
             response_text = decode_tokens(generated_tokens)
             print(f"SARA: {user_input}{response_text}\n")
-            
+
+            # デバッグモードが有効な場合、なぜ生成が止まったのかを可視化する
+            if debug_mode and debug_logs:
+                last_log = debug_logs[-1]
+                if last_log.get("stop_reason"):
+                    print(f"  [DEBUG] Stopped because: {last_log['stop_reason']}")
+                if last_log.get("top_k"):
+                    candidates = [(chr(tid) if 0<=tid<=0x10FFFF else "?", round(pot, 2)) for tid, pot in last_log["top_k"]]
+                    print(f"  [DEBUG] Final candidates before stop: {candidates}\n")
+
         except KeyboardInterrupt:
             break
         except Exception as e:
@@ -62,4 +68,6 @@ def chat_loop(model_dir: str):
 
 if __name__ == "__main__":
     SAVE_DIRECTORY = "models/snn_lm_pretrained"
-    chat_loop(model_dir=SAVE_DIRECTORY)
+    # デバッグ情報を表示したい場合はここを True に変更してください
+    ENABLE_DEBUG = True 
+    chat_loop(model_dir=SAVE_DIRECTORY, debug_mode=ENABLE_DEBUG)
