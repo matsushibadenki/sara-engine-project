@@ -1,6 +1,6 @@
 # ディレクトリパス: src/sara_engine/models/snn_transformer.py
-# ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル v1.3.3
-# ファイルの目的や内容: 破滅的忘却を防ぐため、過剰なLTD（一律減衰）を廃止し、穏やかな重み減衰（Weight Decay）と誤答へのピンポイントなペナルティに変更。文脈も正しくブロックに入力するよう修正。
+# ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル v1.3.5
+# ファイルの目的や内容: コンテキスト長の復元と、シナプス重みの総和を正規化（Synaptic Scaling）することで特定の定型文の暴走を防ぐ。
 
 from sara_engine.core.spike_attention import SpikeMultiPathwayAttention
 from sara_engine.nn.attention import SpikeFuzzyAttention
@@ -14,7 +14,7 @@ import json
 import math
 
 # ---- 定数 ----------------------------------------------------------------
-_MODEL_VERSION: str = "1.3.3"          
+_MODEL_VERSION: str = "1.3.5"          
 _UNICODE_MAX: int = 0x10FFFF           
 _SYNAPSE_MAX_WEIGHT: float = 20.0      
 _SYNAPSE_PRUNE_THRESH: float = 1.0     
@@ -128,7 +128,8 @@ class SpikingTransformerModel(nn.SNNModule):
         super().__init__()
         self.config = config
 
-        self.context_length: int = 16
+        # 修正箇所: 文字レベルでの文脈を維持するため長さを64に復元
+        self.context_length: int = 64
         self.reservoir_size: int = 8192
 
         self.total_readout_size: int = (self.reservoir_size * 3) + config.embed_dim
@@ -265,14 +266,19 @@ class SpikingTransformerModel(nn.SNNModule):
 
         res_spikes: List[int] = self._get_reservoir_spikes(token_id)
 
-        # 修正箇所: スパース性を保ちつつ文脈(res_spikes)をTransformerに入力するため、均等サンプリングを行う
-        block_input_raw = sorted(list(set([s % self.config.embed_dim for s in res_spikes])))
-        max_active = max(1, self.config.embed_dim // 4)
-        if len(block_input_raw) > max_active:
-            step = len(block_input_raw) / max_active
-            block_input = [block_input_raw[int(i * step)] for i in range(max_active)]
-        else:
-            block_input = block_input_raw
+        block_input_set = set()
+        for i, tok in enumerate(self.delay_buffer[:4]):
+            seed = (tok * (i + 1) * 31337) ^ 0x5A5A5A5A
+            state = seed & 0xFFFFFFFF
+            if state == 0:
+                state = 1
+            for _ in range(max(1, self.config.embed_dim // 8)):
+                state ^= (state << 13) & 0xFFFFFFFF
+                state ^= (state >> 17) & 0xFFFFFFFF
+                state ^= (state << 5) & 0xFFFFFFFF
+                block_input_set.add(state % self.config.embed_dim)
+                
+        block_input = sorted(list(block_input_set))
 
         block_spikes: List[int] = self.transformer_layers(
             block_input, learning=learning
@@ -290,7 +296,6 @@ class SpikingTransformerModel(nn.SNNModule):
                     current = out_potentials.get(v_idx, 0.0)
                     out_potentials[v_idx] = current + w
 
-        # 修正箇所: 頻出トークンの強すぎるペナルティを緩和 (0.4 -> 0.15)
         if out_potentials:
             for v_idx in out_potentials:
                 fan_in = self.token_counts.get(v_idx, 1)
@@ -362,18 +367,20 @@ class SpikingTransformerModel(nn.SNNModule):
                 new_w = min(_SYNAPSE_MAX_WEIGHT, current_w + (1.5 * reward_factor * lr_scale))
                 synapses[target_id] = new_w
 
-                # 修正箇所: マイナス引き算の破壊的な忘却を廃止し、0.999掛けによる自然な減衰(Weight Decay)に変更
-                for t_id in list(synapses.keys()):
-                    if t_id != target_id:
-                        synapses[t_id] *= 0.999
-                        if synapses[t_id] < 0.05:
-                            del synapses[t_id]
-
-                # 誤予測したトークンに対してのみ、個別にペナルティを与える
                 if not is_correct and predicted_id in synapses:
-                    synapses[predicted_id] -= punish_factor * 0.8
+                    synapses[predicted_id] -= punish_factor * 1.0
                     if synapses[predicted_id] <= 0.0:
                         del synapses[predicted_id]
+
+                # 修正箇所: Synaptic Scaling (シナプス重みの正規化)
+                # 一つのニューロンから出る重みの総和を制限し、特定の文字への暴走を防ぐ
+                total_weight = sum(synapses.values())
+                if total_weight > _SYNAPSE_MAX_WEIGHT * 5.0:
+                    scale = (_SYNAPSE_MAX_WEIGHT * 5.0) / total_weight
+                    for k in list(synapses.keys()):
+                        synapses[k] *= scale
+                        if synapses[k] < 0.1:
+                            del synapses[k]
 
                 self._prune_synapses(synapses, protect_id=target_id)
 
