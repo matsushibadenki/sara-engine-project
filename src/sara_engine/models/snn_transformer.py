@@ -107,12 +107,19 @@ class SpikingTransformerModel(nn.SNNModule):
 
         self.current_time += 10.0
         self.activity_tracker.step()
+        population_rate = self.activity_tracker.get_global_rate()
 
         gating_factor = self.oscillation_manager.get_gating_factor(
             self.current_time, mode="theta_gamma")
         dynamic_fire_threshold = fire_threshold + (gating_factor * 0.3)
 
         base_threshold = dynamic_fire_threshold
+        if not learning:
+            target_rate = max(1e-6, self.scaling_manager.target_rate)
+            pop_rel_error = (population_rate - target_rate) / target_rate
+            # 推論時の集団発火率に応じてベース閾値を恒常的に補正
+            homeostatic_shift = max(-0.15, min(0.55, pop_rel_error * 0.12))
+            base_threshold = dynamic_fire_threshold + homeostatic_shift
 
         if not learning:
             for tid in list(self.adaptive_thresholds.keys()):
@@ -147,6 +154,14 @@ class SpikingTransformerModel(nn.SNNModule):
                 norm = 1.0 + self.activity_tracker.get_rate(tid) * 2.0
                 out_potentials[tid] = pot / norm
 
+        if not learning and out_potentials:
+            target_rate = max(1e-6, self.scaling_manager.target_rate)
+            global_overfire = max(0.0, population_rate - target_rate)
+            if global_overfire > 0.0:
+                global_damp = 1.0 + (global_overfire / target_rate) * 0.6
+                for tid in list(out_potentials.keys()):
+                    out_potentials[tid] /= global_damp
+
         if not learning and refractory_tokens and out_potentials:
             for i, rt in enumerate(reversed(refractory_tokens)):
                 if rt in out_potentials:
@@ -174,7 +189,10 @@ class SpikingTransformerModel(nn.SNNModule):
                 
                 if not candidates and sorted_items:
                     top_tid, top_p = sorted_items[0]
-                    if 0 < top_tid < self.config.vocab_size:
+                    if (
+                        0 < top_tid < self.config.vocab_size
+                        and top_p > (base_threshold * 1.25)
+                    ):
                         candidates = [(top_tid, top_p)]
 
                 if candidates:
@@ -210,7 +228,10 @@ class SpikingTransformerModel(nn.SNNModule):
                 # 閾値を満たすものが無い場合は一番強いものを妥協して選ぶ
                 if not candidates and sorted_items:
                     top_tid, top_p = sorted_items[0]
-                    if 0 < top_tid < self.config.vocab_size:
+                    if (
+                        0 < top_tid < self.config.vocab_size
+                        and top_p > (base_threshold * 1.35)
+                    ):
                         candidates = [(top_tid, top_p)]
 
                 if debug:
@@ -234,10 +255,10 @@ class SpikingTransformerModel(nn.SNNModule):
                 rate = self.activity_tracker.get_rate(predicted_id)
                 current_thr = self.adaptive_thresholds.get(
                     predicted_id, base_threshold)
-                target_thr = max(base_threshold + 0.2, pot * (1.1 + rate * 0.5))
+                target_thr = max(base_threshold + 0.35, pot * (1.2 + rate * 0.7))
                 # 閾値を急激に跳ね上げず、EMAで滑らかに更新する
                 self.adaptive_thresholds[predicted_id] = (
-                    current_thr * 0.7 + target_thr * 0.3
+                    current_thr * 0.65 + target_thr * 0.35
                 )
                 
             self.activity_tracker.update(predicted_id, fired=True)
@@ -251,7 +272,6 @@ class SpikingTransformerModel(nn.SNNModule):
                         pre_id, predicted_id, strength, self.readout_synapses, self.neuron_type_manager, _SYNAPSE_MAX_WEIGHT)
 
                 current_rate = self.activity_tracker.get_rate(predicted_id)
-                population_rate = self.activity_tracker.get_global_rate()
                 scaling_factor = self.scaling_manager.compute_scaling_factor(
                     current_rate=current_rate,
                     population_rate=population_rate,
