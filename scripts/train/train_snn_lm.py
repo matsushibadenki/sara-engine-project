@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from src.sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
 from src.sara_engine.utils.tokenizer import SaraTokenizer
 
-def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 3):
+def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 1):
     print("=" * 60)
     print("SARA-Engine: SNN Language Model Pre-training (Subword-Level)")
     print("=" * 60)
@@ -70,4 +70,4 @@ def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 3):
 if __name__ == "__main__":
     CORPUS_FILE = "data/processed/corpus.txt"
     SAVE_DIRECTORY = "models/snn_lm_pretrained"
-    train_snn_language_model(corpus_path=CORPUS_FILE, save_dir=SAVE_DIRECTORY, epochs=3)
+    train_snn_language_model(corpus_path=CORPUS_FILE, save_dir=SAVE_DIRECTORY, epochs=1)

@@ -27,29 +27,44 @@ class TextGenerationPipeline:
         temperature = kwargs.get("temperature", 0.5)
         top_k = kwargs.get("top_k", 3)
 
-        # Check if the model uses the new inference API string directly
+        stop_conditions = kwargs.get("stop_conditions")
+
         if hasattr(self.model, "generate") and callable(self.model.generate):
             try:
-                # Fallback for models that only accept input_ids
+                generated = self.model.generate(
+                    prompt=text,
+                    max_new_tokens=max_new_tokens,
+                    top_k=top_k,
+                    temperature=temperature,
+                    repetition_penalty=refractory_penalty,
+                    stop_conditions=stop_conditions,
+                    refractory_penalty=refractory_penalty,
+                    refractory_period=refractory_period,
+                )
+            except TypeError:
                 if hasattr(self.tokenizer, "encode"):
                     input_ids = self.tokenizer.encode(text)
                 else:
-                    # Generic UTF-8 fallback
                     input_ids = [ord(c) for c in text]
-
-                output_ids = self.model.generate(
-                    input_ids, max_l=max_new_tokens)
-
-                if hasattr(self.tokenizer, "decode"):
-                    generated_text = self.tokenizer.decode(output_ids)
-                else:
-                    generated_text = "".join(
-                        [chr(i) for i in output_ids if i < 0x110000])
-
-                return text + generated_text
+                generated = self.model.generate(
+                    prompt_tokens=input_ids,
+                    max_new_tokens=max_new_tokens,
+                    top_k=top_k,
+                    temperature=temperature,
+                    repetition_penalty=refractory_penalty,
+                    stop_conditions=stop_conditions,
+                    refractory_penalty=refractory_penalty,
+                    refractory_period=refractory_period,
+                )
             except Exception as e:
                 print(f"[TextGenerationPipeline] Error during generation: {e}")
                 return text
+
+            if isinstance(generated, str):
+                return generated
+            if hasattr(self.tokenizer, "decode"):
+                return self.tokenizer.decode(generated)
+            return "".join([chr(i) for i in generated if i < 0x110000])
 
         return text
 

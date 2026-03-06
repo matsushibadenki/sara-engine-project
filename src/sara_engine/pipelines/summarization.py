@@ -24,7 +24,7 @@ class SummarizationPipeline:
         
         # SNNの特性上、生成長はスパイクダイナミクスに依存するが、
         # API互換性のために引数を受け入れ、生成長をある程度制御する。
-        summary = self.model.generate(prompt, max_length=max_length)
+        summary = self.model.generate(prompt=prompt, max_new_tokens=max_length)
         
         # プロンプト部分を除去して要約部分のみを返す
         if summary.startswith(prompt):
@@ -42,7 +42,11 @@ class SummarizationPipeline:
         Trains the SNN locally on the provided text-summary pair using STDP.
         """
         training_data = f"{text}\n\nTL;DR:\n{summary}\n"
-        self.model.learn_sequence(training_data)
+        if hasattr(self.tokenizer, "encode"):
+            token_ids = self.tokenizer.encode(training_data)
+        else:
+            token_ids = [ord(c) for c in training_data]
+        self.model.learn_sequence(token_ids)
 
     def save_pretrained(self, save_directory: str) -> None:
         """Saves the SNN configuration and synaptic weights to disk."""

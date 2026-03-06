@@ -1,8 +1,8 @@
-{
-    "//": "ディレクトリパス: scripts/eval/chat_snn_lm.py",
-    "//": "ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (デバッグ対応版)",
-    "//": "ファイルの目的や内容: トークナイザーを導入してサブワードレベルでの推論に対応。"
-}
+# {
+#     "//": "ディレクトリパス: scripts/eval/chat_snn_lm.py",
+#     "//": "ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (パラメータ調整版)",
+#     "//": "ファイルの目的や内容: 未知の入力に対する沈黙を防ぐため、発火閾値を下げ、出力を安定させるために温度パラメータを調整。"
+# }
 
 import os
 import sys
@@ -27,7 +27,8 @@ def chat_loop(model_dir: str, debug_mode: bool = False):
     
     tokenizer = SaraTokenizer(vocab_size=model.config.vocab_size, model_path=os.path.join(model_dir, "sara_vocab.json"))
     
-    print("SARA is ready! (Type 'quit' or 'exit' to stop)\n")
+    print("SARA is ready! (Type 'quit' or 'exit' to stop)")
+    print("💡ヒント: 学習データ（AIやネットワークに関する語彙）に含まれる言葉を入力すると反応しやすくなります。\n")
 
     while True:
         try:
@@ -39,15 +40,33 @@ def chat_loop(model_dir: str, debug_mode: bool = False):
 
             input_tokens = tokenizer.encode(user_input)
             
-            generated_tokens, debug_logs = model.generate(
-                input_ids=input_tokens, 
-                max_length=150,
-                temperature=0.2,
-                fire_threshold=0.8,
-                debug=debug_mode
-            )
+            if debug_mode:
+                # ユーザーの入力がどのようにトークン化されたかを確認
+                token_strs = [tokenizer.id_to_token.get(t, "?") for t in input_tokens]
+                print(f"  [DEBUG] Input tokens: {token_strs}")
+
+            # 無発話時は閾値を緩めて再試行し、沈黙を防ぐ
+            decode_source_tokens = []
+            debug_logs = []
+            for fire_threshold, temperature in [(0.4, 0.1), (0.3, 0.2), (0.2, 0.35)]:
+                generated_tokens, debug_logs = model.generate(
+                    prompt=input_tokens,
+                    max_length=150,
+                    temperature=temperature,
+                    fire_threshold=fire_threshold,
+                    debug=debug_mode
+                )
+                new_generated_tokens = generated_tokens[len(input_tokens):]
+                if new_generated_tokens:
+                    decode_source_tokens = new_generated_tokens
+                    break
+
+            response_text = tokenizer.decode(decode_source_tokens)
             
-            response_text = tokenizer.decode(generated_tokens)
+            # 生成テキストが空の場合は「...」を表示
+            if not response_text.strip():
+                response_text = "..."
+                
             print(f"SARA: {response_text}\n")
 
             if debug_mode and debug_logs:

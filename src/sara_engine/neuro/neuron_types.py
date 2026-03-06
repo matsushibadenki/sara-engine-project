@@ -1,6 +1,8 @@
-# src/sara_engine/neuro/neuron_types.py
-# ニューロンタイプ管理モジュール
-# 興奮性/抑制性ニューロンの分類を管理する
+# {
+#     "//": "ディレクトリパス: src/sara_engine/neuro/neuron_types.py",
+#     "//": "ファイルの日本語タイトル: ニューロンタイプ管理モジュール",
+#     "//": "ファイルの目的や内容: 興奮性/抑制性ニューロンの分類を管理する。デールの法則（Dale's law）を適用して重みの符号を管理するメソッドを追加。"
+# }
 
 import random
 from typing import Dict
@@ -25,3 +27,11 @@ class NeuronTypeManager:
 
     def get_sign(self, neuron_id: int) -> float:
         return -1.0 if self.is_inhibitory(neuron_id) else 1.0
+
+    def enforce_dales_law(self, neuron_id: int, weight: float) -> float:
+        """
+        デールの法則（Dale's law）を適用し、ニューロンのタイプに基づいて重みの符号を強制する。
+        興奮性ニューロンからのシナプス結合は正、抑制性ニューロンからの結合は負にする。
+        """
+        sign = self.get_sign(neuron_id)
+        return sign * abs(weight)

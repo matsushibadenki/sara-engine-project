@@ -52,16 +52,16 @@ def chat():
         if not user_input.strip():
             continue
 
-        sara.reset_buffer()
+        sara.reset_state()
         start_time = time.time()
         prompt = f"You: {user_input}\nSARA:"
 
         response = sara.generate(
             prompt,
-            max_length=args.max_length,
+            max_new_tokens=args.max_length,
             top_k=args.top_k,
             temperature=args.temperature,
-            repetition_penalty=args.repetition_penalty,
+            refractory_penalty=args.repetition_penalty,
             stop_conditions=["\n"]
         )
 

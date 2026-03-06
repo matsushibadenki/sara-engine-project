@@ -4,7 +4,7 @@
 #     "//": "ファイルの目的や内容: v2.4.0相当の SpikingTransformerModel が、行列演算なしで時系列のトークン列を学習し、予測(Generate)できるかを確認する。"
 # }
 
-from sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
+from sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig, NGramSpikeGenerator
 
 def test_transformer_v2():
     print("--- 📚 Spiking Transformer のテストを開始 ---")
@@ -28,6 +28,24 @@ def test_transformer_v2():
     
     print(f"   生成されたトークン列: {generated_ids}")
     print("\n--- ✅ テスト完了：推論と学習ループがエラーなく実行されました ---")
+
+
+def test_inference_fallback_linear_readout_prevents_silence():
+    config = SNNTransformerConfig(vocab_size=20, embed_dim=8, num_layers=1)
+    model = SpikingTransformerModel(config)
+
+    prompt = [5]
+    spikes = NGramSpikeGenerator.generate_spikes(prompt, model.num_ngram_levels, model.reservoir_size)
+    target_id = 3
+    for s in spikes:
+        model.readout_synapses[s][target_id] = (0.1, 0)
+
+    generated, logs = model.generate(prompt, max_length=1, temperature=0.0, fire_threshold=0.4, debug=True)
+
+    assert len(generated) == 2
+    assert generated[-1] == target_id
+    assert logs
+    assert logs[0].get("stop_reason") in ("fallback_linear_readout", "")
 
 if __name__ == "__main__":
     test_transformer_v2()

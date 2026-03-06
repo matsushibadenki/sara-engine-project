@@ -221,3 +221,7 @@ class SaraInference:
         self.refractory_buffer = []
         if self.lif_network:
             self.lif_network.reset()
+
+    # Backward-compatible alias used by older CLI/example code.
+    def reset_buffer(self):
+        self.reset_state()
