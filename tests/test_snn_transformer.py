@@ -36,7 +36,7 @@ def test_inference_fallback_linear_readout_prevents_silence():
 
     prompt = [5]
     spikes = NGramSpikeGenerator.generate_spikes(prompt, model.num_ngram_levels, model.reservoir_size)
-    target_id = 3
+    target_id = 8
     for s in spikes:
         model.readout_synapses[s][target_id] = (0.1, 0)
 
@@ -46,6 +46,49 @@ def test_inference_fallback_linear_readout_prevents_silence():
     assert generated[-1] == target_id
     assert logs
     assert logs[0].get("stop_reason") in ("fallback_linear_readout", "")
+
+
+def test_prompt_warmup_does_not_poison_homeostatic_thresholds():
+    config = SNNTransformerConfig(vocab_size=20, embed_dim=8, num_layers=1)
+    model = SpikingTransformerModel(config)
+
+    warmup_token = 5
+    current_token = 6
+    target_id = 7
+
+    warmup_spikes = NGramSpikeGenerator.generate_spikes([warmup_token], model.num_ngram_levels, model.reservoir_size)
+    current_spikes = NGramSpikeGenerator.generate_spikes([current_token, warmup_token], model.num_ngram_levels, model.reservoir_size)
+
+    for s in warmup_spikes:
+        model.readout_synapses[s][target_id] = (0.35, 0)
+    for s in current_spikes:
+        model.readout_synapses[s][target_id] = (0.22, 0)
+
+    generated, _logs = model.generate(
+        [warmup_token, current_token],
+        max_length=1,
+        temperature=0.0,
+        fire_threshold=0.4,
+        debug=True,
+    )
+
+    assert generated[-1] == target_id
+
+
+def test_generate_stops_before_appending_eos():
+    config = SNNTransformerConfig(vocab_size=20, embed_dim=8, num_layers=1)
+    model = SpikingTransformerModel(config)
+
+    prompt = [5]
+    spikes = NGramSpikeGenerator.generate_spikes(prompt, model.num_ngram_levels, model.reservoir_size)
+    eos_id = 3
+    for s in spikes:
+        model.readout_synapses[s][eos_id] = (1.0, 0)
+
+    generated, logs = model.generate(prompt, max_length=1, temperature=0.0, fire_threshold=0.3, debug=True)
+
+    assert generated == prompt
+    assert logs
 
 if __name__ == "__main__":
     test_transformer_v2()

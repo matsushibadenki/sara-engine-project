@@ -42,7 +42,8 @@ def _score_response(text: str) -> float:
 def _clean_response(text: str, max_chars: int = 200) -> str:
     if not text:
         return text
-    normalized = re.sub(r"[ \t]+", " ", text).strip()
+    normalized = text.replace("<eos>", "").replace("<sos>", "").replace("<pad>", "").replace("<unk>", "")
+    normalized = re.sub(r"[ \t]+", " ", normalized).strip()
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
     if len(normalized) > max_chars:
         normalized = normalized[:max_chars].rstrip()

@@ -33,6 +33,9 @@ _SYNAPSE_PRUNE_TARGET: int = 4096
 _NUM_DENDRITIC_BRANCHES: int = 8
 
 _LATERAL_INHIBITION_STRENGTH: float = 0.6
+_SPECIAL_TOKEN_IDS = {0, 1, 2, 3}
+_HOMEOSTATIC_SPARSE_WINNER_RATIO: float = 3.0
+_HOMEOSTATIC_SPARSE_MIN_SCALE: float = 0.35
 
 # ==========================================================================
 # SpikingTransformerModel
@@ -86,6 +89,7 @@ class SpikingTransformerModel(nn.SNNModule):
         super().reset_state()
         self.delay_buffer.clear()
         self.adaptive_thresholds.clear()
+        self.activity_tracker.reset()
         self.stp_manager.reset()
         self.three_factor_manager.reset()
         self.predictive_manager.reset()
@@ -94,17 +98,7 @@ class SpikingTransformerModel(nn.SNNModule):
             d_tree.reset()
         self.current_time = 0.0
 
-    def forward_step(
-        self,
-        token_id: int,
-        learning: bool = True,
-        target_id: Optional[int] = None,
-        refractory_tokens: Optional[List[int]] = None,
-        temperature: float = 0.6,
-        fire_threshold: float = 1.0,
-        debug: bool = False
-    ) -> Tuple[int, Dict]:
-
+    def _advance_dynamics(self, fire_threshold: float, learning: bool) -> Tuple[float, float]:
         self.current_time += 10.0
         self.activity_tracker.step()
         population_rate = self.activity_tracker.get_global_rate()
@@ -117,18 +111,82 @@ class SpikingTransformerModel(nn.SNNModule):
         if not learning:
             target_rate = max(1e-6, self.scaling_manager.target_rate)
             pop_rel_error = (population_rate - target_rate) / target_rate
-            # 推論時の集団発火率に応じてベース閾値を恒常的に補正
-            homeostatic_shift = max(-0.15, min(0.55, pop_rel_error * 0.12))
+            homeostatic_shift = max(-0.22, min(0.55, pop_rel_error * 0.18))
             base_threshold = dynamic_fire_threshold + homeostatic_shift
 
-        if not learning:
             for tid in list(self.adaptive_thresholds.keys()):
                 rate = self.activity_tracker.get_rate(tid)
                 tau = 0.85 + rate * 0.12
-                self.adaptive_thresholds[tid] = self.adaptive_thresholds[tid] * \
-                    tau + base_threshold * (1.0 - tau)
+                self.adaptive_thresholds[tid] = (
+                    self.adaptive_thresholds[tid] * tau
+                    + base_threshold * (1.0 - tau)
+                )
                 if self.adaptive_thresholds[tid] <= base_threshold + 0.01:
                     del self.adaptive_thresholds[tid]
+
+        return base_threshold, population_rate
+
+    def _ingest_token_context(self, token_id: int, fire_threshold: float) -> List[int]:
+        self._advance_dynamics(fire_threshold=fire_threshold, learning=False)
+        self.delay_buffer.insert(0, token_id)
+        if len(self.delay_buffer) > self.context_length:
+            self.delay_buffer.pop()
+
+        readout_spikes = NGramSpikeGenerator.generate_spikes(
+            self.delay_buffer, self.num_ngram_levels, self.reservoir_size)
+        for s in readout_spikes:
+            self.stp_manager.on_spike(s, self.current_time)
+        return readout_spikes
+
+    def _is_valid_output_token(self, token_id: int) -> bool:
+        return token_id not in _SPECIAL_TOKEN_IDS and token_id < self.config.vocab_size
+
+    def _select_sparse_winner(
+        self,
+        sorted_items: List[Tuple[int, float]],
+        base_threshold: float,
+        population_rate: float,
+    ) -> List[Tuple[int, float]]:
+        if not sorted_items:
+            return []
+        target_rate = max(1e-6, self.scaling_manager.target_rate)
+        underfire = max(0.0, target_rate - population_rate) / target_rate
+        if underfire <= 0.0:
+            return []
+
+        top_tid, top_p = sorted_items[0]
+        if not self._is_valid_output_token(top_tid):
+            return []
+
+        second_p = 0.0
+        for cand_tid, cand_p in sorted_items[1:]:
+            if self._is_valid_output_token(cand_tid):
+                second_p = cand_p
+                break
+
+        min_sparse_threshold = base_threshold * max(
+            0.15, _HOMEOSTATIC_SPARSE_MIN_SCALE - (0.15 * min(1.0, underfire))
+        )
+        dominates = second_p <= 0.0 or top_p >= second_p * _HOMEOSTATIC_SPARSE_WINNER_RATIO
+        if dominates and top_p >= min_sparse_threshold:
+            return [(top_tid, top_p)]
+        return []
+
+    def forward_step(
+        self,
+        token_id: int,
+        learning: bool = True,
+        target_id: Optional[int] = None,
+        refractory_tokens: Optional[List[int]] = None,
+        temperature: float = 0.6,
+        fire_threshold: float = 1.0,
+        debug: bool = False
+    ) -> Tuple[int, Dict]:
+
+        base_threshold, population_rate = self._advance_dynamics(
+            fire_threshold=fire_threshold,
+            learning=learning,
+        )
 
         self.delay_buffer.insert(0, token_id)
         if len(self.delay_buffer) > self.context_length:
@@ -184,16 +242,22 @@ class SpikingTransformerModel(nn.SNNModule):
                 predicted_id = sorted_items[0][0]
             else:
                 candidates = [(tid, p) for tid, p in sorted_items[:5]
-                              if 0 < tid < self.config.vocab_size
+                              if self._is_valid_output_token(tid)
                               and p > self.adaptive_thresholds.get(tid, base_threshold)]
                 
                 if not candidates and sorted_items:
                     top_tid, top_p = sorted_items[0]
                     if (
-                        0 < top_tid < self.config.vocab_size
+                        self._is_valid_output_token(top_tid)
                         and top_p > (base_threshold * 1.25)
                     ):
                         candidates = [(top_tid, top_p)]
+                if not candidates:
+                    candidates = self._select_sparse_winner(
+                        sorted_items=sorted_items[:5],
+                        base_threshold=base_threshold,
+                        population_rate=population_rate,
+                    )
 
                 if candidates:
                     predicted_id = SynapseManager.sample_temperature(
@@ -222,17 +286,23 @@ class SpikingTransformerModel(nn.SNNModule):
                 
                 # --- 修正箇所：フォールバック時にも動的閾値（恒常性）によるブロックを適用 ---
                 candidates = [(tid, p) for tid, p in sorted_items[:5]
-                              if 0 < tid < self.config.vocab_size
+                              if self._is_valid_output_token(tid)
                               and p > self.adaptive_thresholds.get(tid, base_threshold)]
                 
                 # 閾値を満たすものが無い場合は一番強いものを妥協して選ぶ
                 if not candidates and sorted_items:
                     top_tid, top_p = sorted_items[0]
                     if (
-                        0 < top_tid < self.config.vocab_size
+                        self._is_valid_output_token(top_tid)
                         and top_p > (base_threshold * 1.35)
                     ):
                         candidates = [(top_tid, top_p)]
+                if not candidates:
+                    candidates = self._select_sparse_winner(
+                        sorted_items=sorted_items[:5],
+                        base_threshold=base_threshold,
+                        population_rate=population_rate,
+                    )
 
                 if debug:
                     debug_info["top_k"] = candidates
@@ -371,7 +441,7 @@ class SpikingTransformerModel(nn.SNNModule):
         debug_logs: List[Dict] = []
 
         for tid in prompt[:-1]:
-            self.forward_step(tid, learning=False, fire_threshold=fire_threshold)
+            self._ingest_token_context(tid, fire_threshold=fire_threshold)
 
         current_token = prompt[-1]
         for _ in range(max_length):
@@ -385,7 +455,7 @@ class SpikingTransformerModel(nn.SNNModule):
             )
             if debug:
                 debug_logs.append(info)
-            if predicted_id == 0:
+            if predicted_id == 0 or predicted_id == 3:
                 break
             generated.append(predicted_id)
             current_token = predicted_id
