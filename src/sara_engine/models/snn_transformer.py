@@ -1,7 +1,7 @@
 # {
 #     "//": "ディレクトリパス: src/sara_engine/models/snn_transformer.py",
-#     "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル v2.4.4",
-#     "//": "ファイルの目的や内容: 1エポックでの学習精度を上げるため、シナプスの刈り込み閾値（PRUNE_THRESH）のバグを修正。また、頻度正規化学習（Target Counts）を導入し、高頻度トークンの過剰学習を防ぎつつ、予測誤差に基づく学習率を最適化。"
+#     "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマーモデル v2.4.5",
+#     "//": "ファイルの目的や内容: 樹状突起ブランチの決定論的割り当てによる空間的加算（Spatial Summation）の修復と、高頻度語（記号・助詞）の暴走を抑えるためのLTD（長期抑圧）ペナルティの改善。"
 # }
 
 from ..core.spike_attention import SpikeMultiPathwayAttention
@@ -20,15 +20,14 @@ from typing import List, Dict, Optional, Tuple
 from collections import Counter
 import operator
 import pickle
-import random
 import os
 import json
 import math
 
 # ---- 定数 ----------------------------------------------------------------
-_MODEL_VERSION: str = "2.4.4"
+_MODEL_VERSION: str = "2.4.5"
 _SYNAPSE_MAX_WEIGHT: float = 20.0
-_SYNAPSE_PRUNE_THRESH: float = 0.05 # 1.0から0.05へ変更（初期化直後のシナプス消滅を防ぐ）
+_SYNAPSE_PRUNE_THRESH: float = 0.1 # ノイズ刈り込みを少し強化
 _SYNAPSE_BUCKET_MAX: int = 8192
 _SYNAPSE_PRUNE_TARGET: int = 4096
 _NUM_DENDRITIC_BRANCHES: int = 8
@@ -55,20 +54,19 @@ class SpikingTransformerModel(nn.SNNModule):
         self.readout_synapses: List[Dict[int, Tuple[float, int]]] = [
             {} for _ in range(self.total_readout_size)]
 
-        # 全ての生物学的機能を統合
         self.activity_tracker = NeuronActivityTracker()
         self.scaling_manager = SynapticScalingManager(target_rate=0.05, scaling_lr=0.01)
         self.neuron_type_manager = NeuronTypeManager(inhibitory_ratio=0.2)
         self.stp_manager = ShortTermPlasticityManager()
         self.structural_manager = StructuralPlasticityManager()
         self.three_factor_manager = ThreeFactorLearningManager()
-        self.predictive_manager = PredictiveCodingManager(learning_rate=0.2) # 0.01から0.2へ上昇
+        self.predictive_manager = PredictiveCodingManager(learning_rate=0.25) # さらに少し学習率UP
         self.sequence_manager = NeuralSequenceManager(
-            time_window=100.0, sequence_lr=0.05) # 0.03から0.05へ強化
+            time_window=100.0, sequence_lr=0.05)
         self.oscillation_manager = OscillationManager()
 
         self.adaptive_thresholds: Dict[int, float] = {}
-        self.target_counts: Dict[int, int] = {} # 頻度正規化用に追加
+        self.target_counts: Dict[int, int] = {} 
         self.current_time = 0.0
         self.global_step = 0
         self.delay_buffer = []
@@ -101,10 +99,8 @@ class SpikingTransformerModel(nn.SNNModule):
     ) -> Tuple[int, Dict]:
 
         self.current_time += 10.0
-        # Keep homeostatic firing rates time-local during both train/inference.
         self.activity_tracker.step()
 
-        # === 1. Neural Oscillation: 周期的な閾値の変動 ===
         gating_factor = self.oscillation_manager.get_gating_factor(
             self.current_time, mode="theta_gamma")
         dynamic_fire_threshold = fire_threshold + (gating_factor * 0.3)
@@ -127,7 +123,6 @@ class SpikingTransformerModel(nn.SNNModule):
         readout_spikes = NGramSpikeGenerator.generate_spikes(
             self.delay_buffer, self.num_ngram_levels, self.reservoir_size)
 
-        # 樹状突起計算
         for tid in range(self.config.vocab_size):
             self.dendritic_forest[tid].reset()
 
@@ -142,16 +137,14 @@ class SpikingTransformerModel(nn.SNNModule):
         for tid in range(self.config.vocab_size):
             pot = self.dendritic_forest[tid].aggregate()
             if pot > 0.1:
-                norm = 1.0 + self.activity_tracker.get_rate(tid) * 1.5
+                norm = 1.0 + self.activity_tracker.get_rate(tid) * 2.0
                 out_potentials[tid] = pot / norm
 
-        # 乗算的不応期（Refractory）の適用 (直前の反復を抑制)
         if not learning and refractory_tokens and out_potentials:
             for i, rt in enumerate(reversed(refractory_tokens)):
                 if rt in out_potentials:
                     out_potentials[rt] *= (0.1 * i)
 
-        # 生成ロジック
         predicted_id = 0
         debug_info = {"top_k": [], "stop_reason": ""}
 
@@ -168,7 +161,6 @@ class SpikingTransformerModel(nn.SNNModule):
             if learning:
                 predicted_id = sorted_items[0][0]
             else:
-                # 動的閾値での判定
                 candidates = [(tid, p) for tid, p in sorted_items[:5]
                               if 0 < tid < self.config.vocab_size
                               and p > self.adaptive_thresholds.get(tid, base_threshold)]
@@ -183,9 +175,8 @@ class SpikingTransformerModel(nn.SNNModule):
                         candidates, temperature)
                 else:
                     debug_info["stop_reason"] = "no_candidates_after_threshold"
+                    
         elif not learning:
-            # Inference-only fallback: if dendritic nonlinearity yields no output,
-            # use a linear readout path so dialogue does not collapse into silence.
             fallback_potentials: Dict[int, float] = {}
             for s in readout_spikes:
                 if s >= len(self.readout_synapses):
@@ -194,7 +185,6 @@ class SpikingTransformerModel(nn.SNNModule):
                     if 0 < v_idx < self.config.vocab_size:
                         fallback_potentials[v_idx] = fallback_potentials.get(v_idx, 0.0) + w
 
-            # Fallbackにも不応期を適用してループを防止
             if refractory_tokens and fallback_potentials:
                 for i, rt in enumerate(reversed(refractory_tokens)):
                     if rt in fallback_potentials:
@@ -204,16 +194,33 @@ class SpikingTransformerModel(nn.SNNModule):
                 sorted_items = sorted(
                     fallback_potentials.items(), key=operator.itemgetter(1), reverse=True
                 )
+                
+                # --- 修正箇所：フォールバック時にも動的閾値（恒常性）によるブロックを適用 ---
+                candidates = [(tid, p) for tid, p in sorted_items[:5]
+                              if 0 < tid < self.config.vocab_size
+                              and p > self.adaptive_thresholds.get(tid, base_threshold)]
+                
+                # 閾値を満たすものが無い場合は一番強いものを妥協して選ぶ
+                if not candidates and sorted_items:
+                    top_tid, top_p = sorted_items[0]
+                    if 0 < top_tid < self.config.vocab_size:
+                        candidates = [(top_tid, top_p)]
+
                 if debug:
-                    debug_info["top_k"] = sorted_items[:5]
-                predicted_id = SynapseManager.sample_temperature(
-                    sorted_items[:5], temperature=max(temperature, 0.2)
-                )
+                    debug_info["top_k"] = candidates
+                
+                if candidates:
+                    predicted_id = SynapseManager.sample_temperature(
+                        candidates, temperature=max(temperature, 0.2)
+                    )
+                else:
+                    predicted_id = 0
+                # -------------------------------------------------------------------
+                
                 debug_info["stop_reason"] = "fallback_linear_readout"
             else:
                 debug_info["stop_reason"] = "no_out_potentials"
 
-        # 各種マネージャーの更新
         if predicted_id != 0:
             if not learning:
                 pot = out_potentials.get(predicted_id, 0.0)
@@ -231,18 +238,15 @@ class SpikingTransformerModel(nn.SNNModule):
                     self.sequence_manager.apply_sequence_reinforcement(
                         pre_id, predicted_id, strength, self.readout_synapses, self.neuron_type_manager, _SYNAPSE_MAX_WEIGHT)
 
-                # === 恒常性シナプススケーリング (Homeostatic Synaptic Scaling) ===
                 current_rate = self.activity_tracker.get_rate(predicted_id)
                 scaling_factor = self.scaling_manager.compute_scaling_factor(current_rate)
                 
-                # 発火率が目標値から逸脱している場合のみ、乗算的に重みをスケーリングする
                 if abs(1.0 - scaling_factor) > 0.005:
                     for s in readout_spikes:
                         if predicted_id in self.readout_synapses[s]:
                             w, b_id = self.readout_synapses[s][predicted_id]
                             new_w = min(w * scaling_factor, _SYNAPSE_MAX_WEIGHT)
                             
-                            # スケーリングの結果、重みが閾値未満になればシナプスを刈り込む
                             if new_w < _SYNAPSE_PRUNE_THRESH:
                                 del self.readout_synapses[s][predicted_id]
                             else:
@@ -253,12 +257,14 @@ class SpikingTransformerModel(nn.SNNModule):
                     self.three_factor_manager.update_trace(
                         s, predicted_id, 1.0, self.current_time)
 
-        # 学習フェーズ (Predictive Coding)
+        # === 修正箇所：Predictive Codingの学習最適化 ===
         if learning and target_id is not None:
-            # ターゲット頻度の追跡と頻度正規化学習率の計算
             self.target_counts[target_id] = self.target_counts.get(target_id, 0) + 1
             count = self.target_counts[target_id]
-            freq_norm_lr = self.predictive_manager.learning_rate / math.sqrt(count)
+            
+            # 高頻度語への学習率低下をマイルドにし、全く学習されなくなるのを防ぐ
+            freq_penalty = max(0.2, 1.0 / math.log(count + 1.5)) if count > 2 else 1.0
+            freq_norm_lr = self.predictive_manager.learning_rate * freq_penalty
 
             target_pot = out_potentials.get(target_id, 0.0)
             prediction_error = max(0.0, 1.0 - target_pot)
@@ -267,23 +273,26 @@ class SpikingTransformerModel(nn.SNNModule):
                 actual_lr = freq_norm_lr * prediction_error
                 for s in readout_spikes:
                     if target_id not in self.readout_synapses[s]:
-                        branch_id = random.randint(0, _NUM_DENDRITIC_BRANCHES - 1)
-                        self.readout_synapses[s][target_id] = (1.0, branch_id) # 初期値を1.0に強化
+                        # 【重要】ランダム割り当てを廃止。トークンとスパイクの組み合わせから決定論的にブランチを決定
+                        branch_id = (s + target_id) % _NUM_DENDRITIC_BRANCHES
+                        self.readout_synapses[s][target_id] = (1.5, branch_id)
                     
                     w, b_id = self.readout_synapses[s][target_id]
                     new_w = min(w + actual_lr, _SYNAPSE_MAX_WEIGHT)
                     self.readout_synapses[s][target_id] = (new_w, b_id)
 
+            # 間違って発火した（しそうになった）ノイズトークンへのペナルティ
             for false_id, false_pot in out_potentials.items():
-                if false_id != target_id and false_pot > 0.5:
-                    # False IDの出現頻度も考慮して減衰ペナルティを調整
+                if false_id != target_id and false_pot > 0.3:
+                    # 頻度が高い（「の」「は」など）間違った発火ほど強くペナルティを与え、暴走を抑える
                     f_count = self.target_counts.get(false_id, 1)
-                    f_lr = self.predictive_manager.learning_rate / math.sqrt(f_count)
+                    boost = min(3.0, math.log(f_count + 1.0))
+                    penalty = (self.predictive_manager.learning_rate * 0.4) * boost
                     
                     for s in readout_spikes:
                         if false_id in self.readout_synapses[s]:
                             w, b_id = self.readout_synapses[s][false_id]
-                            new_w = w - (f_lr * 0.5)
+                            new_w = w - penalty
                             
                             if new_w < _SYNAPSE_PRUNE_THRESH:
                                 del self.readout_synapses[s][false_id]
@@ -420,9 +429,8 @@ class SynapseManager:
             return 0
         if temperature <= 0.0:
             return max(candidates, key=lambda x: x[1])[0]
-        import math as _math
         max_p = max(p for _, p in candidates)
-        weights = [_math.exp((p - max_p) / temperature) for _, p in candidates]
+        weights = [math.exp((p - max_p) / temperature) for _, p in candidates]
         total = sum(weights)
         import random as _random
         r = _random.random() * total
