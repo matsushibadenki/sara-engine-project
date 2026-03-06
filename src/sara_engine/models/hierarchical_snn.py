@@ -3,21 +3,23 @@
 # ファイルの目的や内容: 文字から単語、文脈へと抽象度を上げる階層構造。既存のTransformerブロックを統合。
 
 from typing import List, Dict, Any, Optional
-from sara_engine.nn.module import SNNModule
-from sara_engine.core.transformer import SpikeTransformerBlock
+from ..nn.module import SNNModule
+from ..core.transformer import SpikeTransformerBlock
+
 
 class HierarchicalSNN(SNNModule):
     """
     Phase 2: Hierarchical Feature Extraction.
     Inherits from SNNModule to support state_dict and modular management.
     """
-    def __init__(self, 
-                 layer_configs: List[Dict[str, Any]], 
+
+    def __init__(self,
+                 layer_configs: List[Dict[str, Any]],
                  use_lif: bool = True):
         super().__init__()
         self.layer_configs = layer_configs
         self.use_lif = use_lif
-        
+
         # モジュールを順次追加。低次（Edge/Char）から高次（Object/Context）へ。
         for i, config in enumerate(layer_configs):
             block = SpikeTransformerBlock(
@@ -46,6 +48,6 @@ class HierarchicalSNN(SNNModule):
         if destination is None:
             import collections
             destination = collections.OrderedDict()
-        
+
         destination[prefix + "num_layers"] = len(self.layer_configs)
         return super().state_dict(destination, prefix)

@@ -1,6 +1,6 @@
 from snn_models.spatiotemporal_stdp import SpatioTemporalSNN
-from sara_engine.memory.ltm import SparseMemoryStore
-from sara_engine.core.cortex import CorticalColumn
+from .ltm import SparseMemoryStore
+from ..core.cortex import CorticalColumn
 
 import time
 import random

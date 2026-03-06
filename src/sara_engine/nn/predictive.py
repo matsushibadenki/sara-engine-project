@@ -9,7 +9,7 @@ import random
 
 
 try:
-    from sara_engine.sara_rust_core import CausalSynapses
+    from ..sara_rust_core import CausalSynapses
 except ImportError:
     CausalSynapses = None
 

@@ -1,19 +1,20 @@
+from .module import SNNModule
+from typing import List, Dict, Set, Optional, Tuple
+import random
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/nn/attention.py",
     "//": "ファイルの日本語タイトル: 高速化版スパイキング・アテンション",
     "//": "ファイルの目的や内容: sara_rust_core.SpikeEngine を統合し、大規模なスパイク伝播と学習を高速化したアテンション層。Fuzzy Recall (SDR Overlap) による連想記憶を統合。Transformers代替となるSDRFuzzyAttentionを追記。"
 }
 
-import random
-from typing import List, Dict, Set, Optional, Tuple
-from .module import SNNModule
 
 # Import Rust core if available
 try:
-    from sara_engine import sara_rust_core # type: ignore
+    from .. import sara_rust_core  # type: ignore
     RUST_AVAILABLE = True
 except ImportError:
     RUST_AVAILABLE = False
+
 
 class SpikeSelfAttention(SNNModule):
     def __init__(self, embed_dim: int, density: float = 0.1, context_size: int = 64, use_rust: bool = True):
@@ -21,13 +22,17 @@ class SpikeSelfAttention(SNNModule):
         self.embed_dim = embed_dim
         self.context_size = context_size
         self.use_rust = use_rust and RUST_AVAILABLE
-        
+
         # Initialize weights
-        self.q_weights: List[Dict[int, float]] = self._init_sparse_weights(embed_dim, embed_dim, density)
-        self.k_weights: List[Dict[int, float]] = self._init_sparse_weights(embed_dim, embed_dim, density)
-        self.v_weights: List[Dict[int, float]] = self._init_sparse_weights(embed_dim, embed_dim, density)
-        self.o_weights: List[Dict[int, float]] = self._init_sparse_weights(embed_dim, embed_dim, density)
-        
+        self.q_weights: List[Dict[int, float]] = self._init_sparse_weights(
+            embed_dim, embed_dim, density)
+        self.k_weights: List[Dict[int, float]] = self._init_sparse_weights(
+            embed_dim, embed_dim, density)
+        self.v_weights: List[Dict[int, float]] = self._init_sparse_weights(
+            embed_dim, embed_dim, density)
+        self.o_weights: List[Dict[int, float]] = self._init_sparse_weights(
+            embed_dim, embed_dim, density)
+
         # Setup Rust engine if used
         if self.use_rust:
             self.q_engine = sara_rust_core.SpikeEngine()
@@ -40,7 +45,7 @@ class SpikeSelfAttention(SNNModule):
         self.register_state("k_weights")
         self.register_state("v_weights")
         self.register_state("o_weights")
-        
+
         self.key_buffer: List[Set[int]] = []
         self.value_buffer: List[Set[int]] = []
 
@@ -71,14 +76,17 @@ class SpikeSelfAttention(SNNModule):
             v_list = self.v_engine.propagate(x_spikes, threshold, max_out)
         else:
             # Fallback Python implementation
-            q_list = self._sparse_propagate(x_spikes, self.q_weights, self.embed_dim, threshold, max_out)
-            k_list = self._sparse_propagate(x_spikes, self.k_weights, self.embed_dim, threshold, max_out)
-            v_list = self._sparse_propagate(x_spikes, self.v_weights, self.embed_dim, threshold, max_out)
+            q_list = self._sparse_propagate(
+                x_spikes, self.q_weights, self.embed_dim, threshold, max_out)
+            k_list = self._sparse_propagate(
+                x_spikes, self.k_weights, self.embed_dim, threshold, max_out)
+            v_list = self._sparse_propagate(
+                x_spikes, self.v_weights, self.embed_dim, threshold, max_out)
 
         q_spikes = set(q_list)
         self.key_buffer.append(set(k_list))
         self.value_buffer.append(set(v_list))
-        
+
         if len(self.key_buffer) > self.context_size:
             self.key_buffer.pop(0)
             self.value_buffer.pop(0)
@@ -88,27 +96,30 @@ class SpikeSelfAttention(SNNModule):
         best_match_idx = -1
         max_coinc = 0
         dyn_thresh = max(1, int(len(q_spikes) * 0.2))
-        
+
         for i, past_k in enumerate(self.key_buffer):
             coinc = len(q_spikes.intersection(past_k))
             if coinc >= dyn_thresh and coinc > max_coinc:
                 max_coinc = coinc
                 best_match_idx = i
-        
+
         if best_match_idx != -1:
             routed_v = self.value_buffer[best_match_idx]
 
         if self.use_rust:
-            y_spikes = self.o_engine.propagate(list(routed_v), threshold, max_out)
+            y_spikes = self.o_engine.propagate(
+                list(routed_v), threshold, max_out)
             if learning:
-                self.q_engine.apply_stdp(x_spikes, list(q_spikes | set(x_spikes)), 0.05)
+                self.q_engine.apply_stdp(x_spikes, list(
+                    q_spikes | set(x_spikes)), 0.05)
                 self.k_engine.apply_stdp(x_spikes, k_list, 0.05)
                 self.v_engine.apply_stdp(x_spikes, v_list, 0.05)
                 self.o_engine.apply_stdp(list(routed_v), y_spikes, 0.05)
                 # Sync back to Python for Save/Load
                 self.q_weights = self.q_engine.get_weights()
         else:
-            y_spikes = self._sparse_propagate(list(routed_v), self.o_weights, self.embed_dim, threshold, max_out)
+            y_spikes = self._sparse_propagate(
+                list(routed_v), self.o_weights, self.embed_dim, threshold, max_out)
             if learning:
                 self._apply_stdp(x_spikes, q_list, self.q_weights)
                 self._apply_stdp(x_spikes, k_list, self.k_weights)
@@ -121,8 +132,10 @@ class SpikeSelfAttention(SNNModule):
         potentials = [0.0] * out_dim
         for s in active:
             if s < len(weights):
-                for t, w in weights[s].items(): potentials[t] += w
-        active_sorted = sorted([(i, p) for i, p in enumerate(potentials) if p > threshold], key=lambda x: x[1], reverse=True)
+                for t, w in weights[s].items():
+                    potentials[t] += w
+        active_sorted = sorted([(i, p) for i, p in enumerate(
+            potentials) if p > threshold], key=lambda x: x[1], reverse=True)
         return [i for i, p in active_sorted[:max_out]]
 
     def _apply_stdp(self, pre_spikes: List[int], post_spikes: List[int], weights: List[Dict[int, float]]) -> None:
@@ -152,23 +165,25 @@ class SpikeFuzzyAttention(SNNModule):
     Biological Attention mechanism using Fuzzy Recall (SDR Overlap).
     Replaces matrix multiplication with Scalable SDR Memory search to handle ambiguity.
     """
+
     def __init__(self, embed_dim: int, threshold: float = 0.2, top_k: int = 3, use_rust: bool = True):
         super().__init__()
         self.embed_dim = embed_dim
         self.threshold = threshold
         self.top_k = top_k
         self.use_rust = use_rust and RUST_AVAILABLE
-        
+
         # Core associative memory
         if self.use_rust and hasattr(sara_rust_core, 'ScalableSDRMemory'):
-            self.kv_memory = sara_rust_core.ScalableSDRMemory(threshold=self.threshold)
+            self.kv_memory = sara_rust_core.ScalableSDRMemory(
+                threshold=self.threshold)
         else:
             self.kv_memory = None
             self.python_memory: List[Tuple[int, Set[int]]] = []
-            
+
         self.values: Dict[int, List[int]] = {}
         self.register_state("values")
-        
+
         self.current_mem_id = 0
         self.register_state("current_mem_id")
 
@@ -187,7 +202,7 @@ class SpikeFuzzyAttention(SNNModule):
         Recall associated values using fuzzy matching on the query spikes.
         """
         out_spikes: Set[int] = set()
-        
+
         # 1. Search (Fuzzy Recall / Biological Association)
         if self.current_mem_id > 0 and x_spikes:
             if self.kv_memory:
@@ -210,17 +225,17 @@ class SpikeFuzzyAttention(SNNModule):
                     for mem_id, score in results_py[:self.top_k]:
                         if mem_id in self.values:
                             out_spikes.update(self.values[mem_id])
-                            
+
         # 2. Store (Self-Attention Context Accumulation)
         if learning and x_spikes:
             if self.kv_memory:
                 self.kv_memory.add_memory(self.current_mem_id, x_spikes)
             else:
                 self.python_memory.append((self.current_mem_id, set(x_spikes)))
-                
+
             self.values[self.current_mem_id] = list(x_spikes)
             self.current_mem_id += 1
-            
+
         return list(out_spikes)
 
 
@@ -231,6 +246,7 @@ class SDRFuzzyAttention(SNNModule):
     Supports multi-lingual processing implicitly through language-agnostic SDRs.
     Transformersの Q, K, V の概念をSNNのスパイクオーバーラップ率で代替するクラスです。
     """
+
     def __init__(self, sdr_size: int, threshold: float = 0.3):
         super().__init__()
         self.sdr_size = sdr_size
@@ -249,10 +265,10 @@ class SDRFuzzyAttention(SNNModule):
         if key is not None and value is not None:
             self.keys.append(key)
             self.values.append(value)
-            
+
         if not self.keys:
             return query
-            
+
         # Evaluate similarities using Rust core (Fuzzy Recall) if available
         scores = []
         for i, k_sdr in enumerate(self.keys):
@@ -263,11 +279,12 @@ class SDRFuzzyAttention(SNNModule):
                 if not set_a or not set_b:
                     score = 0.0
                 else:
-                    score = len(set_a.intersection(set_b)) / float(max(len(set_a), len(set_b)))
+                    score = len(set_a.intersection(set_b)) / \
+                        float(max(len(set_a), len(set_b)))
             scores.append((i, score))
-            
+
         valid_scores = [item for item in scores if item[1] >= self.threshold]
-        
+
         # Output is a union of values that passed the threshold, modulated by similarity score
         output_spikes = set()
         for i, score in valid_scores:
@@ -276,7 +293,7 @@ class SDRFuzzyAttention(SNNModule):
             for spike in self.values[i]:
                 if random.random() < score:
                     output_spikes.add(spike)
-                    
+
         result = list(output_spikes)
         result.sort()
         return result

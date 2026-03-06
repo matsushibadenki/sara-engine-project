@@ -2,8 +2,8 @@
 # スパイキング因果言語モデル v5.0 (Rust Hybrid)
 # 目的: Rustコアを統合し、汎用シナプスのSTDP学習と電位計算をオフロードして超高速化する。
 
-from sara_engine.core.transformer import SpikeTransformerModel
-from sara_engine.sara_rust_core import CausalSynapses
+from ..core.transformer import SpikeTransformerModel
+from ..sara_rust_core import CausalSynapses
 from typing import List, Dict, Optional
 import math
 import random
@@ -25,12 +25,13 @@ _EXCLUDE_WORDS = frozenset([
     "User", "Assistant", ":", "はい", "いいえ",
 ])
 
+
 class SpikingCausalLM:
     def __init__(self, vocab_size: int, embed_dim: int = 1024, hidden_dim: int = 2048,
                  num_layers: int = 2, use_lif: bool = True):
-        self.vocab_size  = vocab_size
-        self.embed_dim   = embed_dim
-        self.max_delay   = 10
+        self.vocab_size = vocab_size
+        self.embed_dim = embed_dim
+        self.max_delay = 10
 
         self.transformer = SpikeTransformerModel(
             num_layers=num_layers,
@@ -65,7 +66,8 @@ class SpikingCausalLM:
         self._id_to_token = id_to_token
         self._vocab_registered = True
         sample = list(id_to_token.items())[:5]
-        print(f"  [register_vocab] registered {len(id_to_token)} entries. sample={sample}")
+        print(
+            f"  [register_vocab] registered {len(id_to_token)} entries. sample={sample}")
 
     def _is_excluded(self, token_id: int) -> bool:
         if not self._vocab_registered:
@@ -80,11 +82,11 @@ class SpikingCausalLM:
             return True
         if clean in _EXCLUDE_WORDS:
             return True
-        
+
         # 終了シグナルはQAボーナスから除外
         if "終" in clean or "＜" in clean or "＞" in clean:
             return True
-            
+
         return False
 
     def reset_context(self) -> None:
@@ -96,11 +98,12 @@ class SpikingCausalLM:
 
         for i in range(len(sequence) - 1):
             curr = sequence[i]
-            nxt  = sequence[i + 1]
-            input_spikes  = self._get_sdr_for_token(curr)
-            output_spikes = self.transformer.forward(input_spikes, learning=False)
-            offset        = [s + self.embed_dim for s in output_spikes]
-            combined      = input_spikes + offset
+            nxt = sequence[i + 1]
+            input_spikes = self._get_sdr_for_token(curr)
+            output_spikes = self.transformer.forward(
+                input_spikes, learning=False)
+            offset = [s + self.embed_dim for s in output_spikes]
+            combined = input_spikes + offset
 
             spike_history.insert(0, combined)
             if len(spike_history) > self.max_delay + 1:
@@ -114,7 +117,7 @@ class SpikingCausalLM:
         question_ids:  List[int],
         answer_ids:    List[int],
         learning_rate: float = 2.0,
-        max_qa_tokens: int   = 15,
+        max_qa_tokens: int = 15,
     ) -> None:
         if not question_ids or not answer_ids:
             return
@@ -129,11 +132,11 @@ class SpikingCausalLM:
                 break
             if self._is_excluded(tok_id):
                 continue
-            
-            decay  = max(0.4, 1.0 - registered * 0.05)
-            alpha  = min(0.5, learning_rate * 0.2)
-            
-            old_w  = self.qa_weights[ctx_key].get(tok_id, 0.0)
+
+            decay = max(0.4, 1.0 - registered * 0.05)
+            alpha = min(0.5, learning_rate * 0.2)
+
+            old_w = self.qa_weights[ctx_key].get(tok_id, 0.0)
             self.qa_weights[ctx_key][tok_id] = old_w + alpha * (decay - old_w)
             registered += 1
 
@@ -144,7 +147,7 @@ class SpikingCausalLM:
     def generate(
         self,
         prompt_tokens:  List[int],
-        max_new_tokens: int   = 25,
+        max_new_tokens: int = 25,
         temperature:    float = 0.01,
         question_ids:   Optional[List[int]] = None,
         stop_token_ids: Optional[List[int]] = None,
@@ -152,22 +155,24 @@ class SpikingCausalLM:
         repetition_window: int = 3,
     ) -> List[int]:
         self.reset_context()
-        generated:     List[int]       = []
+        generated:     List[int] = []
         spike_history: List[List[int]] = []
 
-        qa_ids   = question_ids if question_ids is not None else prompt_tokens
+        qa_ids = question_ids if question_ids is not None else prompt_tokens
         qa_bonus = self._get_qa_bonus(qa_ids)
 
-        QA_SCALE         = 500.0
+        QA_SCALE = 500.0
         qa_scale_current = QA_SCALE
 
         # Rust側から各トークンのファンイン（受容結合重み）を取得
         token_fan_in = self.rust_synapses.get_token_fan_in()
 
         for t in prompt_tokens[:-1]:
-            input_spikes  = self._get_sdr_for_token(t)
-            output_spikes = self.transformer.forward(input_spikes, learning=False)
-            combined      = input_spikes + [s + self.embed_dim for s in output_spikes]
+            input_spikes = self._get_sdr_for_token(t)
+            output_spikes = self.transformer.forward(
+                input_spikes, learning=False)
+            combined = input_spikes + \
+                [s + self.embed_dim for s in output_spikes]
             spike_history.insert(0, combined)
             if len(spike_history) > self.max_delay + 1:
                 spike_history.pop()
@@ -175,15 +180,18 @@ class SpikingCausalLM:
         current_token = prompt_tokens[-1]
 
         for _ in range(max_new_tokens):
-            input_spikes  = self._get_sdr_for_token(current_token)
-            output_spikes = self.transformer.forward(input_spikes, learning=False)
-            combined      = input_spikes + [s + self.embed_dim for s in output_spikes]
+            input_spikes = self._get_sdr_for_token(current_token)
+            output_spikes = self.transformer.forward(
+                input_spikes, learning=False)
+            combined = input_spikes + \
+                [s + self.embed_dim for s in output_spikes]
             spike_history.insert(0, combined)
             if len(spike_history) > self.max_delay + 1:
                 spike_history.pop()
 
             # --- Rustコアで全トークンの発火ポテンシャルを一括計算 ---
-            token_potentials = self.rust_synapses.calculate_potentials(spike_history)
+            token_potentials = self.rust_synapses.calculate_potentials(
+                spike_history)
 
             if not token_potentials:
                 break
@@ -191,7 +199,8 @@ class SpikingCausalLM:
             if qa_bonus and qa_scale_current > 0:
                 for t_id, bonus_w in qa_bonus.items():
                     token_potentials[t_id] = (
-                        token_potentials.get(t_id, 0.0) + bonus_w * qa_scale_current
+                        token_potentials.get(t_id, 0.0) +
+                        bonus_w * qa_scale_current
                     )
 
             for t_id in list(token_potentials.keys()):
@@ -200,7 +209,8 @@ class SpikingCausalLM:
                     token_potentials[t_id] /= math.pow(hub, 0.2)
 
             if repetition_window > 0 and repetition_penalty < 1.0:
-                forbidden = set(generated[-repetition_window:] + [current_token])
+                forbidden = set(
+                    generated[-repetition_window:] + [current_token])
                 for f_id in forbidden:
                     if f_id in token_potentials:
                         token_potentials[f_id] *= repetition_penalty
@@ -215,10 +225,11 @@ class SpikingCausalLM:
             if temperature <= 0.05:
                 next_token = sorted_candidates[0][0]
             else:
-                top_k      = min(5, len(sorted_candidates))
+                top_k = min(5, len(sorted_candidates))
                 candidates = sorted_candidates[:top_k]
-                total_pot  = sum(pow(p, 1.0 / temperature) for _, p in candidates)
-                r          = random.uniform(0, total_pot)
+                total_pot = sum(pow(p, 1.0 / temperature)
+                                for _, p in candidates)
+                r = random.uniform(0, total_pot)
                 next_token = candidates[0][0]
                 cumulative = 0.0
                 for t_id, pot in candidates:
@@ -264,8 +275,8 @@ class SpikingCausalLM:
             state = json.load(f)
 
         self.vocab_size = state["vocab_size"]
-        self.embed_dim  = state["embed_dim"]
-        self.max_delay  = state.get("max_delay", 10)
+        self.embed_dim = state["embed_dim"]
+        self.max_delay = state.get("max_delay", 10)
         self.transformer.load_state_dict(state["transformer"])
 
         self.qa_weights = {}

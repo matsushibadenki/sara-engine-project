@@ -2,8 +2,8 @@
 # // 生物学的スパイキングTransformerモデル
 # // 目的や内容: AttentionとFFNを組み合わせ、逆伝播・行列演算不使用のTransformerアーキテクチャ全体を提供します。多言語トークンをスパイクとして処理します。
 
-from sara_engine.core.bio_attention import BioSpikingSelfAttention
-from sara_engine.core.bio_layers import BioHomeostasis, BioSpikingFFN
+from ..core.bio_attention import BioSpikingSelfAttention
+from ..core.bio_layers import BioHomeostasis, BioSpikingFFN
 
 
 class BioSpikingTransformerBlock:

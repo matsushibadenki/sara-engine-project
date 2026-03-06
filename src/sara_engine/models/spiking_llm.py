@@ -11,9 +11,9 @@ import random
 from collections import defaultdict
 from typing import Any, Dict, List, Set, Tuple, Optional
 
-from sara_engine.core.transformer import LIFSpikeAttention
-from sara_engine.core.cortical_columns import SpikingCorticalColumns
-from sara_engine.utils.tokenizer import SaraTokenizer
+from ..core.transformer import LIFSpikeAttention
+from ..core.cortical_columns import SpikingCorticalColumns
+from ..utils.tokenizer import SaraTokenizer
 
 
 class SpikingLayerNorm:
@@ -199,7 +199,7 @@ class SpikingLLM:
             f"[SpikingLLM] Processing {total_tokens} tokens for delay-line direct wiring...")
 
         try:
-            from sara_engine import sara_rust_core
+            from .. import sara_rust_core
             print("[SpikingLLM] Utilizing Rust core for ultra-fast synaptic wiring...")
             rust_synapses = sara_rust_core.build_direct_synapses(
                 tokens, self.context_window)
@@ -355,36 +355,36 @@ class SpikingLLM:
         repetition_penalty: float = 1.2,
         **kwargs: Any,
     ) -> str | List[int]:
-        
+
         return_string = False
         if prompt is not None:
             prompt_words = self.tokenizer.split_text(prompt)
             prompt_tokens = []
             unk_word = None
             unk_id = self.tokenizer.vocab.get("<unk>", 1)
-            
+
             # 💡 修正点: 入力に未知語が含まれている場合、無視せずに検知して即時停止する
             for w in prompt_words:
                 if w not in self.tokenizer.vocab or self.tokenizer.vocab[w] == unk_id:
-                    if w.strip(): # 空白や改行以外の実質的な未知語
+                    if w.strip():  # 空白や改行以外の実質的な未知語
                         unk_word = w
                         break
                 prompt_tokens.append(self.tokenizer.vocab.get(w, unk_id))
-                
+
             return_string = True
-            
+
             if unk_word:
                 return f"（未知の単語「{unk_word}」が含まれているため、文脈を認識できません）" if return_string else []
-            
+
             if not prompt_tokens and prompt.strip():
                 return "（未知の入力スパイクです。記憶にありません）" if return_string else []
-                
+
         elif prompt_tokens is None:
             prompt_tokens = list(kwargs.get("input_spikes", []))
 
         max_new_tokens = int(kwargs.get("max_length", max_new_tokens))
         generated_sequence: List[int] = []
-        
+
         if not prompt_tokens:
             return "" if return_string else generated_sequence
 
@@ -392,7 +392,7 @@ class SpikingLLM:
             self.tokenizer.vocab[c] for c in self._PENALTY_EXEMPT_CHARS
             if c in self.tokenizer.vocab
         }
-        
+
         end_of_sentence_ids: Set[int] = {
             self.tokenizer.vocab[c] for c in ('。', '！', '？', '\n')
             if c in self.tokenizer.vocab
@@ -406,7 +406,7 @@ class SpikingLLM:
                 post = prompt_tokens[i+1]
                 if 1 in self.pretrained_synapses and pre in self.pretrained_synapses[1] and post in self.pretrained_synapses[1][pre]:
                     known_transitions += 1
-            
+
             if known_transitions == 0:
                 return "（知識ネットワークにこの文脈に続く概念が見つかりません。別の言葉で試してください）" if return_string else []
 
@@ -425,7 +425,7 @@ class SpikingLLM:
             for reversed_idx in range(len(active_recent)):
                 pre_token = active_recent[-(reversed_idx + 1)]
                 delay = reversed_idx + 1
-                
+
                 if delay in self.pretrained_synapses and pre_token in self.pretrained_synapses[delay]:
                     context_factor = 0.75 ** (delay - 1)
                     for post_token, weight in self.pretrained_synapses[delay][pre_token].items():
@@ -441,7 +441,8 @@ class SpikingLLM:
 
             # 💡 修正点: 最初の生成ステップで、複数文脈からの支持(hits>=2)が全く得られない場合は沈黙する
             if not generated_sequence and len(prompt_tokens) >= 2:
-                valid_hits = [len(votes[t]) for t in scores.keys() if t not in exempt_ids and t not in end_of_sentence_ids]
+                valid_hits = [len(votes[t]) for t in scores.keys(
+                ) if t not in exempt_ids and t not in end_of_sentence_ids]
                 max_hits = max(valid_hits) if valid_hits else 0
                 if max_hits < 2:
                     return "（この文脈に続く明確な知識ネットワークが形成されていません）" if return_string else []
@@ -506,7 +507,7 @@ class SpikingLLM:
             max_score = max(scores.values()) if scores else 0.0
             if max_score < 0.1:
                 break
-                
+
             threshold = max(max_score * 0.2, 0.2)
             for tok_id in list(scores.keys()):
                 if scores[tok_id] < threshold:
@@ -515,7 +516,8 @@ class SpikingLLM:
             if not scores:
                 break
 
-            sorted_candidates = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+            sorted_candidates = sorted(
+                scores.items(), key=lambda x: x[1], reverse=True)
             top_k_candidates = sorted_candidates[:top_k]
 
             if not top_k_candidates:
@@ -525,7 +527,8 @@ class SpikingLLM:
                 max_score_topk = top_k_candidates[0][1]
                 exp_scores = []
                 for tok_id, score in top_k_candidates:
-                    exp_val = math.exp((score - max_score_topk) / max(0.05, temperature))
+                    exp_val = math.exp(
+                        (score - max_score_topk) / max(0.05, temperature))
                     exp_scores.append((tok_id, exp_val))
 
                 sum_exp = sum(v for _, v in exp_scores)
@@ -552,7 +555,7 @@ class SpikingLLM:
 
             generated_sequence.append(best_id)
             context_tokens.append(best_id)
-            
+
             # 文末記号が出現した時点で、文章の生成を綺麗に終了する
             if best_id in end_of_sentence_ids:
                 break
@@ -565,7 +568,8 @@ class SpikingLLM:
         os.makedirs(save_directory, exist_ok=True)
         model_path = os.path.join(save_directory, "spiking_llm_weights.json")
 
-        self.tokenizer.model_path = os.path.join(save_directory, "sara_vocab.json")
+        self.tokenizer.model_path = os.path.join(
+            save_directory, "sara_vocab.json")
         self.tokenizer.save()
 
         serializable_synapses = {}
@@ -610,7 +614,8 @@ class SpikingLLM:
             instance.tokenizer.load()
         else:
             instance.tokenizer.vocab = data.get("char_to_id", {})
-            instance.tokenizer.id_to_token = {int(k): v for k, v in data.get("id_to_char", {}).items()}
+            instance.tokenizer.id_to_token = {
+                int(k): v for k, v in data.get("id_to_char", {}).items()}
             instance.tokenizer.next_id = data.get("next_id", 0)
 
         synapses = data.get("pretrained_synapses", {})

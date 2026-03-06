@@ -9,8 +9,8 @@ import json
 import pickle
 import random
 from typing import List, Optional, Dict, Tuple
-from sara_engine.nn.module import SNNModule
-from sara_engine.nn.predictive import SpikingPredictiveLayer
+from ..nn.module import SNNModule
+from ..nn.predictive import SpikingPredictiveLayer
 
 
 class StrongSpikingLMConfig:

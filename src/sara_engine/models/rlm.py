@@ -1,26 +1,27 @@
+from ..memory.sdr import SDREncoder
+from ..core.attention import SpikeAttention
+from ..core.layers import DynamicLiquidLayer
+import os
+import sys
+from collections import deque, OrderedDict
+from typing import List, Dict, Tuple, Any, Optional
+import re
+import pickle
+import numpy as np
 _FILE_INFO = {
     "//": "配置するディレクトリのパス: src/sara_engine/models/rlm.py",
     "//": "ファイルの日本語タイトル: 強化学習モジュール (Stateful RLM) - RLAnything実装版",
     "//": "ファイルの目的や内容: RLAnythingの「動的報酬モデル(Critic)」「方策のステップ学習」「自己カリキュラム(環境適応)」をSNNベースに統合。行列演算や誤差逆伝播法を完全排除。"
 }
 
-import numpy as np
-import pickle
-import re
-from typing import List, Dict, Tuple, Any, Optional
-from collections import deque, OrderedDict
-import sys
-import os
 
-# Mypy対応: 絶対インポートに変更
-from sara_engine.core.layers import DynamicLiquidLayer
-from sara_engine.core.attention import SpikeAttention
-from sara_engine.memory.sdr import SDREncoder
+# 相対インポートに変更（PyPI配布対応）
 
 try:
-    from sara_engine.memory.ltm import SparseMemoryStore
+    from ..memory.ltm import SparseMemoryStore
 except ImportError:
     pass
+
 
 class WorkingMemory:
     def __init__(self, capacity: int = 10, memory_size: int = 500):
@@ -29,65 +30,77 @@ class WorkingMemory:
         self.buffer: deque = deque(maxlen=capacity)
         self.wm_neurons = np.zeros(memory_size, dtype=np.float32)
         self.wm_decay = 0.95
-        
+
     def store(self, pattern: List[int], importance: float = 1.0):
-        self.buffer.append({'pattern': pattern[:100], 'importance': importance, 'age': 0})
+        self.buffer.append(
+            {'pattern': pattern[:100], 'importance': importance, 'age': 0})
         for idx in pattern:
             if idx < self.memory_size:
-                self.wm_neurons[idx] = min(self.wm_neurons[idx] + importance, 3.0)
-    
+                self.wm_neurons[idx] = min(
+                    self.wm_neurons[idx] + importance, 3.0)
+
     def get_context_spikes(self, threshold: float = 0.3) -> List[int]:
         active = np.where(self.wm_neurons > threshold)[0]
         return active.tolist()
-    
+
     def update(self):
         self.wm_neurons *= self.wm_decay
-        for item in self.buffer: item['age'] += 1
-    
+        for item in self.buffer:
+            item['age'] += 1
+
     def reset(self):
         self.buffer.clear()
         self.wm_neurons.fill(0)
+
 
 class StateNeuronGroup:
     def __init__(self, num_states: int = 5):
         self.num_states = num_states
         self.state_names = ["INIT", "SEARCH", "READ", "EXTRACT", "DONE"]
         self.activations = np.zeros(num_states, dtype=np.float32)
-        
+
         self.transition_matrix = np.eye(num_states, dtype=np.float32) * 0.2
         for i in range(num_states - 1):
             self.transition_matrix[i, i+1] = 0.6
         self.transition_matrix[num_states-1, num_states-1] = 1.0
-        
-        self.transition_matrix += np.random.uniform(0, 0.05, (num_states, num_states))
+
+        self.transition_matrix += np.random.uniform(
+            0, 0.05, (num_states, num_states))
         row_sums = self.transition_matrix.sum(axis=1, keepdims=True)
         self.transition_matrix /= row_sums
-        
-        self.current_state = 0 
+
+        self.current_state = 0
         self.activations[0] = 1.0
-        
+
     def update(self, input_strength: float = 0.0, context_strength: float = 0.0):
         probs = self.transition_matrix[self.current_state].copy()
         if input_strength > 0.1 and self.get_state_name() in ["INIT", "DONE"]:
             probs[self.state_names.index("SEARCH")] += 0.2
         noise = np.random.normal(0, 0.05, self.num_states)
         probs = np.maximum(0, probs + noise)
-        if probs.sum() > 0: probs /= probs.sum()
-        else: probs[self.current_state] = 1.0
+        if probs.sum() > 0:
+            probs /= probs.sum()
+        else:
+            probs[self.current_state] = 1.0
         next_state = int(np.argmax(probs))
         self.activations.fill(0)
         self.activations[next_state] = 1.0
         self.current_state = next_state
-        
+
     def learn_transition(self, prev_state_idx: int, current_state_idx: int, reward: float):
-        self.transition_matrix[prev_state_idx, current_state_idx] += 0.1 * reward
+        self.transition_matrix[prev_state_idx,
+                               current_state_idx] += 0.1 * reward
         self.transition_matrix = np.maximum(0, self.transition_matrix)
         row_sums = self.transition_matrix.sum(axis=1, keepdims=True)
         row_sums[row_sums == 0] = 1.0
         self.transition_matrix /= row_sums
 
-    def get_state_name(self) -> str: return self.state_names[self.current_state]
-    def get_state_index(self, name: str) -> int: return self.state_names.index(name) if name in self.state_names else -1
+    def get_state_name(
+        self) -> str: return self.state_names[self.current_state]
+
+    def get_state_index(self, name: str) -> int: return self.state_names.index(
+        name) if name in self.state_names else -1
+
     def set_state(self, state_name: str):
         if state_name in self.state_names:
             idx = self.state_names.index(state_name)
@@ -95,11 +108,13 @@ class StateNeuronGroup:
             self.activations[idx] = 1.0
             self.current_state = idx
 
+
 class DynamicRewardModel:
     """
     RLAnything論文における学習型報酬モデル（Critic）。
     行列演算・誤差逆伝播法を排除し、適格度トレースによる局所学習を行う。
     """
+
     def __init__(self, sdr_size: int):
         self.sdr_size = sdr_size
         self.weights = np.zeros(sdr_size, dtype=np.float32)
@@ -123,10 +138,12 @@ class DynamicRewardModel:
     def learn(self, td_error: float):
         for idx in range(self.sdr_size):
             if self.eligibility_trace[idx] > 0:
-                self.weights[idx] += self.lr * td_error * self.eligibility_trace[idx]
-        
+                self.weights[idx] += self.lr * \
+                    td_error * self.eligibility_trace[idx]
+
     def reset_traces(self):
         self.eligibility_trace.fill(0)
+
 
 class StatefulSaraGPT:
     def __init__(self, sdr_size: int = 1024):
@@ -134,42 +151,47 @@ class StatefulSaraGPT:
         self.encoder = SDREncoder(sdr_size, density=0.02)
         self.h_size = 2000
         self.total_hidden = self.h_size * 3
-        
-        self.l1 = DynamicLiquidLayer(sdr_size, self.h_size, decay=0.3, density=0.08, input_scale=2.0)
-        self.l2 = DynamicLiquidLayer(self.h_size, self.h_size, decay=0.6, density=0.08, input_scale=1.5)
-        self.l3 = DynamicLiquidLayer(self.h_size, self.h_size, decay=0.92, density=0.08, input_scale=1.2)
-        
+
+        self.l1 = DynamicLiquidLayer(
+            sdr_size, self.h_size, decay=0.3, density=0.08, input_scale=2.0)
+        self.l2 = DynamicLiquidLayer(
+            self.h_size, self.h_size, decay=0.6, density=0.08, input_scale=1.5)
+        self.l3 = DynamicLiquidLayer(
+            self.h_size, self.h_size, decay=0.92, density=0.08, input_scale=1.2)
+
         self.layers = [self.l1, self.l2, self.l3]
         self.offsets = [0, self.h_size, self.h_size * 2]
         self.prev_spikes: List[List[int]] = [[], [], []]
-        
-        self.attention = SpikeAttention(input_size=self.h_size, hidden_size=500, memory_size=60)
+
+        self.attention = SpikeAttention(
+            input_size=self.h_size, hidden_size=500, memory_size=60)
         self.attention_active = True
-        
+
         self.working_memory = WorkingMemory(capacity=10, memory_size=500)
         self.state_neurons = StateNeuronGroup(num_states=5)
         self.state_readout_weights: Dict[str, List[Dict[str, Any]]] = {}
-        
+
         for state in self.state_neurons.state_names:
             weights_list = []
             for _ in range(sdr_size):
                 fan_in = 600
-                max_idx = self.total_hidden + 500 
+                max_idx = self.total_hidden + 500
                 idx = np.random.choice(max_idx, fan_in, replace=False)
                 w = np.random.normal(0, 0.05, fan_in).astype(np.float32)
                 weights_list.append({'idx': idx, 'w': w})
             self.state_readout_weights[state] = weights_list
-            
+
         self.readout_v = np.zeros(sdr_size, dtype=np.float32)
         self.readout_decay = 0.85
         self.readout_thresh = 0.5
         self.readout_refractory = np.zeros(sdr_size, dtype=np.float32)
         self.step_counter = 0
-        
+
         self.reward_model = DynamicRewardModel(sdr_size)
 
     def reset_state(self):
-        for layer in self.layers: layer.reset()
+        for layer in self.layers:
+            layer.reset()
         self.attention.reset()
         self.working_memory.reset()
         self.state_neurons.set_state("INIT")
@@ -179,38 +201,42 @@ class StatefulSaraGPT:
         self.step_counter = 0
         self.reward_model.reset_traces()
 
-    def forward_step(self, input_sdr: List[int], training: bool = False, 
-                    force_output: bool = False) -> Tuple[List[int], List[int], str]:
-        
+    def forward_step(self, input_sdr: List[int], training: bool = False,
+                     force_output: bool = False) -> Tuple[List[int], List[int], str]:
+
         context_spikes = self.working_memory.get_context_spikes(threshold=0.4)
-        self.state_neurons.update(input_strength=len(input_sdr)/100.0, context_strength=len(context_spikes)/100.0)
+        self.state_neurons.update(input_strength=len(
+            input_sdr)/100.0, context_strength=len(context_spikes)/100.0)
         current_state_name = self.state_neurons.get_state_name()
-        
+
         combined_input = list(set(input_sdr + context_spikes))
-        
-        spikes_1 = self.l1.forward(active_inputs=combined_input, prev_active_hidden=self.prev_spikes[0], feedback_active=self.prev_spikes[1], learning=training)
-        spikes_2 = self.l2.forward(active_inputs=spikes_1, prev_active_hidden=self.prev_spikes[1], feedback_active=self.prev_spikes[2], learning=training)
-        
+
+        spikes_1 = self.l1.forward(
+            active_inputs=combined_input, prev_active_hidden=self.prev_spikes[0], feedback_active=self.prev_spikes[1], learning=training)
+        spikes_2 = self.l2.forward(
+            active_inputs=spikes_1, prev_active_hidden=self.prev_spikes[1], feedback_active=self.prev_spikes[2], learning=training)
+
         attn_signal = []
         if self.attention_active:
             attn_signal = self.attention.compute(spikes_2)
-        
-        spikes_3 = self.l3.forward(active_inputs=spikes_2, prev_active_hidden=self.prev_spikes[2], feedback_active=[], learning=training, attention_signal=attn_signal)
-        
+
+        spikes_3 = self.l3.forward(active_inputs=spikes_2, prev_active_hidden=self.prev_spikes[2], feedback_active=[
+        ], learning=training, attention_signal=attn_signal)
+
         self.prev_spikes = [spikes_1, spikes_2, spikes_3]
-        
+
         all_hidden_spikes = []
         all_hidden_spikes.extend(spikes_1)
         all_hidden_spikes.extend([x + self.offsets[1] for x in spikes_2])
         all_hidden_spikes.extend([x + self.offsets[2] for x in spikes_3])
-        
+
         wm_offset = self.total_hidden
         wm_readout_spikes = [x + wm_offset for x in context_spikes]
         readout_input_spikes = all_hidden_spikes + wm_readout_spikes
-        
+
         self.readout_v *= self.readout_decay
         self.readout_refractory = np.maximum(0, self.readout_refractory - 1)
-        
+
         if not training:
             noise = np.random.normal(0, 0.01, self.sdr_size).astype(np.float32)
             self.readout_v += noise
@@ -218,17 +244,19 @@ class StatefulSaraGPT:
         if len(readout_input_spikes) > 0:
             current_weights = self.state_readout_weights[current_state_name]
             for out_idx in range(self.sdr_size):
-                if self.readout_refractory[out_idx] > 0: continue
+                if self.readout_refractory[out_idx] > 0:
+                    continue
                 mapping = current_weights[out_idx]
                 indices = mapping['idx']
                 weights = mapping['w']
                 active_mask = np.isin(indices, readout_input_spikes)
                 if np.any(active_mask):
                     self.readout_v[out_idx] += np.sum(weights[active_mask])
-        
-        fired_mask = (self.readout_v > self.readout_thresh) & (self.readout_refractory <= 0)
+
+        fired_mask = (self.readout_v > self.readout_thresh) & (
+            self.readout_refractory <= 0)
         predicted_sdr = []
-        
+
         if np.any(fired_mask):
             candidates = np.where(fired_mask)[0]
             potentials = self.readout_v[candidates]
@@ -241,7 +269,7 @@ class StatefulSaraGPT:
             if not training:
                 self.readout_v[predicted_sdr] = 0
                 self.readout_refractory[predicted_sdr] = 3.0
-        
+
         if len(predicted_sdr) == 0 and force_output:
             if np.max(self.readout_v) > -999:
                 best_idx = np.argmax(self.readout_v)
@@ -249,16 +277,18 @@ class StatefulSaraGPT:
                 if not training:
                     self.readout_v[best_idx] = 0
                     self.readout_refractory[best_idx] = 3.0
-        
+
         if len(predicted_sdr) > 0:
             importance = 1.0
-            if current_state_name == "SEARCH": importance = 1.5
-            if current_state_name == "EXTRACT": importance = 2.0
+            if current_state_name == "SEARCH":
+                importance = 1.5
+            if current_state_name == "EXTRACT":
+                importance = 2.0
             self.working_memory.store(predicted_sdr, importance)
-            
+
         self.working_memory.update()
         self.step_counter += 1
-        
+
         return predicted_sdr, all_hidden_spikes, current_state_name
 
     def reinforce(self, trajectory: List[Dict[str, Any]], final_env_reward: float):
@@ -266,28 +296,29 @@ class StatefulSaraGPT:
         for step_data in trajectory:
             if 'spikes' in step_data:
                 active_spikes_in_episode.extend(step_data['spikes'])
-                
+
         unique_spikes = list(set(active_spikes_in_episode))
         predicted_value = self.reward_model.predict(unique_spikes)
         td_error = final_env_reward - predicted_value
-        
+
         self.reward_model.learn(td_error)
 
         gamma = 0.9
         running_reward = final_env_reward + td_error
-        
+
         for step_data in reversed(trajectory):
             state_name = step_data['state']
             next_state_name = step_data['next_state']
             step_reward = step_data.get('reward', 0.0)
-            
+
             intrinsic_reward = step_reward + (td_error * 0.1)
             running_reward = running_reward + intrinsic_reward
-            
+
             s_idx = self.state_neurons.get_state_index(state_name)
             ns_idx = self.state_neurons.get_state_index(next_state_name)
             if s_idx >= 0 and ns_idx >= 0:
-                self.state_neurons.learn_transition(s_idx, ns_idx, running_reward)
+                self.state_neurons.learn_transition(
+                    s_idx, ns_idx, running_reward)
             running_reward *= gamma
 
     def save_model(self, filepath: str):
@@ -300,44 +331,52 @@ class StatefulSaraGPT:
             'transition_matrix': self.state_neurons.transition_matrix,
             'reward_weights': self.reward_model.weights
         }
-        with open(filepath, 'wb') as f: pickle.dump(state, f)
+        with open(filepath, 'wb') as f:
+            pickle.dump(state, f)
 
     def load_model(self, filepath: str):
-        with open(filepath, 'rb') as f: state = pickle.load(f)
+        with open(filepath, 'rb') as f:
+            state = pickle.load(f)
         self.state_readout_weights = state['state_readout_weights']
-        if 'encoder_cache' in state: self.encoder.token_sdr_map = dict(state['encoder_cache'])
-        if 'transition_matrix' in state: self.state_neurons.transition_matrix = state['transition_matrix']
-        if 'reward_weights' in state: self.reward_model.weights = state['reward_weights']
+        if 'encoder_cache' in state:
+            self.encoder.token_sdr_map = dict(state['encoder_cache'])
+        if 'transition_matrix' in state:
+            self.state_neurons.transition_matrix = state['transition_matrix']
+        if 'reward_weights' in state:
+            self.reward_model.weights = state['reward_weights']
+
 
 class StatefulRLMAgent:
     def __init__(self, model_path: Optional[str] = None):
         self.brain = StatefulSaraGPT(sdr_size=1024)
         if model_path and os.path.exists(model_path):
             self.brain.load_model(model_path)
-        
+
         self.difficulty_level = 1.0
         self.ltm: Optional[Any] = None
         try:
-            from sara_engine.memory.ltm import SparseMemoryStore
+            from ..memory.ltm import SparseMemoryStore
             self.ltm = SparseMemoryStore(filepath="sara_ltm.pkl")
         except ImportError:
             pass
-            
+
     def solve(self, query: str, document: str = "", train_rl: bool = True) -> str:
         self.brain.reset_state()
         self.brain.working_memory.reset()
-        
+
         q_words = query.split()
         for w in q_words:
-            self.brain.working_memory.store(self.brain.encoder.encode(w), importance=2.0)
-            
+            self.brain.working_memory.store(
+                self.brain.encoder.encode(w), importance=2.0)
+
         current_chunk_size = max(20, int(100 / self.difficulty_level))
-        chunks = [document[i:i+current_chunk_size] for i in range(0, len(document), current_chunk_size)] if document else []
-        
+        chunks = [document[i:i+current_chunk_size]
+                  for i in range(0, len(document), current_chunk_size)] if document else []
+
         max_steps = 20
         current_chunk_idx = 0
         found_info = ""
-        
+
         trajectory: List[Dict[str, Any]] = []
         prev_state_name = "INIT"
         self.brain.state_neurons.set_state("INIT")
@@ -347,65 +386,72 @@ class StatefulRLMAgent:
                 visual_input_text = chunks[current_chunk_idx][:10]
             else:
                 visual_input_text = "END"
-            
+
             input_sdr = self.brain.encoder.encode(visual_input_text)
-            
+
             if self.difficulty_level > 1.5:
-                noise_count = int(len(input_sdr) * 0.1 * (self.difficulty_level - 1.0))
+                noise_count = int(len(input_sdr) * 0.1 *
+                                  (self.difficulty_level - 1.0))
                 for _ in range(noise_count):
                     random_idx = int(np.random.randint(0, self.brain.sdr_size))
                     if random_idx not in input_sdr:
                         input_sdr.append(random_idx)
-                        
+
             predicted_sdr, _, state_name = self.brain.forward_step(input_sdr)
-            
+
             self.brain.reward_model.update_traces(predicted_sdr)
-            
+
             if step > 0:
-                trajectory.append({'state': prev_state_name, 'next_state': state_name, 'step': step, 'spikes': predicted_sdr})
+                trajectory.append(
+                    {'state': prev_state_name, 'next_state': state_name, 'step': step, 'spikes': predicted_sdr})
             prev_state_name = state_name
-            
+
             if state_name == "SEARCH":
                 pass
-            
+
             elif state_name == "READ":
                 if chunks and current_chunk_idx < len(chunks):
                     pass
-            
+
             elif state_name == "EXTRACT":
                 if chunks and current_chunk_idx < len(chunks):
                     chunk_text = chunks[current_chunk_idx]
-                    
+
                     words = chunk_text.split()
                     query_words = set(query.split())
-                    stop_words = {"は", "の", "を", "に", "が", "と", "て", "で", "ます", "します", "です", "か", "？", "python_expert:", "rust_expert:", "biology:"}
-                    
-                    candidates = [w for w in words if w not in query_words and w not in stop_words]
-                    
+                    stop_words = {"は", "の", "を", "に", "が", "と", "て", "で", "ます", "します",
+                                  "です", "か", "？", "python_expert:", "rust_expert:", "biology:"}
+
+                    candidates = [
+                        w for w in words if w not in query_words and w not in stop_words]
+
                     if candidates:
                         found_info = "".join(candidates[:3])
                         self.brain.state_neurons.set_state("DONE")
                     else:
-                        current_chunk_idx = (current_chunk_idx + 1) % len(chunks)
+                        current_chunk_idx = (
+                            current_chunk_idx + 1) % len(chunks)
                 else:
                     current_chunk_idx = 0
                     self.brain.state_neurons.set_state("SEARCH")
-            
-            elif state_name == "DONE": break
-            
+
+            elif state_name == "DONE":
+                break
+
             if step > 8 and state_name == "INIT":
-                trajectory.append({'state': 'INIT', 'next_state': 'SEARCH', 'reward': -0.05, 'step': step, 'spikes': predicted_sdr})
+                trajectory.append({'state': 'INIT', 'next_state': 'SEARCH',
+                                  'reward': -0.05, 'step': step, 'spikes': predicted_sdr})
                 self.brain.state_neurons.set_state("SEARCH")
                 prev_state_name = "SEARCH"
 
         if train_rl:
             reward = 0.0
-            if found_info and found_info not in query: 
+            if found_info and found_info not in query:
                 reward = 1.0
                 self.difficulty_level = min(3.0, self.difficulty_level + 0.1)
-            else: 
+            else:
                 reward = -0.5
                 self.difficulty_level = max(1.0, self.difficulty_level - 0.2)
-                
+
             self.brain.reinforce(trajectory, reward)
         return found_info
