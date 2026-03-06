@@ -8,12 +8,66 @@ import os
 import sys
 import time
 import random
+import argparse
+import re
+from typing import List
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
 from src.sara_engine.utils.tokenizer import SaraTokenizer
 
-def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 1):
+def _is_noisy_line(line: str) -> bool:
+    text = line.strip()
+    if len(text) < 2:
+        return True
+
+    lowered = text.lower()
+    if "http://" in lowered or "https://" in lowered or ".pdf" in lowered:
+        return True
+
+    noise_symbols = set("{}[]<>|\\/@#$%^&*_+=~`")
+    noise_count = sum(1 for ch in text if ch in noise_symbols)
+    if noise_count / max(1, len(text)) > 0.18:
+        return True
+
+    if re.search(r"[A-Za-z]{6,}\d{2,}", text):
+        return True
+
+    return False
+
+
+def _build_chunks(
+    token_sequences: List[List[int]],
+    chunk_size: int,
+    stride: int,
+) -> List[List[int]]:
+    chunks: List[List[int]] = []
+    for seq in token_sequences:
+        if len(seq) < 2:
+            continue
+
+        if len(seq) <= chunk_size:
+            chunks.append(seq)
+            continue
+
+        last_start = len(seq) - chunk_size
+        for start in range(0, last_start + 1, stride):
+            chunks.append(seq[start:start + chunk_size])
+
+        if last_start % stride != 0:
+            chunks.append(seq[-chunk_size:])
+
+    return chunks
+
+
+def train_snn_language_model(
+    corpus_path: str,
+    save_dir: str,
+    epochs: int = 3,
+    chunk_size: int = 96,
+    stride: int = 24,
+    learn_epochs_per_chunk: int = 2,
+):
     print("=" * 60)
     print("SARA-Engine: SNN Language Model Pre-training (Subword-Level)")
     print("=" * 60)
@@ -24,24 +78,40 @@ def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 1):
 
     tokenizer = SaraTokenizer(vocab_size=4096)
     with open(corpus_path, "r", encoding="utf-8") as f:
-        text = f.read()
+        raw_lines = f.read().splitlines()
+
+    cleaned_lines = [line.strip() for line in raw_lines if not _is_noisy_line(line)]
+    if not cleaned_lines:
+        print("Error: No usable lines after cleaning.")
+        return
+
+    text = "\n".join(cleaned_lines)
+    print(f"Usable lines: {len(cleaned_lines)}/{len(raw_lines)}")
     
     print("Training tokenizer...")
     tokenizer.train([text])
-    
-    encoded_tokens = tokenizer.encode(text)
-    total_tokens = len(encoded_tokens)
+
+    eos_id = tokenizer.vocab.get("<eos>", 3)
+    token_sequences: List[List[int]] = []
+    total_tokens = 0
+    for line in cleaned_lines:
+        token_ids = tokenizer.encode(line)
+        if not token_ids:
+            continue
+        sequence = token_ids + [eos_id]
+        token_sequences.append(sequence)
+        total_tokens += len(sequence)
+
+    if not token_sequences:
+        print("Error: No tokenized sequences created.")
+        return
+
     print(f"Total tokens to process: {total_tokens}")
 
     config = SNNTransformerConfig(vocab_size=tokenizer.vocab_size)
     model = SpikingTransformerModel(config)
 
-    # 修正箇所: チャンクサイズを広げて、文脈の繋がりを長く学習させる
-    chunk_size = 128
-    stride = 32
-    chunks = []
-    for i in range(0, total_tokens - chunk_size, stride):
-        chunks.append(encoded_tokens[i:i + chunk_size])
+    chunks = _build_chunks(token_sequences, chunk_size=chunk_size, stride=stride)
     
     print(f"Total chunks created: {len(chunks)}")
 
@@ -53,7 +123,7 @@ def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 1):
         
         total_chunks = len(chunks)
         for i, chunk in enumerate(chunks):
-            model.learn_sequence(chunk)
+            model.learn_sequence(chunk, epochs=learn_epochs_per_chunk)
             
             if (i + 1) % 100 == 0 or i == total_chunks - 1:
                 progress = ((i + 1) / total_chunks) * 100
@@ -68,6 +138,20 @@ def train_snn_language_model(corpus_path: str, save_dir: str, epochs: int = 1):
     print("=" * 60)
 
 if __name__ == "__main__":
-    CORPUS_FILE = "data/processed/corpus.txt"
-    SAVE_DIRECTORY = "models/snn_lm_pretrained"
-    train_snn_language_model(corpus_path=CORPUS_FILE, save_dir=SAVE_DIRECTORY, epochs=1)
+    parser = argparse.ArgumentParser(description="Train SNN language model with cleaner corpus chunking.")
+    parser.add_argument("--corpus", default="data/processed/corpus.txt", help="Path to corpus text file.")
+    parser.add_argument("--save-dir", default="models/snn_lm_pretrained", help="Output directory for model/tokenizer.")
+    parser.add_argument("--epochs", type=int, default=3, help="Number of global training epochs.")
+    parser.add_argument("--chunk-size", type=int, default=96, help="Token chunk length.")
+    parser.add_argument("--stride", type=int, default=24, help="Stride for chunk sampling.")
+    parser.add_argument("--learn-epochs", type=int, default=2, help="Internal model.learn_sequence epochs per chunk.")
+    args = parser.parse_args()
+
+    train_snn_language_model(
+        corpus_path=args.corpus,
+        save_dir=args.save_dir,
+        epochs=max(1, args.epochs),
+        chunk_size=max(16, args.chunk_size),
+        stride=max(4, args.stride),
+        learn_epochs_per_chunk=max(1, args.learn_epochs),
+    )

@@ -55,7 +55,14 @@ class SpikingTransformerModel(nn.SNNModule):
             {} for _ in range(self.total_readout_size)]
 
         self.activity_tracker = NeuronActivityTracker()
-        self.scaling_manager = SynapticScalingManager(target_rate=0.05, scaling_lr=0.01)
+        self.scaling_manager = SynapticScalingManager(
+            target_rate=0.05,
+            scaling_lr=0.02,
+            min_scale=0.9,
+            max_scale=1.1,
+            deadband=0.03,
+            global_weight=0.35,
+        )
         self.neuron_type_manager = NeuronTypeManager(inhibitory_ratio=0.2)
         self.stp_manager = ShortTermPlasticityManager()
         self.structural_manager = StructuralPlasticityManager()
@@ -225,8 +232,13 @@ class SpikingTransformerModel(nn.SNNModule):
             if not learning:
                 pot = out_potentials.get(predicted_id, 0.0)
                 rate = self.activity_tracker.get_rate(predicted_id)
-                self.adaptive_thresholds[predicted_id] = max(
-                    pot * (1.3 + rate * 0.7), base_threshold + 1.0)
+                current_thr = self.adaptive_thresholds.get(
+                    predicted_id, base_threshold)
+                target_thr = max(base_threshold + 0.2, pot * (1.1 + rate * 0.5))
+                # 閾値を急激に跳ね上げず、EMAで滑らかに更新する
+                self.adaptive_thresholds[predicted_id] = (
+                    current_thr * 0.7 + target_thr * 0.3
+                )
                 
             self.activity_tracker.update(predicted_id, fired=True)
 
@@ -239,7 +251,11 @@ class SpikingTransformerModel(nn.SNNModule):
                         pre_id, predicted_id, strength, self.readout_synapses, self.neuron_type_manager, _SYNAPSE_MAX_WEIGHT)
 
                 current_rate = self.activity_tracker.get_rate(predicted_id)
-                scaling_factor = self.scaling_manager.compute_scaling_factor(current_rate)
+                population_rate = self.activity_tracker.get_global_rate()
+                scaling_factor = self.scaling_manager.compute_scaling_factor(
+                    current_rate=current_rate,
+                    population_rate=population_rate,
+                )
                 
                 if abs(1.0 - scaling_factor) > 0.005:
                     for s in readout_spikes:

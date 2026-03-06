@@ -6,12 +6,64 @@
 
 import os
 import sys
+import argparse
+import re
+from typing import List, Tuple
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.sara_engine.models.snn_transformer import SpikingTransformerModel
 from src.sara_engine.utils.tokenizer import SaraTokenizer
 
-def chat_loop(model_dir: str, debug_mode: bool = False):
+def _score_response(text: str) -> float:
+    stripped = text.strip()
+    if not stripped:
+        return -1e9
+
+    jp_count = sum(1 for ch in stripped if (
+        '\u3040' <= ch <= '\u30ff' or '\u4e00' <= ch <= '\u9fff'
+    ))
+    ascii_count = sum(1 for ch in stripped if ch.isascii() and ch.isalpha())
+    digit_count = sum(1 for ch in stripped if ch.isdigit())
+    noise_count = len(re.findall(r"[{}[\]<>|\\/@#$%^*_+=~`]", stripped))
+    line_breaks = stripped.count("\n")
+
+    score = float(jp_count) * 1.2
+    score -= float(ascii_count) * 0.5
+    score -= float(digit_count) * 0.2
+    score -= float(noise_count) * 1.5
+    score -= max(0, line_breaks - 2) * 3.0
+    if stripped[-1] in "。！？":
+        score += 3.0
+    if len(stripped) > 220:
+        score -= 2.0
+    return score
+
+
+def _clean_response(text: str, max_chars: int = 200) -> str:
+    if not text:
+        return text
+    normalized = re.sub(r"[ \t]+", " ", text).strip()
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    if len(normalized) > max_chars:
+        normalized = normalized[:max_chars].rstrip()
+        last_punc = max(normalized.rfind("。"), normalized.rfind("！"), normalized.rfind("？"))
+        if last_punc > 30:
+            normalized = normalized[:last_punc + 1]
+    return normalized.strip()
+
+
+def _decode_new_tokens(tokenizer: SaraTokenizer, generated_tokens: List[int], input_len: int) -> str:
+    new_tokens = generated_tokens[input_len:]
+    if not new_tokens:
+        return ""
+    return tokenizer.decode(new_tokens)
+
+
+def chat_loop(
+    model_dir: str,
+    debug_mode: bool = False,
+    max_length: int = 64,
+):
     print("=" * 60)
     print("SARA-Engine: SNN Language Model Inference (Subword-Level)")
     if debug_mode:
@@ -45,32 +97,43 @@ def chat_loop(model_dir: str, debug_mode: bool = False):
                 token_strs = [tokenizer.id_to_token.get(t, "?") for t in input_tokens]
                 print(f"  [DEBUG] Input tokens: {token_strs}")
 
-            # 無発話時は閾値を緩めて再試行し、沈黙を防ぐ
-            decode_source_tokens = []
-            debug_logs = []
-            for fire_threshold, temperature in [(0.4, 0.1), (0.3, 0.2), (0.2, 0.35)]:
+            retry_settings: List[Tuple[float, float, int]] = [
+                (0.55, 0.06, max_length),
+                (0.45, 0.12, int(max_length * 1.15)),
+                (0.35, 0.20, int(max_length * 1.30)),
+            ]
+
+            best_response = ""
+            best_score = -1e9
+            best_logs = []
+
+            for fire_threshold, temperature, retry_max_len in retry_settings:
                 generated_tokens, debug_logs = model.generate(
                     prompt=input_tokens,
-                    max_length=150,
+                    max_length=retry_max_len,
                     temperature=temperature,
                     fire_threshold=fire_threshold,
                     debug=debug_mode
                 )
-                new_generated_tokens = generated_tokens[len(input_tokens):]
-                if new_generated_tokens:
-                    decode_source_tokens = new_generated_tokens
-                    break
 
-            response_text = tokenizer.decode(decode_source_tokens)
+                response_text = _decode_new_tokens(tokenizer, generated_tokens, len(input_tokens))
+                cleaned_text = _clean_response(response_text)
+                score = _score_response(cleaned_text)
+                if score > best_score:
+                    best_score = score
+                    best_response = cleaned_text
+                    best_logs = debug_logs
+                if cleaned_text and cleaned_text.endswith(("。", "！", "？")) and score >= 10:
+                    break
             
             # 生成テキストが空の場合は「...」を表示
-            if not response_text.strip():
-                response_text = "..."
+            if not best_response.strip():
+                best_response = "..."
                 
-            print(f"SARA: {response_text}\n")
+            print(f"SARA: {best_response}\n")
 
-            if debug_mode and debug_logs:
-                last_log = debug_logs[-1]
+            if debug_mode and best_logs:
+                last_log = best_logs[-1]
                 if last_log.get("stop_reason"):
                     print(f"  [DEBUG] Stopped because: {last_log['stop_reason']}")
                 if last_log.get("top_k"):
@@ -83,6 +146,14 @@ def chat_loop(model_dir: str, debug_mode: bool = False):
             print(f"\nAn error occurred: {e}")
 
 if __name__ == "__main__":
-    SAVE_DIRECTORY = "models/snn_lm_pretrained"
-    ENABLE_DEBUG = True 
-    chat_loop(model_dir=SAVE_DIRECTORY, debug_mode=ENABLE_DEBUG)
+    parser = argparse.ArgumentParser(description="Interactive chat for SNN language model.")
+    parser.add_argument("--model-dir", default="models/snn_lm_pretrained", help="Directory of pretrained model.")
+    parser.add_argument("--debug", action="store_true", help="Enable debug output.")
+    parser.add_argument("--max-length", type=int, default=64, help="Base maximum length for generated tokens.")
+    args = parser.parse_args()
+
+    chat_loop(
+        model_dir=args.model_dir,
+        debug_mode=args.debug,
+        max_length=max(16, args.max_length),
+    )
