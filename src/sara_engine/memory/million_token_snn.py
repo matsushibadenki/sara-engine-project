@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/memory/million_token_snn.py",
-    "//": "タイトル: 100万トークン対応イベント駆動型SNNメモリ - 高速・高精度化版",
-    "//": "目的: STDP学習時にシナプス刈り込みとホメオスタシスを適用し、ネットワークのスパース性を維持して学習速度と連想精度を飛躍的に高める。"
-}
-
+# ディレクトリパス: src/sara_engine/memory/million_token_snn.py
+# タイトル: 100万トークン対応イベント駆動型SNNメモリ - 高速・高精度化版
+# 目的: STDP学習時にシナプス刈り込みとホメオスタシスを適用し、ネットワークのスパース性を維持して学習速度と連想精度を飛躍的に高める。
 import math
 from collections import defaultdict, deque
 import time

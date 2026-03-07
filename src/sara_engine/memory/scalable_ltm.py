@@ -1,14 +1,10 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import json
 import time
 import os
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/memory/scalable_ltm.py",
-    "//": "タイトル: 100万トークン対応 スケーラブル疎分散長期記憶 (Scalable LTM)",
-    "//": "目的: Rustコアを活用し、数百万トークン規模のSDRを高速かつ省メモリでファジー検索・連想する。ANN/Transformerの代替となるSNNアーキテクチャ。"
-}
-
-
+# ディレクトリパス: src/sara_engine/memory/scalable_ltm.py
+# タイトル: 100万トークン対応 スケーラブル疎分散長期記憶 (Scalable LTM)
+# 目的: Rustコアを活用し、数百万トークン規模のSDRを高速かつ省メモリでファジー検索・連想する。ANN/Transformerの代替となるSNNアーキテクチャ。
 try:
     from ..sara_rust_core import ScalableSDRMemory
 except ImportError:
@@ -75,7 +71,7 @@ class SNNMemoryModule:
                     "type": meta["type"]
                 })
 
-        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        _elapsed_ms = (time.perf_counter() - start_time) * 1000
         # ログは英語指定
         # print(f"[SNNMemoryModule] Recalled {len(results)} items in {elapsed_ms:.2f} ms.")
         return results

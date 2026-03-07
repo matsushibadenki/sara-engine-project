@@ -1,14 +1,10 @@
 from .layers import SpikeFeedForward, SpikeNormalization
 from .spike_attention import SpikeSelfAttention
-from typing import List, Dict, Optional, Union, Any
+from typing import List, Dict, Union, Any
 import json
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/transformer.py",
-    "//": "ファイルの日本語タイトル: スパイキング・トランスフォーマー",
-    "//": "ファイルの目的や内容: LIFモデルによるアテンション層を追加し、長文理解とRustコアの連携をサポートするTransformer代替モデル。"
-}
-
-
+# ディレクトリパス: src/sara_engine/core/transformer.py
+# ファイルの日本語タイトル: スパイキング・トランスフォーマー
+# ファイルの目的や内容: LIFモデルによるアテンション層を追加し、長文理解とRustコアの連携をサポートするTransformer代替モデル。
 try:
     from ..sara_rust_core import SpikeEngine
     HAS_RUST_CORE = True

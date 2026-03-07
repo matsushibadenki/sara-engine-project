@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/utils/sara_board.py",
-    "//": "ファイルの日本語タイトル: Sara-Board (TensorBoard代替)",
-    "//": "ファイルの目的や内容: SNNの内部動態（スパイクのラスタープロット、スカラー値）を記録し、外部依存なしで軽量なインタラクティブHTMLレポートを出力する可視化ツール。"
-}
-
+# ディレクトリパス: src/sara_engine/utils/sara_board.py
+# ファイルの日本語タイトル: Sara-Board (TensorBoard代替)
+# ファイルの目的や内容: SNNの内部動態（スパイクのラスタープロット、スカラー値）を記録し、外部依存なしで軽量なインタラクティブHTMLレポートを出力する可視化ツール。
 import os
 import json
 from typing import List, Dict, Any

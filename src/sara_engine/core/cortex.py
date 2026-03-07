@@ -1,11 +1,8 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/cortex.py",
-    "//": "タイトル: 大脳皮質 (Cortex)",
-    "//": "目的: CorticalColumnに欠落していた短期記憶リセット(reset_short_term_memory)メソッドを追加し、AttributeErrorを解消する。"
-}
-
+# ディレクトリパス: src/sara_engine/core/cortex.py
+# タイトル: 大脳皮質 (Cortex)
+# 目的: CorticalColumnに欠落していた短期記憶リセット(reset_short_term_memory)メソッドを追加し、AttributeErrorを解消する。
 import random
-from typing import List, Optional, Dict
+from typing import List, Dict
 
 class CortexLayer:
     """

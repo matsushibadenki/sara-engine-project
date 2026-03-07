@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/pooling.py",
-    "//": "ファイルの日本語タイトル: 階層的SDRプーリング層",
-    "//": "ファイルの目的や内容: 視覚や言語の階層的特徴抽出を行うための、局所スパイク統合・抽象化レイヤー。受容野(Receptive Fields)の概念を利用し、行列演算なしで自己組織化的に特徴を抽出する。"
-}
-
+# ディレクトリパス: src/sara_engine/nn/pooling.py
+# ファイルの日本語タイトル: 階層的SDRプーリング層
+# ファイルの目的や内容: 視覚や言語の階層的特徴抽出を行うための、局所スパイク統合・抽象化レイヤー。受容野(Receptive Fields)の概念を利用し、行列演算なしで自己組織化的に特徴を抽出する。
 from typing import List, Dict, Set
 import random
 from .module import SNNModule

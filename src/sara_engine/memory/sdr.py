@@ -5,13 +5,9 @@ import sys
 from typing import List, Dict, Set
 from collections import defaultdict
 import numpy as np
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/memory/sdr.py",
-    "//": "タイトル: 疎分散表現 (SDR) エンコーダ (意味ネットワーク & VSA統合版)",
-    "//": "目的: VSAの巡回シフト(Circular Shift)を用いた役割バインディング(Role Binding)を実装し、文法構造をSDRにエンコードする。"
-}
-
-
+# ディレクトリパス: src/sara_engine/memory/sdr.py
+# タイトル: 疎分散表現 (SDR) エンコーダ (意味ネットワーク & VSA統合版)
+# 目的: VSAの巡回シフト(Circular Shift)を用いた役割バインディング(Role Binding)を実装し、文法構造をSDRにエンコードする。
 # 相対インポートに変更
 try:
     from ..utils.tokenizer import SaraTokenizer

@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/memory/snn_vector_store.py",
-    "//": "ファイルの日本語タイトル: SNNベクトルストア",
-    "//": "ファイルの目的や内容: SNNから抽出された多次元ベクトルを保存・検索する。Transformersライクな save_pretrained と from_pretrained を実装し、知識ベースの永続化に対応。"
-}
-
+# ディレクトリパス: src/sara_engine/memory/snn_vector_store.py
+# ファイルの日本語タイトル: SNNベクトルストア
+# ファイルの目的や内容: SNNから抽出された多次元ベクトルを保存・検索する。Transformersライクな save_pretrained と from_pretrained を実装し、知識ベースの永続化に対応。
 import math
 import json
 import os

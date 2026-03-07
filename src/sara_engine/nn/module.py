@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/module.py",
-    "//": "ファイルの日本語タイトル: SNN基底モジュール (nn.Module代替)",
-    "//": "ファイルの目的や内容: PyTorchのnn.Moduleのように、SNNの層を直感的に組み合わせてネットワークを構築・管理するための基底クラス。動的状態の保存(state_dict)もサポートする。"
-}
-
+# ディレクトリパス: src/sara_engine/nn/module.py
+# ファイルの日本語タイトル: SNN基底モジュール (nn.Module代替)
+# ファイルの目的や内容: PyTorchのnn.Moduleのように、SNNの層を直感的に組み合わせてネットワークを構築・管理するための基底クラス。動的状態の保存(state_dict)もサポートする。
 import collections
 from typing import Dict, Any, List, Optional
 import copy

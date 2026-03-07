@@ -2,25 +2,14 @@ from ..memory.sdr import SDREncoder
 from ..core.attention import SpikeAttention
 from ..core.layers import DynamicLiquidLayer
 import os
-import sys
-from collections import deque, OrderedDict
+from collections import deque
 from typing import List, Dict, Tuple, Any, Optional
-import re
 import pickle
 import numpy as np
-_FILE_INFO = {
-    "//": "配置するディレクトリのパス: src/sara_engine/models/rlm.py",
-    "//": "ファイルの日本語タイトル: 強化学習モジュール (Stateful RLM) - RLAnything実装版",
-    "//": "ファイルの目的や内容: RLAnythingの「動的報酬モデル(Critic)」「方策のステップ学習」「自己カリキュラム(環境適応)」をSNNベースに統合。行列演算や誤差逆伝播法を完全排除。"
-}
-
-
+# 配置するディレクトリのパス: src/sara_engine/models/rlm.py
+# ファイルの日本語タイトル: 強化学習モジュール (Stateful RLM) - RLAnything実装版
+# ファイルの目的や内容: RLAnythingの「動的報酬モデル(Critic)」「方策のステップ学習」「自己カリキュラム(環境適応)」をSNNベースに統合。行列演算や誤差逆伝播法を完全排除。
 # 相対インポートに変更（PyPI配布対応）
-
-try:
-    from ..memory.ltm import SparseMemoryStore
-except ImportError:
-    pass
 
 
 class WorkingMemory:

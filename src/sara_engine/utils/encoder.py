@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/utils/encoder.py",
-    "//": "タイトル: ユニバーサル・スパイクエンコーダー",
-    "//": "目的: ROADMAP 3に基づき、様々なデータをスパイク列に変換するユーティリティ。行列演算なし。"
-}
-
+# ディレクトリパス: src/sara_engine/utils/encoder.py
+# タイトル: ユニバーサル・スパイクエンコーダー
+# 目的: ROADMAP 3に基づき、様々なデータをスパイク列に変換するユーティリティ。行列演算なし。
 import numpy as np
 from typing import List
 

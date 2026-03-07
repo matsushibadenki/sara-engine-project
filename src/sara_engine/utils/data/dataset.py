@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/utils/data/dataset.py",
-    "//": "ファイルの日本語タイトル: スパイクデータセット基底クラス",
-    "//": "ファイルの目的や内容: 従来の静的なバッチデータを、SNN向けの連続的なイベントストリーム（スパイク）に変換するための基底クラス群。"
-}
-
+# ディレクトリパス: src/sara_engine/utils/data/dataset.py
+# ファイルの日本語タイトル: スパイクデータセット基底クラス
+# ファイルの目的や内容: 従来の静的なバッチデータを、SNN向けの連続的なイベントストリーム（スパイク）に変換するための基底クラス群。
 from typing import Iterator, Tuple, List
 
 class SpikeDataset:

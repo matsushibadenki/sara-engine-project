@@ -4,13 +4,9 @@
 from typing import List, Optional, Dict, Any
 import random
 from ..learning.homeostasis import AdaptiveThresholdHomeostasis
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/layers.py",
-    "//": "ファイルの日本語タイトル: スパイキング・ニューラル・レイヤー",
-    "//": "ファイルの目的や内容: FFNでの過剰発火（てんかん状態）を防ぐためのゲイン調整と、推論時におけるk-WTA（勝者独占）ベースの正規化ロジックの導入。"
-}
-
-
+# ディレクトリパス: src/sara_engine/core/layers.py
+# ファイルの日本語タイトル: スパイキング・ニューラル・レイヤー
+# ファイルの目的や内容: FFNでの過剰発火（てんかん状態）を防ぐためのゲイン調整と、推論時におけるk-WTA（勝者独占）ベースの正規化ロジックの導入。
 try:
     from .. import sara_rust_core  # type: ignore
     RUST_AVAILABLE = True
@@ -86,10 +82,10 @@ class DynamicLiquidLayer:
     def load_state_dict(self, state: Dict[str, Any]):
         if not state:
             return
-        self.in_weights = [{int(k): float(v) for k, v in l.items()}
-                           for l in state["in_weights"]]
-        self.rec_weights = [{int(k): float(v) for k, v in l.items()}
-                            for l in state["rec_weights"]]
+        self.in_weights = [{int(k): float(v) for k, v in entry.items()}
+                           for entry in state["in_weights"]]
+        self.rec_weights = [{int(k): float(v) for k, v in entry.items()}
+                            for entry in state["rec_weights"]]
         self.dynamic_thresh = state["dynamic_thresh"]
         self.v = state.get("v", [0.0] * self.size)
         self.refractory = state.get("refractory", [0.0] * self.size)
@@ -233,10 +229,10 @@ class SpikeFeedForward:
         return {"w1": self.w1, "w2": self.w2}
 
     def load_state_dict(self, state: Dict[str, Any]):
-        self.w1 = [{int(k): float(v) for k, v in l.items()}
-                   for l in state["w1"]]
-        self.w2 = [{int(k): float(v) for k, v in l.items()}
-                   for l in state["w2"]]
+        self.w1 = [{int(k): float(v) for k, v in entry.items()}
+                   for entry in state["w1"]]
+        self.w2 = [{int(k): float(v) for k, v in entry.items()}
+                   for entry in state["w2"]]
 
     def _init_sparse_weights(self, in_dim: int, out_dim: int, density: float) -> List[Dict[int, float]]:
         weights: List[Dict[int, float]] = [{} for _ in range(in_dim)]

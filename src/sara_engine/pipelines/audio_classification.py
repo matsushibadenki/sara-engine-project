@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/audio_classification.py",
-    "//": "ファイルの日本語タイトル: 音声分類パイプライン",
-    "//": "ファイルの目的や内容: 生の音声波形(float配列)をSNNに入力し、カテゴリを推論・学習する。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/audio_classification.py
+# ファイルの日本語タイトル: 音声分類パイプライン
+# ファイルの目的や内容: 生の音声波形(float配列)をSNNに入力し、カテゴリを推論・学習する。
 from typing import Union, List, Dict, Any
 from .base import Pipeline
 

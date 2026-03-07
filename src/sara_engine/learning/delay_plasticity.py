@@ -4,8 +4,7 @@
 #     "//": "ファイルの目的や内容: シナプス伝達遅延（Delay）の自己組織化を管理する。スパイクの到着タイミングをポストニューロンの発火に同期させるように遅延時間を調整し、時系列パターンの学習能力を強化する。"
 # }
 
-import math
-from typing import Dict, List, Any
+from typing import Dict
 
 class SynapticDelayManager:
     """

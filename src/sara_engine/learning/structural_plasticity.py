@@ -2,7 +2,6 @@
 # 構造的可塑性モジュール
 # シナプスの生成・刈り込みを管理する
 
-from typing import Dict, Tuple
 
 
 class StructuralPlasticityManager:

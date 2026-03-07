@@ -4,8 +4,6 @@
 #     "//": "ファイルの目的や内容: 樹状突起ブランチの決定論的割り当てによる空間的加算（Spatial Summation）の修復と、高頻度語（記号・助詞）の暴走を抑えるためのLTD（長期抑圧）ペナルティの改善。"
 # }
 
-from ..core.spike_attention import SpikeMultiPathwayAttention
-from ..nn.attention import SpikeFuzzyAttention
 from ..learning.homeostasis import NeuronActivityTracker, SynapticScalingManager
 from ..learning.stp import ShortTermPlasticityManager
 from ..learning.structural_plasticity import StructuralPlasticityManager
@@ -22,7 +20,6 @@ from collections import Counter
 import operator
 import pickle
 import os
-import json
 import math
 
 # ---- 定数 ----------------------------------------------------------------

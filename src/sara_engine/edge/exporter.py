@@ -1,11 +1,8 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/edge/exporter.py",
-    "//": "ファイルの日本語タイトル: エッジ用モデルエクスポーター",
-    "//": "ファイルの目的や内容: 学習済みのSARAモデルからシナプス重みだけを抽出し、エッジデバイスで読み込める軽量なフォーマットにシリアライズする。"
-}
-
+# ディレクトリパス: src/sara_engine/edge/exporter.py
+# ファイルの日本語タイトル: エッジ用モデルエクスポーター
+# ファイルの目的や内容: 学習済みのSARAモデルからシナプス重みだけを抽出し、エッジデバイスで読み込める軽量なフォーマットにシリアライズする。
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 def export_for_edge(model: Any, filepath: str) -> None:
     """

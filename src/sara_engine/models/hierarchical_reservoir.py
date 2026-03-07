@@ -4,9 +4,7 @@
 #     "//": "ファイルの目的や内容: 階層ごとに異なる神経振動（リズム）を適用。上位層のTheta波が下位層のゲートを制御するCommunication Through Coherenceを実装し、情報の階層的な結合能力を強化。"
 # }
 
-import random
-import math
-from typing import List, Dict
+from typing import List
 from .liquid_reservoir import LiquidReservoir
 from ..dynamics.oscillation import OscillationManager
 

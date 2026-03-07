@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/linear_spike.py",
-    "//": "ファイルの日本語タイトル: スパイキング全結合層",
-    "//": "ファイルの目的や内容: SNNModuleを継承した、STDP学習付きの疎結合スパイキング線形層。スパイク消失と全発火のバランスを取るよう重みと閾値を調整。"
-}
-
+# ディレクトリパス: src/sara_engine/nn/linear_spike.py
+# ファイルの日本語タイトル: スパイキング全結合層
+# ファイルの目的や内容: SNNModuleを継承した、STDP学習付きの疎結合スパイキング線形層。スパイク消失と全発火のバランスを取るよう重みと閾値を調整。
 import random
 from typing import List, Dict
 from .module import SNNModule

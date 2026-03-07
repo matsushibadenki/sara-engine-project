@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/multimodal.py",
-    "//": "ファイルの日本語タイトル: マルチモーダル連合学習層",
-    "//": "ファイルの目的や内容: 異なる感覚（テキスト、画像等）からのスパイクを同期させ、STDPによって相関を学習することで、クロスモーダルな想起を可能にするモジュール。忘却(Decay)と刈り込み(Pruning)による長期安定稼働をサポート。"
-}
-
+# ディレクトリパス: src/sara_engine/nn/multimodal.py
+# ファイルの日本語タイトル: マルチモーダル連合学習層
+# ファイルの目的や内容: 異なる感覚（テキスト、画像等）からのスパイクを同期させ、STDPによって相関を学習することで、クロスモーダルな想起を可能にするモジュール。忘却(Decay)と刈り込み(Pruning)による長期安定稼働をサポート。
 from typing import List, Dict, Optional
 from .module import SNNModule
 

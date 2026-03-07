@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/sequential.py",
-    "//": "ファイルの日本語タイトル: シーケンシャル・コンテナ",
-    "//": "ファイルの目的や内容: PyTorchのnn.Sequentialに相当し、複数のSNNモジュールを直列に繋いで順伝播させるコンテナクラス。"
-}
-
+# ディレクトリパス: src/sara_engine/nn/sequential.py
+# ファイルの日本語タイトル: シーケンシャル・コンテナ
+# ファイルの目的や内容: PyTorchのnn.Sequentialに相当し、複数のSNNモジュールを直列に繋いで順伝播させるコンテナクラス。
 import inspect
 from .module import SNNModule
 

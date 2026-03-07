@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/normalization.py",
-    "//": "タイトル: Spike Intrinsic Plasticity (SNN版 Layer Normalization)",
-    "//": "目的: 標準リストで各ニューロンの発火率を追跡し、閾値調整によるホメオスタシスを実現する。"
-}
-
+# ディレクトリパス: src/sara_engine/core/normalization.py
+# タイトル: Spike Intrinsic Plasticity (SNN版 Layer Normalization)
+# 目的: 標準リストで各ニューロンの発火率を追跡し、閾値調整によるホメオスタシスを実現する。
 import random
 from typing import List
 

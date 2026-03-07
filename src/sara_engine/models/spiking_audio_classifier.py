@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/spiking_audio_classifier.py",
-    "//": "ファイルの日本語タイトル: スパイキング・音声分類器",
-    "//": "ファイルの目的や内容: フーリエ変換(FFT)や行列演算を一切使わず、生物の蝸牛(耳)を模倣。波形のゼロ交差発火とスパイク間隔(ISI)だけで音声の周波数を学習する。"
-}
-
+# ディレクトリパス: src/sara_engine/models/spiking_audio_classifier.py
+# ファイルの日本語タイトル: スパイキング・音声分類器
+# ファイルの目的や内容: フーリエ変換(FFT)や行列演算を一切使わず、生物の蝸牛(耳)を模倣。波形のゼロ交差発火とスパイク間隔(ISI)だけで音声の周波数を学習する。
 import json
 import os
 import random

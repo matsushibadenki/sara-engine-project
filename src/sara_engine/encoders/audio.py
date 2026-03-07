@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/encoders/audio.py",
-    "//": "タイトル: 聴覚SDRエンコーダ",
-    "//": "目的: 音声の周波数スペクトルを直接SDRへマッピングする。ImportError修正のためクラス名を変更。"
-}
-
+# ディレクトリパス: src/sara_engine/encoders/audio.py
+# タイトル: 聴覚SDRエンコーダ
+# 目的: 音声の周波数スペクトルを直接SDRへマッピングする。ImportError修正のためクラス名を変更。
 import numpy as np
 from typing import List
 

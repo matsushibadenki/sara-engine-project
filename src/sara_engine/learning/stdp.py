@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/learning/stdp.py",
-    "//": "ファイルの日本語タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー",
-    "//": "ファイルの目的や内容: 想起フラグの確実な伝播と、物理的な膜電位加算による想起能力の最大化。Soft-bound STDPとReward-Modulated STDPの導入による学習精度と安定性の向上。"
-}
-
+# ディレクトリパス: src/sara_engine/learning/stdp.py
+# ファイルの日本語タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー
+# ファイルの目的や内容: 想起フラグの確実な伝播と、物理的な膜電位加算による想起能力の最大化。Soft-bound STDPとReward-Modulated STDPの導入による学習精度と安定性の向上。
 import random
 
 class STDPLayer:

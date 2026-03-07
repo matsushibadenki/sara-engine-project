@@ -1,12 +1,9 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/utils/visualizer.py",
-    "//": "タイトル: SARA可視化ツールキット",
-    "//": "目的: スパイク、膜電位、アテンション、および物理状態(NeuroFEM)の可視化機能を提供するユーティリティ。"
-}
-
+# ディレクトリパス: src/sara_engine/utils/visualizer.py
+# タイトル: SARA可視化ツールキット
+# 目的: スパイク、膜電位、アテンション、および物理状態(NeuroFEM)の可視化機能を提供するユーティリティ。
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List, Optional
+from typing import List
 import os
 
 class SaraVisualizer:

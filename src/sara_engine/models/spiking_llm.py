@@ -9,7 +9,7 @@ import json
 import math
 import random
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple, Optional
+from typing import Any, Dict, Iterator, List, Set, Tuple, Optional
 
 from ..core.transformer import LIFSpikeAttention
 from ..core.cortical_columns import SpikingCorticalColumns
@@ -348,60 +348,363 @@ class SpikingLLM:
             return False
         return all(ord(c) < 128 for c in char) and char not in ('\n', '。', '、')
 
+    def _sync_vocab_size_with_tokenizer(self) -> None:
+        tokenizer_size = max(
+            int(getattr(self.tokenizer, "next_id", 0)),
+            max(self.tokenizer.id_to_token.keys(), default=-1) + 1,
+        )
+        if tokenizer_size > self.vocab_size:
+            self.vocab_size = tokenizer_size
+
+    def _prepare_prompt_tokens(
+        self,
+        prompt: Optional[str] = None,
+        prompt_tokens: Optional[List[int]] = None,
+        input_spikes: Optional[List[int]] = None,
+    ) -> Tuple[List[int], bool, Optional[str]]:
+        if prompt is not None:
+            self._sync_vocab_size_with_tokenizer()
+            prompt_words = self.tokenizer.split_text(prompt)
+            prepared_tokens: List[int] = []
+
+            for word in prompt_words:
+                if not word:
+                    continue
+                token_id = self.tokenizer.vocab.get(word)
+                if token_id is not None:
+                    prepared_tokens.append(token_id)
+                    continue
+
+                subwords = self.tokenizer._tokenize_word(word)
+                known_subwords = [
+                    self.tokenizer.vocab[subword]
+                    for subword in subwords
+                    if subword in self.tokenizer.vocab
+                ]
+                if len(known_subwords) == len(subwords) and known_subwords:
+                    prepared_tokens.extend(known_subwords)
+                    continue
+
+                if word.strip():
+                    dynamic_id = self.tokenizer._add_token(word)
+                    if dynamic_id >= self.vocab_size:
+                        self.vocab_size = dynamic_id + 1
+                    prepared_tokens.append(dynamic_id)
+
+            if not prepared_tokens and prompt.strip():
+                return [], True, "（未知の入力スパイクです。記憶にありません）"
+
+            if prepared_tokens and max(prepared_tokens) >= self.vocab_size:
+                self.vocab_size = max(prepared_tokens) + 1
+
+            return prepared_tokens, True, None
+
+        if prompt_tokens is not None:
+            return list(prompt_tokens), False, None
+
+        if input_spikes is not None:
+            return list(input_spikes), False, None
+
+        return [], False, None
+
+    def _candidate_metadata(
+        self,
+        tok_id: int,
+        score: float,
+        max_score: float,
+        votes: Dict[int, List[int]],
+    ) -> Dict[str, Any]:
+        return {
+            "token_id": int(tok_id),
+            "token": self.tokenizer.id_to_token.get(int(tok_id), ""),
+            "score": float(score),
+            "confidence": float(score / max_score) if max_score > 0 else 0.0,
+            "supporting_delays": sorted(votes.get(tok_id, [])),
+            "support_count": len(votes.get(tok_id, [])),
+        }
+
+    def _score_next_tokens(
+        self,
+        context_tokens: List[int],
+        repetition_penalty: float = 1.2,
+        fatigue: Optional[AdaptiveThresholdHomeostasis] = None,
+        suppress_initial_symbols: bool = True,
+        presence_penalty: float = 0.0,
+        frequency_penalty: float = 0.0,
+    ) -> Tuple[List[Dict[str, Any]], bool]:
+        if not context_tokens:
+            return [], False
+        self._sync_vocab_size_with_tokenizer()
+
+        exempt_ids: Set[int] = {
+            self.tokenizer.vocab[c] for c in self._PENALTY_EXEMPT_CHARS
+            if c in self.tokenizer.vocab
+        }
+        end_of_sentence_ids: Set[int] = {
+            self.tokenizer.vocab[c] for c in ('。', '！', '？', '\n')
+            if c in self.tokenizer.vocab
+        }
+        recent_window = max(self.context_window, 20)
+        if fatigue is None:
+            fatigue = AdaptiveThresholdHomeostasis(
+                target_rate=1.0 / max(4.0, float(recent_window)),
+                adaptation_rate=0.35,
+                decay=0.8,
+                min_threshold=0.0,
+                max_threshold=4.0,
+                global_weight=0.0,
+            )
+        fatigue.update([], population_size=self.vocab_size)
+
+        scores: Dict[int, float] = defaultdict(float)
+        votes: Dict[int, List[int]] = defaultdict(list)
+        active_recent = context_tokens[-self.context_window:]
+
+        for reversed_idx in range(len(active_recent)):
+            pre_token = active_recent[-(reversed_idx + 1)]
+            delay = reversed_idx + 1
+
+            if delay in self.pretrained_synapses and pre_token in self.pretrained_synapses[delay]:
+                context_factor = 0.75 ** (delay - 1)
+                for post_token, weight in self.pretrained_synapses[delay][pre_token].items():
+                    if post_token < self.vocab_size:
+                        scores[post_token] += weight * context_factor
+                        votes[post_token].append(delay)
+
+        for tok_id in list(scores.keys()):
+            hits = len(votes[tok_id])
+            if hits > 1:
+                scores[tok_id] *= (3.0 ** (hits - 1))
+
+        should_block = False
+        if len(context_tokens) >= 2:
+            valid_hits = [
+                len(votes[tok_id]) for tok_id in scores.keys()
+                if tok_id not in exempt_ids and tok_id not in end_of_sentence_ids
+            ]
+            should_block = (max(valid_hits) if valid_hits else 0) < 2
+
+        sdr_context = context_tokens[-min(5, len(context_tokens)):]
+        current_spikes = self._encode_to_sdr(sdr_context)
+        recalled, confidence = self.recall(self._sdr_key(current_spikes), threshold=0.75)
+        if recalled is not None:
+            for tok_id, count in recalled.items():
+                if tok_id < self.vocab_size:
+                    scores[tok_id] += count * confidence * 2.0
+
+        if suppress_initial_symbols:
+            for pid in exempt_ids:
+                if pid in scores:
+                    scores[pid] = 0.0
+
+        for tok_id in list(scores.keys()):
+            strength = 0.1 if tok_id in exempt_ids else 0.8
+            scores[tok_id] = fatigue.modulate(tok_id, scores[tok_id], strength=strength)
+
+        for ngram_len in (2, 3, 4, 5, 6):
+            if len(context_tokens) >= ngram_len:
+                tail = tuple(context_tokens[-ngram_len:])
+                for idx in range(len(context_tokens) - ngram_len):
+                    if tuple(context_tokens[idx:idx + ngram_len]) == tail and idx + ngram_len < len(context_tokens):
+                        repeat_tok = context_tokens[idx + ngram_len]
+                        if repeat_tok in scores:
+                            scores[repeat_tok] = 0.0
+
+        recent_generated = context_tokens[-recent_window:]
+        recent_counts: Dict[int, int] = defaultdict(int)
+        for tok in recent_generated:
+            recent_counts[tok] += 1
+
+        for tok_id in list(scores.keys()):
+            if self._is_ascii_char(tok_id):
+                scores[tok_id] *= 0.1
+            if tok_id in recent_counts and tok_id not in exempt_ids:
+                scores[tok_id] /= repetition_penalty ** recent_counts[tok_id]
+                scores[tok_id] /= (1.0 + max(0.0, presence_penalty))
+                scores[tok_id] /= (1.0 + max(0.0, frequency_penalty) * recent_counts[tok_id])
+
+        max_score = max(scores.values()) if scores else 0.0
+        if max_score < 0.1:
+            return [], should_block
+
+        threshold = max(max_score * 0.2, 0.2)
+        filtered = [
+            self._candidate_metadata(tok_id, score, max_score, votes)
+            for tok_id, score in sorted(scores.items(), key=lambda item: item[1], reverse=True)
+            if score >= threshold
+        ]
+        return filtered, should_block
+
+    def predict_next_tokens(
+        self,
+        prompt: Optional[str] = None,
+        prompt_tokens: Optional[List[int]] = None,
+        top_k: int = 5,
+        repetition_penalty: float = 1.2,
+        presence_penalty: float = 0.0,
+        frequency_penalty: float = 0.0,
+        **kwargs: Any,
+    ) -> List[Dict[str, Any]]:
+        prepared_tokens, _return_string, error_message = self._prepare_prompt_tokens(
+            prompt=prompt,
+            prompt_tokens=prompt_tokens,
+            input_spikes=kwargs.get("input_spikes"),
+        )
+        if error_message or not prepared_tokens:
+            return []
+
+        if len(prepared_tokens) >= 2:
+            known_transitions = 0
+            for idx in range(len(prepared_tokens) - 1):
+                pre = prepared_tokens[idx]
+                post = prepared_tokens[idx + 1]
+                if 1 in self.pretrained_synapses and pre in self.pretrained_synapses[1] and post in self.pretrained_synapses[1][pre]:
+                    known_transitions += 1
+            if known_transitions == 0:
+                return []
+
+        candidates, should_block = self._score_next_tokens(
+            prepared_tokens,
+            repetition_penalty=repetition_penalty,
+            presence_penalty=presence_penalty,
+            frequency_penalty=frequency_penalty,
+        )
+        return candidates[:max(1, int(top_k))]
+
+    def generate_stream(
+        self,
+        prompt: Optional[str] = None,
+        prompt_tokens: Optional[List[int]] = None,
+        max_new_tokens: int = 50,
+        top_k: int = 5,
+        top_p: float = 1.0,
+        temperature: float = 0.3,
+        repetition_penalty: float = 1.2,
+        presence_penalty: float = 0.0,
+        frequency_penalty: float = 0.0,
+        stop_conditions: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> Iterator[Dict[str, Any]]:
+        prepared_tokens, _return_string, error_message = self._prepare_prompt_tokens(
+            prompt=prompt,
+            prompt_tokens=prompt_tokens,
+            input_spikes=kwargs.get("input_spikes"),
+        )
+        if error_message or not prepared_tokens:
+            return
+
+        context_tokens = list(prepared_tokens)
+        generated_sequence: List[int] = []
+        generated_text = ""
+        end_of_sentence_ids: Set[int] = {
+            self.tokenizer.vocab[c] for c in ('。', '！', '？', '\n')
+            if c in self.tokenizer.vocab
+        }
+        if stop_conditions is None:
+            stop_conditions = []
+        recent_window = max(self.context_window, 20)
+        fatigue = AdaptiveThresholdHomeostasis(
+            target_rate=1.0 / max(4.0, float(recent_window)),
+            adaptation_rate=0.35,
+            decay=0.8,
+            min_threshold=0.0,
+            max_threshold=4.0,
+            global_weight=0.0,
+        )
+
+        for step in range(max_new_tokens):
+            candidates, should_block = self._score_next_tokens(
+                context_tokens,
+                repetition_penalty=repetition_penalty,
+                fatigue=fatigue,
+                suppress_initial_symbols=(step == 0),
+                presence_penalty=presence_penalty,
+                frequency_penalty=frequency_penalty,
+            )
+            if not candidates:
+                break
+
+            top_k_candidates = candidates[:max(1, int(top_k))]
+            if temperature > 0.0 and len(top_k_candidates) > 1:
+                max_score = top_k_candidates[0]["score"]
+                exp_scores = []
+                for candidate in top_k_candidates:
+                    exp_val = math.exp(
+                        (candidate["score"] - max_score) / max(0.05, temperature)
+                    )
+                    exp_scores.append((candidate, exp_val))
+
+                ranked = sorted(exp_scores, key=lambda item: item[1], reverse=True)
+                if 0.0 < top_p < 1.0:
+                    total_mass = sum(val for _, val in ranked)
+                    cutoff: List[Tuple[Dict[str, Any], float]] = []
+                    cumulative = 0.0
+                    for candidate, exp_val in ranked:
+                        cutoff.append((candidate, exp_val))
+                        cumulative += exp_val / total_mass if total_mass > 0 else 0.0
+                        if cumulative >= top_p:
+                            break
+                    ranked = cutoff
+
+                total = sum(val for _, val in ranked)
+                chosen = ranked[0][0]
+                if total > 0:
+                    threshold = random.random()
+                    cumulative = 0.0
+                    for candidate, exp_val in ranked:
+                        cumulative += exp_val / total
+                        if threshold <= cumulative:
+                            chosen = candidate
+                            break
+            else:
+                chosen = top_k_candidates[0]
+
+            token_id = int(chosen["token_id"])
+            fatigue.update([token_id], population_size=self.vocab_size)
+            generated_sequence.append(token_id)
+            context_tokens.append(token_id)
+            token_text = self.decode_text([token_id])
+            generated_text += token_text
+
+            yield {
+                "token_id": token_id,
+                "token": chosen["token"],
+                "text": token_text,
+                "score": chosen["score"],
+                "confidence": chosen["confidence"],
+                "step": step,
+                "candidates": top_k_candidates,
+                "generated_tokens": list(generated_sequence),
+            }
+
+            if any(generated_text.endswith(stop_text) for stop_text in stop_conditions):
+                break
+            if token_id in end_of_sentence_ids:
+                break
+
     def generate(
         self,
         prompt: Optional[str] = None,
         prompt_tokens: Optional[List[int]] = None,
         max_new_tokens: int = 50,
         top_k: int = 5,
+        top_p: float = 1.0,
         temperature: float = 0.3,
         repetition_penalty: float = 1.2,
         **kwargs: Any,
     ) -> str | List[int]:
-
-        return_string = False
-        if prompt is not None:
-            prompt_words = self.tokenizer.split_text(prompt)
-            prompt_tokens = []
-            unk_word = None
-            unk_id = self.tokenizer.vocab.get("<unk>", 1)
-
-            # 💡 修正点: 入力に未知語が含まれている場合、無視せずに検知して即時停止する
-            for w in prompt_words:
-                if w not in self.tokenizer.vocab or self.tokenizer.vocab[w] == unk_id:
-                    if w.strip():  # 空白や改行以外の実質的な未知語
-                        unk_word = w
-                        break
-                prompt_tokens.append(self.tokenizer.vocab.get(w, unk_id))
-
-            return_string = True
-
-            if unk_word:
-                return f"（未知の単語「{unk_word}」が含まれているため、文脈を認識できません）" if return_string else []
-
-            if not prompt_tokens and prompt.strip():
-                return "（未知の入力スパイクです。記憶にありません）" if return_string else []
-
-        elif prompt_tokens is None:
-            prompt_tokens = list(kwargs.get("input_spikes", []))
+        prompt_tokens, return_string, error_message = self._prepare_prompt_tokens(
+            prompt=prompt,
+            prompt_tokens=prompt_tokens,
+            input_spikes=kwargs.get("input_spikes"),
+        )
+        if error_message:
+            return error_message if return_string else []
 
         max_new_tokens = int(kwargs.get("max_length", max_new_tokens))
-        generated_sequence: List[int] = []
-
         if not prompt_tokens:
-            return "" if return_string else generated_sequence
+            return "" if return_string else []
 
-        exempt_ids: Set[int] = {
-            self.tokenizer.vocab[c] for c in self._PENALTY_EXEMPT_CHARS
-            if c in self.tokenizer.vocab
-        }
-
-        end_of_sentence_ids: Set[int] = {
-            self.tokenizer.vocab[c] for c in ('。', '！', '？', '\n')
-            if c in self.tokenizer.vocab
-        }
-
-        # 💡 修正点: 知っている単語同士でも、コーパス内で繋がったことがない文脈なら推論を停止する
         if len(prompt_tokens) >= 2:
             known_transitions = 0
             for i in range(len(prompt_tokens) - 1):
@@ -413,155 +716,29 @@ class SpikingLLM:
             if known_transitions == 0:
                 return "（知識ネットワークにこの文脈に続く概念が見つかりません。別の言葉で試してください）" if return_string else []
 
-        context_tokens: List[int] = list(prompt_tokens)
-        recent_window = max(self.context_window, 20)
+        stream = list(self.generate_stream(
+            prompt_tokens=prompt_tokens,
+            max_new_tokens=max_new_tokens,
+            top_k=top_k,
+            top_p=float(kwargs.get("top_p", top_p)),
+            temperature=temperature,
+            repetition_penalty=repetition_penalty,
+            presence_penalty=float(kwargs.get("presence_penalty", 0.0)),
+            frequency_penalty=float(kwargs.get("frequency_penalty", 0.0)),
+            stop_conditions=kwargs.get("stop_conditions"),
+            **kwargs,
+        ))
+        generated_sequence = [int(item["token_id"]) for item in stream]
 
-        fatigue = AdaptiveThresholdHomeostasis(
-            target_rate=1.0 / max(4.0, float(recent_window)),
-            adaptation_rate=0.35,
-            decay=0.8,
-            min_threshold=0.0,
-            max_threshold=4.0,
-            global_weight=0.0,
-        )
-
-        for _t in range(max_new_tokens):
-            fatigue.update([], population_size=self.vocab_size)
-            scores: Dict[int, float] = defaultdict(float)
-            votes: Dict[int, List[int]] = defaultdict(list)
-
-            active_recent = context_tokens[-self.context_window:]
-
-            # === 1. Direct Wiring (遅延シナプス) ===
-            for reversed_idx in range(len(active_recent)):
-                pre_token = active_recent[-(reversed_idx + 1)]
-                delay = reversed_idx + 1
-
-                if delay in self.pretrained_synapses and pre_token in self.pretrained_synapses[delay]:
-                    context_factor = 0.75 ** (delay - 1)
-                    for post_token, weight in self.pretrained_synapses[delay][pre_token].items():
-                        if post_token < self.vocab_size:
-                            scores[post_token] += weight * context_factor
-                            votes[post_token].append(delay)
-
-            # === 2. 樹状突起での同時発火検出 (Coincidence Detection) ===
-            for tok_id in list(scores.keys()):
-                hits = len(votes[tok_id])
-                if hits > 1:
-                    scores[tok_id] *= (3.0 ** (hits - 1))
-
-            # 💡 修正点: 最初の生成ステップで、複数文脈からの支持(hits>=2)が全く得られない場合は沈黙する
-            if not generated_sequence and len(prompt_tokens) >= 2:
-                valid_hits = [len(votes[t]) for t in scores.keys(
-                ) if t not in exempt_ids and t not in end_of_sentence_ids]
-                max_hits = max(valid_hits) if valid_hits else 0
-                if max_hits < 2:
-                    return "（この文脈に続く明確な知識ネットワークが形成されていません）" if return_string else []
-
-            # === 3. SDR Fuzzy Recall (エピソード記憶 / STDP) ===
-            sdr_context = context_tokens[-min(5, len(context_tokens)):]
-            current_spikes = self._encode_to_sdr(sdr_context)
-            sdr_k = self._sdr_key(current_spikes)
-
-            recalled, confidence = self.recall(sdr_k, threshold=0.75)
-            if recalled is not None:
-                for tok_id, count in recalled.items():
-                    if tok_id < self.vocab_size:
-                        scores[tok_id] += count * confidence * 2.0
-
-            if not scores:
-                break
-
-            # 発話開始時の記号ニューロン抑制
-            if not generated_sequence:
-                for pid in exempt_ids:
-                    if pid in scores:
-                        scores[pid] = 0.0
-
-            # === 4. ALIF (適応的閾値) によるニューロンの疲労ペナルティ ===
-            for tok_id in list(scores.keys()):
-                strength = 0.1 if tok_id in exempt_ids else 0.8
-                scores[tok_id] = fatigue.modulate(tok_id, scores[tok_id], strength=strength)
-
-            # N-gram 堂々巡りの強力なブロック
-            for ngram_len in (2, 3, 4, 5, 6):
-                if len(context_tokens) >= ngram_len:
-                    tail = tuple(context_tokens[-ngram_len:])
-                    for i in range(len(context_tokens) - ngram_len):
-                        if tuple(context_tokens[i:i+ngram_len]) == tail:
-                            if i + ngram_len < len(context_tokens):
-                                repeat_tok = context_tokens[i+ngram_len]
-                                if repeat_tok in scores:
-                                    scores[repeat_tok] = 0.0
-
-            # ASCIIペナルティ
-            for tok_id in list(scores.keys()):
-                if self._is_ascii_char(tok_id):
-                    scores[tok_id] *= 0.1
-
-            # Repetition Penalty
-            recent_generated = context_tokens[-recent_window:]
-            recent_counts: Dict[int, int] = defaultdict(int)
-            for tok in recent_generated:
-                recent_counts[tok] += 1
-
-            for tok_id in list(scores.keys()):
-                if tok_id in recent_counts and tok_id not in exempt_ids:
-                    count = recent_counts[tok_id]
-                    penalty = repetition_penalty ** count
-                    scores[tok_id] /= penalty
-
-            # === 5. 低スコアノイズの絶対的カット ===
-            max_score = max(scores.values()) if scores else 0.0
-            if max_score < 0.1:
-                break
-
-            threshold = max(max_score * 0.2, 0.2)
-            for tok_id in list(scores.keys()):
-                if scores[tok_id] < threshold:
-                    del scores[tok_id]
-
-            if not scores:
-                break
-
-            sorted_candidates = sorted(
-                scores.items(), key=lambda x: x[1], reverse=True)
-            top_k_candidates = sorted_candidates[:top_k]
-
-            if not top_k_candidates:
-                break
-
-            if temperature > 0.0:
-                max_score_topk = top_k_candidates[0][1]
-                exp_scores = []
-                for tok_id, score in top_k_candidates:
-                    exp_val = math.exp(
-                        (score - max_score_topk) / max(0.05, temperature))
-                    exp_scores.append((tok_id, exp_val))
-
-                sum_exp = sum(v for _, v in exp_scores)
-                if sum_exp <= 0:
-                    best_id = top_k_candidates[0][0]
-                else:
-                    r = random.random()
-                    cumulative = 0.0
-                    best_id = exp_scores[0][0]
-                    for tok_id, exp_val in exp_scores:
-                        cumulative += exp_val / sum_exp
-                        if r <= cumulative:
-                            best_id = tok_id
-                            break
-            else:
-                best_id = top_k_candidates[0][0]
-
-            fatigue.update([best_id], population_size=self.vocab_size)
-
-            generated_sequence.append(best_id)
-            context_tokens.append(best_id)
-
-            # 文末記号が出現した時点で、文章の生成を綺麗に終了する
-            if best_id in end_of_sentence_ids:
-                break
+        if kwargs.get("return_dict_in_generate"):
+            result: Dict[str, Any] = {
+                "sequences": self.decode_text(generated_sequence) if return_string else generated_sequence,
+            }
+            if kwargs.get("output_scores"):
+                result["scores"] = [item["candidates"] for item in stream]
+            if kwargs.get("output_tokens"):
+                result["tokens"] = [item["token"] for item in stream]
+            return result
 
         if return_string:
             return self.decode_text(generated_sequence)

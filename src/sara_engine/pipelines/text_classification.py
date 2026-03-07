@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/text_classification.py",
-    "//": "ファイルの日本語タイトル: テキスト分類パイプライン",
-    "//": "ファイルの目的や内容: SNNを用いたテキスト分類。局所学習(STDP)用のlearnメソッドを追加。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/text_classification.py
+# ファイルの日本語タイトル: テキスト分類パイプライン
+# ファイルの目的や内容: SNNを用いたテキスト分類。局所学習(STDP)用のlearnメソッドを追加。
 from typing import Union, List, Dict
 from .base import Pipeline
 

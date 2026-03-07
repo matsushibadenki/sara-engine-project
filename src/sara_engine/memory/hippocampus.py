@@ -2,17 +2,11 @@ from snn_models.spatiotemporal_stdp import SpatioTemporalSNN
 from .ltm import SparseMemoryStore
 from ..core.cortex import CorticalColumn
 
-import time
-import random
 from collections import deque
-from typing import List, Dict, Any, Set, Deque
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/memory/hippocampus.py",
-    "//": "タイトル: 皮質-海馬 連動メモリシステム (Cortico-Hippocampal System)",
-    "//": "目的: 嗅内皮質からの貫通線維を模倣し、皮質表現と生入力SDRのハイブリッドで検索精度を極大化。過度な数式ハックを排し、皮質(Cortex)が持つ自然な時間バイアスを尊重する。"
-}
-
-
+from typing import List, Dict, Any, Deque
+# ディレクトリパス: src/sara_engine/memory/hippocampus.py
+# タイトル: 皮質-海馬 連動メモリシステム (Cortico-Hippocampal System)
+# 目的: 嗅内皮質からの貫通線維を模倣し、皮質表現と生入力SDRのハイブリッドで検索精度を極大化。過度な数式ハックを排し、皮質(Cortex)が持つ自然な時間バイアスを尊重する。
 class CorticoHippocampalSystem:
     def __init__(self, cortex: CorticalColumn, ltm_filepath: str = "sara_integrated_ltm.pkl", max_working_memory_size: int = 15, snn_input_size: int = 2000):
         self.cortex = cortex

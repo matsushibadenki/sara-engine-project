@@ -3,13 +3,9 @@ from .hierarchical_snn import HierarchicalSNN
 from ..nn.module import SNNModule
 from typing import List, Dict, Any
 import random
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/spiking_predictive_lm.py",
-    "//": "ファイルの日本語タイトル: 予測符号化ベースのスパイク言語モデル",
-    "//": "ファイルの目的や内容: 階層モデルと予測符号化層を統合。系列学習とデコードのパスから抽象化ノイズを完全に分離し、純粋なSDRのみを用いることで厳密な順序の自己回帰生成を実現する。不応期(Refractory Period)を実装し、反復生成を防止。"
-}
-
-
+# ディレクトリパス: src/sara_engine/models/spiking_predictive_lm.py
+# ファイルの日本語タイトル: 予測符号化ベースのスパイク言語モデル
+# ファイルの目的や内容: 階層モデルと予測符号化層を統合。系列学習とデコードのパスから抽象化ノイズを完全に分離し、純粋なSDRのみを用いることで厳密な順序の自己回帰生成を実現する。不応期(Refractory Period)を実装し、反復生成を防止。
 class SpikingPredictiveLM(SNNModule):
     def __init__(self, vocab_size: int, layer_configs: List[Dict[str, Any]], max_delay: int = 10, learning_rate: float = 0.1, predict_threshold: float = 0.1):
         super().__init__()

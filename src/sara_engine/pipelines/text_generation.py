@@ -1,9 +1,8 @@
+# ディレクトリパス: src/sara_engine/pipelines/text_generation.py
+# ファイルの日本語タイトル: テキスト生成パイプライン
+# ファイルの目的や内容: SNNを用いたテキスト生成機能のTransformers互換パイプライン実装。
+
 from typing import Any
-{
-    "//": "ディレクトリパス: src/sara_engine/pipelines/text_generation.py",
-    "//": "ファイルの日本語タイトル: テキスト生成パイプライン",
-    "//": "ファイルの目的や内容: SNNを用いたテキスト生成機能のTransformers互換パイプライン実装。"
-}
 
 
 class TextGenerationPipeline:
@@ -26,8 +25,14 @@ class TextGenerationPipeline:
         refractory_period = kwargs.get("refractory_period", 10)
         temperature = kwargs.get("temperature", 0.5)
         top_k = kwargs.get("top_k", 3)
+        top_p = kwargs.get("top_p", 1.0)
+        presence_penalty = kwargs.get("presence_penalty", 0.0)
+        frequency_penalty = kwargs.get("frequency_penalty", 0.0)
 
         stop_conditions = kwargs.get("stop_conditions")
+        return_dict_in_generate = kwargs.get("return_dict_in_generate", False)
+        output_scores = kwargs.get("output_scores", False)
+        output_tokens = kwargs.get("output_tokens", False)
 
         if hasattr(self.model, "generate") and callable(self.model.generate):
             try:
@@ -35,11 +40,17 @@ class TextGenerationPipeline:
                     prompt=text,
                     max_new_tokens=max_new_tokens,
                     top_k=top_k,
+                    top_p=top_p,
                     temperature=temperature,
                     repetition_penalty=refractory_penalty,
+                    presence_penalty=presence_penalty,
+                    frequency_penalty=frequency_penalty,
                     stop_conditions=stop_conditions,
                     refractory_penalty=refractory_penalty,
                     refractory_period=refractory_period,
+                    return_dict_in_generate=return_dict_in_generate,
+                    output_scores=output_scores,
+                    output_tokens=output_tokens,
                 )
             except TypeError:
                 if hasattr(self.tokenizer, "encode"):
@@ -50,16 +61,24 @@ class TextGenerationPipeline:
                     prompt_tokens=input_ids,
                     max_new_tokens=max_new_tokens,
                     top_k=top_k,
+                    top_p=top_p,
                     temperature=temperature,
                     repetition_penalty=refractory_penalty,
+                    presence_penalty=presence_penalty,
+                    frequency_penalty=frequency_penalty,
                     stop_conditions=stop_conditions,
                     refractory_penalty=refractory_penalty,
                     refractory_period=refractory_period,
+                    return_dict_in_generate=return_dict_in_generate,
+                    output_scores=output_scores,
+                    output_tokens=output_tokens,
                 )
             except Exception as e:
                 print(f"[TextGenerationPipeline] Error during generation: {e}")
                 return text
 
+            if isinstance(generated, dict):
+                return generated
             if isinstance(generated, str):
                 return generated
             if hasattr(self.tokenizer, "decode"):
@@ -67,6 +86,62 @@ class TextGenerationPipeline:
             return "".join([chr(i) for i in generated if i < 0x110000])
 
         return text
+
+    def predict_next_tokens(self, text: str, top_k: int = 5, **kwargs) -> list[dict[str, Any]]:
+        if hasattr(self.model, "predict_next_tokens"):
+            try:
+                return self.model.predict_next_tokens(
+                    prompt=text,
+                    top_k=top_k,
+                    repetition_penalty=kwargs.get("repetition_penalty", 1.2),
+                    presence_penalty=kwargs.get("presence_penalty", 0.0),
+                    frequency_penalty=kwargs.get("frequency_penalty", 0.0),
+                )
+            except TypeError:
+                if hasattr(self.tokenizer, "encode"):
+                    input_ids = self.tokenizer.encode(text)
+                else:
+                    input_ids = [ord(c) for c in text]
+                return self.model.predict_next_tokens(
+                    prompt_tokens=input_ids,
+                    top_k=top_k,
+                    repetition_penalty=kwargs.get("repetition_penalty", 1.2),
+                    presence_penalty=kwargs.get("presence_penalty", 0.0),
+                    frequency_penalty=kwargs.get("frequency_penalty", 0.0),
+                )
+        return []
+
+    def stream(self, text: str, max_new_tokens: int = 50, **kwargs):
+        if hasattr(self.model, "generate_stream"):
+            try:
+                return self.model.generate_stream(
+                    prompt=text,
+                    max_new_tokens=max_new_tokens,
+                    top_k=kwargs.get("top_k", 3),
+                    top_p=kwargs.get("top_p", 1.0),
+                    temperature=kwargs.get("temperature", 0.5),
+                    repetition_penalty=kwargs.get("repetition_penalty", 1.2),
+                    presence_penalty=kwargs.get("presence_penalty", 0.0),
+                    frequency_penalty=kwargs.get("frequency_penalty", 0.0),
+                    stop_conditions=kwargs.get("stop_conditions"),
+                )
+            except TypeError:
+                if hasattr(self.tokenizer, "encode"):
+                    input_ids = self.tokenizer.encode(text)
+                else:
+                    input_ids = [ord(c) for c in text]
+                return self.model.generate_stream(
+                    prompt_tokens=input_ids,
+                    max_new_tokens=max_new_tokens,
+                    top_k=kwargs.get("top_k", 3),
+                    top_p=kwargs.get("top_p", 1.0),
+                    temperature=kwargs.get("temperature", 0.5),
+                    repetition_penalty=kwargs.get("repetition_penalty", 1.2),
+                    presence_penalty=kwargs.get("presence_penalty", 0.0),
+                    frequency_penalty=kwargs.get("frequency_penalty", 0.0),
+                    stop_conditions=kwargs.get("stop_conditions"),
+                )
+        return iter(())
 
     def learn(self, text: str) -> None:
         """

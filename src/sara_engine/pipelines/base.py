@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/base.py",
-    "//": "ファイルの日本語タイトル: パイプライン基底クラス",
-    "//": "ファイルの目的や内容: TransformersのPipelineベースクラスに相当する、SNNパイプラインの共通基盤。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/base.py
+# ファイルの日本語タイトル: パイプライン基底クラス
+# ファイルの目的や内容: TransformersのPipelineベースクラスに相当する、SNNパイプラインの共通基盤。
 class Pipeline:
     """
     Base class for all SARA Engine pipelines.

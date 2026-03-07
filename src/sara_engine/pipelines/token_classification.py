@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/token_classification.py",
-    "//": "ファイルの日本語タイトル: トークン分類パイプライン",
-    "//": "ファイルの目的や内容: Transformersのpipeline('token-classification')をSNNで再現。SpikingTokenClassifierのforward仕様に合わせてシーケンス全体を一括処理するように修正。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/token_classification.py
+# ファイルの日本語タイトル: トークン分類パイプライン
+# ファイルの目的や内容: Transformersのpipeline('token-classification')をSNNで再現。SpikingTokenClassifierのforward仕様に合わせてシーケンス全体を一括処理するように修正。
 from typing import Union, List, Dict, Any
 import inspect
 

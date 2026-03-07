@@ -1,14 +1,10 @@
 from .layers import SpikeFeedForward
-from typing import List, Dict, Set
+from typing import List, Dict
 import random
 from ..learning.homeostasis import AdaptiveThresholdHomeostasis
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/cortical_columns.py",
-    "//": "ファイルの日本語タイトル: スパイキング・大脳皮質カラム (MoE代替)",
-    "//": "ファイルの目的や内容: TransformersのMoE (Mixture of Experts) の生物学的代替。側抑制(Lateral Inhibition)とホメオスタシス(発火頻度適応)によるWinner-Take-All(WTA)回路を用いて、特定エキスパートの独占を防ぎながら入力を最適にルーティングする。"
-}
-
-
+# ディレクトリパス: src/sara_engine/core/cortical_columns.py
+# ファイルの日本語タイトル: スパイキング・大脳皮質カラム (MoE代替)
+# ファイルの目的や内容: TransformersのMoE (Mixture of Experts) の生物学的代替。側抑制(Lateral Inhibition)とホメオスタシス(発火頻度適応)によるWinner-Take-All(WTA)回路を用いて、特定エキスパートの独占を防ぎながら入力を最適にルーティングする。
 try:
     import sara_rust_core
     HAS_RUST_CORE = True

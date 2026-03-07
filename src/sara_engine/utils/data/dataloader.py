@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/utils/data/dataloader.py",
-    "//": "ファイルの日本語タイトル: スパイク・ストリーム・データローダー",
-    "//": "ファイルの目的や内容: PyTorch DataLoaderの代替。静的なバッチではなく、AER (Address-Event Representation) 形式の連続ストリームとして時系列データをエンジンに供給する。"
-}
-
+# ディレクトリパス: src/sara_engine/utils/data/dataloader.py
+# ファイルの日本語タイトル: スパイク・ストリーム・データローダー
+# ファイルの目的や内容: PyTorch DataLoaderの代替。静的なバッチではなく、AER (Address-Event Representation) 形式の連続ストリームとして時系列データをエンジンに供給する。
 from typing import List, Generator, Any, Callable
 
 class SpikeStreamLoader:

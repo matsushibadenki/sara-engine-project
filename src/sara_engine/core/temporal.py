@@ -1,12 +1,8 @@
-from typing import List, Set
+from typing import List
 import random
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/temporal.py",
-    "//": "タイトル: Temporal Coding (位置表現) レイヤー",
-    "//": "目的: 行列演算を用いず、SDRの巡回シフトと位置アンカーを用いて、系列内の語順（構文情報）を表現する。"
-}
-
-
+# ディレクトリパス: src/sara_engine/core/temporal.py
+# タイトル: Temporal Coding (位置表現) レイヤー
+# 目的: 行列演算を用いず、SDRの巡回シフトと位置アンカーを用いて、系列内の語順（構文情報）を表現する。
 class TemporalEncoder:
     """
     SNN向けの位置エンコーディング。

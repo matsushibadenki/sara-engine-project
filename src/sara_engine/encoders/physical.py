@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/encoders/physical.py",
-    "//": "タイトル: 物理状態(NeuroFEM)用 SDRエンコーダー",
-    "//": "目的: NeuroFEMで得られた連続値の物理状態（温度や変位など）を、SARA大脳皮質が処理できるSDR（スパース分散表現）に変換する。"
-}
-
+# ディレクトリパス: src/sara_engine/encoders/physical.py
+# タイトル: 物理状態(NeuroFEM)用 SDRエンコーダー
+# 目的: NeuroFEMで得られた連続値の物理状態（温度や変位など）を、SARA大脳皮質が処理できるSDR（スパース分散表現）に変換する。
 import numpy as np
 from typing import List
 

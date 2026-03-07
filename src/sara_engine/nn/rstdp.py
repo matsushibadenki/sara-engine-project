@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/rstdp.py",
-    "//": "ファイルの日本語タイトル: 報酬変調STDP層 (R-STDP)",
-    "//": "ファイルの目的や内容: 誤差逆伝播法(BP)に依存せず、適格度トレースと遅延報酬を用いた「3要素学習則」によって大域的最適化を行う強化学習用SNNモジュール。"
-}
-
+# ディレクトリパス: src/sara_engine/nn/rstdp.py
+# ファイルの日本語タイトル: 報酬変調STDP層 (R-STDP)
+# ファイルの目的や内容: 誤差逆伝播法(BP)に依存せず、適格度トレースと遅延報酬を用いた「3要素学習則」によって大域的最適化を行う強化学習用SNNモジュール。
 import random
 from typing import List, Dict, Tuple
 from .module import SNNModule

@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/feature_extraction.py",
-    "//": "ファイルの日本語タイトル: 特徴抽出パイプライン",
-    "//": "ファイルの目的や内容: 入力テキストからSNNのリザーバー発火パターン（埋め込みベクトル）を抽出する。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/feature_extraction.py
+# ファイルの日本語タイトル: 特徴抽出パイプライン
+# ファイルの目的や内容: 入力テキストからSNNのリザーバー発火パターン（埋め込みベクトル）を抽出する。
 from typing import Union, List
 from .base import Pipeline
 

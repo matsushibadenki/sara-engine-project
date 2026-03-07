@@ -1,11 +1,10 @@
+# ディレクトリパス: src/sara_engine/nn/predictive.py
+# ファイルの日本語タイトル: 予測符号化スパイキング層
+# ファイルの目的や内容: 強いAI向けに動的閾値(Homeostasis)と予測消去(Cancellation)を強化。SyntaxErrorを修正。
+
 from .module import SNNModule
 from typing import List, Dict, Tuple, Set, Optional
 import random
-{
-    "//": "ディレクトリパス: src/sara_engine/nn/predictive.py",
-    "//": "ファイルの日本語タイトル: 予測符号化スパイキング層",
-    "//": "ファイルの目的や内容: 強いAI向けに動的閾値(Homeostasis)と予測消去(Cancellation)を強化。SyntaxErrorを修正。"
-}
 
 
 try:

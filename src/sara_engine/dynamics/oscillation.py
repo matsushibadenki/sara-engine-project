@@ -6,7 +6,7 @@
 
 import math
 import random
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
 # ==========================================================================
 # 1. OscillationManager (神経振動 / 時間的ゲーティング)

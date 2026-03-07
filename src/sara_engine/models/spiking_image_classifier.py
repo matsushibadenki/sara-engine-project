@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/spiking_image_classifier.py",
-    "//": "ファイルの日本語タイトル: スパイキング・画像分類器",
-    "//": "ファイルの目的や内容: 画像のピクセル強度をスパイクに変換し、行列演算(CNN等)なしで視覚パターンをSTDP分類する。"
-}
-
+# ディレクトリパス: src/sara_engine/models/spiking_image_classifier.py
+# ファイルの日本語タイトル: スパイキング・画像分類器
+# ファイルの目的や内容: 画像のピクセル強度をスパイクに変換し、行列演算(CNN等)なしで視覚パターンをSTDP分類する。
 import json
 import os
 import random

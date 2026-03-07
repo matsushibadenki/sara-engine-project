@@ -8,6 +8,7 @@ import random
 import math
 from typing import Any
 
+
 class Synapse:
     def __init__(self, pre_neuron: Any, post_neuron: Any, post_branch_idx: int, is_inhibitory: bool = False):
         self.pre = pre_neuron
@@ -43,21 +44,28 @@ class Synapse:
             self.pre_trace += 1.0
 
             dw = self.A_plus * self.post_trace
-            if self.is_inhibitory: self.weight -= dw 
-            else: self.weight += dw
+            if self.is_inhibitory:
+                self.weight -= dw
+            else:
+                self.weight += dw
 
             # 実効電流を計算し、対象の枝へ注入 (API適合)
             current = self.weight * self.u * self.x
             if hasattr(self.post, 'dendritic_tree'):
-                self.post.dendritic_tree.integrate_to_branch(self.post_branch_idx, current)
+                self.post.dendritic_tree.integrate_to_branch(
+                    self.post_branch_idx, current)
 
         if getattr(self.post, 'spike', False):
             self.post_trace += 1.0
             dw = self.A_minus * self.pre_trace
-            if self.is_inhibitory: self.weight += dw
-            else: self.weight -= dw
+            if self.is_inhibitory:
+                self.weight += dw
+            else:
+                self.weight -= dw
 
-        if self.is_inhibitory: self.weight = max(-2.0, min(0.0, self.weight))
-        else: self.weight = max(0.0, min(2.0, self.weight))
+        if self.is_inhibitory:
+            self.weight = max(-2.0, min(0.0, self.weight))
+        else:
+            self.weight = max(0.0, min(2.0, self.weight))
 
         return 0.0

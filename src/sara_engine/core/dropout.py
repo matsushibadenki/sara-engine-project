@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/dropout.py",
-    "//": "タイトル: Stochastic Synapse (SNN版 Dropout)",
-    "//": "目的: 行列演算を使わず、Python標準のrandomモジュールのみでシナプス伝達の確率的失敗（ドロップアウト）を再現する。"
-}
-
+# ディレクトリパス: src/sara_engine/core/dropout.py
+# タイトル: Stochastic Synapse (SNN版 Dropout)
+# 目的: 行列演算を使わず、Python標準のrandomモジュールのみでシナプス伝達の確率的失敗（ドロップアウト）を再現する。
 import random
 from typing import List
 

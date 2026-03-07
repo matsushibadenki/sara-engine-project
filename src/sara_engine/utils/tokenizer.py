@@ -45,16 +45,27 @@ class SaraTokenizer:
             # Janomeがない場合の簡易的な単語・句読点分割
             return [w for w in re.split(r'(\s+|[。、！？.!,?])', text) if w]
 
+    def split_text(self, text: str) -> List[str]:
+        """互換API: 学習済みBPE規則を考慮しつつ、空白や句読点を保持して分割する。"""
+        pieces: List[str] = []
+        for token in self.pre_tokenize(text):
+            if token == "":
+                continue
+            if token.isspace() or token in {"。", "、", "！", "？", ".", ",", "!", "?"}:
+                pieces.append(token)
+                continue
+            pieces.extend(self._tokenize_word(token))
+        return pieces
+
     def _add_token(self, token: str) -> int:
         if token not in self.vocab:
-            if self.next_id < self.vocab_size:
-                tid = self.next_id
-                self.vocab[token] = tid
-                self.id_to_token[tid] = token
-                self.next_id += 1
-                return tid
-            else:
-                return self.vocab.get("<unk>", 1)
+            if self.next_id >= self.vocab_size:
+                self.vocab_size = self.next_id + 1
+            tid = self.next_id
+            self.vocab[token] = tid
+            self.id_to_token[tid] = token
+            self.next_id += 1
+            return tid
         return self.vocab[token]
 
     def _get_stats(self, splits: Dict[str, int]) -> Dict[Tuple[str, str], int]:

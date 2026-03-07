@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/spike_attention.py",
-    "//": "ファイルの日本語タイトル: 連合学習強化型 スパイキング・アテンション",
-    "//": "ファイルの目的や内容: スパイクの爆発およびクロストークを防ぐためのスパースルーティング。Rustエンジンによる高速化と、TransformersのMulti-Headに相当するMulti-Pathway Attentionを実装。"
-}
-
+# ディレクトリパス: src/sara_engine/core/spike_attention.py
+# ファイルの日本語タイトル: 連合学習強化型 スパイキング・アテンション
+# ファイルの目的や内容: スパイクの爆発およびクロストークを防ぐためのスパースルーティング。Rustエンジンによる高速化と、TransformersのMulti-Headに相当するMulti-Pathway Attentionを実装。
 import random
 from typing import List, Dict, Set
 

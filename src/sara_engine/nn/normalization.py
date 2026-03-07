@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/normalization.py",
-    "//": "ファイルの日本語タイトル: スパイキング層正規化 (LayerNorm代替)",
-    "//": "ファイルの目的や内容: ネットワーク内の発火率を一定に保つための恒常性(Homeostasis)メカニズム。TransformerのLayerNormのSNN版として機能する。"
-}
-
+# ディレクトリパス: src/sara_engine/nn/normalization.py
+# ファイルの日本語タイトル: スパイキング層正規化 (LayerNorm代替)
+# ファイルの目的や内容: ネットワーク内の発火率を一定に保つための恒常性(Homeostasis)メカニズム。TransformerのLayerNormのSNN版として機能する。
 import random
 from typing import List
 from .module import SNNModule

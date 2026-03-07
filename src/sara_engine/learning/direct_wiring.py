@@ -11,7 +11,7 @@ import os
 import json
 import math
 from collections import defaultdict
-from typing import List, Dict, Tuple, Optional
+from typing import Dict
 
 
 class ALIFNeuron:

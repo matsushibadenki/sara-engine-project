@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/summarization.py",
-    "//": "ファイルの日本語タイトル: テキスト要約パイプライン",
-    "//": "ファイルの目的や内容: Transformersのpipeline('summarization')をSNNで再現し、テキストの要約機能を提供する。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/summarization.py
+# ファイルの日本語タイトル: テキスト要約パイプライン
+# ファイルの目的や内容: Transformersのpipeline('summarization')をSNNで再現し、テキストの要約機能を提供する。
 from typing import Any
 
 class SummarizationPipeline:

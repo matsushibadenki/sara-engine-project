@@ -11,7 +11,7 @@ from ..memory.hippocampus import CorticoHippocampalSystem
 from ..core.cortex import CorticalColumn
 from ..memory.sdr import SDREncoder
 from ..utils.dialogue import AdaptiveTopicTracker
-from typing import List, Dict, Any, Callable, Optional, Tuple
+from typing import List, Dict, Any, Callable
 import hashlib
 import random
 import os

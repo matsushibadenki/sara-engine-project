@@ -6,7 +6,6 @@
 
 import math
 import random
-from typing import List, Dict, Tuple
 
 class DendriticBranch:
     """

@@ -1,13 +1,9 @@
 from .module import SNNModule
 from typing import List, Dict, Set, Optional, Tuple
 import random
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/attention.py",
-    "//": "ファイルの日本語タイトル: 高速化版スパイキング・アテンション",
-    "//": "ファイルの目的や内容: sara_rust_core.SpikeEngine を統合し、大規模なスパイク伝播と学習を高速化したアテンション層。Fuzzy Recall (SDR Overlap) による連想記憶を統合。Transformers代替となるSDRFuzzyAttentionを追記。"
-}
-
-
+# ディレクトリパス: src/sara_engine/nn/attention.py
+# ファイルの日本語タイトル: 高速化版スパイキング・アテンション
+# ファイルの目的や内容: sara_rust_core.SpikeEngine を統合し、大規模なスパイク伝播と学習を高速化したアテンション層。Fuzzy Recall (SDR Overlap) による連想記憶を統合。Transformers代替となるSDRFuzzyAttentionを追記。
 # Import Rust core if available
 try:
     from .. import sara_rust_core  # type: ignore

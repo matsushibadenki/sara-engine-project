@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/data_loader.py",
-    "//": "ファイルの日本語タイトル: 連合スパイク・エンコーダー",
-    "//": "ファイルの目的や内容: 複数のトークンを時間的に重ね合わせ、概念間の連合学習（Associative Learning）を可能にする。"
-}
-
+# ディレクトリパス: src/sara_engine/core/data_loader.py
+# ファイルの日本語タイトル: 連合スパイク・エンコーダー
+# ファイルの目的や内容: 複数のトークンを時間的に重ね合わせ、概念間の連合学習（Associative Learning）を可能にする。
 import random
 from typing import List, Iterator
 

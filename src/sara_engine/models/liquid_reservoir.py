@@ -6,7 +6,7 @@
 
 import random
 import math
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from ..neuro.dendrite import DendriticTree
 from ..metrics.branching_ratio import BranchingRatioEstimator
 
@@ -65,7 +65,8 @@ class LiquidReservoir:
         self.d = [2.0 if self.is_inhibitory[i]
                   else 8.0 for i in range(n_neurons)]
         self.v_thresh = [30.0 for _ in range(n_neurons)]
-        self.branching_estimator = BranchingRatioEstimator(smoothing_alpha=0.08)
+        self.branching_estimator = BranchingRatioEstimator(
+            smoothing_alpha=0.08)
         self.target_sigma = 1.0
         self.critical_gain = 1.0
 
@@ -169,9 +170,11 @@ class LiquidReservoir:
             for post_id in list(self.synapses[pre_id].keys()):
                 self.synapses[pre_id][post_id] *= scale
                 if self.is_inhibitory[pre_id]:
-                    self.synapses[pre_id][post_id] = max(-self.max_weight, min(0.0, self.synapses[pre_id][post_id]))
+                    self.synapses[pre_id][post_id] = max(
+                        -self.max_weight, min(0.0, self.synapses[pre_id][post_id]))
                 else:
-                    self.synapses[pre_id][post_id] = max(0.0, min(self.max_weight, self.synapses[pre_id][post_id]))
+                    self.synapses[pre_id][post_id] = max(
+                        0.0, min(self.max_weight, self.synapses[pre_id][post_id]))
 
     def _update_weight(self, pre_id: int, post_id: int, dw: float):
         w = self.synapses[pre_id][post_id]

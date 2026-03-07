@@ -1,3 +1,7 @@
+# ディレクトリパス: src/sara_engine/cli.py
+# ファイルの日本語タイトル: SARA CLI エントリポイント
+# ファイルの目的や内容: ターミナルから `sara-chat` や `sara-train` コマンドで推論・学習を実行する。推論パラメータを外部から調整可能な引数を追加。
+
 from .models.spiking_llm import SpikingLLM
 from .inference import SaraInference
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -8,11 +12,6 @@ import json
 import os
 import time
 import argparse
-{
-    "//": "ディレクトリパス: src/sara_engine/cli.py",
-    "//": "ファイルの日本語タイトル: SARA CLI エントリポイント",
-    "//": "ファイルの目的や内容: ターミナルから `sara-chat` や `sara-train` コマンドで推論・学習を実行する。推論パラメータを外部から調整可能な引数を追加。"
-}
 
 
 def chat():

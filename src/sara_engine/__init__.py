@@ -23,13 +23,14 @@ from .auto import (
     AutoSNNModelForTokenClassification
 )
 from .pipelines import pipeline
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/__init__.py",
-    "//": "ファイルの日本語タイトル: パッケージ初期化モジュール",
-    "//": "ファイルの目的や内容: ユーザーがSARA Engineを利用する際の最上位APIエントリーポイント。pipelineとAutoクラス群を最優先で公開。"
-}
-
-__version__ = "0.3.4"  # PyPIリリースに向けたバージョンアップ
+from .rag import SNNRAGPipeline
+from .tools import ToolRegistry, ToolResult, ToolDefinition, ToolParameter, tool, register_builtin_tools
+from .safety import SafetyGuard, SafetyLevel, SafetyCheckResult
+from .evaluation import SARABenchmark, RAGEvaluator, ToolEvaluator, SafetyEvaluator, EvalResult, EvalMetric
+# ディレクトリパス: src/sara_engine/__init__.py
+# ファイルの日本語タイトル: パッケージ初期化モジュール
+# ファイルの目的や内容: ユーザーがSARA Engineを利用する際の最上位APIエントリーポイント。pipelineとAutoクラス群を最優先で公開。RAG/ツール/安全制御/評価基盤を統合。
+__version__ = "0.4.0"  # RAG/ツール/安全制御/評価基盤の強化
 
 # --- Hugging Face Transformers-like API (Main Public Interface) ---
 
@@ -48,6 +49,30 @@ __all__ = [
     "AutoSNNModelForFeatureExtraction",
     "AutoSNNModelForImageClassification",
     "AutoSNNModelForTokenClassification",
+
+    # RAG
+    "SNNRAGPipeline",
+
+    # ツール実行基盤
+    "ToolRegistry",
+    "ToolResult",
+    "ToolDefinition",
+    "ToolParameter",
+    "tool",
+    "register_builtin_tools",
+
+    # 安全制御
+    "SafetyGuard",
+    "SafetyLevel",
+    "SafetyCheckResult",
+
+    # 評価基盤
+    "SARABenchmark",
+    "RAGEvaluator",
+    "ToolEvaluator",
+    "SafetyEvaluator",
+    "EvalResult",
+    "EvalMetric",
 
     # Core & Agent
     "SpikingLLM",

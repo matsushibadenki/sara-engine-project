@@ -5,7 +5,7 @@
 # }
 
 import random
-from typing import List, Dict
+from typing import List
 from ..neuro.neuron import Neuron
 from ..neuro.synapse_rl import RLSynapse
 from ..cognitive.global_workspace import GlobalWorkspace

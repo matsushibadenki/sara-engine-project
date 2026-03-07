@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/utils/board.py",
-    "//": "ファイルの日本語タイトル: Sara-Board (ダイナミクス可視化)",
-    "//": "ファイルの目的や内容: TensorBoardの代替として、SNNのスパイク発火(ラスタープロット)やネットワークの動的状態を記録・可視化するツール。"
-}
-
+# ディレクトリパス: src/sara_engine/utils/board.py
+# ファイルの日本語タイトル: Sara-Board (ダイナミクス可視化)
+# ファイルの目的や内容: TensorBoardの代替として、SNNのスパイク発火(ラスタープロット)やネットワークの動的状態を記録・可視化するツール。
 import os
 import json
 from collections import defaultdict

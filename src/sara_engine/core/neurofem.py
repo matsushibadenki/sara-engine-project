@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/neurofem.py",
-    "//": "タイトル: ニューロモルフィック有限要素法 (NeuroFEM) レイヤー",
-    "//": "目的: 行列演算や誤差逆伝播法を用いずに、SNNのスパイク伝播によって物理シミュレーションを行う。"
-}
-
+# ディレクトリパス: src/sara_engine/core/neurofem.py
+# タイトル: ニューロモルフィック有限要素法 (NeuroFEM) レイヤー
+# 目的: 行列演算や誤差逆伝播法を用いずに、SNNのスパイク伝播によって物理シミュレーションを行う。
 from typing import List, Dict
 
 class NeuroFEMLayer:

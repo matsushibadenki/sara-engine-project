@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/encoders/spike_tokenizer.py",
-    "//": "ファイルの日本語タイトル: スパイクトークナイザー（BPE版）",
-    "//": "ファイルの目的や内容: 未知語や多言語（日本語・英語）に頑健に対応するため、本格的なBPE（Byte-Pair Encoding）サブワードトークナイザーを導入。tokenizersライブラリがない環境向けにフォールバック機能も実装。"
-}
-
+# ディレクトリパス: src/sara_engine/encoders/spike_tokenizer.py
+# ファイルの日本語タイトル: スパイクトークナイザー（BPE版）
+# ファイルの目的や内容: 未知語や多言語（日本語・英語）に頑健に対応するため、本格的なBPE（Byte-Pair Encoding）サブワードトークナイザーを導入。tokenizersライブラリがない環境向けにフォールバック機能も実装。
 import os
 import json
 import re

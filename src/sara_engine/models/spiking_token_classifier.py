@@ -3,13 +3,9 @@ from typing import List, Dict, Optional, Any
 import pickle
 import os
 import json
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/spiking_token_classifier.py",
-    "//": "ファイルの日本語タイトル: スパイキング・トークン分類器",
-    "//": "ファイルの目的や内容: nn.SNNModuleを継承し、内部状態をstate_dictで管理するようにリファクタリング。"
-}
-
-
+# ディレクトリパス: src/sara_engine/models/spiking_token_classifier.py
+# ファイルの日本語タイトル: スパイキング・トークン分類器
+# ファイルの目的や内容: nn.SNNModuleを継承し、内部状態をstate_dictで管理するようにリファクタリング。
 class SNNTokenClassifierConfig:
     def __init__(self, vocab_size: int = 256, num_classes: int = 4, context_length: int = 32):
         self.vocab_size = vocab_size

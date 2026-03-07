@@ -1,13 +1,9 @@
 from ..nn.attention import SDRFuzzyAttention
 from ..nn.module import SNNModule
 from typing import Dict, List, Tuple
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/spiking_multimodal_hub.py",
-    "//": "ファイルの日本語タイトル: マルチモーダルSNN連想ハブ",
-    "//": "ファイルの目的や内容: 複数のモダリティ（視覚、テキスト、音声など）からのスパイクを同一の連想記憶空間で結びつける。Fuzzy Attentionを統合し、純粋なスパイクの共起（Hebbian Learning）によるクロスモーダル検索を実現。"
-}
-
-
+# ディレクトリパス: src/sara_engine/models/spiking_multimodal_hub.py
+# ファイルの日本語タイトル: マルチモーダルSNN連想ハブ
+# ファイルの目的や内容: 複数のモダリティ（視覚、テキスト、音声など）からのスパイクを同一の連想記憶空間で結びつける。Fuzzy Attentionを統合し、純粋なスパイクの共起（Hebbian Learning）によるクロスモーダル検索を実現。
 class SpikingMultimodalHub(SNNModule):
     """
     Phase 2: Multi-source Integration Hub

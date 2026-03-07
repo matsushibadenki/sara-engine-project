@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/memory/ltm.py",
-    "//": "タイトル: 疎分散長期記憶 (Sparse Distributed Memory Store)",
-    "//": "目的: SDRベースの長期記憶ストレージ。文脈内学習へフィードバックするために検索結果へSDRを含めるよう拡張。"
-}
-
+# ディレクトリパス: src/sara_engine/memory/ltm.py
+# タイトル: 疎分散長期記憶 (Sparse Distributed Memory Store)
+# 目的: SDRベースの長期記憶ストレージ。文脈内学習へフィードバックするために検索結果へSDRを含めるよう拡張。
 import pickle
 import os
 import time

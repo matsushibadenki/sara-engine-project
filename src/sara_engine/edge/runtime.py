@@ -1,13 +1,10 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/edge/runtime.py",
-    "//": "ファイルの日本語タイトル: Sara-Edge 軽量ランタイム",
-    "//": "ファイルの目的や内容: エッジデバイス向けに最適化された推論専用エンジン。学習用のクラス階層やオーバーヘッドをすべて排除し、最小限のメモリでテキスト生成を実行する。"
-}
-
+# ディレクトリパス: src/sara_engine/edge/runtime.py
+# ファイルの日本語タイトル: Sara-Edge 軽量ランタイム
+# ファイルの目的や内容: エッジデバイス向けに最適化された推論専用エンジン。学習用のクラス階層やオーバーヘッドをすべて排除し、最小限のメモリでテキスト生成を実行する。
 import json
 import random
 import operator
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional
 
 class SaraEdgeRuntime:
     """

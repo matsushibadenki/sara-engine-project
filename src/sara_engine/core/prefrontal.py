@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/prefrontal.py",
-    "//": "タイトル: 前頭前野 (Prefrontal Cortex)",
-    "//": "目的: 行列演算を使わず、単純な集合の積(Intersection)で文脈を決定する。"
-}
-
+# ディレクトリパス: src/sara_engine/core/prefrontal.py
+# タイトル: 前頭前野 (Prefrontal Cortex)
+# 目的: 行列演算を使わず、単純な集合の積(Intersection)で文脈を決定する。
 from typing import List, Dict, Set
 # 注意: ここでのSDREncoderのインポート先は実際のファイル構成に合わせる必要がありますが、
 # 循環参照を避けるため型ヒントのみにするか、インターフェースを想定します。

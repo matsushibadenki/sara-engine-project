@@ -1,10 +1,7 @@
 # ファイルメタ情報
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/readout_layer.py",
-    "//": "ファイルの日本語タイトル: スパイク読み出し層 (Top-1 Hinge-Loss STDP / 生物学的WTA)",
-    "//": "ファイルの目的や内容: Winner-Take-All（側抑制）の原理を応用し、最大の競合クラス（Top-1）に対してのみマージン更新を行うPassive-Aggressiveアルゴリズムを実装。独立サンプルの分類タスクに悪影響を与えていた不応期（Refractory）の無効化オプションを追加し、精度95%以上の壁を突破する。"
-}
-
+# ディレクトリパス: src/sara_engine/models/readout_layer.py
+# ファイルの日本語タイトル: スパイク読み出し層 (Top-1 Hinge-Loss STDP / 生物学的WTA)
+# ファイルの目的や内容: Winner-Take-All（側抑制）の原理を応用し、最大の競合クラス（Top-1）に対してのみマージン更新を行うPassive-Aggressiveアルゴリズムを実装。独立サンプルの分類タスクに悪影響を与えていた不応期（Refractory）の無効化オプションを追加し、精度95%以上の壁を突破する。
 import random
 import math
 from typing import List, Dict, Optional

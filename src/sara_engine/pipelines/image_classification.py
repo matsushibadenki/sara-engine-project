@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/image_classification.py",
-    "//": "ファイルの日本語タイトル: 画像分類パイプライン",
-    "//": "ファイルの目的や内容: 画像を1次元ベクトルとしてSNNに入力し、カテゴリを推論・学習する。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/image_classification.py
+# ファイルの日本語タイトル: 画像分類パイプライン
+# ファイルの目的や内容: 画像を1次元ベクトルとしてSNNに入力し、カテゴリを推論・学習する。
 from typing import Union, List, Dict, Any
 from .base import Pipeline
 

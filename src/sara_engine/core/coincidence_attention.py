@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/coincidence_attention.py",
-    "//": "ファイルの日本語タイトル: 同期発火型アテンション",
-    "//": "ファイルの目的や内容: 既存のSpikeSelfAttentionとは異なり、重みパラメータを持たず、純粋なSetの積集合(Coincidence)のみで情報の重要度をルーティングする概念実証用モジュール。"
-}
-
+# ディレクトリパス: src/sara_engine/core/coincidence_attention.py
+# ファイルの日本語タイトル: 同期発火型アテンション
+# ファイルの目的や内容: 既存のSpikeSelfAttentionとは異なり、重みパラメータを持たず、純粋なSetの積集合(Coincidence)のみで情報の重要度をルーティングする概念実証用モジュール。
 from typing import List, Set
 
 class SpikeDrivenAttention:

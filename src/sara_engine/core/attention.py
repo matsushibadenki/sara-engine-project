@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/attention.py",
-    "//": "タイトル: Spike-based Multi-Head Attention",
-    "//": "目的: 行列演算を使わず、SDRの共通集合（Overlap）で類似度を計算する。Rust実装がロードできない場合はPython実装へ安全にフォールバックする。"
-}
-
+# ディレクトリパス: src/sara_engine/core/attention.py
+# タイトル: Spike-based Multi-Head Attention
+# 目的: 行列演算を使わず、SDRの共通集合（Overlap）で類似度を計算する。Rust実装がロードできない場合はPython実装へ安全にフォールバックする。
 import random
 from typing import List, Dict, Set, Optional
 

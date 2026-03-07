@@ -3,13 +3,9 @@
 # [ファイルの目的や内容]: Pythonリファレンス、Rustマルチコア、および将来のニューロモルフィック専用ハードウェアを透過的に切り替えてスパイク伝播を実行するためのインターフェース。
 from typing import List, Dict
 import logging
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/core/hal.py",
-    "//": "ファイルの日本語タイトル: ハードウェア抽象化層 (HAL)",
-    "//": "ファイルの目的や内容: Pythonリファレンス、Rustマルチコア、および将来のニューロモルフィック専用ハードウェアを透過的に切り替えてスパイク伝播を実行するためのインターフェース。"
-}
-
-
+# ディレクトリパス: src/sara_engine/core/hal.py
+# ファイルの日本語タイトル: ハードウェア抽象化層 (HAL)
+# ファイルの目的や内容: Pythonリファレンス、Rustマルチコア、および将来のニューロモルフィック専用ハードウェアを透過的に切り替えてスパイク伝播を実行するためのインターフェース。
 class SpikeBackend:
     def set_weights(self, weights: List[Dict[int, float]]):
         raise NotImplementedError

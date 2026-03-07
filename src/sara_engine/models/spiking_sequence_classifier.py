@@ -7,13 +7,9 @@ import pickle
 import random
 import os
 import json
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/spiking_sequence_classifier.py",
-    "//": "ファイルの日本語タイトル: スパイキング・シーケンス分類器",
-    "//": "ファイルの目的や内容: nn.SNNModuleを継承し、内部状態をstate_dictで管理するようにリファクタリング。"
-}
-
-
+# ディレクトリパス: src/sara_engine/models/spiking_sequence_classifier.py
+# ファイルの日本語タイトル: スパイキング・シーケンス分類器
+# ファイルの目的や内容: nn.SNNModuleを継承し、内部状態をstate_dictで管理するようにリファクタリング。
 class SNNSequenceClassifierConfig:
     def __init__(self, vocab_size: int = 256, num_classes: int = 2, reservoir_size: int = 2048):
         self.vocab_size = vocab_size

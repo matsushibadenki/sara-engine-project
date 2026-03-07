@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/agent_chat.py",
-    "//": "ファイルの日本語タイトル: エージェント・チャットパイプライン",
-    "//": "ファイルの目的や内容: ユーザーがモデルの詳細を気にせず、テキストを入力するだけで自律的なツール実行とテキスト生成を行えるようにSaraAgentをラップする。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/agent_chat.py
+# ファイルの日本語タイトル: エージェント・チャットパイプライン
+# ファイルの目的や内容: ユーザーがモデルの詳細を気にせず、テキストを入力するだけで自律的なツール実行とテキスト生成を行えるようにSaraAgentをラップする。
 from typing import Any, Callable
 
 class AgentChatPipeline:

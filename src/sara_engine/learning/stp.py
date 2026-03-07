@@ -7,6 +7,7 @@
 import math
 from typing import Dict
 
+
 class ShortTermPlasticityManager:
     """
     Tsodyks-Markram Short Term Plasticity (STP)
@@ -87,6 +88,10 @@ class ShortTermPlasticityManager:
         }
 
     def load_state_dict(self, state: Dict[str, object]) -> None:
-        if "u" in state: self.u = {int(k): float(v) for k, v in state["u"].items()}
-        if "x" in state: self.x = {int(k): float(v) for k, v in state["x"].items()}
-        if "last_update" in state: self.last_update = {int(k): float(v) for k, v in state["last_update"].items()}
+        if "u" in state:
+            self.u = {int(k): float(v) for k, v in state["u"].items()}
+        if "x" in state:
+            self.x = {int(k): float(v) for k, v in state["x"].items()}
+        if "last_update" in state:
+            self.last_update = {int(k): float(v)
+                                for k, v in state["last_update"].items()}

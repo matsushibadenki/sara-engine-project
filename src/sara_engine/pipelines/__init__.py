@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/pipelines/__init__.py",
-    "//": "ファイルの日本語タイトル: パイプライン初期化",
-    "//": "ファイルの目的や内容: SARA Engineの各種タスクパイプラインを統合管理。モデル名(文字列)が渡された場合、自動的にAutoSpikingLMやAutoSpikingAgentをロードするスマートなファクトリ機能を追加。"
-}
-
+# ディレクトリパス: src/sara_engine/pipelines/__init__.py
+# ファイルの日本語タイトル: パイプライン初期化
+# ファイルの目的や内容: SARA Engineの各種タスクパイプラインを統合管理。モデル名(文字列)が渡された場合、自動的にAutoSpikingLMやAutoSpikingAgentをロードするスマートなファクトリ機能を追加。
 from typing import Any
 from .text_generation import TextGenerationPipeline
 from .text_classification import TextClassificationPipeline

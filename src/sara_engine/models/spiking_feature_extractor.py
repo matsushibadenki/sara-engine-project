@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/models/spiking_feature_extractor.py",
-    "//": "ファイルの日本語タイトル: スパイキング・特徴抽出器",
-    "//": "ファイルの目的や内容: 発火電位に閾値(Threshold)を設け、微小なノイズ電位をゼロに落とすことで、真の疎分散表現(SDR)を生成しベクトル類似度を劇的に向上させる。"
-}
-
+# ディレクトリパス: src/sara_engine/models/spiking_feature_extractor.py
+# ファイルの日本語タイトル: スパイキング・特徴抽出器
+# ファイルの目的や内容: 発火電位に閾値(Threshold)を設け、微小なノイズ電位をゼロに落とすことで、真の疎分散表現(SDR)を生成しベクトル類似度を劇的に向上させる。
 import json
 import os
 import random

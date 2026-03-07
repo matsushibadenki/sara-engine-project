@@ -1,9 +1,6 @@
-_FILE_INFO = {
-    "//": "ディレクトリパス: src/sara_engine/nn/dropout.py",
-    "//": "ファイルの日本語タイトル: スパイク・ドロップアウト",
-    "//": "ファイルの目的や内容: 学習時にスパイクを一定確率で遮断し、局所学習(STDP)の過学習を防ぐTransformerのDropoutのSNN版。"
-}
-
+# ディレクトリパス: src/sara_engine/nn/dropout.py
+# ファイルの日本語タイトル: スパイク・ドロップアウト
+# ファイルの目的や内容: 学習時にスパイクを一定確率で遮断し、局所学習(STDP)の過学習を防ぐTransformerのDropoutのSNN版。
 import random
 from typing import List
 from .module import SNNModule
