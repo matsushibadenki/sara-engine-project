@@ -1,11 +1,9 @@
 from sara_engine.pipelines.text_generation import pipeline as text_pipeline
 from sara_engine.auto import AutoTokenizer, AutoStrongSpikingLM
 import os
-{
-    "//": "ディレクトリパス: examples/nlp/demo_strong_ai.py",
-    "//": "ファイルの日本語タイトル: 強いAI (階層的予測符号化) デモ",
-    "//": "ファイルの目的や内容: 予測符号化を用いたStrongSpikingLMの学習と、深い文脈からの推論テスト。"
-}
+# ディレクトリパス: examples/nlp/demo_strong_ai.py
+# ファイルの日本語タイトル: 強いAI (階層的予測符号化) デモ
+# ファイルの目的や内容: 予測符号化を用いたStrongSpikingLMの学習と、深い文脈からの推論テスト。
 
 
 def main():

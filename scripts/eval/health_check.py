@@ -7,12 +7,12 @@ import random
 import sys
 import time
 
-# プロジェクトルートをパスに追加（インポート前に実行する必要がある）
+# srcディレクトリをパスに追加（インポート前に実行する必要がある）
 sys.path.insert(0, os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..')))
+    os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 
-from src.sara_engine.core.layers import DynamicLiquidLayer  # noqa: E402
-from src.sara_engine.learning.stdp import STDPLayer  # noqa: E402
+from sara_engine.core.layers import DynamicLiquidLayer  # noqa: E402
+from sara_engine.learning.stdp import STDPLayer  # noqa: E402
 
 
 class SARAHealthCheck:
@@ -123,7 +123,7 @@ class SARAHealthCheck:
                 try:
                     import sara_rust_core
                 except ImportError:
-                    from src.sara_engine import sara_rust_core
+                    from sara_engine import sara_rust_core
 
             engine = sara_rust_core.SpikeEngine()
             weights: list[dict[int, float]] = [{1: 0.5, 2: 1.0}, {}, {1: 0.8}]
@@ -153,13 +153,13 @@ class SARAHealthCheck:
                 try:
                     import sara_rust_core
                 except ImportError:
-                    from src.sara_engine import sara_rust_core
-            
+                    from sara_engine import sara_rust_core
+
             memory = sara_rust_core.ScalableSDRMemory(0.1)
             memory.add_memory(1, [1, 2, 3, 4, 5])
             memory.add_memory(2, [6, 7, 8, 9, 10])
             results = memory.search([1, 2, 3], 5)
-            
+
             if results and results[0][0] == 1:
                 self.log("SDR連想メモリ", True, "ScalableSDRMemoryの高速検索機能を確認。")
             else:
@@ -175,13 +175,14 @@ class SARAHealthCheck:
                 try:
                     import sara_rust_core
                 except ImportError:
-                    from src.sara_engine import sara_rust_core
-            
-            router = sara_rust_core.SpikeWTARouter(input_dim=10, num_experts=5, top_k=2)
+                    from sara_engine import sara_rust_core
+
+            router = sara_rust_core.SpikeWTARouter(
+                input_dim=10, num_experts=5, top_k=2)
             weights = [{0: 1.0, 1: 0.5, 2: 0.2} for _ in range(10)]
             router.set_weights(weights)
             winners = router.route([0, 1, 2], learning=True)
-            
+
             if len(winners) <= 2:
                 self.log("WTAルーティング", True, "SpikeWTARouterの競合学習とルーティング機能を確認。")
             else:
@@ -197,11 +198,12 @@ class SARAHealthCheck:
                 try:
                     import sara_rust_core
                 except ImportError:
-                    from src.sara_engine import sara_rust_core
-            
+                    from sara_engine import sara_rust_core
+
             tokens = [1, 2, 3, 1, 2, 4, 1, 2, 3]
-            synapses = sara_rust_core.build_direct_synapses(tokens, context_window=2)
-            
+            synapses = sara_rust_core.build_direct_synapses(
+                tokens, context_window=2)
+
             if isinstance(synapses, dict) and len(synapses) > 0:
                 self.log("Direct Wiring", True, "コーパスからの直接シナプス結線構築機能を確認。")
             else:
