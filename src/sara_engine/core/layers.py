@@ -3,6 +3,7 @@
 # [ファイルの目的や内容]: FFNでの過剰発火（てんかん状態）を防ぐためのゲイン調整と、推論時におけるk-WTA（勝者独占）ベースの正規化ロジックの導入。
 from typing import List, Optional, Dict, Any
 import random
+from ..learning.homeostasis import AdaptiveThresholdHomeostasis
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/layers.py",
     "//": "ファイルの日本語タイトル: スパイキング・ニューラル・レイヤー",
@@ -168,37 +169,42 @@ class SpikeNormalization:
     def __init__(self, target_rate: float = 0.1, adaptation_rate: float = 0.01):
         self.target_rate = target_rate
         self.adaptation_rate = adaptation_rate
-        self.threshold_offsets: Dict[int, float] = {}
+        self.homeostasis = AdaptiveThresholdHomeostasis(
+            target_rate=target_rate,
+            adaptation_rate=adaptation_rate,
+            decay=0.95,
+            min_threshold=0.0,
+            max_threshold=0.9,
+            global_weight=0.25,
+        )
 
     def state_dict(self) -> Dict[str, Any]:
-        return {"threshold_offsets": self.threshold_offsets}
+        return {"homeostasis": self.homeostasis.state_dict()}
 
     def load_state_dict(self, state: Dict[str, Any]):
-        self.threshold_offsets = {int(k): float(v)
-                                  for k, v in state["threshold_offsets"].items()}
+        if "homeostasis" in state:
+            self.homeostasis.load_state_dict(state["homeostasis"])
+            return
+        threshold_offsets = {int(k): float(v)
+                             for k, v in state["threshold_offsets"].items()}
+        self.homeostasis.thresholds = threshold_offsets
 
     def forward(self, spikes: List[int], dim: int, learning: bool = True) -> List[int]:
         normalized_spikes = []
 
         if learning:
+            self.homeostasis.update(spikes, population_size=dim)
             for s in spikes:
-                offset = self.threshold_offsets.get(s, 0.0)
+                offset = self.homeostasis.get_threshold(s, 0.0)
                 # 学習時は確率的にスパイクをドロップダウンさせる
                 if random.random() > offset:
                     normalized_spikes.append(s)
-
-            # 発火率の誤差からオフセット（抑制）を更新
-            current_rate = len(spikes) / max(1, dim)
-            error = current_rate - self.target_rate
-            for s in spikes:
-                curr = self.threshold_offsets.get(s, 0.0)
-                self.threshold_offsets[s] = max(
-                    0.0, min(0.9, curr + self.adaptation_rate * error))
         else:
+            self.homeostasis.update([], population_size=dim)
             # 推論時: Target Rateに基づくk-WTA（上位K個の勝者独占）的な足切りを行う
             valid_spikes = []
             for s in spikes:
-                offset = self.threshold_offsets.get(s, 0.0)
+                offset = self.homeostasis.get_threshold(s, 0.0)
                 valid_spikes.append((s, offset))
 
             # オフセットが低い（抑制されにくい）順にソート

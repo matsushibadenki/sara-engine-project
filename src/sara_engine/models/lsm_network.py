@@ -8,6 +8,7 @@ import random
 from typing import List
 from ..neuro.neuron import Neuron
 from ..neuro.synapse import Synapse
+from ..metrics.branching_ratio import BranchingRatioEstimator
 
 
 class LSMNetwork:
@@ -29,6 +30,8 @@ class LSMNetwork:
         self.target_rate = 0.05
         self.firing_rates = {
             n: self.target_rate for n in self.liquid + self.outputs}
+        self.branching_estimator = BranchingRatioEstimator(smoothing_alpha=0.08)
+        self.target_sigma = 1.0
 
         self.prune_threshold = 0.01
         self.growth_prob = 0.1
@@ -81,6 +84,11 @@ class LSMNetwork:
             self.firing_rates[n] = self.firing_rates[n] * \
                 0.99 + (1.0 if n.spike else 0.0) * 0.01
 
+        sigma = self.branching_estimator.update(
+            sum(1 for n in self.liquid if n.spike) + sum(1 for s in out_spikes if s)
+        )
+        self._apply_criticality_control(sigma)
+
         # メタ可塑性の適用
         if self.global_step % 100 == 0:
             self._apply_homeostasis()
@@ -89,6 +97,15 @@ class LSMNetwork:
             self._apply_structural_plasticity()
 
         return out_spikes
+
+    def _apply_criticality_control(self, sigma: float) -> None:
+        sigma_error = sigma - self.target_sigma
+        if abs(sigma_error) < 0.05:
+            return
+
+        threshold_shift = max(-0.15, min(0.15, sigma_error * 0.04))
+        for n in self.liquid + self.outputs:
+            n.threshold = max(0.2, min(2.5, n.threshold + threshold_shift))
 
     def _apply_homeostasis(self):
         scale_factors = {}

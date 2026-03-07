@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Set, Tuple, Optional
 
 from ..core.transformer import LIFSpikeAttention
 from ..core.cortical_columns import SpikingCorticalColumns
+from ..learning.homeostasis import AdaptiveThresholdHomeostasis
 from ..utils.tokenizer import SaraTokenizer
 
 
@@ -25,16 +26,25 @@ class SpikingLayerNorm:
     ):
         self.sdr_size = sdr_size
         self.base_threshold = base_threshold
-        self.thresholds = [base_threshold] * sdr_size
         self.target_spikes = max(1, int(sdr_size * target_active_ratio))
+        self.homeostasis = AdaptiveThresholdHomeostasis(
+            target_rate=target_active_ratio,
+            adaptation_rate=0.08,
+            decay=0.96,
+            min_threshold=0.01,
+            max_threshold=base_threshold * 3.0,
+            global_weight=0.35,
+        )
+        self.homeostasis.thresholds = {
+            i: base_threshold for i in range(sdr_size)
+        }
 
     def forward(self, input_potentials: List[float]) -> List[int]:
         active_potentials = [(i, p)
                              for i, p in enumerate(input_potentials) if p > 0]
 
         if not active_potentials:
-            for i in range(self.sdr_size):
-                self.thresholds[i] = max(0.01, self.thresholds[i] - 0.02)
+            self.homeostasis.update([], population_size=self.sdr_size)
             return []
 
         active_ratio = len(active_potentials) / self.sdr_size
@@ -45,7 +55,7 @@ class SpikingLayerNorm:
         spikes: List[int] = []
         for i, p in enumerate(input_potentials):
             effective_p = p - global_inhibition
-            if effective_p >= self.thresholds[i]:
+            if effective_p >= self.homeostasis.get_threshold(i, self.base_threshold):
                 spikes.append(i)
 
         max_allowed = self.target_spikes * 2
@@ -63,14 +73,7 @@ class SpikingLayerNorm:
                 if idx not in spikes:
                     spikes.append(idx)
 
-        adjustment_rate = 0.01
-        for i in range(self.sdr_size):
-            if i in spikes:
-                self.thresholds[i] += adjustment_rate
-            else:
-                self.thresholds[i] -= adjustment_rate * 0.8
-            self.thresholds[i] = max(
-                0.01, min(self.thresholds[i], self.base_threshold * 3.0))
+        self.homeostasis.update(spikes, population_size=self.sdr_size)
 
         return sorted(spikes)
 
@@ -413,9 +416,17 @@ class SpikingLLM:
         context_tokens: List[int] = list(prompt_tokens)
         recent_window = max(self.context_window, 20)
 
-        fatigue: Dict[int, float] = defaultdict(float)
+        fatigue = AdaptiveThresholdHomeostasis(
+            target_rate=1.0 / max(4.0, float(recent_window)),
+            adaptation_rate=0.35,
+            decay=0.8,
+            min_threshold=0.0,
+            max_threshold=4.0,
+            global_weight=0.0,
+        )
 
         for _t in range(max_new_tokens):
+            fatigue.update([], population_size=self.vocab_size)
             scores: Dict[int, float] = defaultdict(float)
             votes: Dict[int, List[int]] = defaultdict(list)
 
@@ -469,11 +480,8 @@ class SpikingLLM:
 
             # === 4. ALIF (適応的閾値) によるニューロンの疲労ペナルティ ===
             for tok_id in list(scores.keys()):
-                if fatigue[tok_id] > 0.0:
-                    if tok_id in exempt_ids:
-                        scores[tok_id] /= (1.0 + fatigue[tok_id] * 0.05)
-                    else:
-                        scores[tok_id] /= (1.0 + fatigue[tok_id] * 0.5)
+                strength = 0.1 if tok_id in exempt_ids else 0.8
+                scores[tok_id] = fatigue.modulate(tok_id, scores[tok_id], strength=strength)
 
             # N-gram 堂々巡りの強力なブロック
             for ngram_len in (2, 3, 4, 5, 6):
@@ -546,12 +554,7 @@ class SpikingLLM:
             else:
                 best_id = top_k_candidates[0][0]
 
-            # 疲労の更新
-            for k in list(fatigue.keys()):
-                fatigue[k] *= 0.5
-                if fatigue[k] < 0.05:
-                    del fatigue[k]
-            fatigue[best_id] += 1.0
+            fatigue.update([best_id], population_size=self.vocab_size)
 
             generated_sequence.append(best_id)
             context_tokens.append(best_id)

@@ -13,6 +13,7 @@ from ..learning.three_factor_learning import ThreeFactorLearningManager
 from ..learning.predictive_coding import PredictiveCodingManager
 from ..learning.sequence_learning import NeuralSequenceManager
 from ..dynamics.oscillation import OscillationManager
+from ..cognitive.global_workspace import GlobalWorkspace
 from ..neuro.neuron_types import NeuronTypeManager
 from ..neuro.dendrite import DendriticTree
 from .. import nn
@@ -74,6 +75,12 @@ class SpikingTransformerModel(nn.SNNModule):
         self.sequence_manager = NeuralSequenceManager(
             time_window=100.0, sequence_lr=0.05)
         self.oscillation_manager = OscillationManager()
+        self.global_workspace = GlobalWorkspace(
+            num_candidates=8,
+            inhibition_factor=0.35,
+            winner_threshold=0.8,
+            decay=0.82,
+        )
 
         self.adaptive_thresholds: Dict[int, float] = {}
         self.target_counts: Dict[int, int] = {} 
@@ -94,6 +101,7 @@ class SpikingTransformerModel(nn.SNNModule):
         self.three_factor_manager.reset()
         self.predictive_manager.reset()
         self.sequence_manager.reset()
+        self.global_workspace.reset()
         for d_tree in self.dendritic_forest:
             d_tree.reset()
         self.current_time = 0.0
@@ -171,6 +179,19 @@ class SpikingTransformerModel(nn.SNNModule):
         if dominates and top_p >= min_sparse_threshold:
             return [(top_tid, top_p)]
         return []
+
+    def _workspace_select_candidate(
+        self,
+        candidates: List[Tuple[int, float]],
+    ) -> List[Tuple[int, float]]:
+        if not candidates:
+            return []
+        limited = candidates[:self.global_workspace.num_candidates]
+        winner_idx = self.global_workspace.step([p for _, p in limited])
+        if winner_idx < 0 or winner_idx >= len(limited):
+            return limited
+        winner = limited[winner_idx]
+        return [winner] + [item for idx, item in enumerate(limited) if idx != winner_idx]
 
     def forward_step(
         self,
@@ -258,6 +279,7 @@ class SpikingTransformerModel(nn.SNNModule):
                         base_threshold=base_threshold,
                         population_rate=population_rate,
                     )
+                candidates = self._workspace_select_candidate(candidates)
 
                 if candidates:
                     predicted_id = SynapseManager.sample_temperature(
@@ -303,6 +325,7 @@ class SpikingTransformerModel(nn.SNNModule):
                         base_threshold=base_threshold,
                         population_rate=population_rate,
                     )
+                candidates = self._workspace_select_candidate(candidates)
 
                 if debug:
                     debug_info["top_k"] = candidates

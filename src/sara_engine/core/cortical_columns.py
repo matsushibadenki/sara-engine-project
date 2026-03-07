@@ -1,6 +1,7 @@
 from .layers import SpikeFeedForward
 from typing import List, Dict, Set
 import random
+from ..learning.homeostasis import AdaptiveThresholdHomeostasis
 _FILE_INFO = {
     "//": "ディレクトリパス: src/sara_engine/core/cortical_columns.py",
     "//": "ファイルの日本語タイトル: スパイキング・大脳皮質カラム (MoE代替)",
@@ -48,13 +49,22 @@ class SpikingCorticalColumns:
             self.router.set_weights(initial_weights)
         else:
             self.router_weights = initial_weights
-            self.router_thresholds = {i: 0.0 for i in range(num_experts)}
+            self.router_homeostasis = AdaptiveThresholdHomeostasis(
+                target_rate=max(0.05, self.top_k / max(1, num_experts)),
+                adaptation_rate=0.4,
+                decay=0.92,
+                min_threshold=0.0,
+                max_threshold=4.0,
+                global_weight=0.3,
+            )
 
     def reset_state(self):
         for expert in self.experts:
             if hasattr(expert, 'reset_state'):
                 expert.reset_state()
         self.step_counter = 0
+        if not self.use_rust:
+            self.router_homeostasis.reset()
 
     def state_dict(self) -> Dict:
         return {
@@ -63,7 +73,8 @@ class SpikingCorticalColumns:
             "top_k": self.top_k,
             "experts": [expert.state_dict() for expert in self.experts],
             "router_weights": self.router.get_weights() if self.use_rust else self.router_weights,
-            "router_thresholds": self.router.get_thresholds() if self.use_rust else self.router_thresholds
+            "router_thresholds": self.router.get_thresholds() if self.use_rust else self.router_homeostasis.thresholds,
+            "router_homeostasis": None if self.use_rust else self.router_homeostasis.state_dict(),
         }
 
     def load_state_dict(self, state: Dict):
@@ -80,8 +91,13 @@ class SpikingCorticalColumns:
                 self.router.set_thresholds(state["router_thresholds"])
         else:
             self.router_weights = state["router_weights"]
-            self.router_thresholds = state.get(
-                "router_thresholds", {i: 0.0 for i in range(self.num_experts)})
+            if "router_homeostasis" in state:
+                self.router_homeostasis.load_state_dict(state["router_homeostasis"])
+            else:
+                self.router_homeostasis.thresholds = {
+                    int(k): float(v)
+                    for k, v in state.get("router_thresholds", {}).items()
+                }
 
     def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
         if self.use_rust:
@@ -96,18 +112,20 @@ class SpikingCorticalColumns:
 
             # Apply Homeostasis (subtract fatigue threshold)
             adjusted_potentials = {
-                i: expert_potentials[i] - self.router_thresholds[i] for i in range(self.num_experts)}
+                i: expert_potentials[i] - self.router_homeostasis.get_threshold(i, 0.0)
+                for i in range(self.num_experts)
+            }
             sorted_experts = sorted(
                 adjusted_potentials.items(), key=lambda x: x[1], reverse=True)
             active_experts = [exp_id for exp_id,
                               pot in sorted_experts[:self.top_k]]
 
             if learning:
-                # Fatigue accumulation and recovery
-                for i in range(self.num_experts):
-                    self.router_thresholds[i] *= 0.95
-                for exp_id in active_experts:
-                    self.router_thresholds[exp_id] += 2.0
+                self.router_homeostasis.update(
+                    active_experts, population_size=self.num_experts)
+            else:
+                self.router_homeostasis.update(
+                    [], population_size=self.num_experts)
 
         out_spikes = set()
         for exp_id in active_experts:

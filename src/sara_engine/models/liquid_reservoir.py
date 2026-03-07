@@ -8,6 +8,7 @@ import random
 import math
 from typing import List, Dict, Any
 from ..neuro.dendrite import DendriticTree
+from ..metrics.branching_ratio import BranchingRatioEstimator
 
 
 class LiquidReservoir:
@@ -64,6 +65,9 @@ class LiquidReservoir:
         self.d = [2.0 if self.is_inhibitory[i]
                   else 8.0 for i in range(n_neurons)]
         self.v_thresh = [30.0 for _ in range(n_neurons)]
+        self.branching_estimator = BranchingRatioEstimator(smoothing_alpha=0.08)
+        self.target_sigma = 1.0
+        self.critical_gain = 1.0
 
     def step(self, external_currents: List[float], delay_manager: Any = None) -> List[int]:
         self.current_time += self.dt
@@ -94,7 +98,7 @@ class LiquidReservoir:
         fired_neurons = []
         for i in range(self.n):
             I_ext = external_currents[i] if i < len(external_currents) else 0.0
-            I_total = I_ext + I_syn_total[i]
+            I_total = (I_ext + I_syn_total[i]) * self.critical_gain
 
             v, u_i = self.v[i], self.u_izh[i]
             v_new = v + self.dt * (0.04 * v**2 + 5.0 *
@@ -143,7 +147,31 @@ class LiquidReservoir:
                     self._update_weight(
                         pre_id, post_id, self.A_plus * self.pre_trace[pre_id])
 
+        sigma = self.branching_estimator.update(len(fired_neurons))
+        self._apply_criticality_control(sigma)
+
         return fired_neurons
+
+    def _apply_criticality_control(self, sigma: float) -> None:
+        sigma_error = sigma - self.target_sigma
+        self.critical_gain = max(0.7, min(1.3, 1.0 - sigma_error * 0.15))
+
+        if abs(sigma_error) < 0.05:
+            return
+
+        excit_scale = max(0.92, min(1.08, 1.0 - sigma_error * 0.05))
+        inhib_scale = max(0.92, min(1.08, 1.0 + sigma_error * 0.05))
+        for pre_id in range(self.n):
+            if self.is_inhibitory[pre_id]:
+                scale = inhib_scale
+            else:
+                scale = excit_scale
+            for post_id in list(self.synapses[pre_id].keys()):
+                self.synapses[pre_id][post_id] *= scale
+                if self.is_inhibitory[pre_id]:
+                    self.synapses[pre_id][post_id] = max(-self.max_weight, min(0.0, self.synapses[pre_id][post_id]))
+                else:
+                    self.synapses[pre_id][post_id] = max(0.0, min(self.max_weight, self.synapses[pre_id][post_id]))
 
     def _update_weight(self, pre_id: int, post_id: int, dw: float):
         w = self.synapses[pre_id][post_id]

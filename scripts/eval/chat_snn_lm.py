@@ -1,8 +1,8 @@
-# {
-#     "//": "ディレクトリパス: scripts/eval/chat_snn_lm.py",
-#     "//": "ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (パラメータ調整版)",
-#     "//": "ファイルの目的や内容: 未知の入力に対する沈黙を防ぐため、発火閾値を下げ、出力を安定させるために温度パラメータを調整。"
-# }
+{
+    "//": "ディレクトリパス: scripts/eval/chat_snn_lm.py",
+    "//": "ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (パラメータ調整版)",
+    "//": "ファイルの目的や内容: 英語ノイズや無意味な出力を防ぐため、スコアリングのペナルティ強化およびサニタイズ処理を追加。"
+}
 
 import os
 import sys
@@ -28,10 +28,12 @@ def _score_response(text: str) -> float:
     line_breaks = stripped.count("\n")
 
     score = float(jp_count) * 1.2
-    score -= float(ascii_count) * 0.5
+    # 英字に対するペナルティを強化し、英語のノイズ出力を抑止
+    score -= float(ascii_count) * 1.5 
     score -= float(digit_count) * 0.2
     score -= float(noise_count) * 1.5
     score -= max(0, line_breaks - 2) * 3.0
+    
     if stripped[-1] in "。！？":
         score += 3.0
     if len(stripped) > 220:
@@ -45,6 +47,10 @@ def _clean_response(text: str, max_chars: int = 200) -> str:
     normalized = text.replace("<eos>", "").replace("<sos>", "").replace("<pad>", "").replace("<unk>", "")
     normalized = re.sub(r"[ \t]+", " ", normalized).strip()
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    
+    # 英語のノイズ（ハイフンとアルファベットの連続）を削除
+    normalized = re.sub(r"[-a-zA-Z\s]{15,}.*$", "", normalized)
+    
     if len(normalized) > max_chars:
         normalized = normalized[:max_chars].rstrip()
         last_punc = max(normalized.rfind("。"), normalized.rfind("！"), normalized.rfind("？"))

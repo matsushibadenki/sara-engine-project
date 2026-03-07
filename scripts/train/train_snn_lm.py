@@ -1,8 +1,8 @@
-# {
-#     "//": "ディレクトリパス: scripts/train/train_snn_lm.py",
-#     "//": "ファイルの日本語タイトル: SNN言語モデル 実データ事前学習スクリプト",
-#     "//": "ファイルの目的や内容: SARA BPE トークナイザーを使用してサブワードレベルで学習。文脈を長く保つためにチャンクサイズを128に拡大。"
-# }
+{
+    "//": "ディレクトリパス: scripts/train/train_snn_lm.py",
+    "//": "ファイルの日本語タイトル: SNN言語モデル 実データ事前学習スクリプト",
+    "//": "ファイルの目的や内容: SARA BPE トークナイザーを使用してサブワードレベルで学習。ノイズ（英語論文の断片など）を除外するため、日本語含有率のチェックを追加。"
+}
 
 import os
 import sys
@@ -31,6 +31,11 @@ def _is_noisy_line(line: str) -> bool:
         return True
 
     if re.search(r"[A-Za-z]{6,}\d{2,}", text):
+        return True
+
+    # 日本語の文字（ひらがな、カタカナ、漢字）の割合をチェックし、少なすぎる場合はノイズとして弾く
+    jp_chars = len(re.findall(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]', text))
+    if len(text) > 0 and (jp_chars / len(text)) < 0.3:
         return True
 
     return False

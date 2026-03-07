@@ -3,7 +3,11 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
-from sara_engine.learning.homeostasis import NeuronActivityTracker, SynapticScalingManager
+from sara_engine.learning.homeostasis import (
+    AdaptiveThresholdHomeostasis,
+    NeuronActivityTracker,
+    SynapticScalingManager,
+)
 
 
 def test_activity_tracker_rate_is_bounded_and_decays():
@@ -54,3 +58,40 @@ def test_scaling_factor_has_deadband_and_population_feedback():
     down = manager.compute_scaling_factor(current_rate=0.5, population_rate=0.5)
     assert up > 1.0
     assert down < 1.0
+
+
+def test_adaptive_threshold_homeostasis_raises_and_recovers():
+    manager = AdaptiveThresholdHomeostasis(
+        target_rate=0.1,
+        adaptation_rate=0.5,
+        decay=0.8,
+        min_threshold=0.0,
+        max_threshold=2.0,
+    )
+
+    for _ in range(8):
+        manager.update([3], population_size=10)
+    raised = manager.get_threshold(3)
+    assert raised > 0.0
+
+    for _ in range(20):
+        manager.update([], population_size=10)
+    recovered = manager.get_threshold(3)
+    assert 0.0 <= recovered < raised
+
+
+def test_adaptive_threshold_homeostasis_modulates_scores():
+    manager = AdaptiveThresholdHomeostasis(
+        target_rate=0.05,
+        adaptation_rate=0.4,
+        decay=0.9,
+        min_threshold=0.0,
+        max_threshold=3.0,
+    )
+
+    for _ in range(10):
+        manager.update([9], population_size=100)
+
+    raw = 1.0
+    modulated = manager.modulate(9, raw, strength=1.0)
+    assert 0.0 < modulated < raw
