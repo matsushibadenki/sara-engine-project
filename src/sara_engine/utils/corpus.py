@@ -1,5 +1,9 @@
+# ディレクトリパス: src/sara_engine/utils/corpus.py
+# ファイルの日本語タイトル: コーパス処理ユーティリティ
+# ファイルの目的や内容: テキストデータの前処理、ノイズ除去、行の結合、見出しの分離、箇条書きの正規化、および学習用会話データの生成補助を行う。
+
 import re
-from typing import List
+from typing import List, Tuple
 
 
 _NOISE_SYMBOLS = set("{}[]<>|\\/@#$%^&*_+=~`")
@@ -33,6 +37,14 @@ def is_noisy_line(line: str) -> bool:
     return False
 
 
+def normalize_list_item(line: str) -> str:
+    """箇条書きのマーカーを正規化する"""
+    line = line.strip()
+    line = re.sub(r"^[\-*\+＋・]\s*", "・", line)
+    line = re.sub(r"^[0-9０-９]+[\.\)．）]\s*", "・", line)
+    return line
+
+
 def merge_wrapped_lines(lines: List[str]) -> List[str]:
     merged: List[str] = []
     buffer = ""
@@ -44,6 +56,10 @@ def merge_wrapped_lines(lines: List[str]) -> List[str]:
                 merged.append(buffer)
                 buffer = ""
             continue
+
+        # 箇条書きの正規化
+        if _looks_like_list_item(line):
+            line = normalize_list_item(line)
 
         if not buffer:
             buffer = line
@@ -74,7 +90,12 @@ def _should_merge_lines(prev_line: str, next_line: str) -> bool:
     if prev_line[-1] in _SENTENCE_ENDERS:
         return False
 
+    # 見出しと本文の分離
     if _looks_like_heading(prev_line) or _looks_like_heading(next_line):
+        return False
+        
+    # 箇条書きは結合しない
+    if _looks_like_list_item(prev_line) or _looks_like_list_item(next_line):
         return False
 
     if next_line.startswith(_WRAP_CONTINUATION_PREFIXES):
@@ -94,6 +115,39 @@ def _looks_like_heading(line: str) -> bool:
         return True
     if line.startswith(("-", "*", "###", "##", "#")):
         return True
+    # 数字のみの行も見出しとみなす
     if re.fullmatch(r"[0-9０-９]+", line):
         return True
     return False
+
+def _looks_like_list_item(line: str) -> bool:
+    if re.match(r"^[\-*\+＋・]\s+", line):
+        return True
+    if re.match(r"^[0-9０-９]+[\.\)．）]\s+", line):
+        return True
+    return False
+
+
+def generate_conversational_pairs(lines: List[str]) -> List[Tuple[str, str]]:
+    """
+    説明文コーパスから対話形式（質問->回答など）のデータペアを生成する。
+    """
+    pairs = []
+    for line in lines:
+        if not line or len(line) < 10:
+            continue
+        # 定義の抽出（「〜とは〜である」）
+        match = re.search(r"(.+?)(とは|って)(.+?)(です|である|だ)。", line)
+        if match:
+            term = match.group(1).strip()
+            definition = match.group(3).strip() + match.group(4) + "。"
+            pairs.append((f"{term}について教えてください。", f"{term}は、{definition}"))
+            
+        # 途中からの続きを予測させるペア
+        midpoint = len(line) // 2
+        split_idx = line.find("、", midpoint)
+        if split_idx != -1:
+            first_half = line[:split_idx + 1]
+            second_half = line[split_idx + 1:]
+            pairs.append((f"{first_half}の続きを教えてください。", second_half))
+    return pairs

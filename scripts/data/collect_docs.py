@@ -1,12 +1,24 @@
-# ディレクトリパス: scripts/collect_docs.py
+# ディレクトリパス: scripts/data/collect_docs.py
 # ファイルの日本語タイトル: 多目的ドキュメントエクストラクター
-# ファイルの目的や内容: CSV, HTML, PDF等の多様なデータ形式からテキストを抽出し、SNN学習用の中間コーパス（interim）として保存する。日本語URLの自動エンコードに対応。
+# ファイルの目的や内容: CSV, HTML, PDF等の多様なデータ形式からテキストを抽出し、SNN学習用の中間コーパス（interim）として保存する。さらに、対話学習用のQAペアを自動生成して保存する。
 
 import os
+import sys
 import csv
+import json
 import urllib.request
 import urllib.parse
 from html.parser import HTMLParser
+
+# srcディレクトリをパスに追加してモジュールをインポートできるようにする
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
+try:
+    from sara_engine.utils.corpus import clean_corpus_lines, generate_conversational_pairs
+except ImportError:
+    print("⚠️ sara_engine.utils.corpus が見つかりません。デフォルトの処理を使用します。")
+    clean_corpus_lines = lambda x, **kwargs: x
+    generate_conversational_pairs = lambda x: []
+
 
 try:
     import PyPDF2
@@ -104,11 +116,28 @@ def process_document(source_type, source, output_path, **kwargs):
         print("ℹ️ 抽出できるテキストがありませんでした。")
         return
 
+    # 前処理と行の結合（段落化、ノイズ除去、箇条書きの正規化など）
+    cleaned_texts = clean_corpus_lines(texts, merge_wrapped=True)
+
+    # 1. 通常の知識コーパスとして保存
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    valid_count = 0
     with open(output_path, "a", encoding="utf-8") as f:
-        for text in texts:
+        for text in cleaned_texts:
             # 短すぎるノイズ行は学習の邪魔になるため除外
             if len(text) > 15:
                 f.write(text + "\n")
+                valid_count += 1
                 
-    print(f"✅ {len(texts)} 件のテキストブロックを {output_path} に追加しました。")
+    print(f"✅ {valid_count} 件のテキストブロックを {output_path} に追加しました。")
+
+    # 2. 会話形式（チャット学習用）のペアを自動生成して保存
+    chat_pairs = generate_conversational_pairs(cleaned_texts)
+    if chat_pairs:
+        # 出力ディレクトリ内の 'chat_data.jsonl' に追記する
+        chat_output_path = os.path.join(os.path.dirname(output_path), "chat_data.jsonl")
+        with open(chat_output_path, "a", encoding="utf-8") as f_chat:
+            for prompt, response in chat_pairs:
+                json_line = json.dumps({"prompt": prompt, "response": response}, ensure_ascii=False)
+                f_chat.write(json_line + "\n")
+        print(f"✅ {len(chat_pairs)} 件の対話ペアを {chat_output_path} に追加しました。")

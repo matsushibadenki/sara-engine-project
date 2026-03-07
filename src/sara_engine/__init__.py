@@ -29,7 +29,7 @@ _FILE_INFO = {
     "//": "ファイルの目的や内容: ユーザーがSARA Engineを利用する際の最上位APIエントリーポイント。pipelineとAutoクラス群を最優先で公開。"
 }
 
-__version__ = "0.3.2"  # PyPIリリースに向けたバージョンアップ
+__version__ = "0.3.3"  # PyPIリリースに向けたバージョンアップ
 
 # --- Hugging Face Transformers-like API (Main Public Interface) ---
 
