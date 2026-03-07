@@ -199,6 +199,7 @@ class SpikingTransformerModel(nn.SNNModule):
         learning: bool = True,
         target_id: Optional[int] = None,
         refractory_tokens: Optional[List[int]] = None,
+        recent_tokens: Optional[List[int]] = None,
         temperature: float = 0.6,
         fire_threshold: float = 1.0,
         debug: bool = False
@@ -246,8 +247,22 @@ class SpikingTransformerModel(nn.SNNModule):
                 if rt in out_potentials:
                     out_potentials[rt] *= (0.1 * i)
 
+        if not learning and recent_tokens and out_potentials:
+            recent_window = recent_tokens[-24:]
+            token_counts = Counter(recent_window)
+            for tid in list(out_potentials.keys()):
+                count = token_counts.get(tid, 0)
+                if count <= 0:
+                    continue
+                penalty = 1.0 + min(4.0, count * 0.45)
+                if recent_window and tid == recent_window[-1]:
+                    penalty *= 2.5
+                elif len(recent_window) >= 2 and tid == recent_window[-2]:
+                    penalty *= 1.5
+                out_potentials[tid] /= penalty
+
         predicted_id = 0
-        debug_info = {"top_k": [], "stop_reason": ""}
+        debug_info = {"top_k": [], "stop_reason": "", "candidates": []}
 
         if out_potentials:
             sorted_items = sorted(out_potentials.items(),
@@ -280,6 +295,7 @@ class SpikingTransformerModel(nn.SNNModule):
                         population_rate=population_rate,
                     )
                 candidates = self._workspace_select_candidate(candidates)
+                debug_info["candidates"] = candidates[:5]
 
                 if candidates:
                     predicted_id = SynapseManager.sample_temperature(
@@ -329,6 +345,7 @@ class SpikingTransformerModel(nn.SNNModule):
 
                 if debug:
                     debug_info["top_k"] = candidates
+                debug_info["candidates"] = candidates[:5]
                 
                 if candidates:
                     predicted_id = SynapseManager.sample_temperature(
@@ -468,14 +485,39 @@ class SpikingTransformerModel(nn.SNNModule):
 
         current_token = prompt[-1]
         for _ in range(max_length):
-            predicted_id, info = self.forward_step(
-                current_token,
-                learning=False,
-                refractory_tokens=generated[-5:],
-                temperature=temperature,
-                fire_threshold=fire_threshold,
-                debug=debug,
-            )
+            retry_blocked: set[int] = set()
+            predicted_id = 0
+            info: Dict = {}
+            for _attempt in range(3):
+                predicted_id, info = self.forward_step(
+                    current_token,
+                    learning=False,
+                    refractory_tokens=generated[-5:],
+                    recent_tokens=generated[-32:],
+                    temperature=temperature,
+                    fire_threshold=fire_threshold,
+                    debug=debug,
+                )
+                if predicted_id in retry_blocked:
+                    predicted_id = 0
+                    break
+                if predicted_id == 0:
+                    break
+                if self._would_repeat_ngram(generated, predicted_id, n=4):
+                    retry_blocked.add(predicted_id)
+                    current_thr = self.adaptive_thresholds.get(predicted_id, fire_threshold)
+                    self.adaptive_thresholds[predicted_id] = max(current_thr, current_thr + 0.8)
+                    info["stop_reason"] = "blocked_repeat_4gram"
+                    predicted_id = 0
+                    continue
+                if self._would_repeat_ngram(generated, predicted_id, n=3):
+                    retry_blocked.add(predicted_id)
+                    current_thr = self.adaptive_thresholds.get(predicted_id, fire_threshold)
+                    self.adaptive_thresholds[predicted_id] = max(current_thr, current_thr + 0.45)
+                    info["stop_reason"] = "blocked_repeat_3gram"
+                    predicted_id = 0
+                    continue
+                break
             if debug:
                 debug_logs.append(info)
             if predicted_id == 0 or predicted_id == 3:
@@ -484,6 +526,15 @@ class SpikingTransformerModel(nn.SNNModule):
             current_token = predicted_id
 
         return generated, debug_logs
+
+    def _would_repeat_ngram(self, generated: List[int], next_token: int, n: int) -> bool:
+        if n <= 1 or (len(generated) + 1) < n:
+            return False
+        candidate = tuple((generated + [next_token])[-n:])
+        for i in range(len(generated) - n + 1):
+            if tuple(generated[i:i + n]) == candidate:
+                return True
+        return False
 
     def save_pretrained(self, save_dir: str) -> None:
         os.makedirs(save_dir, exist_ok=True)

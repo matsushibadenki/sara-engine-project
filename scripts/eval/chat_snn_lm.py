@@ -12,6 +12,7 @@ from typing import List, Tuple
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.sara_engine.models.snn_transformer import SpikingTransformerModel
+from src.sara_engine.utils.chat import ChatSessionHelper
 from src.sara_engine.utils.tokenizer import SaraTokenizer
 
 def _score_response(text: str) -> float:
@@ -26,12 +27,27 @@ def _score_response(text: str) -> float:
     digit_count = sum(1 for ch in stripped if ch.isdigit())
     noise_count = len(re.findall(r"[{}[\]<>|\\/@#$%^*_+=~`]", stripped))
     line_breaks = stripped.count("\n")
+    quote_count = stripped.count("「") + stripped.count("」") + stripped.count("『") + stripped.count("』")
+    citation_like = len(re.findall(r"(第\d+巻|第\d+号|\d{4}年|\d+-\d+頁)", stripped))
+
+    repeated_phrase_penalty = 0.0
+    for span in range(8, min(24, max(9, len(stripped) // 2))):
+        seen = {}
+        for i in range(0, max(0, len(stripped) - span + 1)):
+            frag = stripped[i:i + span]
+            if len(frag.strip()) < max(4, span // 2):
+                continue
+            seen[frag] = seen.get(frag, 0) + 1
+        repeated_phrase_penalty += sum((count - 1) * 2.5 for count in seen.values() if count > 1)
 
     score = float(jp_count) * 1.2
     # 英字に対するペナルティを強化し、英語のノイズ出力を抑止
     score -= float(ascii_count) * 1.5 
     score -= float(digit_count) * 0.2
     score -= float(noise_count) * 1.5
+    score -= float(quote_count) * 0.2
+    score -= float(citation_like) * 2.0
+    score -= repeated_phrase_penalty
     score -= max(0, line_breaks - 2) * 3.0
     
     if stripped[-1] in "。！？":
@@ -50,12 +66,23 @@ def _clean_response(text: str, max_chars: int = 200) -> str:
     
     # 英語のノイズ（ハイフンとアルファベットの連続）を削除
     normalized = re.sub(r"[-a-zA-Z\s]{15,}.*$", "", normalized)
+    normalized = re.sub(r"(『[^』]{0,40}|第\d+巻.*$|第\d+号.*$|\d{4}年.*$)", "", normalized)
+    normalized = normalized.replace("、。", "。")
+
+    paired_marks = [("「", "」"), ("『", "』"), ("(", ")"), ("（", "）")]
+    for opener, closer in paired_marks:
+        if normalized.count(opener) > normalized.count(closer):
+            cut = normalized.rfind(opener)
+            if cut > 8:
+                normalized = normalized[:cut].rstrip()
     
     if len(normalized) > max_chars:
         normalized = normalized[:max_chars].rstrip()
         last_punc = max(normalized.rfind("。"), normalized.rfind("！"), normalized.rfind("？"))
         if last_punc > 30:
             normalized = normalized[:last_punc + 1]
+    if normalized and normalized[-1] in "、・「『（(":
+        normalized = normalized[:-1].rstrip()
     return normalized.strip()
 
 
@@ -85,6 +112,7 @@ def chat_loop(
     model = SpikingTransformerModel.from_pretrained(model_dir)
     
     tokenizer = SaraTokenizer(vocab_size=model.config.vocab_size, model_path=os.path.join(model_dir, "sara_vocab.json"))
+    chat_helper = ChatSessionHelper(max_turns=4)
     
     print("SARA is ready! (Type 'quit' or 'exit' to stop)")
     print("💡ヒント: 学習データ（AIやネットワークに関する語彙）に含まれる言葉を入力すると反応しやすくなります。\n")
@@ -97,7 +125,8 @@ def chat_loop(
             if not user_input.strip():
                 continue
 
-            input_tokens = tokenizer.encode(user_input)
+            prompt_text = chat_helper.build_prompt_text(user_input)
+            input_tokens = tokenizer.encode(prompt_text)
             
             if debug_mode:
                 # ユーザーの入力がどのようにトークン化されたかを確認
@@ -125,7 +154,7 @@ def chat_loop(
 
                 response_text = _decode_new_tokens(tokenizer, generated_tokens, len(input_tokens))
                 cleaned_text = _clean_response(response_text)
-                score = _score_response(cleaned_text)
+                score = _score_response(cleaned_text) + chat_helper.rerank_score(user_input, cleaned_text)
                 if score > best_score:
                     best_score = score
                     best_response = cleaned_text
@@ -133,11 +162,12 @@ def chat_loop(
                 if cleaned_text and cleaned_text.endswith(("。", "！", "？")) and score >= 10:
                     break
             
-            # 生成テキストが空の場合は「...」を表示
-            if not best_response.strip():
-                best_response = "..."
+            if not best_response.strip() or best_score < 2.0:
+                best_response = chat_helper.fallback_response(user_input)
                 
             print(f"SARA: {best_response}\n")
+            chat_helper.add_turn("user", user_input)
+            chat_helper.add_turn("assistant", best_response)
 
             if debug_mode and best_logs:
                 last_log = best_logs[-1]

@@ -9,36 +9,12 @@ import sys
 import time
 import random
 import argparse
-import re
 from typing import List
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
+from src.sara_engine.utils.corpus import clean_corpus_lines
 from src.sara_engine.utils.tokenizer import SaraTokenizer
-
-def _is_noisy_line(line: str) -> bool:
-    text = line.strip()
-    if len(text) < 2:
-        return True
-
-    lowered = text.lower()
-    if "http://" in lowered or "https://" in lowered or ".pdf" in lowered:
-        return True
-
-    noise_symbols = set("{}[]<>|\\/@#$%^&*_+=~`")
-    noise_count = sum(1 for ch in text if ch in noise_symbols)
-    if noise_count / max(1, len(text)) > 0.18:
-        return True
-
-    if re.search(r"[A-Za-z]{6,}\d{2,}", text):
-        return True
-
-    # 日本語の文字（ひらがな、カタカナ、漢字）の割合をチェックし、少なすぎる場合はノイズとして弾く
-    jp_chars = len(re.findall(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]', text))
-    if len(text) > 0 and (jp_chars / len(text)) < 0.3:
-        return True
-
-    return False
 
 
 def _build_chunks(
@@ -85,7 +61,7 @@ def train_snn_language_model(
     with open(corpus_path, "r", encoding="utf-8") as f:
         raw_lines = f.read().splitlines()
 
-    cleaned_lines = [line.strip() for line in raw_lines if not _is_noisy_line(line)]
+    cleaned_lines = clean_corpus_lines(raw_lines, merge_wrapped=True)
     if not cleaned_lines:
         print("Error: No usable lines after cleaning.")
         return

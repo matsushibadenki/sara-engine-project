@@ -90,5 +90,24 @@ def test_generate_stops_before_appending_eos():
     assert generated == prompt
     assert logs
 
+
+def test_generate_blocks_repeated_ngram_loops():
+    config = SNNTransformerConfig(vocab_size=32, embed_dim=8, num_layers=1)
+    model = SpikingTransformerModel(config)
+
+    prompt = [5, 6, 7]
+    seq_a = NGramSpikeGenerator.generate_spikes([7, 6, 5], model.num_ngram_levels, model.reservoir_size)
+    seq_b = NGramSpikeGenerator.generate_spikes([8, 7, 6, 5], model.num_ngram_levels, model.reservoir_size)
+
+    for s in seq_a:
+        model.readout_synapses[s][8] = (1.2, 0)
+    for s in seq_b:
+        model.readout_synapses[s][5] = (1.2, 0)
+
+    generated, logs = model.generate(prompt, max_length=6, temperature=0.0, fire_threshold=0.3, debug=True)
+
+    assert generated[:4] == [5, 6, 7, 8]
+    assert len(generated) <= 5
+
 if __name__ == "__main__":
     test_transformer_v2()
