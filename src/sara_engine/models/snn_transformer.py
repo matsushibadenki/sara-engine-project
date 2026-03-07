@@ -22,6 +22,22 @@ import pickle
 import os
 import math
 
+
+class _CompatibleModelUnpickler(pickle.Unpickler):
+    """Load legacy checkpoints that were pickled with older module paths."""
+
+    _MODULE_ALIASES = {
+        "src.sara_engine": "sara_engine",
+        "src": "",
+    }
+
+    def find_class(self, module: str, name: str):
+        if module.startswith("src.sara_engine"):
+            module = module.replace("src.sara_engine", "sara_engine", 1)
+        elif module == "src":
+            module = "__main__"
+        return super().find_class(module, name)
+
 # ---- 定数 ----------------------------------------------------------------
 _MODEL_VERSION: str = "2.4.5"
 _SYNAPSE_MAX_WEIGHT: float = 20.0
@@ -552,7 +568,7 @@ class SpikingTransformerModel(nn.SNNModule):
             raise FileNotFoundError(f"Pre-trained model not found at {model_path}")
             
         with open(model_path, "rb") as f:
-            state = pickle.load(f)
+            state = _CompatibleModelUnpickler(f).load()
             
         model = cls(state["config"])
         model.readout_synapses = state["readout_synapses"]
