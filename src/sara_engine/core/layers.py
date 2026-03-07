@@ -28,7 +28,9 @@ class DynamicLiquidLayer:
                  density: float = 0.05, input_scale: float = 1.0,
                  rec_scale: float = 0.8, feedback_scale: float = 0.5,
                  use_rust: Optional[bool] = None,
-                 target_rate: float = 0.05):
+                 target_rate: float = 0.05,
+                 homeostasis_decay: float = 0.995,
+                 homeostasis_lr: float = 0.08):
         self.size = hidden_size
         self.input_size = input_size
         self.decay = decay
@@ -44,6 +46,9 @@ class DynamicLiquidLayer:
         self.v = [0.0] * hidden_size
         self.refractory = [0.0] * hidden_size
         self.dynamic_thresh = [1.0] * hidden_size
+        self.firing_rates = [target_rate] * hidden_size
+        self.homeostasis_decay = homeostasis_decay
+        self.homeostasis_lr = homeostasis_lr
         self.trace = [0.0] * hidden_size
         self.in_weights: List[Dict[int, float]] = [{}
                                                    for _ in range(input_size)]
@@ -75,6 +80,7 @@ class DynamicLiquidLayer:
             "in_weights": self.in_weights,
             "rec_weights": self.rec_weights,
             "dynamic_thresh": self.dynamic_thresh,
+            "firing_rates": self.firing_rates,
             "v": self.v,
             "refractory": self.refractory
         }
@@ -87,6 +93,7 @@ class DynamicLiquidLayer:
         self.rec_weights = [{int(k): float(v) for k, v in entry.items()}
                             for entry in state["rec_weights"]]
         self.dynamic_thresh = state["dynamic_thresh"]
+        self.firing_rates = state.get("firing_rates", [self.target_rate] * self.size)
         self.v = state.get("v", [0.0] * self.size)
         self.refractory = state.get("refractory", [0.0] * self.size)
 
@@ -132,14 +139,21 @@ class DynamicLiquidLayer:
 
         fired_set = set(fired_indices)
         for i in range(self.size):
+            activity = 1.0 if i in fired_set else 0.0
+            self.firing_rates[i] = (
+                self.firing_rates[i] * self.homeostasis_decay
+                + activity * (1.0 - self.homeostasis_decay)
+            )
+
             if i in fired_set:
                 self.v[i] = 0.0
                 self.refractory[i] = random.uniform(
                     2.0, 5.0) if learning else 3.0
                 self.trace[i] += 1.0
-                self.dynamic_thresh[i] += 0.05
-            else:
-                self.dynamic_thresh[i] += (self.target_rate - 0.05) * 0.01
+
+            self.dynamic_thresh[i] += (
+                self.firing_rates[i] - self.target_rate
+            ) * self.homeostasis_lr
 
             self.dynamic_thresh[i] = max(0.5, min(5.0, self.dynamic_thresh[i]))
 
@@ -159,6 +173,7 @@ class DynamicLiquidLayer:
         self.v = [0.0] * self.size
         self.refractory = [0.0] * self.size
         self.dynamic_thresh = [1.0] * self.size
+        self.firing_rates = [self.target_rate] * self.size
 
 
 class SpikeNormalization:

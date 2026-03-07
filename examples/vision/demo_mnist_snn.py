@@ -134,22 +134,38 @@ def preprocess_images(images: list[list[int]], thresholds: list[int]) -> list[li
         preprocessed.append(active_per_step)
     return preprocessed
 
+def parse_int_list_env(name: str, default: list[int]) -> list[int]:
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    values = [part.strip() for part in raw.split(",")]
+    parsed = [int(v) for v in values if v]
+    return parsed if parsed else default
+
 def run_mnist_snn() -> None:
     print("="*60)
     print("SARA-Engine: MNIST Classification (Gabor V1 Receptive Fields)")
     print("="*60)
 
+    seed = int(os.environ.get("SARA_MNIST_SEED", "42"))
+    random.seed(seed)
+
     train_images, train_labels, test_images, test_labels = prepare_mnist_dataset()
     
     num_inputs = 784
     num_classes = 10
-    epochs = 2  # テストのためエポックを短縮
+    epochs = int(os.environ.get("SARA_MNIST_EPOCHS", "2"))
     
     # 動作確認のため、最初はサンプル数を絞る設定を可能にする（必要に応じて len(train_images) に戻してください）
-    train_samples_to_use = 10000 
-    test_samples_to_use = 1000
+    train_samples_to_use = int(os.environ.get("SARA_MNIST_TRAIN_SAMPLES", "10000"))
+    test_samples_to_use = int(os.environ.get("SARA_MNIST_TEST_SAMPLES", "1000"))
+    liquid_target_rate = float(os.environ.get("SARA_MNIST_LIQUID_TARGET_RATE", "0.05"))
+    liquid_homeostasis_lr = float(os.environ.get("SARA_MNIST_LIQUID_HOMEOSTASIS_LR", "0.08"))
+    liquid_homeostasis_decay = float(os.environ.get("SARA_MNIST_LIQUID_HOMEOSTASIS_DECAY", "0.995"))
+    readout_prune_threshold = float(os.environ.get("SARA_MNIST_READOUT_PRUNE", "0.02"))
 
     print(f"\n[Network] 生物学的マルチスケール・ネットワークを構築中... (学習データ: {train_samples_to_use}件)")
+    print(f"  -> Seed: {seed}")
     
     layer_configs = [
         {"size": 1000, "decay": 0.50, "patch_sizes": [4, 6, 8]}, # 速度向上のためサイズを一時的に縮小
@@ -165,26 +181,39 @@ def run_mnist_snn() -> None:
             input_size=num_inputs, 
             hidden_size=size_val, 
             decay=decay_val, 
-            target_rate=0.05,
+            target_rate=liquid_target_rate,
             density=0.0,
-            input_scale=0.0
+            input_scale=0.0,
+            homeostasis_decay=liquid_homeostasis_decay,
+            homeostasis_lr=liquid_homeostasis_lr,
         )
         apply_spatial_receptive_fields(layer, 28, 28, patch_sizes_val)
         liquid_layers.append(layer)
     
-    thresholds = [220, 160, 100, 40]
+    thresholds = parse_int_list_env("SARA_MNIST_THRESHOLDS", [220, 160, 100, 40])
     num_steps = len(thresholds)
     
     total_hidden = sum(int(cfg["size"]) for cfg in layer_configs)
     feature_dim_per_step = num_inputs + total_hidden
     temporal_spatial_size = feature_dim_per_step * num_steps
     
+    use_homeostasis = os.environ.get("SARA_MNIST_USE_HOMEOSTASIS", "0") != "0"
     readout_layer = SpikeReadoutLayer(
         d_model=temporal_spatial_size, 
         vocab_size=num_classes,
         learning_rate=0.02,
-        use_refractory=False
+        use_refractory=False,
+        use_homeostasis=use_homeostasis,
+        homeostasis_target_rate=1.0 / num_classes,
+        homeostasis_adaptation_rate=0.015,
+        homeostasis_decay=0.999,
+        homeostasis_strength=6.0,
     )
+    print(f"  -> Readout homeostasis: {'ON' if use_homeostasis else 'OFF'}")
+    print(f"  -> Liquid target_rate: {liquid_target_rate}")
+    print(f"  -> Liquid homeostasis lr/decay: {liquid_homeostasis_lr}/{liquid_homeostasis_decay}")
+    print(f"  -> Rank-order thresholds: {thresholds}")
+    print(f"  -> Readout prune threshold: {readout_prune_threshold}")
 
     print("\n[Pre-process] 画像データの前処理...")
     train_encoded = preprocess_images(train_images[:train_samples_to_use], thresholds)
@@ -248,6 +277,17 @@ def run_mnist_snn() -> None:
                 print(f"\r  Progress: {i + 1}/{train_samples_to_use} ({speed:.2f} samples/sec)", end="")
 
         print(f"\n  Epoch {epoch+1} 完了 | 所要時間: {time.time() - epoch_start:.2f}秒")
+        if readout_prune_threshold > 0.0:
+            before_prune = readout_layer.active_synapse_count()
+            pruned = readout_layer.prune_weights(readout_prune_threshold)
+            after_prune = readout_layer.active_synapse_count()
+            print(f"  Readout prune: {pruned} synapses removed ({before_prune} -> {after_prune})")
+        if readout_layer.homeostasis is not None:
+            thresholds_snapshot = [
+                round(readout_layer.homeostasis.get_threshold(i, 0.0), 3)
+                for i in range(num_classes)
+            ]
+            print(f"  Readout homeostasis thresholds: {thresholds_snapshot}")
 
     print(f"\n学習完了 | 総計所要時間: {time.time() - start_time:.2f}秒")
 

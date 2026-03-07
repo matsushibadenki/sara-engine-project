@@ -5,9 +5,21 @@
 import random
 import math
 from typing import List, Dict, Optional
+from ..learning.homeostasis import AdaptiveThresholdHomeostasis
 
 class SpikeReadoutLayer:
-    def __init__(self, d_model: int, vocab_size: int, learning_rate: float = 0.01, use_refractory: bool = False):
+    def __init__(
+        self,
+        d_model: int,
+        vocab_size: int,
+        learning_rate: float = 0.01,
+        use_refractory: bool = False,
+        use_homeostasis: bool = False,
+        homeostasis_target_rate: Optional[float] = None,
+        homeostasis_adaptation_rate: float = 0.02,
+        homeostasis_decay: float = 0.995,
+        homeostasis_strength: float = 8.0,
+    ):
         self.d_model = d_model
         self.vocab_size = vocab_size
         self.learning_rate = learning_rate
@@ -20,10 +32,40 @@ class SpikeReadoutLayer:
         
         self.refractory_states: Dict[int, int] = {}
         self.refractory_duration = 2
+        self.use_homeostasis = use_homeostasis
+        self.homeostasis_strength = homeostasis_strength
+        self.homeostasis: Optional[AdaptiveThresholdHomeostasis] = None
+        if use_homeostasis:
+            target_rate = homeostasis_target_rate
+            if target_rate is None:
+                target_rate = 1.0 / max(1, vocab_size)
+            self.homeostasis = AdaptiveThresholdHomeostasis(
+                target_rate=target_rate,
+                adaptation_rate=homeostasis_adaptation_rate,
+                decay=homeostasis_decay,
+                min_threshold=0.0,
+                max_threshold=1.5,
+                global_weight=0.35,
+            )
         
         # 表現力を制限しないよう上下限を広げる
         self.w_max = 50.0
         self.w_min = -50.0 
+
+    def active_synapse_count(self) -> int:
+        total = 0
+        for row in self.W:
+            total += len(row)
+        return total
+
+    def prune_weights(self, min_abs_weight: float = 0.01) -> int:
+        pruned = 0
+        for row in self.W:
+            to_delete = [token_id for token_id, weight in row.items() if abs(weight) < min_abs_weight]
+            for token_id in to_delete:
+                del row[token_id]
+                pruned += 1
+        return pruned
 
     def forward(self, spikes: List[int], target_token: Optional[int] = None, learning: bool = True) -> int:
         if self.use_refractory:
@@ -38,18 +80,25 @@ class SpikeReadoutLayer:
             if s < len(self.W):
                 for token_id, weight in self.W[s].items():
                     potentials[token_id] += weight
+
+        adjusted_potentials = list(potentials)
+        if self.homeostasis is not None:
+            for token_id in range(self.vocab_size):
+                adjusted_potentials[token_id] -= (
+                    self.homeostasis.get_threshold(token_id, 0.0) * self.homeostasis_strength
+                )
                 
         if not learning and self.use_refractory:
             for tid in self.refractory_states:
                 if tid < self.vocab_size:
-                    potentials[tid] = -9999.0 
+                    adjusted_potentials[tid] = -9999.0 
                 
         predicted_token = 0
         max_potential = -9999.0
         
         for i in range(self.vocab_size):
-            if potentials[i] > max_potential:
-                max_potential = potentials[i]
+            if adjusted_potentials[i] > max_potential:
+                max_potential = adjusted_potentials[i]
                 predicted_token = i
         
         if max_potential <= -9000.0 and len(spikes) == 0:
@@ -57,6 +106,10 @@ class SpikeReadoutLayer:
             
         if not learning and self.use_refractory:
             self.refractory_states[predicted_token] = self.refractory_duration
+
+        if self.homeostasis is not None:
+            active_ids = [predicted_token] if len(spikes) > 0 else []
+            self.homeostasis.update(active_ids, population_size=self.vocab_size)
 
         # Top-1 Hinge-Loss STDP (Crammer & Singer Multiclass PA)
         # 生物学的な側抑制（Winner-Take-All）に相当し、発散を完全に防ぐ
@@ -69,8 +122,8 @@ class SpikeReadoutLayer:
             
             for i in range(self.vocab_size):
                 if i != target_token:
-                    if potentials[i] > max_wrong_potential:
-                        max_wrong_potential = potentials[i]
+                    if adjusted_potentials[i] > max_wrong_potential:
+                        max_wrong_potential = adjusted_potentials[i]
                         max_wrong_token = i
             
             # 学習率のスケール係数と要求マージンの動的調整
@@ -82,7 +135,7 @@ class SpikeReadoutLayer:
             
             # Top-1 クラスに対するヒンジロス
             if max_wrong_token != -1:
-                loss = target_margin - (potentials[target_token] - max_wrong_potential)
+                loss = target_margin - (adjusted_potentials[target_token] - max_wrong_potential)
                 
                 if loss > 0:
                     # 正解クラスと不正解クラスの2つを更新するため、分母は 2 * norm_sq
