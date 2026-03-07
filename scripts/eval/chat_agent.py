@@ -4,6 +4,7 @@
 
 import os
 import sys
+import argparse
 from datetime import datetime
 
 # srcディレクトリをパスに追加
@@ -14,6 +15,7 @@ if project_root not in sys.path:
 
 from sara_engine.agent.sara_agent import SaraAgent
 from sara_engine.pipelines.agent_chat import AgentChatPipeline
+from sara_engine.utils.project_paths import model_path
 
 def get_current_time(prompt: str) -> str:
     """エージェントに提供する外部ツール（現在時刻の取得）"""
@@ -35,6 +37,14 @@ def get_calculator(prompt: str) -> str:
     return "計算できませんでした"
 
 def main():
+    parser = argparse.ArgumentParser(description="Interactive chat for SaraAgent.")
+    parser.add_argument(
+        "--model-dir",
+        default=model_path("sara_agent"),
+        help="Directory containing saved SaraAgent state.",
+    )
+    args = parser.parse_args()
+
     print("=" * 60)
     print("🧠 SARA-Engine: Integrated Agent Chat Inference")
     print("=" * 60)
@@ -47,7 +57,7 @@ def main():
     )
     
     print("[INFO] 学習済みの記憶モデルをロードしています...")
-    agent.load_agent("workspace/models/sara_agent")
+    agent.load_agent(args.model_dir)
     
     pipeline = AgentChatPipeline(agent)
     
@@ -83,7 +93,7 @@ def main():
                 # teaching_mode=True で推論パイプラインに通す
                 response = pipeline(text=learn_text, teaching_mode=True)
                 # 学習した内容を永続化
-                agent.save_agent("workspace/models/sara_agent")
+                agent.save_agent(args.model_dir)
                 
                 print(" " * 30, end="\r")
                 print(f"🤖 SARA:\n{response}\n")

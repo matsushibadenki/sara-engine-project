@@ -11,11 +11,16 @@ import shutil
 import subprocess
 
 # scriptsディレクトリ自体をシステムパスに追加
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+scripts_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(scripts_dir, ".."))
+src_dir = os.path.join(project_root, "src")
+sys.path.insert(0, scripts_dir)
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
 
+from sara_engine.utils.project_paths import model_path
 from data.collect_math import generate_math_corpus, default_math_database
 from data.collect_docs import process_document
-from train.train_chat import train_chat_data
 from eval.test_math_chat import run_math_chat
 from eval.test_vision_inference import run_vision_inference
 from utils.prune_memory import prune_model_memory
@@ -39,17 +44,17 @@ def main():
     parser_train_self = subparsers.add_parser("train-self-org", help="【推奨】SNN固有の自己組織化学習(誤差逆伝播なし)を実行します。")
     
     parser_train_distill = subparsers.add_parser("train-distill", help="従来の蒸留(BPベース)による学習を実行します。")
-    parser_train_distill.add_argument("--model", default="workspace/models/distilled_sara_llm.msgpack")
+    parser_train_distill.add_argument("--model", default=model_path("sara_agent"))
 
     # --- 3. 推論・対話 (Inference/Chat) ---
     parser_chat_self = subparsers.add_parser("chat-self-org", help="自己組織化学習したSNNモデルと対話します。")
     
     parser_chat_distill = subparsers.add_parser("chat-distill", help="蒸留学習したモデルと対話します。")
-    parser_chat_distill.add_argument("--model", default="workspace/models/distilled_sara_llm.msgpack")
+    parser_chat_distill.add_argument("--model", default=model_path("sara_agent"))
 
     # --- 4. ユーティリティ ---
     parser_prune = subparsers.add_parser("prune", help="重みの低い不要な記憶を削除し、モデルを軽量化します。")
-    parser_prune.add_argument("--model", default="workspace/models/distilled_sara_llm.msgpack")
+    parser_prune.add_argument("--model", default=model_path("distilled_sara_llm.msgpack"))
     parser_prune.add_argument("--threshold", type=float, default=50.0)
 
     parser_clean = subparsers.add_parser("clean", help="中間データを削除して環境をリセットします。")
@@ -100,13 +105,14 @@ def main():
 
     elif args.command == "train-distill":
         print("🔥 蒸留学習(Distillation)を開始します...")
-        train_chat_data(["data/raw/chat_data.jsonl"], args.model)
+        from train.train_chat import train_chat_model
+        train_chat_model("data/raw/chat_data.jsonl", save_dir=args.model)
 
     elif args.command == "chat-self-org":
         subprocess.run([sys.executable, "scripts/eval/chat_self_organized.py"])
 
     elif args.command == "chat-distill":
-        run_math_chat(args.model)
+        subprocess.run([sys.executable, "scripts/eval/chat_agent.py", "--model-dir", args.model])
 
     elif args.command == "prune":
         prune_model_memory(args.model, args.threshold)

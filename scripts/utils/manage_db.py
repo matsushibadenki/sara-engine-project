@@ -7,6 +7,7 @@
 import sqlite3
 import os
 import json
+import re
 
 class SaraCorpusDB:
     def __init__(self, db_path="data/sara_corpus.db"):
@@ -103,7 +104,14 @@ class SaraCorpusDB:
                 if t_type == "chat":
                     f.write(f"{content}\n")
                 else:
-                    pair = {"prompt": "次の文章に続く言葉を出力してください。", "completion": content}
+                    text = content.strip()
+                    if len(text) < 12:
+                        continue
+                    head = re.split(r"[、。]", text, maxsplit=1)[0].strip("「」『』 ")
+                    if 2 <= len(head) <= 24:
+                        pair = {"prompt": f"{head}について教えてください。", "response": text}
+                    else:
+                        pair = {"prompt": "この内容を説明してください。", "response": text}
                     f.write(json.dumps(pair, ensure_ascii=False) + "\n")
                 count += 1
         return count

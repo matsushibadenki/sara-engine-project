@@ -1,17 +1,8 @@
-from .models.gpt import SaraGPT
-from .models.rlm import StatefulRLMAgent
-from .memory.sdr import SDREncoder
-from .memory.ltm import SparseMemoryStore
-from .utils.visualizer import SaraVisualizer
-from .encoders.audio import AudioSpikeEncoder
-from .encoders.vision import ImageSpikeEncoder
-from .core.transformer import SpikeTransformerBlock, SpikeTransformerModel
-from .core.spike_attention import SpikeSelfAttention
-from .core.layers import DynamicLiquidLayer, SpikeNormalization, SpikeFeedForward
-from .core.data_loader import SpikeStreamDataLoader, TextToSpikeEncoder, SemanticSpikeEncoder
-from .inference import SaraInference
-from .agent.sara_agent import SaraAgent
-from .models.spiking_llm import SpikingLLM
+from .evaluation import SARABenchmark, RAGEvaluator, ToolEvaluator, SafetyEvaluator, EvalResult, EvalMetric
+from .safety import SafetyGuard, SafetyLevel, SafetyCheckResult
+from .tools import ToolRegistry, ToolResult, ToolDefinition, ToolParameter, tool, register_builtin_tools
+from .rag import SNNRAGPipeline
+from .pipelines import pipeline
 from .auto import (
     AutoTokenizer,
     AutoSpikingLM,            # 追加
@@ -22,15 +13,34 @@ from .auto import (
     AutoSNNModelForImageClassification,
     AutoSNNModelForTokenClassification
 )
-from .pipelines import pipeline
-from .rag import SNNRAGPipeline
-from .tools import ToolRegistry, ToolResult, ToolDefinition, ToolParameter, tool, register_builtin_tools
-from .safety import SafetyGuard, SafetyLevel, SafetyCheckResult
-from .evaluation import SARABenchmark, RAGEvaluator, ToolEvaluator, SafetyEvaluator, EvalResult, EvalMetric
+from .models.spiking_llm import SpikingLLM
+from .agent.sara_agent import SaraAgent
+from .inference import SaraInference
+from .core.data_loader import SpikeStreamDataLoader, TextToSpikeEncoder, SemanticSpikeEncoder
+from .core.layers import DynamicLiquidLayer, SpikeNormalization, SpikeFeedForward
+from .core.spike_attention import SpikeSelfAttention
+from .core.transformer import SpikeTransformerBlock, SpikeTransformerModel
+from .encoders.vision import ImageSpikeEncoder
+from .encoders.audio import AudioSpikeEncoder
+from .utils.visualizer import SaraVisualizer
+from .memory.ltm import SparseMemoryStore
+from .memory.sdr import SDREncoder
+from .models.rlm import StatefulRLMAgent
+from .models.gpt import SaraGPT
+import os
+
+_PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.abspath(os.path.join(_PACKAGE_DIR, "..", ".."))
+_WORKSPACE_CACHE_DIR = os.path.join(_PROJECT_ROOT, "workspace", "cache")
+_MPL_CACHE_DIR = os.path.join(_WORKSPACE_CACHE_DIR, "matplotlib")
+os.makedirs(_MPL_CACHE_DIR, exist_ok=True)
+os.environ.setdefault("XDG_CACHE_HOME", _WORKSPACE_CACHE_DIR)
+os.environ.setdefault("MPLCONFIGDIR", _MPL_CACHE_DIR)
+
 # ディレクトリパス: src/sara_engine/__init__.py
 # ファイルの日本語タイトル: パッケージ初期化モジュール
 # ファイルの目的や内容: ユーザーがSARA Engineを利用する際の最上位APIエントリーポイント。pipelineとAutoクラス群を最優先で公開。RAG/ツール/安全制御/評価基盤を統合。
-__version__ = "0.4.0"  # RAG/ツール/安全制御/評価基盤の強化
+__version__ = "0.4.1"  # RAG/ツール/安全制御/評価基盤の強化
 
 # --- Hugging Face Transformers-like API (Main Public Interface) ---
 

@@ -14,6 +14,7 @@ from typing import Any, Dict, Iterator, List, Set, Tuple, Optional
 from ..core.transformer import LIFSpikeAttention
 from ..core.cortical_columns import SpikingCorticalColumns
 from ..learning.homeostasis import AdaptiveThresholdHomeostasis
+from ..utils.project_paths import ensure_output_directory
 from ..utils.tokenizer import SaraTokenizer
 
 
@@ -745,7 +746,7 @@ class SpikingLLM:
         return generated_sequence
 
     def save_pretrained(self, save_directory: str) -> None:
-        os.makedirs(save_directory, exist_ok=True)
+        save_directory = ensure_output_directory(save_directory)
         model_path = os.path.join(save_directory, "spiking_llm_weights.json")
 
         self.tokenizer.model_path = os.path.join(

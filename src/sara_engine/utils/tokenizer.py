@@ -8,6 +8,7 @@ import json
 import os
 import re
 from typing import List, Dict, Tuple, Any
+from .project_paths import ensure_parent_directory, workspace_path
 
 try:
     from janome.tokenizer import Tokenizer as JanomeTokenizer  # type: ignore
@@ -16,7 +17,7 @@ except ImportError:
     _HAS_JANOME = False
 
 class SaraTokenizer:
-    def __init__(self, vocab_size: int = 4096, model_path: str = "workspace/sara_vocab.json"):
+    def __init__(self, vocab_size: int = 4096, model_path: str = workspace_path("tokenizers", "sara_vocab.json")):
         self.vocab_size = vocab_size
         self.model_path = model_path
         self.vocab: Dict[str, int] = {}
@@ -174,13 +175,13 @@ class SaraTokenizer:
         return "".join(tokens)
 
     def save(self):
+        output_path = ensure_parent_directory(self.model_path)
         data = {
             "vocab": self.vocab,
             "next_id": self.next_id,
             "merges": [[p[0], p[1]] for p in sorted(self.merge_ranks.keys(), key=lambda k: self.merge_ranks[k])]
         }
-        os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
-        with open(self.model_path, 'w', encoding='utf-8') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     def load(self):

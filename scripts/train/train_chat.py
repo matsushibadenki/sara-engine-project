@@ -10,13 +10,21 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 
 from sara_engine.agent.sara_agent import SaraAgent
+from sara_engine.utils.project_paths import (
+    model_path as models_path,
+    raw_data_path,
+    resolve_project_relative,
+)
 
-def train_chat_model(data_path="data/interim/chat_data.jsonl", epochs=2):
+def train_chat_model(
+    data_path=raw_data_path("chat_data.jsonl"),
+    save_dir=models_path("sara_agent"),
+    epochs=2,
+):
     print(f"--- チャット学習開始: {data_path} ---")
-    
-    if not os.path.isabs(data_path):
-        data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", data_path))
-        
+
+    data_path = resolve_project_relative(data_path)
+
     if not os.path.exists(data_path):
         print(f"❌ 学習データが見つかりません: {data_path}")
         return
@@ -55,8 +63,20 @@ def train_chat_model(data_path="data/interim/chat_data.jsonl", epochs=2):
     print("🎉 チャットモデルのSNN学習が完了しました。")
 
     print("💾 エージェントの学習状態をディスクに保存しています...")
-    agent.save_agent("workspace/models/sara_agent")
+    agent.save_agent(save_dir)
     print("✨ すべての保存処理が完了しました。")
+
+
+def train_chat_data(data_paths=None, model_path=None, epochs=2):
+    """Backward-compatible wrapper for older CLI callers."""
+    if not data_paths:
+        data_path = raw_data_path("chat_data.jsonl")
+    elif isinstance(data_paths, list):
+        data_path = data_paths[0]
+    else:
+        data_path = str(data_paths)
+    save_dir = model_path or models_path("sara_agent")
+    train_chat_model(data_path=data_path, save_dir=save_dir, epochs=epochs)
 
 if __name__ == "__main__":
     train_chat_model()

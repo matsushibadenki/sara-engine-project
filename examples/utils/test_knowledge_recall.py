@@ -12,8 +12,9 @@ import json
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from sara_engine.learning.stdp import STDPLayer
+from sara_engine.utils.project_paths import workspace_path
 
-def load_or_create_brain_state(filename="workspace/sara_vocab.json"):
+def load_or_create_brain_state(filename=workspace_path("tokenizers", "sara_vocab.json")):
     num_inputs = 10
     num_outputs = 1
     synapses_data = []

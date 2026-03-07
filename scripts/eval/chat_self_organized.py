@@ -14,6 +14,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from sara_engine.models.spiking_llm import SpikingLLM
+from sara_engine.utils.project_paths import model_path
 
 def main():
     print("="*50)
@@ -24,7 +25,7 @@ def main():
     if len(sys.argv) > 1:
         model_dir = os.path.abspath(sys.argv[1])
     else:
-        model_dir = os.path.join(project_root, "workspace", "models", "self_organized_llm")
+        model_dir = model_path("self_organized_llm")
     
     # 2. ファイル名まで指定された場合はディレクトリパスに直す
     if os.path.isfile(model_dir) and model_dir.endswith(".json"):
@@ -39,7 +40,7 @@ def main():
         print("\n💡 解決策1: 必要なモデルファイルが存在しません。先にモデルの学習を行ってください。")
         print("実行例: python scripts/train/train_self_organized.py")
         print("\n💡 解決策2: すでに学習済みで保存場所が異なる場合は、ターミナルでディレクトリを直接指定して実行してください。")
-        print("実行例: python scripts/eval/chat_self_organized.py workspace/models/self_organized_llm")
+        print("実行例: python scripts/eval/chat_self_organized.py models/self_organized_llm")
         return
 
     # 記憶の読み込み

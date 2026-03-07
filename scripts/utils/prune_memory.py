@@ -3,7 +3,16 @@
 # ファイルの目的や内容: SNNモデルの記憶マップから、重みの低い不要なシナプス結合（ノイズ）を削除し、モデルを軽量・高速化する。
 
 import os
+import sys
 import msgpack
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+src_dir = os.path.join(project_root, "src")
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
+
+from sara_engine.utils.project_paths import model_path
 
 def prune_model_memory(model_path, threshold=50.0):
     if not os.path.exists(model_path):
@@ -52,4 +61,4 @@ def prune_model_memory(model_path, threshold=50.0):
     print(f"  - ファイルサイズ: {file_size_before / 1024 / 1024:.2f} MB -> {file_size_after / 1024 / 1024:.2f} MB")
 
 if __name__ == "__main__":
-    prune_model_memory("models/distilled_sara_llm.msgpack")
+    prune_model_memory(model_path("distilled_sara_llm.msgpack"))

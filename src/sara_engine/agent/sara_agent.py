@@ -18,6 +18,7 @@ import os
 import re
 import pickle
 import math
+from ..utils.project_paths import ensure_output_directory, model_path, workspace_path
 
 class SaraAgent:
     def __init__(
@@ -47,7 +48,7 @@ class SaraAgent:
 
         self.brain = CorticoHippocampalSystem(
             cortex=self.cortex,
-            ltm_filepath="models/sara_multimodal_ltm.pkl",
+            ltm_filepath=model_path("sara_multimodal_ltm.pkl"),
             max_working_memory_size=15,
         )
 
@@ -65,8 +66,8 @@ class SaraAgent:
         self.tools: Dict[str, Callable[[str], str]] = {}
         self._bootstrap()
 
-    def save_agent(self, save_dir: str = "workspace/models/sara_agent") -> None:
-        os.makedirs(save_dir, exist_ok=True)
+    def save_agent(self, save_dir: str = model_path("sara_agent")) -> None:
+        save_dir = ensure_output_directory(save_dir)
         if hasattr(self.llm, "save_pretrained"):
             try:
                 self.llm.save_pretrained(save_dir)
@@ -80,7 +81,7 @@ class SaraAgent:
         except Exception as e:
             print(f"⚠️ 記憶の保存に失敗しました: {e}")
 
-    def load_agent(self, load_dir: str = "workspace/models/sara_agent") -> None:
+    def load_agent(self, load_dir: str = model_path("sara_agent")) -> None:
         if not os.path.exists(load_dir):
             return
         if hasattr(self.llm, "load_pretrained"):
@@ -115,7 +116,8 @@ class SaraAgent:
             "リスト 内包 表記 を 使う と コード は 簡潔 に 書け ます",
             "ミトコンドリア は 細胞 の エネルギー を 作り ます",
         ]
-        if not os.path.exists("workspace/sara_vocab.json"):
+        bootstrap_vocab_path = workspace_path("tokenizers", "sara_vocab.json")
+        if not os.path.exists(bootstrap_vocab_path):
             self.encoder.tokenizer.train(corpus)
         self.encoder.train_semantic_network(corpus, window_size=3, epochs=2)
 

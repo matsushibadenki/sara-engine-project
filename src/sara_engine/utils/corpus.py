@@ -2,8 +2,10 @@
 # ファイルの日本語タイトル: コーパス処理ユーティリティ
 # ファイルの目的や内容: テキストデータの前処理、ノイズ除去、行の結合、見出しの分離、箇条書きの正規化、および学習用会話データの生成補助を行う。
 
+import json
 import re
-from typing import List, Tuple
+from pathlib import Path
+from typing import List, Tuple, Dict
 
 
 _NOISE_SYMBOLS = set("{}[]<>|\\/@#$%^&*_+=~`")
@@ -151,3 +153,98 @@ def generate_conversational_pairs(lines: List[str]) -> List[Tuple[str, str]]:
             second_half = line[split_idx + 1:]
             pairs.append((f"{first_half}の続きを教えてください。", second_half))
     return pairs
+
+
+def is_low_quality_response(text: str) -> bool:
+    stripped = text.strip()
+    if len(stripped) < 8:
+        return True
+    if len(stripped) > 220:
+        return True
+    if re.search(r"(Wikipedia|Category:|クリック|右図|pp\.|https?://|\\displaystyle)", stripped):
+        return True
+    if stripped.startswith(("。", "、", "）", ")", "】", "』", "」")):
+        return True
+    if re.match(r"^(の|が|を|に|へ|と|で|は|も|や|し|て|な|か|され|する|した|しています|である)", stripped):
+        return True
+    if stripped.endswith(("（", "(", "、", "・", "の", "が", "を", "に", "は", "と")):
+        return True
+    if sum(1 for ch in stripped if ch in "{}<>|") >= 1:
+        return True
+    jp_chars = len(re.findall(r"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]", stripped))
+    ascii_chars = len(re.findall(r"[A-Za-z]", stripped))
+    if jp_chars < 4:
+        return True
+    if ascii_chars > max(12, jp_chars):
+        return True
+    return False
+
+
+def clean_chat_pairs(pairs: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+    cleaned: List[Tuple[str, str]] = []
+    seen: set[Tuple[str, str]] = set()
+    for prompt, response in pairs:
+        p = re.sub(r"\s+", " ", prompt).strip()
+        r = re.sub(r"\s+", " ", response).strip()
+        if len(p) < 2 or len(r) < 8:
+            continue
+        if p == "次の文章に続く言葉を出力してください。":
+            continue
+        if re.search(r"(続きを教えてください。)$", p) and is_low_quality_response(r):
+            continue
+        if is_low_quality_response(r):
+            continue
+        item = (p, r)
+        if item in seen:
+            continue
+        seen.add(item)
+        cleaned.append(item)
+    return cleaned
+
+
+def load_chat_jsonl_pairs(path: str) -> List[Tuple[str, str]]:
+    file_path = Path(path)
+    if not file_path.exists():
+        return []
+
+    pairs: List[Tuple[str, str]] = []
+    with file_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                data: Dict[str, str] = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            prompt = data.get("prompt", "").strip()
+            response = data.get("response", data.get("completion", "")).strip()
+            if prompt and response:
+                pairs.append((prompt, response))
+    return clean_chat_pairs(pairs)
+
+
+def build_definition_qa_pairs(lines: List[str]) -> List[Tuple[str, str]]:
+    pairs: List[Tuple[str, str]] = []
+    for line in lines:
+        text = line.strip()
+        if len(text) < 20 or len(text) > 180:
+            continue
+
+        # "Xは〜である" / "Xとは〜である" 型をQ/A化
+        match = re.match(r"(.{2,24}?)(とは|は)、?(.{8,140}?)(です|である|だ|を指す|を意味する)。?$", text)
+        if match:
+            term = match.group(1).strip("「」『』 ")
+            predicate = match.group(3).strip()
+            ending = match.group(4)
+            if (
+                len(term) >= 2
+                and not is_noisy_line(term)
+                and not re.search(r"[0-9０-９]{2,}|[()（）,:：]|について|これ|それ|ため|よう", term)
+                and re.search(r"[\u30A0-\u30FF\u4E00-\u9FFFA-Za-z]", term)
+                and not is_low_quality_response(predicate + ending + "。")
+            ):
+                answer = f"{term}は、{predicate}{ending}。"
+                pairs.append((f"{term}とは何ですか？", answer))
+                pairs.append((f"{term}について教えてください。", answer))
+
+    return clean_chat_pairs(pairs)

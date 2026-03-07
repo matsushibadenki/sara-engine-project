@@ -21,8 +21,8 @@ You can import plain text files (.txt) for general knowledge acquisition and JSO
   python scripts/sara\_cli.py db-import path/to/your/document.txt
 
 * **For Conversational Data:**  
-  Create a .jsonl file containing prompt and completion pairs.  
-  *Example format inside the file:* {"prompt": "Hello", "completion": "Hi there\!"}  
+  Create a .jsonl file containing prompt and response pairs.  
+  *Example format inside the file:* {"prompt": "Hello", "response": "Hi there\!"}  
   python scripts/sara\_cli.py db-import path/to/your/chat\_data.jsonl
 
 ### **Step 1.3: Check Database Status**
@@ -55,16 +55,16 @@ This is the core Spiking Neural Network (SNN) approach. It **does not use backpr
 python scripts/sara\_cli.py train-self-org
 
 * **What happens:** The model reads corpus.txt, builds synaptic connections (N-gram delays) at high speed using the Rust core, and learns sequences via STDP.  
-* **Output:** The memory is saved to workspace/models/self\_organized\_llm/spiking\_llm\_weights.json.
+* **Output:** The memory is saved to models/self\_organized\_llm/spiking\_llm\_weights.json.
 
-### **Method B: Distillation Learning (Legacy / BP-based)**
+### **Method B: Distillation Learning (Legacy Chat Fine-Tuning)**
 
-This method uses traditional backpropagation (BP) to distill knowledge into the SNN using structured conversational data.
+This legacy path fine-tunes the `SaraAgent` conversational memory using structured conversational data.
 
 python scripts/sara\_cli.py train-distill
 
-* **What happens:** The model trains specifically on the prompt/completion pairs in chat\_data.jsonl.  
-* **Output:** The weights are saved to workspace/models/distilled\_sara\_llm.msgpack.
+* **What happens:** The agent trains on the prompt/response pairs in `data/raw/chat_data.jsonl`.  
+* **Output:** The trained agent state is saved under `models/sara_agent` by default. You can override the save directory with `--model`.
 
 ## **3\. Testing and Inference**
 
@@ -81,11 +81,13 @@ python scripts/sara\_cli.py chat-self-org
 * The model features an "Awareness of Ignorance" safety mechanism: if you ask about a topic it hasn't learned, it will safely decline to answer rather than hallucinating.  
 * Type quit or exit to stop the session.
 
-### **Testing the Distilled Model**
+### **Testing the Distilled / Legacy Model**
 
-If you trained using train-distill, start the chat with:
+If you trained using `train-distill`, start the matching interactive agent chat with:
 
 python scripts/sara\_cli.py chat-distill
+
+By default this loads `models/sara_agent`. You can override the model directory with `--model`.
 
 ## **4\. Utility Commands**
 
@@ -101,4 +103,4 @@ To remove all interim data, processed files, and reset the workspace for a clean
 
 python scripts/sara\_cli.py clean
 
-*(Add \--all if you want to perform a deep clean).*
+This command currently cleans `data/interim` and `data/processed`. There is no `--all` option in the current CLI implementation.

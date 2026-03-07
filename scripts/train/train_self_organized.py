@@ -16,6 +16,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from sara_engine.models.spiking_llm import SpikingLLM
+from sara_engine.utils.project_paths import model_path, processed_data_path
 
 def train_self_organized(corpus_path, save_dir, vocab_size=65536, sdr_size=128, context_window=15):
     print("="*50)
@@ -91,8 +92,8 @@ def train_self_organized(corpus_path, save_dir, vocab_size=65536, sdr_size=128, 
     print(f"✨ Self-Organized Training completed in {elapsed:.2f} seconds.")
 
 if __name__ == "__main__":
-    corpus_file = os.path.join(project_root, "data", "processed", "corpus.txt")
-    model_dir = os.path.join(project_root, "workspace", "models", "self_organized_llm")
+    corpus_file = processed_data_path("corpus.txt")
+    model_dir = model_path("self_organized_llm")
     
     train_self_organized(
         corpus_path=corpus_file, 
