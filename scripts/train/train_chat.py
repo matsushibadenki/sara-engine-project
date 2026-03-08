@@ -2,19 +2,20 @@
 # ファイルの日本語タイトル: チャットモデル学習スクリプト
 # ファイルの目的や内容: collect_docs.pyで自動生成された対話ペア(JSONL)を読み込み、エージェントのSNNに学習させる。学習後にモデルを永続化する。
 
-import os
-import json
-import sys
-
-# srcディレクトリをパスに追加してモジュールをインポートできるようにする
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
-
-from sara_engine.agent.sara_agent import SaraAgent
 from sara_engine.utils.project_paths import (
     model_path as models_path,
     raw_data_path,
     resolve_project_relative,
 )
+from sara_engine.agent.sara_agent import SaraAgent
+import os
+import json
+import sys
+
+# srcディレクトリをパスに追加してモジュールをインポートできるようにする
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..', 'src')))
+
 
 def train_chat_model(
     data_path=raw_data_path("chat_data.jsonl"),
@@ -30,7 +31,7 @@ def train_chat_model(
         return
 
     agent = SaraAgent()
-    
+
     with open(data_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
@@ -40,8 +41,10 @@ def train_chat_model(
             continue
         try:
             data = json.loads(line)
-            if "prompt" in data and "response" in data:
-                pairs.append((data["prompt"], data["response"]))
+            prompt = data.get("prompt")
+            response = data.get("response") or data.get("completion")
+            if prompt and response:
+                pairs.append((prompt, response))
         except json.JSONDecodeError:
             continue
 
@@ -56,7 +59,7 @@ def train_chat_model(
         for idx, (prompt, response) in enumerate(pairs):
             combined_text = f"general: 質問「{prompt}」に対する回答は「{response}」"
             agent.chat(combined_text, teaching_mode=True)
-            
+
             if (idx + 1) % 50 == 0 or (idx + 1) == len(pairs):
                 print(f"  {idx + 1}/{len(pairs)} 件完了...")
 
@@ -77,6 +80,7 @@ def train_chat_data(data_paths=None, model_path=None, epochs=2):
         data_path = str(data_paths)
     save_dir = model_path or models_path("sara_agent")
     train_chat_model(data_path=data_path, save_dir=save_dir, epochs=epochs)
+
 
 if __name__ == "__main__":
     train_chat_model()

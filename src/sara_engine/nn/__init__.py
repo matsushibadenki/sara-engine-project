@@ -6,7 +6,10 @@ from .sequential import Sequential as Sequential
 from .linear_spike import LinearSpike as LinearSpike
 from .attention import SpikeSelfAttention as SpikeSelfAttention
 from .predictive import PredictiveSpikeLayer as PredictiveSpikeLayer
+from .predictive import SpikingPredictiveLayer as SpikingPredictiveLayer
 from .dropout import SpikeDropout as SpikeDropout
 from .normalization import SpikeLayerNorm as SpikeLayerNorm
 from .multimodal import CrossModalAssociator as CrossModalAssociator
 from .rstdp import RewardModulatedLinearSpike as RewardModulatedLinearSpike
+from .unsupervised_layer import UnsupervisedSpikeLayer as UnsupervisedSpikeLayer
+from .spatio_temporal_binding import SpatioTemporalBindingLayer as SpatioTemporalBindingLayer

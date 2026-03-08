@@ -1,0 +1,8 @@
+{
+    "embed_dim": 64,
+    "num_layers": 3,
+    "ffn_dim": 256,
+    "dropout_p": 0.2,
+    "target_spikes_ratio": 0.2,
+    "use_fuzzy": true
+}

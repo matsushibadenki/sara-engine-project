@@ -91,7 +91,7 @@ def evaluate_genome(genome: dict) -> float:
     current_token = tokens[0]
     for i in range(total):
         target = tokens[i+1]
-        pred = model.forward_step(current_token, learning=False)
+        pred, _info = model.forward_step(current_token, learning=False)
         if pred == target:
             correct += 1
         # 教師強制（Teacher Forcing）: 正解データを次の入力として与える

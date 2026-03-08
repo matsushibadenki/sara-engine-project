@@ -11,13 +11,17 @@ import json
 import tqdm
 import sys
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+project_root = os.path.abspath(os.path.join(scripts_dir, ".."))
+src_dir = os.path.join(project_root, "src")
+for path in (scripts_dir, src_dir):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
 from sara_engine.models.spiking_llm import SpikingLLM
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
-
-from manage_db import SaraCorpusDB
+from sara_engine.utils.project_paths import interim_data_path, model_path
+from utils.manage_db import SaraCorpusDB
 
 class SNNLLMDistiller:
     def __init__(self, teacher_model_name, student_model, device="cpu"):
@@ -97,16 +101,15 @@ class SNNLLMDistiller:
                     dm[tok_id] = 200.0
 
 if __name__ == "__main__":
-    model_path = "models/distilled_sara_llm.msgpack"
-    data_dir = "data"
-    progress_file = os.path.join(data_dir, "progress.json")
+    student_model_path = model_path("distilled_sara_llm.msgpack")
+    progress_file = interim_data_path("distill_progress.json")
     
     print("Initializing SNN Student Model (8192 neurons)...")
     student = SpikingLLM(num_layers=2, sdr_size=8192, vocab_size=256000)
     device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
     
     distiller = SNNLLMDistiller("google/gemma-2-2b", student, device)
-    distiller.load_student(model_path)
+    distiller.load_student(student_model_path)
 
     db = SaraCorpusDB()
     last_id = 0
@@ -127,15 +130,15 @@ if __name__ == "__main__":
                 distiller.distill_single_text(row[1])
                 
                 if (i + 1) % 50 == 0:
-                    distiller.save_student(model_path)
+                    distiller.save_student(student_model_path)
                     with open(progress_file, "w") as f:
                         json.dump({"last_id": row[0]}, f)
             
-            distiller.save_student(model_path)
+            distiller.save_student(student_model_path)
             with open(progress_file, "w") as f:
                 json.dump({"last_id": rows[-1][0]}, f)
             print("✨ Distillation completed successfully.")
 
     except KeyboardInterrupt:
         print("\n⚠️ Interrupted. Saving current progress...")
-        distiller.save_student(model_path)
+        distiller.save_student(student_model_path)
