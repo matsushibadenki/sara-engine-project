@@ -66,6 +66,18 @@ python scripts/sara\_cli.py train-distill
 * **What happens:** The agent trains on the prompt/response pairs in `data/raw/chat_data.jsonl`.  
 * **Output:** The trained agent state is saved under `models/sara_agent` by default. You can override the save directory with `--model`.
 
+### **Method C: Subword-Level SNN Pre-training (サブワードレベルSNN事前学習)**
+
+新しく追加されたSpiking Transformer Modelを用いた、より高度な言語獲得アプローチです。単語単位ではなく、BPE（Byte-Pair Encoding）を用いたサブワード単位で学習を行います。これにより、未知語への対応力や表現の柔軟性が向上します。
+
+`python scripts/train/train_snn_lm.py --corpus data/corpus.txt`
+
+オプションとして、`--chat-data data/raw/chat_data.jsonl` を指定することで、コーパスに加えて対話形式のデータも同時に学習させることができます。
+
+* **What happens:** 指定されたコーパス（例えば `data/corpus.txt`）を読み込み、不要なノイズを除去したうえで `SaraTokenizer` を学習させます。その後、トランスフォーマーアーキテクチャを持つSNNモデル（`SpikingTransformerModel`）にテキストのシーケンスを学習させます。
+* **Output:** 学習済みの重みと語彙データ（`sara_vocab.json`）は、デフォルトで `models/snn_lm_pretrained` に保存されます。保存先は `--save-dir` で変更可能です。
+
+
 ## **3\. Testing and Inference**
 
 Once the model is trained, you can interact with it using the built-in chat interface. **Make sure to use the chat command that matches your training method.**
@@ -88,6 +100,17 @@ If you trained using `train-distill`, start the matching interactive agent chat 
 python scripts/sara\_cli.py chat-distill
 
 By default this loads `models/sara_agent`. You can override the model directory with `--model`.
+
+### **Testing the Subword-Level SNN Model (サブワードモデルのテスト)**
+
+Method C (`train_snn_lm.py`) で学習したサブワードレベルのモデルをテストするための推論・対話スクリプトです。
+
+`python scripts/eval/chat_snn_lm.py`
+
+* デフォルトで `models/snn_lm_pretrained` から学習済みの重みと語彙を読み込みます。別のディレクトリを指定する場合は `--model-dir` を使用してください。
+* `--debug` フラグを付けることで、各推論ステップごとのトークン候補や内部の発火ポテンシャルを可視化でき、学習結果の分析に役立ちます。（例: `python scripts/eval/chat_snn_lm.py --debug`）
+* **機能:** 入力されたプロンプトに対して、SNNのニューロンの活動（スパイク）をシミュレートしながら次のトークンを予測・生成します。また、RAG（Retrieval-Augmented Generation）のような仕組みを持ち、学習データに基づいたローカルナレッジも活用して応答します。
+
 
 ## **4\. Utility Commands**
 
