@@ -1,3 +1,7 @@
+# ディレクトリパス: scripts/eval/chat_snn_lm.py
+# ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (バグ修正版)
+# ファイルの目的や内容: 英語ノイズや無意味な出力を防ぐため、スコアリングのペナルティ強化およびサニタイズ処理を追加。過去の対話履歴によるルールベース判定の無限ループバグを修正。
+
 from sara_engine.utils.tokenizer import SaraTokenizer
 from sara_engine.utils.chat import ChatSessionHelper
 from sara_engine.models.snn_transformer import SpikingTransformerModel
@@ -7,10 +11,6 @@ import argparse
 import sys
 import os
 from pathlib import Path
-# ディレクトリパス: scripts/eval/chat_snn_lm.py
-# ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (パラメータ調整版)
-# ファイルの目的や内容: 英語ノイズや無意味な出力を防ぐため、スコアリングのペナルティ強化およびサニタイズ処理を追加。
-
 
 sys.path.insert(0, os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', 'src')))
@@ -99,12 +99,14 @@ class LocalKnowledgeResponder:
         return continuation
 
     def _rule_based_answer(self, query: str, context_text: str) -> str:
-        scope = f"{context_text}\n{query}".strip()
+        # 【修正箇所】context_text（対話履歴）を除外し、最新のユーザーの質問(query)のみを判定対象にする
+        scope = query.strip()
         rules: List[Tuple[str, str]] = [
             (r"排他的論理和|XOR", "排他的論理和(XOR)は単純パーセプトロンでは線形分離できないため扱えません。隠れ層を持つ多層ニューラルネットワークなら表現できます。"),
             (r"最初の実用的な|イヴァネンコ|イヴァネンコとラパ|ディープラーニングアルゴリズム", "最初期の実用的なディープラーニング手法としては、1960年代にイヴァネンコとラパが提案した多層ネットワーク学習法が知られています。"),
             (r"ヒトの神経系|神経系", "ヒトの神経系はニューロンがシナプスでつながるネットワークです。樹状突起が入力を受け取り、細胞体で処理し、軸索を通じて他の細胞へ信号を送ります。"),
             (r"スパイキングニューラルネットワーク|SNN", "スパイキングニューラルネットワークは、ニューロンの発火タイミングを情報として扱う神経回路モデルです。通常のニューラルネットワークより生物学的な挙動に近いのが特徴です。"),
+            (r"シナプス", "シナプスは、ニューロン同士が情報を受け渡す接合部です。生物の学習では、シナプス結合の強さが変化することが重要な役割を持ちます。"),
             (r"ニューラルネットワーク", "ニューラルネットワークは、入力から出力へ重み付き結合を通して情報を伝え、重みを調整することで学習する数理モデルです。分類、回帰、生成などに広く使われます。"),
             (r"ディープラーニング", "ディープラーニングは、多層のニューラルネットワークで特徴表現を段階的に学習する手法です。画像認識、音声認識、自然言語処理で特に有効です。"),
             (r"パーセプトロン", "パーセプトロンは入力の重み付き和から出力を決める最も基本的なニューラルネットワークです。単純パーセプトロンは線形分離できる問題に向きます。"),
@@ -247,7 +249,6 @@ def _score_response(text: str) -> float:
                                        2.5 for count in seen.values() if count > 1)
 
     score = float(jp_count) * 1.2
-    # 英字に対するペナルティを強化し、英語のノイズ出力を抑止
     score -= float(ascii_count) * 1.5
     score -= float(digit_count) * 0.2
     score -= float(noise_count) * 1.5
@@ -271,7 +272,6 @@ def _clean_response(text: str, max_chars: int = 200) -> str:
     normalized = re.sub(r"[ \t]+", " ", normalized).strip()
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
 
-    # 英語のノイズ（ハイフンとアルファベットの連続）を削除
     normalized = re.sub(r"[-a-zA-Z\s]{15,}.*$", "", normalized)
     normalized = re.sub(
         r"(『[^』]{0,40}|第\d+巻.*$|第\d+号.*$|\d{4}年.*$)", "", normalized)
@@ -376,7 +376,6 @@ def chat_loop(
             input_tokens = tokenizer.encode(prompt_text)
 
             if debug_mode:
-                # ユーザーの入力がどのようにトークン化されたかを確認
                 token_strs = [tokenizer.id_to_token.get(
                     t, "?") for t in input_tokens]
                 print(f"  [DEBUG] Input tokens: {token_strs}")
