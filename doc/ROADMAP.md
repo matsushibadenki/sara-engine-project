@@ -1,25 +1,85 @@
-# **SARA Engine 商用化・高精度化ロードマップ**
+# **SARA Engine: Documentation Hub**
 
-## **フェーズ 1: 基盤の堅牢化 (完了)**
-「動くもの」から「壊れない・運用できるもの」への脱皮。
-* [x] **ディレクトリ階層化**: data/raw, interim, processed の分離と管理。
-* [x] **統合CLI (sara_cli.py)**: パイプラインの一元管理。
-* [x] **記憶の刈り込み (Synaptic Pruning)**: ノイズシナプスを削除し、メモリ効率と推論精度を向上。
+SARA Engine (Spiking Architecture for Reasoning and Adaptation) は、従来の人工ニューラルネットワーク (ANN) の限界を打破し、次世代の脳型認知アーキテクチャを実現するためのフレームワークです。
 
-## **フェーズ 2: 精度と一般化の向上 (完了)**
-行列演算やGPUを使わず、SNN特有の性質でLLMに匹敵する「賢さ（汎化能力）」を実現する。
-* [x] **曖昧さの許容 (Fuzzy Recall / SDR Overlap)**: 記憶と完全に一致しなくても、一定の類似度で連想を起動するアルゴリズムの実装。
-* [x] **階層的特徴抽出 (Hierarchical SDR)**: 視覚や言語の特徴を自己組織化的に統合し、上位の抽象概念を抽出。
-* [x] **予測符号化 (Predictive Coding)**: 予測誤差(Surprise)のみを用いた教師なし学習による高効率な系列予測。
-* [x] **マルチソース統合**: PDF, Web, 画像等を一つの共通SNN空間で同時に学習・連想する。
+このディレクトリには、プロジェクトの思想、設計ドキュメント、そして今後のロードマップがまとめられています。
 
-## **フェーズ 3: 商用デプロイ・エコシステム (Current)**
-外部との接続と実社会での運用。
-* [ ] **CAPI / Rust SDK**: 他の言語（C++, Swift, Kotlin）からSARAを呼び出すためのインターフェース。
-* [ ] **エッジ最適化**: Raspberry Pi やモバイル端末でのリアルタイム学習・推論の安定化とモデル量子化。
-* [ ] **監視ダッシュボード**: 記憶の密度や学習進捗、スパイクの発火状況をリアルタイムで可視化するWeb UI。
-## **性能目標 (商用KPI)**
+## **1\. コア設計ポリシー (Design Philosophy)**
 
-* **推論速度**: CPU単体で1トークンあたり10ms以内。  
-* **メモリ効率**: 100万トークンの知識を 2GB 以内のRAMで保持。  
-* **学習効率**: 誤差逆伝播法を用いた従来モデルの1/10以下のデータ量での特定ドメイン適応。
+SARA Engineは、以下の厳格なポリシー (doc/policy.md) に基づいて設計されています。
+
+1. **Biological Plausibility (生物学的妥当性):**  
+   * 誤差逆伝播法（バックプロパゲーション）に依存しません。  
+   * 密な行列演算（Dense Matrix Multiplication）を排し、イベント駆動のスパースなスパイク伝達を利用します。  
+   * STDP（スパイクタイミング依存シナプス可塑性）、報酬変調型STDP、遅延可塑性などの局所的な学習則を用います。  
+2. **Self-Organization & Homeostasis (自己組織化と恒常性):**  
+   * ネットワークトポロジは静的ではなく、学習の過程で動的にシナプスが生成・消滅（Structural Plasticity）し、最適な構造を自己組織化します。  
+   * ホメオスタシス（恒常性）機構により、発火率を安定させ、一部のニューロンへの負荷集中を防ぎます。  
+3. **Hardware Efficiency (ハードウェア効率):**  
+   * GPUによる並列計算を必須とせず、RustコアによるCPU上での超高速・低消費電力な推論と学習を実現します。エッジデバイスでの実行を第一級の市民として扱います。
+
+## **2\. ANN系AIを乗り越えるための戦略 (How to Surpass ANNs)**
+
+現在のLLMをはじめとするANNは、巨大な計算資源による「力技」の極みですが、消費電力の増大、破局的忘却、コンテキスト長の限界という構造的な弱点を持っています。SARA Engineは以下の戦略でANNを乗り越えます。
+
+* **Continuous Online Learning (連続的なオンライン学習):**  
+  ANNのように「事前学習」と「推論」のフェーズを明確に分けません。環境と相互作用しながら、破局的忘却を起こさずにリアルタイムに新しい概念を獲得し続けます。  
+* **Infinite Context via Stateful Dynamics (状態ダイナミクスによる無限の文脈):**  
+  Attention行列サイズによる制限をなくし、ニューロンの膜電位やシナプス遅延という「状態」を利用することで、時間的な流れを自然にエンコードし、原理的に無限の文脈を扱います。  
+* **Dynamic Resource Allocation (動的リソース割り当て):**  
+  計算リソースを全体に使うのではなく、必要なモジュール（Cortical Column）だけがスパイク発火する「スパース・ルーティング」により、ANNでは不可能なレベルの省電力を実現します。
+
+## **3\. ドキュメント一覧**
+
+### **コンセプト・アーキテクチャ**
+
+* [SNN-based AI architecture design document](http://docs.google.com/idea/SNN-based_AI_architecture_design_document.md): SNNベースの全体アーキテクチャ構想。  
+* [Next-generation brain-like cognitive architecture](http://docs.google.com/idea/Next-generation_brain-like_cognitive_architecture_based_on_self-organized_criticality_and_dendritic_computation.md): 樹状突起計算と自己組織化臨界現象を利用した次世代認知モデル。  
+* [Self-organization and homeostasis](http://docs.google.com/idea/Self-organization_and_homeostasis.md): ネットワークの自律的成長と安定化のメカニズム。  
+* [Stateful SNN Theory](http://docs.google.com/idea/stateful_snn_theory.md): 状態保持型SNNによる系列処理と時間ダイナミクス理論。  
+* [Core Policy](http://docs.google.com/policy.md): SARA Engineの絶対的な設計原則。
+
+### **マニュアル・ツール**
+
+* [Training Manual](http://docs.google.com/SARA-Engine_Training_Manual.md): 学習の実行、パラメータチューニングのガイド。  
+* [Tools (English)](http://docs.google.com/bout-Tools-EN.md) / [Tools (Japanese)](http://docs.google.com/bout-Tools-JP.md): プロジェクト内で使用する解析・可視化ツールの説明。
+
+### **マイルストーン**
+
+* [Detailed Roadmap](http://docs.google.com/ROADMAP.md): 詳細な実装ロードマップと進捗状況。  
+* [Release Strategy](http://docs.google.com/idea/SARA%20Engine%20PyPI%20Release%20Strategy.pdf): PyPIを通じたパッケージリリースの戦略。
+
+## **4\. 開発スケジュール・ロードマップ (Master Schedule)**
+
+ANNを乗り越え、強力な自律型エージェントを実現するための開発フェーズです。
+
+### **Phase 1: Foundation & Rust Core Acceleration (完了/最適化中)**
+
+* **目標:** 生物学的学習則（STDP等）の確立と、Rustによる超高速なイベント駆動シミュレータの統合。  
+* **成果:** sara\_rust\_core によるバックエンド統合、SNN Transformer、Spatiotemporal STDPモジュールの完成。CPU上での高速推論の達成。
+
+### **Phase 2: Scale-out & Continuous Learning (現在〜中期)**
+
+* **目標:** 数千万〜億単位のニューロン規模へのスケールアップと、破局的忘却のないオンライン学習の実証。  
+* **タスク:**  
+  * 動的構造変更（Structural Plasticity）の安定化とスケーラビリティ向上。  
+  * LTM (Long-Term Memory) と海馬モジュール間の知識転送・記憶固定化のアルゴリズム強化。  
+  * NLPやVisionタスクにおいて、少数のデータからのOne-shot学習がANNを上回ることをベンチマークで実証。  
+  * マルチコア・クラスタ環境でのRustノード分散処理プロトコルの実装。
+
+### **Phase 3: Infinite Context & Multimodal Autonomous Agent (長期)**
+
+* **目標:** コンテキスト長の概念を取り払い、視覚・聴覚・言語を同時に処理する完全自律型の知能の完成。  
+* **タスク:**  
+  * グローバルワークスペース（Global Workspace）を通じた、複数モダリティ間の意識的な情報統合。  
+  * 遅延可塑性とスパイキング位相コーディングによる、長期的な時間依存性の完全な掌握。  
+  * 対話、推論、行動決定をリアルタイムに実行する sara\_agent の汎用人工知能化。  
+  * ANNのフラグシップモデル（GPTクラス）と同等の推論能力を、1/100以下の消費電力（エッジデバイス）で実現。
+
+### **Phase 4: Beyond & Ecosystem Evolution (最終形態)**
+
+* **目標:** SARA Engineが新たなAI開発のデファクトスタンダードとなるエコシステムの構築。  
+* **タスク:**  
+  * 自己組織化によりタスク固有のアーキテクチャを自動設計するメタ学習機能。  
+  * 多様なIoT、ロボティクスエッジデバイスへの展開。  
+  * PyPI及びオープンソースコミュニティによるモジュールの拡張エコシステム形成。
