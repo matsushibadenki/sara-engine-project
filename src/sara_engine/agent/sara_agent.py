@@ -1,6 +1,6 @@
 # ディレクトリパス: src/sara_engine/agent/sara_agent.py
 # ファイルの日本語タイトル: 統合マルチモーダル・エージェント
-# ファイルの目的や内容: 学習時の文脈自動ラベル付け（代名詞解決用）と、指示語検知によるスマートなキーワードフィルタリングを実装した最終版。
+# ファイルの目的や内容: 検索時のキーワード判定を「メタデータを含む全体」と「クリーンな本文」で分離し、代名詞（指示語）を用いたフォローアップ質問に対する文脈解決能力を回復させた最終版。
 
 from ..memory.million_token_snn import DynamicSNNMemory
 from ..encoders.audio import AudioSpikeEncoder
@@ -232,7 +232,7 @@ class SaraAgent:
         stop_terms = {
             "それ", "これ", "あれ", "その", "この", "あの", "こと", "もの", "何", "なに",
             "です", "ます", "した", "して", "いる", "ある", "なる", "ですか", "ますか",
-            "メリット", "デメリット",
+            "メリット", "デメリット", "は", "が", "の", "に", "を", "と", "や"
         }
         extracted: List[str] = []
 
@@ -270,8 +270,11 @@ class SaraAgent:
         input_sdr = self.encoder.encode(user_text)
         self.encoder.apply_vsa = original_vsa
 
+        # teaching_modeの場合でも、文脈をつなぐために履歴には記録しておく（出力はしない）
         if not teaching_mode:
             self._update_history("user", user_text, input_sdr)
+        else:
+            self._update_history("user", f"[学習] {user_text}", input_sdr)
             
         history_context_sdr = self._get_history_context_sdr()
 
@@ -280,18 +283,22 @@ class SaraAgent:
             routing_sdr.update(random.sample(
                 history_context_sdr, int(len(history_context_sdr) * 0.1)))
 
-        overlaps = {comp: len(routing_sdr.intersection(set(anchor))) + (2 if comp != "general" else 0)
-                    for comp, anchor in self.prefrontal.context_anchors.items()}
+        overlaps = {}
+        for comp, anchor in self.prefrontal.context_anchors.items():
+            intersect_len = len(routing_sdr.intersection(set(anchor)))
+            if intersect_len > 0 and comp != "general":
+                overlaps[comp] = intersect_len + 2
+            else:
+                overlaps[comp] = intersect_len
+
         sorted_experts = sorted(
             overlaps.items(), key=lambda x: x[1], reverse=True)
-        active_experts = [comp for comp,
-                          score in sorted_experts[:2] if score > 0]
-        if not active_experts or sorted_experts[0][1] < 5:
+        active_experts = [comp for comp, score in sorted_experts[:2] if score > 0]
+        if not active_experts:
             active_experts = ["general"]
 
         self.dialogue_state["current_topic"] = active_experts[0]
 
-        # 💡 文脈キーワードの抽出（過去数ターンのユーザー発言から）
         context_keywords = set()
         prev_user = ""
         if len(self.dialogue_history) > 0:
@@ -320,7 +327,6 @@ class SaraAgent:
                 self.prefrontal.context_anchors[context] = set(random.sample(
                     list(anchor_set), target_bits) if len(anchor_set) > target_bits else anchor_set)
 
-            # 💡 【重要】学習時に、現在の文脈キーワードを記憶テキストに埋め込んで一緒に保存する
             kw_prefix = f"【文脈: {' '.join(context_keywords)}】 " if context_keywords else ""
             content_to_store = f"{kw_prefix}{user_text}"
 
@@ -342,10 +348,8 @@ class SaraAgent:
         tool_triggered_by_user = len(pre_tool_results) > 0
 
         recent_context = f"前回の質問「{prev_user[:30]}」を踏まえ、" if prev_user else ""
-
         current_keywords = set(extracted_now)
         
-        # 指示語（代名詞）が含まれているかをチェック
         has_demonstrative = any(d in user_text for d in ["それ", "これ", "あれ", "その", "この", "あの", "彼", "彼女"])
         if has_demonstrative or len(current_keywords) <= 1:
             current_keywords.update(context_keywords)
@@ -376,56 +380,55 @@ class SaraAgent:
             all_retrieved.extend(self.brain.in_context_inference(
                 current_sensory_sdr=list(search_sdr), context=comp))
 
-        valid_retrievals = [m for m in all_retrieved if m.get("score", 0) > 0.05]
+        valid_retrievals = [m for m in all_retrieved if m.get("score", 0) > 0.01]
         filtered_retrievals = []
         
         for m in valid_retrievals:
             content = m["content"]
             content_lower = content.lower()
             
-            curr_match = sum(1 for kw in current_keywords if kw.lower() in content_lower)
+            # メタデータ（【文脈:...】）を除去したクリーンな本文を取得
+            clean_content = content
+            match_ctx = re.search(r'【文脈:.*?】\s*(.*)', content)
+            if match_ctx:
+                clean_content = match_ctx.group(1)
+            
+            match_qa = re.search(r'回答は「(.*?)」', clean_content)
+            if match_qa:
+                clean_content = match_qa.group(1)
+                
+            m["clean_content"] = clean_content.strip()
+            
+            # 💡【重要修正】現在のキーワードはクリーンな本文と照合し、文脈キーワードはメタデータを含む全体と照合する
+            clean_lower = clean_content.lower()
+            curr_match = sum(1 for kw in current_keywords if kw.lower() in clean_lower)
             ctx_match = sum(1 for kw in context_keywords if kw.lower() in content_lower)
 
-            # 現在語が明確ならそれを優先し、指示語・短文時は文脈概念で補完
             if current_keywords and not has_demonstrative:
-                req_curr = 1 if len(current_keywords) <= 2 else max(1, math.ceil(len(current_keywords) * 0.5))
-                if curr_match < req_curr:
+                if curr_match == 0:
                     continue
             
-            # 2. 💡 指示語が使われている場合は、過去の文脈（主語）が含まれているかを確認する
             if (has_demonstrative or not current_keywords) and context_keywords:
                 if ctx_match == 0:
-                    continue  # 文脈キーワードが1つも含まれていない場合は無関係な記憶として除外
+                    continue
 
             all_kw = set(current_keywords) | context_keywords
             total_match = sum(1 for kw in all_kw if kw.lower() in content_lower)
-            m["keyword_score"] = total_match
-                
-            match_qa = re.search(r'回答は「(.*?)」', content)
-            if match_qa:
-                m["clean_content"] = match_qa.group(1)
-            else:
-                m["clean_content"] = content
+            
+            # 現在のキーワードに合致したものをスコア的に強く優遇する
+            m["keyword_score"] = total_match + (curr_match * 2)
                 
             filtered_retrievals.append(m)
 
         filtered_retrievals.sort(key=lambda x: (x.get("keyword_score", 0), x.get("score", 0)), reverse=True)
         valid_retrievals = filtered_retrievals
 
-        if tool_triggered_by_user:
-            memory_context = " ".join(pre_tool_results)
-            blended_memory = "[外部ツール実行結果による事実情報]"
-        elif valid_retrievals:
-            best_memories = [m["clean_content"] for m in valid_retrievals[:2]]
-            blended_memory = " | ".join(best_memories)
-            memory_context = best_memories[0]
-            if len(memory_context) > 150:
-                 memory_context = memory_context[:150] + "..."
-        else:
-            blended_memory = "なし"
-            memory_context = associated_text[:100] if associated_text else ""
-
-        if not memory_context.strip() and not tool_triggered_by_user:
+        if not valid_retrievals and not tool_triggered_by_user:
+            if len(user_text) <= 10 and mode == "general":
+                fallback_msg = "はい、SARAです。何かお手伝いできることはありますか？"
+                self._update_history("system", fallback_msg, self.encoder.encode(fallback_msg))
+                return f"[MoE Router: {active_experts[0]}]\n >> {fallback_msg}"
+                
             active_terms = self.topic_tracker.active_terms(limit=3)
             if active_terms:
                 hint = " / ".join(active_terms)
@@ -434,6 +437,16 @@ class SaraAgent:
                 fallback_msg = "申し訳ありませんが、その質問に関連する十分な知識が記憶に見つかりません。別の表現で試していただくか、関連する知識を教えていただけますか？"
             self._update_history("system", fallback_msg, self.encoder.encode(fallback_msg))
             return f"[MoE Router: {active_experts[0]} (Fallback)]\n >> {fallback_msg}"
+
+        if tool_triggered_by_user:
+            memory_context = " ".join(pre_tool_results)
+            blended_memory = "[外部ツール実行結果による事実情報]"
+        else:
+            best_memories = [m["clean_content"] for m in valid_retrievals[:2]]
+            blended_memory = " | ".join(best_memories)
+            memory_context = best_memories[0]
+            if len(memory_context) > 150:
+                 memory_context = memory_context[:150] + "..."
 
         if tool_triggered_by_user:
             final_generated_text = f"【システム情報】 {pre_tool_results[0]}"
@@ -483,14 +496,14 @@ class SaraAgent:
                 best_score = score
                 best_candidate = candidate_text
 
-        if len(best_candidate) < 5 and memory_context:
+        if len(best_candidate) < 10 or best_score < 15.0:
             final_generated_text = memory_context
         else:
-            final_generated_text = memory_context + "\n" + best_candidate
+            final_generated_text = memory_context + "\n[SNN生成による追記] " + best_candidate
 
         full_response = f"[MoE Router: {', '.join(active_experts)} 活性化 (Mode: {mode})]\n"
         full_response += f" >> 海馬ブレンド記憶: {blended_memory}\n"
-        full_response += f" >> SNN-LLM自律生成: {final_generated_text}"
+        full_response += f" >> SARA回答: {final_generated_text}"
 
         self._update_history("system", final_generated_text,
                              self.encoder.encode(final_generated_text))

@@ -1,6 +1,6 @@
 # ディレクトリパス: scripts/eval/chat_agent.py
 # ファイルの日本語タイトル: 統合エージェント・チャット評価スクリプト
-# ファイルの目的や内容: 強化された会話メモリ、再ランキング、文完成機構を持つ SaraAgent を用いた対話インターフェース。対話を通じた動的学習（teaching_mode）のテスト機能を追加。
+# ファイルの目的や内容: "biology: 学習: ..." のようなコンテキスト指定付きの学習コマンドを正しくパースできるように修正。
 
 import os
 import sys
@@ -82,9 +82,9 @@ def main():
             if not user_input.strip():
                 continue
 
-            # 💡 オンライン学習コマンドの処理
-            if user_input.startswith("学習:"):
-                learn_text = user_input[3:].strip()
+            # 💡 オンライン学習コマンドの処理 ("biology: 学習: ..." も拾えるように修正)
+            if "学習:" in user_input:
+                learn_text = user_input.replace("学習:", "").strip()
                 if not learn_text:
                     print("🤖 SARA: 学習する内容を入力してください。\n")
                     continue

@@ -139,8 +139,9 @@ class UnsupervisedSpikeLayer(SNNModule):
 
         # --- 4. 側方抑制 ---
         out_spikes: List[int]
+        is_training = learning and not self._frozen
         if self.lateral_inhibition > 0.0 and len(candidates) > 1:
-            out_spikes = self._apply_lateral_inhibition(candidates, potentials)
+            out_spikes = self._apply_lateral_inhibition(candidates, potentials, is_training=is_training)
         else:
             out_spikes = candidates
 
@@ -151,12 +152,13 @@ class UnsupervisedSpikeLayer(SNNModule):
                 out_spikes = [best]
 
         # --- 5. STDP 学習 ---
-        do_learn = learning and not self._frozen
-        if do_learn:
+        if is_training:
             self._apply_competitive_stdp(in_spikes, out_spikes)
 
         # --- 6. ホメオスタシス更新 ---
-        self._update_homeostasis(out_spikes)
+        # 凍結時は閾値の適応を行わない（決定論的動作の保証）
+        if not self._frozen:
+            self._update_homeostasis(out_spikes)
 
         return out_spikes
 
@@ -168,6 +170,7 @@ class UnsupervisedSpikeLayer(SNNModule):
         self,
         candidates: List[int],
         potentials: List[float],
+        is_training: bool = True,
     ) -> List[int]:
         """側方抑制: 勝者ニューロンが近隣を抑制して多様な受容野を形成する。
 
@@ -188,9 +191,13 @@ class UnsupervisedSpikeLayer(SNNModule):
             for offset in range(-inhibition_radius, inhibition_radius + 1):
                 neighbor = neuron_id + offset
                 if 0 <= neighbor < self.out_features and neighbor != neuron_id:
-                    # 抑制確率は側方抑制の強さに比例
-                    if random.random() < self.lateral_inhibition:
-                        suppressed.add(neighbor)
+                    # 推論・凍結時は決定論的、学習時は確率的に抑制
+                    if is_training:
+                        if random.random() < self.lateral_inhibition:
+                            suppressed.add(neighbor)
+                    else:
+                        if self.lateral_inhibition >= 0.5:
+                            suppressed.add(neighbor)
 
         return surviving
 

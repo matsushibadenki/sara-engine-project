@@ -1,6 +1,6 @@
 # ディレクトリパス: scripts/eval/chat_snn_lm.py
-# ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (バグ修正版)
-# ファイルの目的や内容: 英語ノイズや無意味な出力を防ぐため、スコアリングのペナルティ強化およびサニタイズ処理を追加。過去の対話履歴によるルールベース判定の無限ループバグを修正。
+# ファイルの日本語タイトル: SNN言語モデル 推論・対話スクリプト (実用エージェント完全版)
+# ファイルの目的や内容: 検索知識（RAG）にない質問に対するSNNの暴走（言葉のサラダ）を完全にシャットアウトする2段構えの防壁を実装。「知っていることだけを確実に答える」実用的なAIエージェントとして機能させる。
 
 from sara_engine.utils.tokenizer import SaraTokenizer
 from sara_engine.utils.chat import ChatSessionHelper
@@ -99,7 +99,6 @@ class LocalKnowledgeResponder:
         return continuation
 
     def _rule_based_answer(self, query: str, context_text: str) -> str:
-        # 【修正箇所】context_text（対話履歴）を除外し、最新のユーザーの質問(query)のみを判定対象にする
         scope = query.strip()
         rules: List[Tuple[str, str]] = [
             (r"排他的論理和|XOR", "排他的論理和(XOR)は単純パーセプトロンでは線形分離できないため扱えません。隠れ層を持つ多層ニューラルネットワークなら表現できます。"),
@@ -193,6 +192,10 @@ class LocalKnowledgeResponder:
             score += 12.0
         passage_terms = self._extract_terms(passage)
         overlap = len(query_terms & passage_terms)
+        
+        if overlap == 0 and query not in passage:
+            return 0.0
+            
         score += overlap * 3.5
         if query_terms:
             score += overlap / max(1, len(query_terms))
@@ -214,10 +217,6 @@ class LocalKnowledgeResponder:
             return ""
         if not text.endswith(("。", "！", "？")):
             text += "。"
-        if query in text:
-            return text
-        if len(query) <= 20 and not re.search(r"(何|なに|なぜ|どう|とは|\?)", query):
-            return f"{query}は、{text}"
         return text
 
 
@@ -294,6 +293,31 @@ def _clean_response(text: str, max_chars: int = 200) -> str:
         normalized = normalized[:-1].rstrip()
     return normalized.strip()
 
+# 【防壁1】SNN特有の「言葉のサラダ」を強力に検知するフィルター（強化版）
+def _is_word_salad(text: str) -> bool:
+    if not text:
+        return True
+    # 助詞の異常な連続
+    if re.search(r"(はは|のの|をを|がが|にに|でで|とと|てて)", text):
+        return True
+    # 異常なキーワードやQAフォーマットの混線
+    if re.search(r"(何ですか|回答:|問:|答:|:)", text):
+        return True
+    # コロンや全角コロンの不自然な出現
+    if ":" in text or "：" in text:
+        return True
+    # 括弧の不一致
+    if text.count("「") != text.count("」") or text.count("『") != text.count("』") or text.count("（") != text.count("）"):
+        return True
+    # 漢字が多すぎる（支離滅裂な単語の羅列）
+    jp_chars = sum(1 for ch in text if '\u3040' <= ch <= '\u30ff' or '\u4e00' <= ch <= '\u9fff')
+    kanji_chars = sum(1 for ch in text if '\u4e00' <= ch <= '\u9fff')
+    if jp_chars > 10 and (kanji_chars / jp_chars) > 0.55:
+        return True
+    # 文末が不自然（ある程度の長さがあるのに句点で終わらない）
+    if len(text) > 20 and not text.endswith(("。", "！", "？", "」", "』")):
+        return True
+    return False
 
 def _is_fragment_like(text: str) -> bool:
     stripped = text.strip()
@@ -310,6 +334,8 @@ def _is_fragment_like(text: str) -> bool:
     if stripped[-1] in "、（(":
         return True
     if re.search(r"[{}<>|]", stripped):
+        return True
+    if _is_word_salad(stripped):
         return True
     return False
 
@@ -351,6 +377,8 @@ def chat_loop(
 
     print("Waking up SARA... Loading synaptic weights...")
     model = SpikingTransformerModel.from_pretrained(model_dir)
+    model.adaptive_thresholds.clear()
+
     knowledge = LocalKnowledgeResponder([
         os.path.join("data", "processed", "corpus.txt"),
         os.path.join("data", "interim", "docs_corpus.txt"),
@@ -387,9 +415,9 @@ def chat_loop(
             )
 
             retry_settings: List[Tuple[float, float, int]] = [
-                (0.55, 0.06, max_length),
-                (0.45, 0.12, int(max_length * 1.15)),
-                (0.35, 0.20, int(max_length * 1.30)),
+                (0.40, 0.01, max_length),
+                (0.30, 0.05, int(max_length * 1.15)),
+                (0.20, 0.10, int(max_length * 1.30)),
             ]
 
             best_response = ""
@@ -408,8 +436,11 @@ def chat_loop(
                 response_text = _decode_new_tokens(
                     tokenizer, generated_tokens, len(input_tokens))
                 cleaned_text = _clean_response(response_text)
-                score = _score_response(
-                    cleaned_text) + chat_helper.rerank_score(user_input, cleaned_text)
+                
+                score = _score_response(cleaned_text) + chat_helper.rerank_score(user_input, cleaned_text)
+                if _is_word_salad(cleaned_text):
+                    score -= 1000.0 # サラダ判定されたら絶対に出力させない
+
                 if score > best_score:
                     best_score = score
                     best_response = cleaned_text
@@ -417,6 +448,7 @@ def chat_loop(
                 if cleaned_text and cleaned_text.endswith(("。", "！", "？")) and score >= 10:
                     break
 
+            # 【防壁2】RAG（確実な知識）の存在有無による分岐
             if retrieved_response:
                 retrieved_score = (
                     _score_response(retrieved_response)
@@ -430,9 +462,15 @@ def chat_loop(
                     if retrieved_score >= max(4.0, best_score - 1.5):
                         best_response = retrieved_response
                         best_score = retrieved_score
+            else:
+                # RAG（知識ベース）にない場合、現在のSNNの表現力ではサラダになるため閾値を極めて高く設定する
+                if best_score < 30.0:  # 文字数で稼いだだけの低品質な文をブロック
+                    best_response = ""
+                    best_score = -1e9
 
-            if not best_response.strip() or (best_score < 2.0 and not (prefer_retrieval and retrieved_response)):
-                best_response = chat_helper.fallback_response(user_input)
+            # スコアが低い、またはサラダとしてブロックされた場合
+            if not best_response.strip() or best_score < 5.0:
+                best_response = "申し訳ありません、その質問に対する十分な知識や文脈がネットワーク内に形成されていません。もう少しAIや神経科学に関連する質問を試してみてください。"
 
             print(f"SARA: {best_response}\n")
             chat_helper.add_turn("user", user_input)
