@@ -102,17 +102,22 @@ class LocalKnowledgeResponder:
         scope = query.strip()
         rules: List[Tuple[str, str]] = [
             (r"排他的論理和|XOR", "排他的論理和(XOR)は単純パーセプトロンでは線形分離できないため扱えません。隠れ層を持つ多層ニューラルネットワークなら表現できます。"),
-            (r"最初の実用的な|イヴァネンコ|イヴァネンコとラパ|ディープラーニングアルゴリズム", "最初期の実用的なディープラーニング手法としては、1960年代にイヴァネンコとラパが提案した多層ネットワーク学習法が知られています。"),
+            (r"最初の実用的な|イヴァネンコ|イヴァネンコとラパ|ディープラーニングアルゴリズム",
+             "最初期の実用的なディープラーニング手法としては、1960年代にイヴァネンコとラパが提案した多層ネットワーク学習法が知られています。"),
             (r"ヒトの神経系|神経系", "ヒトの神経系はニューロンがシナプスでつながるネットワークです。樹状突起が入力を受け取り、細胞体で処理し、軸索を通じて他の細胞へ信号を送ります。"),
-            (r"スパイキングニューラルネットワーク|SNN", "スパイキングニューラルネットワークは、ニューロンの発火タイミングを情報として扱う神経回路モデルです。通常のニューラルネットワークより生物学的な挙動に近いのが特徴です。"),
+            (r"スパイキングニューラルネットワーク|SNN",
+             "スパイキングニューラルネットワークは、ニューロンの発火タイミングを情報として扱う神経回路モデルです。通常のニューラルネットワークより生物学的な挙動に近いのが特徴です。"),
             (r"シナプス", "シナプスは、ニューロン同士が情報を受け渡す接合部です。生物の学習では、シナプス結合の強さが変化することが重要な役割を持ちます。"),
             (r"ニューラルネットワーク", "ニューラルネットワークは、入力から出力へ重み付き結合を通して情報を伝え、重みを調整することで学習する数理モデルです。分類、回帰、生成などに広く使われます。"),
             (r"ディープラーニング", "ディープラーニングは、多層のニューラルネットワークで特徴表現を段階的に学習する手法です。画像認識、音声認識、自然言語処理で特に有効です。"),
             (r"パーセプトロン", "パーセプトロンは入力の重み付き和から出力を決める最も基本的なニューラルネットワークです。単純パーセプトロンは線形分離できる問題に向きます。"),
-            (r"畳み込みニューラルネットワーク|CNN", "CNNは局所受容野と重み共有を用いるニューラルネットワークで、画像のような空間構造を持つデータの処理に向いています。"),
-            (r"リカレントニューラルネットワーク|RNN", "RNNは過去の状態を次の計算に持ち越すことで、時系列や文章のような順序を持つデータを扱うニューラルネットワークです。"),
+            (r"畳み込みニューラルネットワーク|CNN",
+             "CNNは局所受容野と重み共有を用いるニューラルネットワークで、画像のような空間構造を持つデータの処理に向いています。"),
+            (r"リカレントニューラルネットワーク|RNN",
+             "RNNは過去の状態を次の計算に持ち越すことで、時系列や文章のような順序を持つデータを扱うニューラルネットワークです。"),
             (r"Transformer", "Transformerは自己注意機構を使って系列内の要素間の関係を並列に捉えるモデルです。現在の大規模言語モデルの中核になっています。"),
-            (r"誤差逆伝播|バックプロパゲーション", "誤差逆伝播法は、出力誤差を各層へ逆向きに伝えて重みを更新する学習法です。深層学習を実用化した中心技術の1つです。"),
+            (r"誤差逆伝播|バックプロパゲーション",
+             "誤差逆伝播法は、出力誤差を各層へ逆向きに伝えて重みを更新する学習法です。深層学習を実用化した中心技術の1つです。"),
             (r"学習|訓練", "ニューラルネットワークの学習とは、予測誤差が小さくなるように重みやしきい値を調整することです。"),
             (r"推論", "推論は、学習済みの重みを使って新しい入力に対する出力を計算する処理です。"),
         ]
@@ -133,7 +138,8 @@ class LocalKnowledgeResponder:
                 break
 
         cleaned_lines = [self._normalize_line(line) for line in lines]
-        cleaned_lines = [line for line in cleaned_lines if self._is_useful_line(line)]
+        cleaned_lines = [
+            line for line in cleaned_lines if self._is_useful_line(line)]
 
         passages: List[str] = []
         for idx, line in enumerate(cleaned_lines):
@@ -173,7 +179,8 @@ class LocalKnowledgeResponder:
             return False
         if re.search(r"[{}<>]{2,}", line):
             return False
-        jp_chars = sum(1 for ch in line if '\u3040' <= ch <= '\u30ff' or '\u4e00' <= ch <= '\u9fff')
+        jp_chars = sum(1 for ch in line if '\u3040' <= ch <=
+                       '\u30ff' or '\u4e00' <= ch <= '\u9fff')
         ascii_chars = sum(1 for ch in line if ch.isascii() and ch.isalpha())
         if jp_chars < 6:
             return False
@@ -183,7 +190,8 @@ class LocalKnowledgeResponder:
 
     def _extract_terms(self, text: str) -> set[str]:
         parts = re.findall(r"[\u3040-\u30ff\u4e00-\u9fffA-Za-z0-9]{2,}", text)
-        stop_terms = {"です", "ます", "する", "した", "こと", "これ", "それ", "どれ", "よう", "ため"}
+        stop_terms = {"です", "ます", "する", "した",
+                      "こと", "これ", "それ", "どれ", "よう", "ため"}
         return {part for part in parts if part not in stop_terms}
 
     def _score_passage(self, query: str, query_terms: set[str], passage: str) -> float:
@@ -192,10 +200,10 @@ class LocalKnowledgeResponder:
             score += 12.0
         passage_terms = self._extract_terms(passage)
         overlap = len(query_terms & passage_terms)
-        
+
         if overlap == 0 and query not in passage:
             return 0.0
-            
+
         score += overlap * 3.5
         if query_terms:
             score += overlap / max(1, len(query_terms))
@@ -238,7 +246,7 @@ def _score_response(text: str) -> float:
 
     repeated_phrase_penalty = 0.0
     for span in range(8, min(24, max(9, len(stripped) // 2))):
-        seen = {}
+        seen: dict[str, int] = {}
         for i in range(0, max(0, len(stripped) - span + 1)):
             frag = stripped[i:i + span]
             if len(frag.strip()) < max(4, span // 2):
@@ -294,6 +302,8 @@ def _clean_response(text: str, max_chars: int = 200) -> str:
     return normalized.strip()
 
 # 【防壁1】SNN特有の「言葉のサラダ」を強力に検知するフィルター（強化版）
+
+
 def _is_word_salad(text: str) -> bool:
     if not text:
         return True
@@ -310,7 +320,8 @@ def _is_word_salad(text: str) -> bool:
     if text.count("「") != text.count("」") or text.count("『") != text.count("』") or text.count("（") != text.count("）"):
         return True
     # 漢字が多すぎる（支離滅裂な単語の羅列）
-    jp_chars = sum(1 for ch in text if '\u3040' <= ch <= '\u30ff' or '\u4e00' <= ch <= '\u9fff')
+    jp_chars = sum(1 for ch in text if '\u3040' <= ch <=
+                   '\u30ff' or '\u4e00' <= ch <= '\u9fff')
     kanji_chars = sum(1 for ch in text if '\u4e00' <= ch <= '\u9fff')
     if jp_chars > 10 and (kanji_chars / jp_chars) > 0.55:
         return True
@@ -318,6 +329,7 @@ def _is_word_salad(text: str) -> bool:
     if len(text) > 20 and not text.endswith(("。", "！", "？", "」", "』")):
         return True
     return False
+
 
 def _is_fragment_like(text: str) -> bool:
     stripped = text.strip()
@@ -408,7 +420,8 @@ def chat_loop(
                     t, "?") for t in input_tokens]
                 print(f"  [DEBUG] Input tokens: {token_strs}")
 
-            retrieved_response = knowledge.answer(user_input, context_text=prompt_text)
+            retrieved_response = knowledge.answer(
+                user_input, context_text=prompt_text)
             prefer_retrieval = (
                 len(user_input.strip()) <= 24
                 and len(chat_helper._extract_terms(user_input)) >= 1
@@ -436,10 +449,11 @@ def chat_loop(
                 response_text = _decode_new_tokens(
                     tokenizer, generated_tokens, len(input_tokens))
                 cleaned_text = _clean_response(response_text)
-                
-                score = _score_response(cleaned_text) + chat_helper.rerank_score(user_input, cleaned_text)
+
+                score = _score_response(
+                    cleaned_text) + chat_helper.rerank_score(user_input, cleaned_text)
                 if _is_word_salad(cleaned_text):
-                    score -= 1000.0 # サラダ判定されたら絶対に出力させない
+                    score -= 1000.0  # サラダ判定されたら絶対に出力させない
 
                 if score > best_score:
                     best_score = score

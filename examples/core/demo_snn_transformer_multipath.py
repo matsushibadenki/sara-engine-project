@@ -42,7 +42,7 @@ def main():
         for i, seq in enumerate(training_data):
             if epoch == 0:
                 print(f"  -> Learning sequence {i+1}: {seq[:30]}...")
-            model.learn_sequence(seq)
+            model.learn_sequence(seq)  # type: ignore[arg-type]
         print(f"  [Epoch {epoch + 1}/{num_epochs}] completed.")
 
     # Test generation
@@ -54,7 +54,7 @@ def main():
     ]
 
     for prompt in prompts:
-        generated = model.generate(prompt, max_length=30)
+        generated = model.generate(prompt, max_length=30)  # type: ignore[arg-type]
         print(f"\nPrompt: '{prompt}'")
         print(f"Result: '{generated}'")
 

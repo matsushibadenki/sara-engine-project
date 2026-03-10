@@ -51,7 +51,7 @@ def run_math_chat(model_path):
         print("SARA: ", end="", flush=True)
 
         confidence_printed = False
-        refractory_counters = {}
+        refractory_counters: dict[int, int] = {}
 
         for step_idx in range(100):
             ctx = context_tokens[-24:] if len(

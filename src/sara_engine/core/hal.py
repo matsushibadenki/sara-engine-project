@@ -46,7 +46,7 @@ class RustBackend(SpikeBackend):
 
     def __init__(self):
         try:
-            from .. import sara_rust_core  # type: ignore
+            from .. import sara_rust_core
             self.engine = sara_rust_core.SpikeEngine()
             self.available = True
         except ImportError:

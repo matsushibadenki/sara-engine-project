@@ -104,9 +104,9 @@ class DirectWiringSNN:
             print("[INFO] Falling back to standard Python implementation...")
 
         # フォールバック (Python単独実行時)
-        co_occurrence = defaultdict(
+        co_occurrence: Dict[int, Dict[int, Dict[int, float]]] = defaultdict(
             lambda: defaultdict(lambda: defaultdict(float)))
-        unigram_counts = defaultdict(int)
+        unigram_counts: Dict[int, int] = defaultdict(int)
 
         for i in range(total_tokens):
             current_token = tokens[i]
@@ -135,7 +135,7 @@ class DirectWiringSNN:
     def save_model(self, filepath: str):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
-        serializable_synapses = {}
+        serializable_synapses: Dict[str, Dict[str, Dict[str, float]]] = {}
         for delay, pre_dict in self.synapses.items():
             serializable_synapses[str(delay)] = {}
             for pre, post_dict in pre_dict.items():
@@ -197,7 +197,7 @@ class DirectWiringSNN:
 
         for step in range(max_new_tokens):
             current_time += 1
-            next_currents = defaultdict(float)
+            next_currents: Dict[int, float] = defaultdict(float)
 
             for reversed_idx, pre_token in enumerate(reversed(recent_spikes)):
                 delay = reversed_idx + 1

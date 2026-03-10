@@ -1,7 +1,7 @@
 # [配置するディレクトリのパス]: ./examples/demo_interactive_chat.py
 # [ファイルの日本語タイトル]: インタラクティブSNNチャット
 # [ファイルの目的や内容]: 学習フェーズをスキップし、TransformersライクなAutoクラスとパイプラインを利用して事前学習済みSNNモデルと即座に対話するデモ。
-from sara_engine import AutoTokenizer, pipeline  # type: ignore
+from sara_engine import AutoTokenizer, pipeline
 import sys
 import os
 # ディレクトリパス: examples/demo_interactive_chat.py

@@ -70,7 +70,9 @@ def main():
         print("  - Rust core not available. Skipping Rust benchmark.")
         return
 
-    rust_layer.core.set_weights(weights)
+    core = getattr(rust_layer, 'core', None)
+    if core is not None and hasattr(core, 'set_weights'):
+        core.set_weights(weights)
 
     def rust_task(): rust_layer.forward(
         active_inputs=active_spikes, prev_active_hidden=[])

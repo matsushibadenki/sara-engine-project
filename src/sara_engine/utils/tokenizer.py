@@ -11,10 +11,11 @@ from typing import List, Dict, Tuple, Any
 from .project_paths import ensure_parent_directory, workspace_path
 
 try:
-    from janome.tokenizer import Tokenizer as JanomeTokenizer  # type: ignore
+    from janome.tokenizer import Tokenizer as JanomeTokenizer
     _HAS_JANOME = True
 except ImportError:
     _HAS_JANOME = False
+
 
 class SaraTokenizer:
     def __init__(self, vocab_size: int = 4096, model_path: str = workspace_path("tokenizers", "sara_vocab.json")):
@@ -25,11 +26,12 @@ class SaraTokenizer:
         self.merge_ranks: Dict[Tuple[str, str], int] = {}
         self.next_id = 0
         self._janome_tokenizer: Any = None
-        
-        self.special_tokens = ["<pad>", "<unk>", "<sos>", "<eos>", "\n", " ", "　"]
+
+        self.special_tokens = ["<pad>", "<unk>",
+                               "<sos>", "<eos>", "\n", " ", "　"]
         for token in self.special_tokens:
             self._add_token(token)
-            
+
         if os.path.exists(self.model_path):
             self.load()
 
@@ -37,7 +39,7 @@ class SaraTokenizer:
         """単語境界を跨いだ不要な結合を防ぐための事前分割"""
         if not text:
             return []
-        
+
         if _HAS_JANOME:
             if self._janome_tokenizer is None:
                 self._janome_tokenizer = JanomeTokenizer()
@@ -96,15 +98,15 @@ class SaraTokenizer:
             words = self.pre_tokenize(text)
             for w in words:
                 word_freqs[w] = word_freqs.get(w, 0) + 1
-        
+
         # 初期状態: 各単語を文字単位に分割してスペースで結合
         splits = {" ".join(list(w)): freq for w, freq in word_freqs.items()}
-        
+
         # 基本となる文字をVocabに登録
         for word in word_freqs.keys():
             for char in word:
                 self._add_token(char)
-                
+
         # BPEマージループ (頻出する文字ペアを結合していく)
         num_merges = self.vocab_size - self.next_id
         for i in range(num_merges):
@@ -112,29 +114,29 @@ class SaraTokenizer:
             if not stats:
                 break
             # 最も頻出するペアを取得
-            best_pair = max(stats, key=stats.get)
+            best_pair = max(stats, key=lambda k: stats[k])
             splits = self._merge_vocab(best_pair, splits)
-            
+
             # 学習したマージ規則を順位付きで保存
             self.merge_ranks[best_pair] = len(self.merge_ranks)
             self._add_token("".join(best_pair))
-            
+
             if self.next_id >= self.vocab_size:
                 break
-                
+
         self.save()
 
     def _tokenize_word(self, word: str) -> List[str]:
         """学習されたBPEマージルールに従って1単語をサブワードに分割"""
         if len(word) <= 1:
             return [word]
-            
+
         symbols = list(word)
         while True:
             pairs = [(symbols[i], symbols[i+1]) for i in range(len(symbols)-1)]
             if not pairs:
                 break
-                
+
             # 学習時と全く同じ順序（優先度）でマージを適用する
             best_pair = None
             lowest_rank = float('inf')
@@ -143,10 +145,10 @@ class SaraTokenizer:
                 if rank < lowest_rank:
                     lowest_rank = rank
                     best_pair = pair
-                    
+
             if best_pair is None:
                 break
-                
+
             new_symbols = []
             i = 0
             while i < len(symbols):
@@ -192,6 +194,7 @@ class SaraTokenizer:
             self.next_id = data["next_id"]
             self.id_to_token = {int(v): k for k, v in self.vocab.items()}
             if "merges" in data:
-                self.merge_ranks = {tuple(p): i for i, p in enumerate(data["merges"])}
+                self.merge_ranks = {
+                    tuple(p): i for i, p in enumerate(data["merges"])}
         except Exception as e:
             print(f"Warning: Failed to load tokenizer model: {e}")

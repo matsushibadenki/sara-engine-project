@@ -1,21 +1,13 @@
 import hashlib
 import random
-import os
-import sys
+
 from typing import List, Dict, Set
 from collections import defaultdict
 import numpy as np
 # ディレクトリパス: src/sara_engine/memory/sdr.py
 # タイトル: 疎分散表現 (SDR) エンコーダ (意味ネットワーク & VSA統合版)
 # 目的: VSAの巡回シフト(Circular Shift)を用いた役割バインディング(Role Binding)を実装し、文法構造をSDRにエンコードする。
-# 相対インポートに変更
-try:
-    from ..utils.tokenizer import SaraTokenizer
-except ImportError:
-    sys.path.append(os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '../../')))
-    # type: ignore[import-not-found, no-redef]
-    from utils.tokenizer import SaraTokenizer
+from sara_engine.utils.tokenizer import SaraTokenizer
 
 
 class SemanticNetwork:

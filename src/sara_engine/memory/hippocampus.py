@@ -1,9 +1,11 @@
-from snn_models.spatiotemporal_stdp import SpatioTemporalSNN
-from .ltm import SparseMemoryStore
-from ..core.cortex import CorticalColumn
-
 from collections import deque
-from typing import List, Dict, Any, Deque
+from typing import Any, Deque, Dict, List
+
+from sara_engine.core.cortex import CorticalColumn
+from sara_engine.memory.ltm import SparseMemoryStore
+from sara_engine.models.spatiotemporal_stdp import SpatioTemporalSNN
+
+
 # ディレクトリパス: src/sara_engine/memory/hippocampus.py
 # タイトル: 皮質-海馬 連動メモリシステム (Cortico-Hippocampal System)
 # 目的: 嗅内皮質からの貫通線維を模倣し、皮質表現と生入力SDRのハイブリッドで検索精度を極大化。過度な数式ハックを排し、皮質(Cortex)が持つ自然な時間バイアスを尊重する。

@@ -8,11 +8,11 @@ from ..learning.homeostasis import AdaptiveThresholdHomeostasis
 # ファイルの日本語タイトル: スパイキング・ニューラル・レイヤー
 # ファイルの目的や内容: FFNでの過剰発火（てんかん状態）を防ぐためのゲイン調整と、推論時におけるk-WTA（勝者独占）ベースの正規化ロジックの導入。
 try:
-    from .. import sara_rust_core  # type: ignore
+    from .. import sara_rust_core
     RUST_AVAILABLE = True
 except ImportError:
     try:
-        import sara_rust_core  # type: ignore
+        import sara_rust_core
         RUST_AVAILABLE = True
     except ImportError:
         RUST_AVAILABLE = False

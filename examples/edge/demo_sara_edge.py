@@ -1,14 +1,14 @@
+from sara_engine.edge.runtime import SaraEdgeRuntime
+from sara_engine.edge.exporter import export_for_edge
+from sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
+import time
+import os
 _FILE_INFO = {
     "//": "ディレクトリパス: examples/demo_sara_edge.py",
     "//": "ファイルの日本語タイトル: Sara-Edge ランタイム デモ",
     "//": "ファイルの目的や内容: SNNTransformerModelを学習させ、その重みをSara-Edge用にエクスポートし、超軽量なエッジランタイムで推論（テキスト生成）が完全に一致するかをテストする。"
 }
 
-import os
-import time
-from sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
-from sara_engine.edge.exporter import export_for_edge
-from sara_engine.edge.runtime import SaraEdgeRuntime
 
 def run_edge_demo():
     workspace_dir = os.path.join(os.path.dirname(__file__), "workspace")
@@ -23,12 +23,13 @@ def run_edge_demo():
         f.write("[1] Training Full SpikingTransformerModel...\n")
         config = SNNTransformerConfig(embed_dim=64, num_layers=1)
         full_model = SpikingTransformerModel(config)
-        
+
         training_text = "Sara-Edge brings biological AI to microcontrollers."
-        full_model.learn_sequence(training_text)
-        
+        full_model.learn_sequence(training_text)  # type: ignore[arg-type]
+
         prompt = "Sara-Edge brings"
-        full_model_output = full_model.generate(prompt, max_length=35)
+        full_model_output = full_model.generate(
+            prompt, max_length=35)  # type: ignore[arg-type]
         f.write(f"Full Model Output: {full_model_output}\n\n")
 
         # 2. エッジ用フォーマットへのエクスポート
@@ -41,9 +42,10 @@ def run_edge_demo():
         f.write("[3] Running Inference on SaraEdgeRuntime...\n")
         start_time = time.time()
         edge_runtime = SaraEdgeRuntime(edge_model_path)
-        edge_output = edge_runtime.generate(prompt, max_length=35)
+        edge_output = edge_runtime.generate(
+            prompt, max_length=35)
         inference_time = time.time() - start_time
-        
+
         f.write(f"Edge Runtime Output: {edge_output}\n")
         f.write(f"Inference Time: {inference_time:.4f} seconds\n\n")
 
@@ -56,6 +58,7 @@ def run_edge_demo():
             print("WARNING: Mismatch in outputs.")
 
     print(f"Log generated at: {log_file_path}")
+
 
 if __name__ == "__main__":
     run_edge_demo()

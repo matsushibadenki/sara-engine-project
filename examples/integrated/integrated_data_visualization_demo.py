@@ -64,7 +64,8 @@ def main():
             step, layer_name="Layer 0: Input Stream", spikes=input_spikes)
 
         # (B) リザーバー/コンテキスト層の発火状況を取得して記録
-        res_spikes = model._get_reservoir_spikes(token_id)
+        res_spikes = model._get_reservoir_spikes(  # type: ignore[attr-defined]
+            token_id)
         board.log_spikes(
             step, layer_name="Layer 1: Context Reservoir", spikes=res_spikes)
 

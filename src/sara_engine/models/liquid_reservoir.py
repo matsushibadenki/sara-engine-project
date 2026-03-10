@@ -89,11 +89,13 @@ class LiquidReservoir:
         for post_id in range(self.n):
             for pre_id, eff_w in current_arrivals[post_id]:
                 # 各ニューロンの樹状突起が信号を枝ごとに受容
-                self.dendritic_trees[post_id].integrate_synapse(
-                    pre_id, eff_w, 1.0)
+                branch_id = pre_id % len(
+                    self.dendritic_trees[post_id].branches)
+                self.dendritic_trees[post_id].integrate_to_branch(
+                    branch_id, eff_w)
 
             # 細胞体(Soma)に届く総電流を計算（ここで非線形なDendritic Spikeが発生）
-            I_syn_total[post_id] = self.dendritic_trees[post_id].aggregate_to_soma()
+            I_syn_total[post_id] = self.dendritic_trees[post_id].aggregate()
 
         # 3. Izhikevich 更新と発火判定
         fired_neurons = []

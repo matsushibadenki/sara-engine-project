@@ -6,7 +6,7 @@ import os
 # タイトル: 100万トークン対応 スケーラブル疎分散長期記憶 (Scalable LTM)
 # 目的: Rustコアを活用し、数百万トークン規模のSDRを高速かつ省メモリでファジー検索・連想する。ANN/Transformerの代替となるSNNアーキテクチャ。
 try:
-    from ..sara_rust_core import ScalableSDRMemory
+    from sara_engine.sara_rust_core import ScalableSDRMemory
 except ImportError:
     print("Warning: Rust core 'ScalableSDRMemory' not found. Please run 'pip install -e .' to rebuild the library.")
     ScalableSDRMemory = None

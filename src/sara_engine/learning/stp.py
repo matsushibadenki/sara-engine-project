@@ -5,7 +5,7 @@
 # }
 
 import math
-from typing import Dict
+from typing import Any, Dict
 
 
 class ShortTermPlasticityManager:
@@ -80,14 +80,14 @@ class ShortTermPlasticityManager:
 
         return scale
 
-    def state_dict(self) -> Dict[str, object]:
+    def state_dict(self) -> Dict[str, Any]:
         return {
             "u": dict(self.u),
             "x": dict(self.x),
             "last_update": dict(self.last_update)
         }
 
-    def load_state_dict(self, state: Dict[str, object]) -> None:
+    def load_state_dict(self, state: Dict[str, Any]) -> None:
         if "u" in state:
             self.u = {int(k): float(v) for k, v in state["u"].items()}
         if "x" in state:

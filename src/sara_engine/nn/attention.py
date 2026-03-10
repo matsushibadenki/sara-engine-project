@@ -6,7 +6,7 @@ import random
 # ファイルの目的や内容: sara_rust_core.SpikeEngine を統合し、大規模なスパイク伝播と学習を高速化したアテンション層。Fuzzy Recall (SDR Overlap) による連想記憶を統合。Transformers代替となるSDRFuzzyAttentionを追記。
 # Import Rust core if available
 try:
-    from .. import sara_rust_core  # type: ignore
+    from .. import sara_rust_core
     RUST_AVAILABLE = True
 except ImportError:
     RUST_AVAILABLE = False

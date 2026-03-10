@@ -60,7 +60,8 @@ class MultimodalSNNHub(SNNModule):
             query=global_spikes, key=global_spikes, value=global_spikes)
 
         # 4. Predict cross-modal associations (e.g. Text -> Imagine Image)
-        predictions = {mod: [] for mod in self.modality_names}
+        predictions: Dict[str, List[int]] = {
+            mod: [] for mod in self.modality_names}
         for mod in self.modality_names:
             pred_pots = {i: 0.0 for i in range(self.shared_space_size)}
             for gs in global_spikes:

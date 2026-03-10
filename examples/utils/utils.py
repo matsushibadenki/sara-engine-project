@@ -40,8 +40,8 @@ def text_to_spikes(text, vocab_map, steps_per_char=3, echo_steps=10):
 
 def load_mnist_data(data_dir='./data'):
     try:
-        import torch  # type: ignore
-        from torchvision import datasets, transforms  # type: ignore
+        import torch
+        from torchvision import datasets, transforms
         
         transform = transforms.Compose([
             transforms.ToTensor(),

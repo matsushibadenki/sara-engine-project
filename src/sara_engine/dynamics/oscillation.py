@@ -6,16 +6,18 @@
 
 import math
 import random
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 # ==========================================================================
 # 1. OscillationManager (神経振動 / 時間的ゲーティング)
 # ==========================================================================
 
+
 class OscillationManager:
     """
     神経振動（Neural Oscillations）による時間的ゲーティングの管理。
     """
+
     def __init__(self):
         # 脳波の周波数定義 (Hz)
         self.frequencies = {
@@ -51,17 +53,19 @@ class OscillationManager:
 # 2. STPSynapse (Tsodyks–Markram モデル / 短期可塑性)
 # ==========================================================================
 
+
 class STPSynapse:
     """
     短期シナプス可塑性（Short-Term Plasticity）を実装したシナプス。
     u: 利用率 (release probability / facilitation)
     x: 利用可能資源 (available resources / depression)
     """
+
     def __init__(
-        self, 
-        weight: float, 
-        U: float = 0.2, 
-        tau_f: float = 600.0, 
+        self,
+        weight: float,
+        U: float = 0.2,
+        tau_f: float = 600.0,
         tau_d: float = 200.0
     ):
         self.w = weight  # 長期的な基底重み
@@ -78,7 +82,7 @@ class STPSynapse:
         シナプス状態を更新し、有効重み（w_eff）を返す。
         """
         dt = current_time - self.last_update_t
-        
+
         # 1. スパイクが無い時間の回復 (指数減衰・回復)
         if dt > 0:
             self.u = self.U + (self.u - self.U) * math.exp(-dt / self.tau_f)
@@ -101,11 +105,13 @@ class STPSynapse:
 # 3. LIFNeuron (神経振動による動的閾値制御付き)
 # ==========================================================================
 
+
 class LIFNeuron:
     """
     Leaky Integrate-and-Fire (LIF) ニューロン。
     神経振動（Oscillation）によって発火閾値が変動する。
     """
+
     def __init__(self, base_threshold: float = 1.0, leak: float = 0.95):
         self.v = 0.0
         self.base_threshold = base_threshold
@@ -134,7 +140,7 @@ class LIFNeuron:
         if self.v > dynamic_threshold:
             self.spike = True
             self.v = 0.0
-            self.refractory_period = 2 # 簡易的な不応期
+            self.refractory_period = 2  # 簡易的な不応期
         else:
             self.spike = False
 
@@ -144,20 +150,23 @@ class LIFNeuron:
 # 4. DynamicSpikingNetwork (統合ネットワーク)
 # ==========================================================================
 
+
 class DynamicSpikingNetwork:
     """
     神経振動 + STP + LIF を統合した自律学習型リザバー。
     """
+
     def __init__(self, n_in: int, n_res: int, n_out: int):
         self.oscillation = OscillationManager()
         self.neurons_in = [LIFNeuron() for _ in range(n_in)]
-        self.neurons_res = [LIFNeuron(base_threshold=1.2) for _ in range(n_res)]
+        self.neurons_res = [LIFNeuron(base_threshold=1.2)
+                            for _ in range(n_res)]
         self.neurons_out = [LIFNeuron() for _ in range(n_out)]
 
         # シナプスリスト: (pre_neuron_index, post_neuron_index, stp_synapse)
-        self.synapses_in_to_res = []
-        self.synapses_res_recurrent = []
-        self.synapses_res_to_out = []
+        self.synapses_in_to_res: List[Tuple[int, int, STPSynapse]] = []
+        self.synapses_res_recurrent: List[Tuple[int, int, STPSynapse]] = []
+        self.synapses_res_to_out: List[Tuple[int, int, STPSynapse]] = []
 
         self._init_synapses(n_in, n_res, n_out)
         self.current_time_ms = 0.0
@@ -174,7 +183,7 @@ class DynamicSpikingNetwork:
         for i in range(n_res):
             for j in range(n_res):
                 if i != j and random.random() < 0.1:
-                    w = random.uniform(-0.2, 0.4) # 抑制性結合も混ぜる
+                    w = random.uniform(-0.2, 0.4)  # 抑制性結合も混ぜる
                     self.synapses_res_recurrent.append((i, j, STPSynapse(w)))
 
         # リザバー -> 出力

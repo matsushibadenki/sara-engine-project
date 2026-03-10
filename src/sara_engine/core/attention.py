@@ -5,12 +5,12 @@ import random
 from typing import List, Dict, Set, Optional
 
 try:
-    from .. import sara_rust_core  # type: ignore
+    from .. import sara_rust_core
 
     RUST_AVAILABLE = True
 except ImportError:
     try:
-        import sara_rust_core  # type: ignore
+        import sara_rust_core
 
         RUST_AVAILABLE = True
     except ImportError:

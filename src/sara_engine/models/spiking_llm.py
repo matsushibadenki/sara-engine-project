@@ -227,9 +227,9 @@ class SpikingLLM:
         except ImportError:
             print(
                 "[WARNING] sara_rust_core not found. Falling back to standard Python implementation...")
-            co_occurrence = defaultdict(
+            co_occurrence: Dict[int, Dict[int, Dict[int, float]]] = defaultdict(
                 lambda: defaultdict(lambda: defaultdict(float)))
-            unigram_counts = defaultdict(int)
+            unigram_counts: Dict[int, int] = defaultdict(int)
 
             for i in range(total_tokens):
                 current_token = tokens[i]
@@ -487,7 +487,8 @@ class SpikingLLM:
 
         sdr_context = context_tokens[-min(5, len(context_tokens)):]
         current_spikes = self._encode_to_sdr(sdr_context)
-        recalled, confidence = self.recall(self._sdr_key(current_spikes), threshold=0.75)
+        recalled, confidence = self.recall(
+            self._sdr_key(current_spikes), threshold=0.75)
         if recalled is not None:
             for tok_id, count in recalled.items():
                 if tok_id < self.vocab_size:
@@ -500,7 +501,8 @@ class SpikingLLM:
 
         for tok_id in list(scores.keys()):
             strength = 0.1 if tok_id in exempt_ids else 0.8
-            scores[tok_id] = fatigue.modulate(tok_id, scores[tok_id], strength=strength)
+            scores[tok_id] = fatigue.modulate(
+                tok_id, scores[tok_id], strength=strength)
 
         for ngram_len in (2, 3, 4, 5, 6):
             if len(context_tokens) >= ngram_len:
@@ -522,7 +524,8 @@ class SpikingLLM:
             if tok_id in recent_counts and tok_id not in exempt_ids:
                 scores[tok_id] /= repetition_penalty ** recent_counts[tok_id]
                 scores[tok_id] /= (1.0 + max(0.0, presence_penalty))
-                scores[tok_id] /= (1.0 + max(0.0, frequency_penalty) * recent_counts[tok_id])
+                scores[tok_id] /= (1.0 + max(0.0, frequency_penalty)
+                                   * recent_counts[tok_id])
 
         max_score = max(scores.values()) if scores else 0.0
         if max_score < 0.1:
@@ -631,11 +634,13 @@ class SpikingLLM:
                 exp_scores = []
                 for candidate in top_k_candidates:
                     exp_val = math.exp(
-                        (candidate["score"] - max_score) / max(0.05, temperature)
+                        (candidate["score"] - max_score) /
+                        max(0.05, temperature)
                     )
                     exp_scores.append((candidate, exp_val))
 
-                ranked = sorted(exp_scores, key=lambda item: item[1], reverse=True)
+                ranked = sorted(
+                    exp_scores, key=lambda item: item[1], reverse=True)
                 if 0.0 < top_p < 1.0:
                     total_mass = sum(val for _, val in ranked)
                     cutoff: List[Tuple[Dict[str, Any], float]] = []
@@ -693,7 +698,7 @@ class SpikingLLM:
         temperature: float = 0.3,
         repetition_penalty: float = 1.2,
         **kwargs: Any,
-    ) -> str | List[int]:
+    ) -> str | List[int] | Dict[str, Any]:
         prompt_tokens, return_string, error_message = self._prepare_prompt_tokens(
             prompt=prompt,
             prompt_tokens=prompt_tokens,
@@ -753,7 +758,7 @@ class SpikingLLM:
             save_directory, "sara_vocab.json")
         self.tokenizer.save()
 
-        serializable_synapses = {}
+        serializable_synapses: Dict[str, Dict[str, Dict[str, float]]] = {}
         for delay, pre_dict in self.pretrained_synapses.items():
             serializable_synapses[str(delay)] = {}
             for pre, post_dict in pre_dict.items():

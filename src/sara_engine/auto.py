@@ -149,11 +149,13 @@ class AutoSpikingLM:
 class AutoSpikingAgent:
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path: str):
+        agent = SaraAgent()
         if not os.path.exists(pretrained_model_name_or_path):
             print(
                 f"Warning: Agent path not found {pretrained_model_name_or_path}, creating a fresh one.")
-            return SaraAgent()
-        return SaraAgent.from_pretrained(pretrained_model_name_or_path)
+        else:
+            agent.load_agent(pretrained_model_name_or_path)
+        return agent
 
 
 class AutoStrongSpikingLM:

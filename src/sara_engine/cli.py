@@ -152,7 +152,7 @@ def train():
 
             top_probs, top_indices = torch.topk(probs[i], 5)
             for rank in range(5):
-                t_idx = top_indices[rank].item()
+                t_idx = int(top_indices[rank].item())
                 if t_idx != actual:
                     dm[t_idx] = dm.get(t_idx, 0.0) + 50.0 * \
                         top_probs[rank].item()

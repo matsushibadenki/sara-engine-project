@@ -15,7 +15,7 @@ from ..cognitive.global_workspace import GlobalWorkspace
 from ..neuro.neuron_types import NeuronTypeManager
 from ..neuro.dendrite import DendriticTree
 from .. import nn
-from typing import List, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from collections import Counter
 import operator
 import pickle
@@ -38,10 +38,11 @@ class _CompatibleModelUnpickler(pickle.Unpickler):
             module = "__main__"
         return super().find_class(module, name)
 
+
 # ---- 定数 ----------------------------------------------------------------
 _MODEL_VERSION: str = "2.4.5"
 _SYNAPSE_MAX_WEIGHT: float = 20.0
-_SYNAPSE_PRUNE_THRESH: float = 0.1 # ノイズ刈り込みを少し強化
+_SYNAPSE_PRUNE_THRESH: float = 0.1  # ノイズ刈り込みを少し強化
 _SYNAPSE_BUCKET_MAX: int = 8192
 _SYNAPSE_PRUNE_TARGET: int = 4096
 _NUM_DENDRITIC_BRANCHES: int = 8
@@ -84,7 +85,8 @@ class SpikingTransformerModel(nn.SNNModule):
         self.stp_manager = ShortTermPlasticityManager()
         self.structural_manager = StructuralPlasticityManager()
         self.three_factor_manager = ThreeFactorLearningManager()
-        self.predictive_manager = PredictiveCodingManager(learning_rate=0.25) # さらに少し学習率UP
+        self.predictive_manager = PredictiveCodingManager(
+            learning_rate=0.25)  # さらに少し学習率UP
         self.sequence_manager = NeuralSequenceManager(
             time_window=100.0, sequence_lr=0.05)
         self.oscillation_manager = OscillationManager()
@@ -96,10 +98,10 @@ class SpikingTransformerModel(nn.SNNModule):
         )
 
         self.adaptive_thresholds: Dict[int, float] = {}
-        self.target_counts: Dict[int, int] = {} 
+        self.target_counts: Dict[int, int] = {}
         self.current_time = 0.0
         self.global_step = 0
-        self.delay_buffer = []
+        self.delay_buffer: List[int] = []
 
         self.register_state("readout_synapses")
         self.register_state("adaptive_thresholds")
@@ -275,7 +277,8 @@ class SpikingTransformerModel(nn.SNNModule):
                 out_potentials[tid] /= penalty
 
         predicted_id = 0
-        debug_info = {"top_k": [], "stop_reason": "", "candidates": []}
+        debug_info: Dict[str, Any] = {
+            "top_k": [], "stop_reason": "", "candidates": []}
 
         if out_potentials:
             sorted_items = sorted(out_potentials.items(),
@@ -293,7 +296,7 @@ class SpikingTransformerModel(nn.SNNModule):
                 candidates = [(tid, p) for tid, p in sorted_items[:5]
                               if self._is_valid_output_token(tid)
                               and p > self.adaptive_thresholds.get(tid, base_threshold)]
-                
+
                 if not candidates and sorted_items:
                     top_tid, top_p = sorted_items[0]
                     if (
@@ -315,7 +318,7 @@ class SpikingTransformerModel(nn.SNNModule):
                         candidates, temperature)
                 else:
                     debug_info["stop_reason"] = "no_candidates_after_threshold"
-                    
+
         elif not learning:
             fallback_potentials: Dict[int, float] = {}
             for s in readout_spikes:
@@ -323,7 +326,8 @@ class SpikingTransformerModel(nn.SNNModule):
                     continue
                 for v_idx, (w, _b_id) in self.readout_synapses[s].items():
                     if 0 < v_idx < self.config.vocab_size:
-                        fallback_potentials[v_idx] = fallback_potentials.get(v_idx, 0.0) + w
+                        fallback_potentials[v_idx] = fallback_potentials.get(
+                            v_idx, 0.0) + w
 
             if refractory_tokens and fallback_potentials:
                 for i, rt in enumerate(reversed(refractory_tokens)):
@@ -334,12 +338,12 @@ class SpikingTransformerModel(nn.SNNModule):
                 sorted_items = sorted(
                     fallback_potentials.items(), key=operator.itemgetter(1), reverse=True
                 )
-                
+
                 # --- 修正箇所：フォールバック時にも動的閾値（恒常性）によるブロックを適用 ---
                 candidates = [(tid, p) for tid, p in sorted_items[:5]
                               if self._is_valid_output_token(tid)
                               and p > self.adaptive_thresholds.get(tid, base_threshold)]
-                
+
                 # 閾値を満たすものが無い場合は一番強いものを妥協して選ぶ
                 if not candidates and sorted_items:
                     top_tid, top_p = sorted_items[0]
@@ -359,7 +363,7 @@ class SpikingTransformerModel(nn.SNNModule):
                 if debug:
                     debug_info["top_k"] = candidates
                 debug_info["candidates"] = candidates[:5]
-                
+
                 if candidates:
                     predicted_id = SynapseManager.sample_temperature(
                         candidates, temperature=max(temperature, 0.2)
@@ -367,7 +371,7 @@ class SpikingTransformerModel(nn.SNNModule):
                 else:
                     predicted_id = 0
                 # -------------------------------------------------------------------
-                
+
                 debug_info["stop_reason"] = "fallback_linear_readout"
             else:
                 debug_info["stop_reason"] = "no_out_potentials"
@@ -378,17 +382,18 @@ class SpikingTransformerModel(nn.SNNModule):
                 rate = self.activity_tracker.get_rate(predicted_id)
                 current_thr = self.adaptive_thresholds.get(
                     predicted_id, base_threshold)
-                target_thr = max(base_threshold + 0.35, pot * (1.2 + rate * 0.7))
+                target_thr = max(base_threshold + 0.35,
+                                 pot * (1.2 + rate * 0.7))
                 # 閾値を急激に跳ね上げず、EMAで滑らかに更新する
                 self.adaptive_thresholds[predicted_id] = (
                     current_thr * 0.65 + target_thr * 0.35
                 )
-                
+
             self.activity_tracker.update(predicted_id, fired=True)
 
             seq_events = self.sequence_manager.record_firing(
                 predicted_id, self.current_time)
-            
+
             if learning:
                 for pre_id, strength in seq_events:
                     self.sequence_manager.apply_sequence_reinforcement(
@@ -399,17 +404,19 @@ class SpikingTransformerModel(nn.SNNModule):
                     current_rate=current_rate,
                     population_rate=population_rate,
                 )
-                
+
                 if abs(1.0 - scaling_factor) > 0.005:
                     for s in readout_spikes:
                         if predicted_id in self.readout_synapses[s]:
                             w, b_id = self.readout_synapses[s][predicted_id]
-                            new_w = min(w * scaling_factor, _SYNAPSE_MAX_WEIGHT)
-                            
+                            new_w = min(w * scaling_factor,
+                                        _SYNAPSE_MAX_WEIGHT)
+
                             if new_w < _SYNAPSE_PRUNE_THRESH:
                                 del self.readout_synapses[s][predicted_id]
                             else:
-                                self.readout_synapses[s][predicted_id] = (new_w, b_id)
+                                self.readout_synapses[s][predicted_id] = (
+                                    new_w, b_id)
 
             for s in readout_spikes:
                 if predicted_id in self.readout_synapses[s]:
@@ -418,16 +425,18 @@ class SpikingTransformerModel(nn.SNNModule):
 
         # === 修正箇所：Predictive Codingの学習最適化 ===
         if learning and target_id is not None:
-            self.target_counts[target_id] = self.target_counts.get(target_id, 0) + 1
+            self.target_counts[target_id] = self.target_counts.get(
+                target_id, 0) + 1
             count = self.target_counts[target_id]
-            
+
             # 高頻度語への学習率低下をマイルドにし、全く学習されなくなるのを防ぐ
-            freq_penalty = max(0.2, 1.0 / math.log(count + 1.5)) if count > 2 else 1.0
+            freq_penalty = max(
+                0.2, 1.0 / math.log(count + 1.5)) if count > 2 else 1.0
             freq_norm_lr = self.predictive_manager.learning_rate * freq_penalty
 
             target_pot = out_potentials.get(target_id, 0.0)
             prediction_error = max(0.0, 1.0 - target_pot)
-            
+
             if prediction_error > 0.05:
                 actual_lr = freq_norm_lr * prediction_error
                 for s in readout_spikes:
@@ -435,7 +444,7 @@ class SpikingTransformerModel(nn.SNNModule):
                         # 【重要】ランダム割り当てを廃止。トークンとスパイクの組み合わせから決定論的にブランチを決定
                         branch_id = (s + target_id) % _NUM_DENDRITIC_BRANCHES
                         self.readout_synapses[s][target_id] = (1.5, branch_id)
-                    
+
                     w, b_id = self.readout_synapses[s][target_id]
                     new_w = min(w + actual_lr, _SYNAPSE_MAX_WEIGHT)
                     self.readout_synapses[s][target_id] = (new_w, b_id)
@@ -446,17 +455,19 @@ class SpikingTransformerModel(nn.SNNModule):
                     # 頻度が高い（「の」「は」など）間違った発火ほど強くペナルティを与え、暴走を抑える
                     f_count = self.target_counts.get(false_id, 1)
                     boost = min(3.0, math.log(f_count + 1.0))
-                    penalty = (self.predictive_manager.learning_rate * 0.4) * boost
-                    
+                    penalty = (
+                        self.predictive_manager.learning_rate * 0.4) * boost
+
                     for s in readout_spikes:
                         if false_id in self.readout_synapses[s]:
                             w, b_id = self.readout_synapses[s][false_id]
                             new_w = w - penalty
-                            
+
                             if new_w < _SYNAPSE_PRUNE_THRESH:
                                 del self.readout_synapses[s][false_id]
                             else:
-                                self.readout_synapses[s][false_id] = (new_w, b_id)
+                                self.readout_synapses[s][false_id] = (
+                                    new_w, b_id)
 
         return predicted_id, debug_info
 
@@ -500,7 +511,7 @@ class SpikingTransformerModel(nn.SNNModule):
         for _ in range(max_length):
             retry_blocked: set[int] = set()
             predicted_id = 0
-            info: Dict = {}
+            info: Dict[str, Any] = {}
             for _attempt in range(3):
                 predicted_id, info = self.forward_step(
                     current_token,
@@ -518,15 +529,19 @@ class SpikingTransformerModel(nn.SNNModule):
                     break
                 if self._would_repeat_ngram(generated, predicted_id, n=4):
                     retry_blocked.add(predicted_id)
-                    current_thr = self.adaptive_thresholds.get(predicted_id, fire_threshold)
-                    self.adaptive_thresholds[predicted_id] = max(current_thr, current_thr + 0.8)
+                    current_thr = self.adaptive_thresholds.get(
+                        predicted_id, fire_threshold)
+                    self.adaptive_thresholds[predicted_id] = max(
+                        current_thr, current_thr + 0.8)
                     info["stop_reason"] = "blocked_repeat_4gram"
                     predicted_id = 0
                     continue
                 if self._would_repeat_ngram(generated, predicted_id, n=3):
                     retry_blocked.add(predicted_id)
-                    current_thr = self.adaptive_thresholds.get(predicted_id, fire_threshold)
-                    self.adaptive_thresholds[predicted_id] = max(current_thr, current_thr + 0.45)
+                    current_thr = self.adaptive_thresholds.get(
+                        predicted_id, fire_threshold)
+                    self.adaptive_thresholds[predicted_id] = max(
+                        current_thr, current_thr + 0.45)
                     info["stop_reason"] = "blocked_repeat_3gram"
                     predicted_id = 0
                     continue
@@ -565,11 +580,12 @@ class SpikingTransformerModel(nn.SNNModule):
     def from_pretrained(cls, save_dir: str) -> "SpikingTransformerModel":
         model_path = os.path.join(save_dir, "snn_model.pkl")
         if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Pre-trained model not found at {model_path}")
-            
+            raise FileNotFoundError(
+                f"Pre-trained model not found at {model_path}")
+
         with open(model_path, "rb") as f:
             state = _CompatibleModelUnpickler(f).load()
-            
+
         model = cls(state["config"])
         model.readout_synapses = state["readout_synapses"]
         model.adaptive_thresholds = state["adaptive_thresholds"]

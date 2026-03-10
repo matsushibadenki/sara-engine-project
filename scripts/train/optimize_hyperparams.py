@@ -1,3 +1,4 @@
+from typing import Dict, List, Any
 from sara_engine.models.snn_transformer import SpikingTransformerModel, SNNTransformerConfig
 import time
 import json
@@ -17,7 +18,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(
 # =====================================================================
 # [1] 探索空間の定義 (Hyperparameter Search Space)
 # =====================================================================
-SEARCH_SPACE = {
+SEARCH_SPACE: Dict[str, List[Any]] = {
     "embed_dim": [32, 64, 128],
     "num_layers": [1, 2, 3],
     "ffn_dim": [64, 128, 256],

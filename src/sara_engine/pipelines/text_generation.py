@@ -15,7 +15,7 @@ class TextGenerationPipeline:
         self.model = model
         self.tokenizer = tokenizer
 
-    def __call__(self, text: str, max_new_tokens: int = 50, **kwargs) -> str:
+    def __call__(self, text: str, max_new_tokens: int = 50, **kwargs) -> Any:
         """
         Generates text based on the provided prompt string.
         Utilizes biologically inspired parameters like refractory_period instead of repetition_penalty.

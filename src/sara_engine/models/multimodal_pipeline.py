@@ -15,7 +15,7 @@ class MultimodalSNNConfig(SNNTransformerConfig):
         self.audio_dim = audio_dim
 
     def to_dict(self):
-        d = super().to_dict()
+        d = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
         d.update({
             "vision_dim": self.vision_dim,
             "audio_dim": self.audio_dim
@@ -75,7 +75,8 @@ class SpikingMultimodalPipeline(nn.SNNModule):
         text_embed_spikes = []
         if text_token is not None:
             # text_model内のリザバー層のスパイクを取得し、共通次元へ射影
-            res_spikes = self.text_model._get_reservoir_spikes(text_token)
+            res_spikes = getattr(
+                self.text_model, "_get_reservoir_spikes", lambda x: [x])(text_token)
             text_embed_spikes = list(
                 set([s % self.config.embed_dim for s in res_spikes]))
             # 内部でのテキスト予測学習も進める

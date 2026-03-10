@@ -39,9 +39,9 @@ def _make_pattern_data(
     return data
 
 
-def _data_factory(data: list[list[int]]):  # type: ignore[no-untyped-def]
+def _data_factory(data: list[list[int]]):
     """データリストをイテレータファクトリとして返す。"""
-    def factory():  # type: ignore[no-untyped-def]
+    def factory():
         return iter(data)
     return factory
 
@@ -225,7 +225,8 @@ class TestGreedyLayerWiseTrainer:
             convergence_patience=5,
         )
 
-        all_metrics = trainer.train_stack(layers, _data_factory(data))
+        all_metrics = trainer.train_stack(
+            layers, _data_factory(data))  # type: ignore[arg-type]
 
         assert len(all_metrics) == 2
         # 全層が凍結されている
