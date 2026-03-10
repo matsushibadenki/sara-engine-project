@@ -26,3 +26,5 @@ This repository uses fixed output locations. New code must not create files outs
 - Does not rely on matrix calculations
 - Does not rely on GPUs
 - Emphasizes accuracy and energy efficiency
+- Captions written in the code must be written in English.
+- Programs should be written in multiple languages and logs should be displayed in English.
