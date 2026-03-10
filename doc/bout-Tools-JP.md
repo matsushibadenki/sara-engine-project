@@ -1,100 +1,68 @@
-# **ツールとサンプルスクリプトの詳細**
+# **SARA Engine ツール群について (About Tools)**
 
-SARA Engine プロジェクトに含まれる各種サンプルスクリプト、ベンチマーク、テストツールの概要です。
+SARA Engineプロジェクトには、モデルの学習から評価、データ収集、データベース管理に至るまで、開発と実験を円滑に進めるための多様なスクリプトが含まれています。
 
-## **1\. Examples (examples/)**
+すべてのスクリプトは、プロジェクトのルートディレクトリから実行することを想定しています。
 
-このディレクトリには、エンジンの各機能を示すデモスクリプトやパフォーマンス測定用のベンチマークが含まれています（全59ファイル）。
+## **1\. 統合CLIツール**
 
-### **デモンストレーション (Demos)**
+* **scripts/sara\_cli.py**  
+  SARA Engineの主要な機能（チャット、学習、評価など）をコマンドラインから統合的に呼び出すためのエントリーポイントです。個別のスクリプトのラッパーとして機能します。
 
-SARAの主要なコンポーネントやユースケースを示します。
+## **2\. 学習用スクリプト (scripts/train/)**
 
-* **エージェント・チャット**  
-  * demo\_agent\_chat.py: 自律エージェントによる対話デモ。  
-  * demo\_interactive\_chat.py: インタラクティブなチャットインターフェース。  
-  * demo\_million\_token\_agent.py: 長大なコンテキストを扱うエージェントのデモ。  
-* **Spiking Neural Networks (SNN)**  
-  * demo\_advanced\_snn.py: 高度なSNN構成のデモ。  
-  * demo\_mnist\_snn.py: SNNを用いたMNIST数値認識。  
-  * demo\_snn\_classification.py: 一般的な分類タスクのデモ。  
-  * demo\_snn\_learning.py: オンライン学習機能のデモ。  
-  * demo\_snn\_feature\_extraction.py: 特徴抽出パイプライン。  
-* **Transformer & LLM**  
-  * demo\_bio\_transformer.py: 生物学的に妥当なトランスフォーマーのデモ。  
-  * demo\_snn\_transformer.py: SNNベースのトランスフォーマー実装。  
-  * demo\_snn\_transformer\_multipath.py: マルチパス構成のトランスフォーマー。  
-  * demo\_spiking\_llm.py: スパイクベースの言語モデルデモ。  
-  * demo\_spiking\_llm\_text.py: テキスト生成に特化したスパイクLLM。  
-  * demo\_spiking\_llm\_save\_load.py: モデルの保存と読み込みの例。  
-* **マルチモーダル & パイプライン**  
-  * demo\_multimodal\_memory.py: 複数モダリティにまたがる記憶システム。  
-  * demo\_multimodal\_pipeline.py: マルチモーダル処理パイプラインの構築。  
-  * demo\_snn\_pipelines.py: 推論パイプラインの一括デモ。  
-* **特定タスク・応用**  
-  * demo\_snn\_audio\_classification.py: 音声データ認識。  
-  * demo\_snn\_image\_classification.py: 画像データ認識。  
-  * demo\_snn\_text\_classification.py: テキスト分類。  
-  * demo\_snn\_text\_generation.py: スパイクベースのテキスト生成。  
-  * demo\_snn\_token\_classification.py: トークン単位の分類。  
-  * demo\_snn\_rag.py: RAG（検索拡張生成）の実装例。  
-  * demo\_snn\_rag\_persistent.py: 永続化ストレージを使用したRAG。  
-  * demo\_rl\_training.py: 強化学習のトレーニングループ。  
-  * demo\_predictive\_coding.py: 予測符号化（Predictive Coding）の実装。  
-  * demo\_predictive\_lm.py: 予測言語モデル。  
-  * demo\_semantic\_spike\_routing.py: セマンティック・スパイク・ルーティング。  
-  * demo\_spike\_attention.py: スパイクアテンション機構。  
-  * demo\_spike\_dataloader.py: スパイクデータ専用のローダー。  
-  * demo\_spike\_stream\_processing.py: ストリームデータ処理。  
-  * demo\_stream\_learning.py: リアルタイムストリーム学習。  
-* **ハードウェア・エッジ・Rust**  
-  * demo\_sara\_board.py: SARA Boardインターフェースのデモ。  
-  * demo\_sara\_edge.py: エッジデバイス向けデプロイ例。  
-  * demo\_saraboard\_and\_loader.py: ボードとデータローダーの連携。  
-  * demo\_rust\_snn\_no\_numpy.py: NumPyに依存しないRustコアによるSNN。  
-  * demo\_nn\_module.py: 新しいNNモジュール構成のデモ。
+SNNモデルの学習（事前学習、ファインチューニング、自己組織化）を行うためのスクリプト群です。**※SARAのポリシーに従い、バックプロパゲーションは使用せず、STDPなどの局所学習則に基づいています。**
 
-### **ベンチマーク (Benchmarks)**
+* **train\_snn\_lm.py**  
+  Spiking Language Model (SNN-LM) の事前学習を実行します。コーパスデータから単語の出現パターンやコンテキストをスパイクのタイミングとして学習します。  
+* **train\_chat.py**  
+  チャットデータセット (chat\_data.jsonl 等) を用いて、SNNモデルを対話形式にファインチューニング（あるいは直接配線）します。  
+* **train\_vision.py**  
+  画像データセット（MNIST、Fashion MNISTなど）を用いて、視覚野スパイキングモジュールの学習を行います。  
+* **train\_self\_organized.py**  
+  構造的プラスティシティ（シナプスの動的生成・消滅）やホメオスタシスを利用した、教師なし/自己組織化学習の実験を行います。  
+* **distill\_llm.py**  
+  生物学的蒸留（Biological Distillation）モジュールを用いて、巨大なモデルの知識を効率的なスパイク表現へと抽出・転移させます。  
+* **optimize\_hyperparams.py**  
+  発火閾値、リーク率、STDPの学習率など、SNN特有のハイパーパラメータを自動探索・最適化します。
 
-パフォーマンスと精度の測定を行います。
+## **3\. 評価・推論スクリプト (scripts/eval/)**
 
-* benchmark\_hal.py: ハードウェア抽象化レイヤー（HAL）の効率測定。  
-* benchmark\_long\_context.py: 長文処理時のメモリと速度の評価。  
-* benchmark\_memory\_retention.py: 記憶の保持能力（忘却耐性）の評価。  
-* benchmark\_multicore.py: マルチコア並列処理のスケール性能。  
-* benchmark\_multimodal\_associative.py: マルチモーダル連想記憶の性能。  
-* benchmark\_rl\_stdp.py: STDPを用いた強化学習の収束性。  
-* benchmark\_rust.py: Python実装とRustコア実装の速度比較。  
-* benchmark\_rust\_acceleration.py: Rustによる加速効果の詳細測定。  
-* benchmark\_snn\_transformer.py: SNNトランスフォーマーの計算コスト評価。
+学習済みモデルのパフォーマンス評価や、ユーザーとのインタラクティブなテストを行うためのスクリプト群です。
 
-### **インタラクティブ & ユーティリティ**
+* **chat\_agent.py**  
+  マルチモーダル処理や記憶へのアクセス能力を持つ、統合的な sara\_agent とのチャットインターフェースを起動します。  
+* **chat\_snn\_lm.py**  
+  事前学習された純粋なSNN言語モデル（SNN-LM）とのインタラクティブなテキストチャットを行います。  
+* **chat\_self\_organized.py**  
+  自己組織化モデルベースで構築された対話エージェントのテストを行います。  
+* **test\_math\_chat.py**  
+  数学的な推論タスクや論理的思考が求められるプロンプトに対する、SNNモデルの応答精度を評価します。  
+* **test\_vision\_inference.py**  
+  視覚モデル（スパイキング画像分類器など）の推論精度をテスト・評価します。  
+* **health\_check.py**  
+  SARA Engineのモジュール依存関係、Rustコア (sara\_rust\_core) のロード状態、環境変数のヘルスチェックを実行します。
 
-* interactive\_demo.py: 総合的なインタラクティブGUIデモ。  
-* interactive\_snn.py: SNNの挙動をリアルタイムで確認するツール。  
-* visualize\_stdp.py: STDP（スパイクタイミング依存可塑性）の視覚化。  
-* utils.py: サンプルスクリプト共通のユーティリティ関数。  
-* test\_knowledge\_recall.py: 知識想起の精度評価（サンプル内テスト）。  
-* test\_spike\_dataloader.py: データローダーの機能検証（サンプル内テスト）。  
-* test\_transformer\_components.py: トランスフォーマー各部位の動作確認。
+## **4\. データ収集・前処理スクリプト (scripts/data/)**
 
-## **2\. Tests (tests/)**
+学習に使用するコーパスやデータセットを収集・整形するためのスクリプトです。
 
-システムの信頼性を担保するためのユニットテストおよび統合テストです（全10ファイル）。
+* **collect\_all.py**  
+  設定されたすべてのデータソースから一括してテキスト・データを収集・統合します。  
+* **collect\_aozora.py**  
+  青空文庫などのオープンソースデータから日本語テキストを収集し、SNNで処理可能なコーパス形式に変換します。  
+* **collect\_docs.py**  
+  プロジェクト内のドキュメントや外部の技術文書を収集し、知識ベース（RAG用のテキスト等）として整形します。  
+* **collect\_math.py**  
+  論理推論力を高めるための、数学的問題や数式データセットを収集・パースします。
 
-* test\_crossmodal\_association.py: モダリティ間連想機能のテスト。  
-* test\_event\_driven\_snn.py: イベント駆動型SNNエンジンの動作検証。  
-* test\_hippocampal\_system.py: 海馬を模した短期・長期記憶システムのテスト。  
-* test\_million\_token\_snn.py: 超大規模コンテキスト処理の安定性テスト。  
-* test\_neurofem.py: NeuroFEM（神経有限要素法）の基本演算テスト。  
-* test\_neurofem\_2d.py: 2次元空間におけるNeuroFEMのシミュレーション。  
-* test\_neurofem\_integration.py: NeuroFEMとSNNの統合動作テスト。  
-* test\_neurofem\_visualize.py: NeuroFEMの計算結果の視覚化テスト。  
-* test\_new\_features.py: 新しく追加された各機能の総合検証。  
-* test\_spatiotemporal\_stdp.py: 時空間STDPルールの動作検証。
+## **5\. ユーティリティ・データベース管理 (scripts/utils/)**
 
-## **3\. Scripts (scripts/)**
+LTM（長期記憶）ベクトルストアやSQLiteデータベースのメンテナンス、ネットワークの最適化を行うスクリプト群です。
 
-メンテナンスや運用のためのスクリプトです。
-
-* health\_check.py: インストール環境、依存ライブラリ、Rustコアの接続状態を確認する診断ツール。
+* **manage\_db.py**  
+  SARA Engineのコーパスデータベース (data/sara\_corpus.db) の初期化、更新、マイグレーション管理を行います。  
+* **fix\_memory.py**  
+  LTM（長期記憶）やSNNベクトルストア内の破損したエントリや、不整合が発生している記憶データの修復を行います。  
+* **prune\_memory.py**  
+  発火頻度が極端に低い不要なシナプスや、陳腐化した古い記憶ベクトルを剪定（Pruning）し、推論速度とメモリ効率を向上させます。
