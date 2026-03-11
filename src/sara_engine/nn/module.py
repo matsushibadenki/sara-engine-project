@@ -55,7 +55,17 @@ class SNNModule:
         # サブモジュールの状態を再帰的に取得
         for name, module in self._modules.items():
             if hasattr(module, 'state_dict'):
-                module.state_dict(destination, prefix + name + '.')
+                import inspect
+                sig = inspect.signature(module.state_dict)
+                # SNNModule継承クラスなどは argsに destination, prefix を取る想定
+                # そうでない場合(コアレイヤー等)は、辞書を受け取って手動でprefix付けする
+                if len(sig.parameters) >= 2:
+                    module.state_dict(destination, prefix + name + '.')
+                else:
+                    sub_dict = module.state_dict()
+                    if isinstance(sub_dict, dict):
+                        for k, v in sub_dict.items():
+                            destination[prefix + name + '.' + k] = copy.deepcopy(v)
             
         return destination
 
