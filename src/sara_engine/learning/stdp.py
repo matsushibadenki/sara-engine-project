@@ -1,6 +1,7 @@
-# ディレクトリパス: src/sara_engine/learning/stdp.py
-# ファイルの日本語タイトル: STDP（スパイクタイミング依存可塑性）学習レイヤー
-# ファイルの目的や内容: 想起フラグの確実な伝播と、物理的な膜電位加算による想起能力の最大化。Soft-bound STDPとReward-Modulated STDPの導入による学習精度と安定性の向上。
+# Directory Path: src/sara_engine/learning/stdp.py
+# English Title: STDP and BCM Learning Layer
+# Purpose/Content: Implementation of STDP and BCM-STDP hybrid layer for associative capacity and stable metaplasticity, eliminating the need for backpropagation and matrix operations. Multi-language support included.
+
 import random
 
 class STDPLayer:
@@ -175,3 +176,90 @@ class STDPPretrainer:
                                         del model.synapses[pre_idx][past_idx]
                                     else:
                                         model.synapses[pre_idx][past_idx] = new_w
+
+
+class BCMSTDPLayer(STDPLayer):
+    """
+    BCM-STDP Hybrid Layer
+    Incorporates Bienenstock-Cooper-Munro (BCM) theory with STDP.
+    This provides a sliding threshold for metaplasticity, ensuring stable learning
+    and heterosynaptic LTD without needing error backpropagation.
+    """
+    def __init__(self, num_inputs: int, num_outputs: int, threshold: float = 0.5):
+        super().__init__(num_inputs, num_outputs, threshold)
+        self.y_traces = [0.0] * num_outputs
+        self.theta_m = [0.1] * num_outputs # Sliding threshold for BCM
+        self.bcm_learning_rate = 0.05
+        self.trace_decay = 0.8
+        self.theta_decay = 0.99 
+
+    def get_status_message(self, lang: str = "en") -> str:
+        """多言語ステータス取得機能"""
+        messages = {
+            "en": "BCM-STDP Layer initialized. Sliding threshold active for metaplasticity.",
+            "ja": "BCM-STDPレイヤーが初期化されました。メタ可塑性のためのスライディング閾値が有効です。",
+            "fr": "Couche BCM-STDP initialisée. Seuil glissant actif pour la métaplasticité."
+        }
+        return messages.get(lang, messages["en"])
+
+    def process_step(self, input_spikes: list[int], reward: float = 1.0, boost: bool = False) -> tuple[list[int], list[float]]:
+        output_spikes = [0] * self.num_outputs
+        active_inputs = [i for i, s in enumerate(input_spikes) if s == 1]
+        
+        gain = 8.0 if boost else 1.0
+
+        for j in range(self.num_outputs):
+            self.potentials[j] *= self.leak_rate
+            for i in active_inputs:
+                if i in self.synapses[j]:
+                    self.potentials[j] += self.synapses[j][i] * gain
+
+        fired_indices = []
+        for j in range(self.num_outputs):
+            if self.potentials[j] >= self.thresholds[j]:
+                output_spikes[j] = 1
+                fired_indices.append(j)
+                self.potentials[j] = 0.0 
+                self.thresholds[j] += self.theta_plus
+            
+            # 発火履歴トレースの更新とBCMスライディング閾値(E[y^2])の計算
+            self.y_traces[j] = self.y_traces[j] * self.trace_decay + output_spikes[j]
+            self.theta_m[j] = self.theta_m[j] * self.theta_decay + (self.y_traces[j] ** 2) * (1.0 - self.theta_decay)
+
+        for j in range(self.num_outputs):
+            self.thresholds[j] += (self.base_threshold - self.thresholds[j]) * self.theta_decay
+
+        if reward > 0:
+            active_set = set(active_inputs)
+            for j in range(self.num_outputs):
+                current_synapses = self.synapses[j]
+                y = self.y_traces[j]
+                
+                # BCM変調係数: y > theta_mで増強、y < theta_mで抑圧
+                bcm_factor = y * (y - self.theta_m[j])
+                
+                for i in list(current_synapses.keys()):
+                    if i in active_set:
+                        delta_w = self.bcm_learning_rate * reward * bcm_factor
+                        current_synapses[i] += delta_w
+                    else:
+                        if output_spikes[j]:
+                            # ヘテロシナプティックLTD
+                            current_synapses[i] -= self.A_minus * current_synapses[i]
+                            
+                    if current_synapses[i] < self.prune_threshold:
+                        del current_synapses[i]
+                    elif current_synapses[i] > self.w_max:
+                        current_synapses[i] = self.w_max
+
+                if output_spikes[j] and random.random() < 0.5 and active_inputs:
+                    new_i = random.choice(active_inputs)
+                    current_synapses[new_i] = current_synapses.get(new_i, 0.3) + 0.4
+
+                current_sum = sum(current_synapses.values())
+                if current_sum > 0:
+                    scale = self.target_weight_sum / current_sum
+                    for i in current_synapses:
+                        current_synapses[i] = min(self.w_max, current_synapses[i] * scale)
+
+        return output_spikes, list(self.potentials)
