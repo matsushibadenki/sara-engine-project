@@ -1,168 +1,151 @@
 # Directory Path: tests/test_spiking_jepa.py
-# English Title: Tests and Demonstration for Hierarchical Spiking JEPA
-# Purpose and Content: 階層的スパイキングJEPA(H-JEPA)の機能と動作を検証するテストコード。pytestによる単体テストに加え、直接実行時にprint文で予測結果や履歴バッファの状態をコンソール出力して動作確認できるデモ機能を含む。
+# English Title: Spiking JEPA Test Suite
+# Purpose/Content: Unit tests for the backpropagation-free Spiking JEPA module. Verifies multi-language support, weight sparsity, and the ability to learn predictive representations (energy minimization) using pure list operations.
 
-import pytest
-import copy
+import random
+from sara_engine.models.spiking_jepa import SpikingJEPA, EnergyMinimizer
 
-from sara_engine.models.spiking_jepa import SpikingJEPA
+class TestEnergyMinimizer:
+    """誤差逆伝播の代替となる局所エネルギー（Surprise）計算のテスト"""
 
-@pytest.fixture
-def jepa_model():
-    # 軽量なモデルを生成するフィクスチャ
-    configs = [{"embed_dim": 16, "hidden_dim": 32}]
-    # テストを高速化・簡略化するために短いtime_scalesを設定
-    time_scales = {"low": 1, "medium": 2}
-    model = SpikingJEPA(
-        layer_configs=configs,
-        ema_decay=0.9,
-        learning_rate=0.1,
-        time_scales=time_scales
-    )
-    return model
-
-def test_jepa_initialization(jepa_model):
-    """初期化時にContextとTargetのエンコーダが同じ重みを持つか確認"""
-    ctx_state = jepa_model.context_encoder.state_dict()
-    tgt_state = jepa_model.target_encoder.state_dict()
-    
-    assert ctx_state.keys() == tgt_state.keys()
-
-def test_ema_sync(jepa_model):
-    """EMA(指数移動平均)によるTarget Encoderの重み更新が機能するか確認"""
-    ctx_layer = jepa_model.context_encoder.layer_0
-    tgt_layer = jepa_model.target_encoder.layer_0
-    
-    if not hasattr(ctx_layer, 'ffn'):
-        pytest.skip("ffn layer is required for this specific test")
-    
-    initial_tgt_w = copy.deepcopy(tgt_layer.ffn.w1[0][0]) if 0 in tgt_layer.ffn.w1[0] else 0.5
-    tgt_layer.ffn.w1[0][0] = initial_tgt_w
-    
-    # Context Encoderの重みを意図的に変更
-    ctx_layer.ffn.w1[0][0] = initial_tgt_w + 1.0
-    
-    # sync_encoders を呼び出し
-    jepa_model._sync_encoders(alpha=0.9)
-    
-    # 更新後の値を検証
-    expected_val = 0.9 * initial_tgt_w + 0.1 * (initial_tgt_w + 1.0)
-    updated_val = tgt_layer.ffn.w1[0][0]
-    
-    assert abs(updated_val - expected_val) < 1e-5, f"Expected {expected_val}, got {updated_val}"
-
-def test_jepa_forward_pass(jepa_model):
-    """フォワードパスがエラーなく実行され、予測誤差を返すか確認"""
-    x_spikes = [0, 1, 2, 3]
-    y_spikes = [0, 1, 2, 3, 4]
-    z_spikes = [5, 6]
-    
-    for _ in range(3):
-        predicted_s_y, surprise_spikes = jepa_model.forward(x_spikes, y_spikes, z_spikes, learning=True)
-    
-    assert isinstance(predicted_s_y, list)
-    assert isinstance(surprise_spikes, list)
-    assert jepa_model.total_predictions > 0
-
-def test_target_encoder_stop_gradient(jepa_model):
-    """Target Encoderが予測誤差(Surprise)の逆伝播によって直接学習されない(Stop-Gradient)か確認"""
-    jepa_model.context_encoder.reset_state()
-    tgt_layer = jepa_model.target_encoder.layer_0
-    
-    if not hasattr(tgt_layer, 'ffn'):
-        pytest.skip("Test requires FFN layer")
+    def test_compute_surprise_signal_perfect_match(self) -> None:
+        """予測と目標が完全に一致した場合、最大のポジティブシグナルが返る"""
+        minimizer = EnergyMinimizer(size=5)
+        pred = [1, 0, 1, 0, 0]
+        targ = [1, 0, 1, 0, 0]
         
-    if 0 not in tgt_layer.ffn.w1[0]:
-        tgt_layer.ffn.w1[0][0] = 0.5
+        surprise, signal = minimizer.compute_surprise_signal(pred, targ)
         
-    initial_w = copy.deepcopy(tgt_layer.ffn.w1[0][0])
-        
-    x_spikes = [0, 1]
-    y_spikes = [0, 1]
-    
-    jepa_model.ema_decay = 1.0
-    jepa_model.forward(x_spikes, y_spikes, learning=True)
-    
-    current_w = tgt_layer.ffn.w1[0][0]
-    assert current_w == initial_w, "Target Encoder should be stop-gradient when EMA=1.0"
+        # 予測が一致しているのでSurprise(驚き)スパイクは出ないはず
+        assert sum(surprise) == 0
+        # 精度100%なのでシグナルは +1.0
+        assert signal == 1.0
 
-def test_hierarchical_context_history(jepa_model):
-    """階層的コンテキスト履歴バッファのサイズ管理が正常に機能するか確認"""
-    x_spikes = [0]
-    z_spikes = [1]
-    
-    max_history = jepa_model.max_history
-    assert max_history == 3
-    
-    for _ in range(5):
-        jepa_model.forward(x_spikes, z_spikes=z_spikes, learning=False)
+    def test_compute_surprise_signal_complete_mismatch(self) -> None:
+        """予測が完全に外れた場合、ネガティブシグナルとSurpriseスパイクが返る"""
+        minimizer = EnergyMinimizer(size=5)
+        # 目標は発火しているが、予測は全く発火していない状態
+        pred = [0, 0, 0, 0, 0]
+        targ = [1, 1, 1, 0, 0]
         
-    assert len(jepa_model.context_history) == max_history
+        surprise, signal = minimizer.compute_surprise_signal(pred, targ)
+        
+        # 目標が発火した3箇所でSurpriseスパイクが出る
+        assert sum(surprise) == 3
+        # 精度0%なのでシグナルは -1.0
+        assert signal == -1.0
 
-if __name__ == "__main__":
-    print("==================================================")
-    print(" H-JEPA (Hierarchical Spiking JEPA) 動作テストデモ")
-    print("==================================================\n")
-    
-    # 1. モデルの初期化
-    configs = [{"embed_dim": 16, "hidden_dim": 32}]
-    time_scales = {"low": 1, "medium": 3, "high": 5}
-    
-    print("モデルを初期化しています...")
-    demo_model = SpikingJEPA(
-        layer_configs=configs,
-        ema_decay=0.99,
-        learning_rate=0.1,
-        time_scales=time_scales
-    )
-    
-    print(f"最大履歴保持ステップ数 (Max History): {demo_model.max_history}")
-    print(f"時間スケール設定: {demo_model.time_scales}\n")
-    
-    # 2. ダミースパイクデータの用意
-    x_spikes_seq = [
-        [0, 1, 2],
-        [1, 2, 3],
-        [2, 3, 4],
-        [3, 4, 5],
-        [4, 5, 6],
-        [5, 6, 7],
-        [6, 7, 8]
-    ]
-    # TargetはContextの少し先の状態を模倣
-    y_spikes_seq = [
-        [1, 2, 3, 9],
-        [2, 3, 4, 9],
-        [3, 4, 5, 9],
-        [4, 5, 6, 9],
-        [5, 6, 7, 9],
-        [6, 7, 8, 9],
-        [7, 8, 9, 9]
-    ]
-    z_spikes = [10] # 固定の潜在変数
-    
-    # 3. タイムステップごとのシミュレーション実行
-    print("--- タイムステップ処理開始 ---")
-    for t in range(len(x_spikes_seq)):
-        x_in = x_spikes_seq[t]
-        y_in = y_spikes_seq[t]
+    def test_compute_surprise_signal_no_target(self) -> None:
+        """目標が全く発火していない(無音)状態では学習シグナルは0になる"""
+        minimizer = EnergyMinimizer(size=5)
+        pred = [1, 0, 0, 0, 0] # 誤って発火してしまった
+        targ = [0, 0, 0, 0, 0]
         
-        print(f"\n[Step {t+1}]")
-        print(f"  入力 (Context) : {x_in}")
-        print(f"  正解 (Target)  : {y_in}")
+        surprise, signal = minimizer.compute_surprise_signal(pred, targ)
         
-        # フォワード処理 (予測と自己組織化)
-        predicted_s_y, surprise_spikes = demo_model.forward(
-            x_spikes=x_in, 
-            y_spikes=y_in, 
-            z_spikes=z_spikes, 
-            learning=True
-        )
+        assert surprise[0] == 1 # 誤発火部分がSurpriseとなる
+        assert signal == 0.0 # ターゲットがないので重み更新の基準にしない
+
+
+class TestSpikingJEPA:
+    """Spiking JEPA（自己教師あり予測モジュール）のテスト"""
+
+    def test_initialization_and_sparsity(self) -> None:
+        """行列ではなく、スパースな辞書ベースの結合が作られているか確認"""
+        jepa = SpikingJEPA(context_size=10, target_size=5, hidden_size=8)
         
-        print(f"  => 予測されたターゲット表現 : {predicted_s_y}")
-        print(f"  => 予測誤差(Surprise)スパイク : {surprise_spikes}")
-        print(f"  => 現在の履歴バッファサイズ   : {len(demo_model.context_history)}")
+        assert len(jepa.context_projector) == 8
+        assert len(jepa.predictor) == 5
         
-    print("\n==================================================")
-    print(" デモ完了")
-    print("==================================================")
+        # 全結合(Dense)ではなく、スパース(一部のキーしか持たない)であることを確認
+        # 確率的なので稀に全結合になる可能性があるが、通常はサイズ未満になる
+        is_sparse = False
+        for node_synapses in jepa.context_projector:
+            if len(node_synapses) < 10:
+                is_sparse = True
+                break
+        assert is_sparse
+
+    def test_multilingual_message(self) -> None:
+        """多言語ステータス機能の確認"""
+        jepa = SpikingJEPA(10, 5, 8)
+        assert "Spiking JEPA" in jepa.get_status_message("ja")
+        assert "predictive coding" in jepa.get_status_message("en")
+        assert "rétropropagation" in jepa.get_status_message("fr")
+
+    def test_predictive_learning_convergence(self) -> None:
+        """
+        [最重要テスト]
+        誤った予測（過剰発火）がペナルティシグナルによって抑制され、
+        予測誤差（Surprise/エネルギー）が減少していく学習ダイナミクスを検証する。
+        """
+        random.seed(42)
+        jepa = SpikingJEPA(context_size=5, target_size=5, hidden_size=5)
+        jepa.learning_rate = 0.8
+        jepa.threshold = 0.1
+        
+        # テスト環境の制御: 確実に探索と刈り込みが起きるように初期結線を仕込む
+        # コンテキスト(0,1)入力で、意図的に間違った予測(0,1)が発火するように設定する
+        jepa.context_projector[0] = {0: 1.0, 1: 1.0}
+        jepa.context_projector[1] = {0: 1.0, 1: 1.0}
+        
+        jepa.predictor[0] = {0: 1.0, 1: 1.0}
+        jepa.predictor[1] = {0: 1.0, 1: 1.0}
+        
+        # ターゲットはインデックス(2,3)なので、上記の予測(0,1)は間違いとなる
+        context_pattern = [1, 1, 0, 0, 0]
+        target_pattern = [0, 0, 1, 1, 0]
+        
+        initial_surprises = []
+        final_surprises = []
+        
+        # 1. 最初の数エポック（学習初期：間違った予測が出るためSurpriseが大きい）
+        # ★修正ポイント: 評価中なので learning=False にしなければならない
+        for _ in range(5):
+            surprise, _ = jepa.step(context_pattern, target_pattern, learning=False)
+            initial_surprises.append(sum(surprise))
+            # 膜電位の不要な蓄積を防ぐためリセット
+            jepa.hidden_potentials = [0.0] * jepa.hidden_size
+            jepa.target_potentials = [0.0] * jepa.target_size
+            
+        # 2. 学習ループ（間違った予測をしたシナプスがLTDで刈り込まれる）
+        for _ in range(20):
+            jepa.step(context_pattern, target_pattern, learning=True)
+            jepa.hidden_potentials = [0.0] * jepa.hidden_size
+            jepa.target_potentials = [0.0] * jepa.target_size
+            
+        # 3. 最後の数エポック（学習後期：無駄な発火が消えSurpriseが減る）
+        for _ in range(5):
+            surprise, _ = jepa.step(context_pattern, target_pattern, learning=False)
+            final_surprises.append(sum(surprise))
+            jepa.hidden_potentials = [0.0] * jepa.hidden_size
+            jepa.target_potentials = [0.0] * jepa.target_size
+            
+        avg_initial_surprise = sum(initial_surprises) / len(initial_surprises)
+        avg_final_surprise = sum(final_surprises) / len(final_surprises)
+        
+        # 最初はターゲットにない過剰発火でSurpriseが多いが、
+        # 学習による刈り込みで無駄な発火が減り、全体のエラー（エネルギー）が低下する。
+        assert avg_final_surprise < avg_initial_surprise
+
+    def test_pruning_mechanism(self) -> None:
+        """不要なシナプスが刈り込まれ(Pruning)、メモリを節約しているか確認"""
+        random.seed(42)
+        jepa = SpikingJEPA(context_size=5, target_size=5, hidden_size=5)
+        jepa.learning_rate = 1.0
+        jepa.prune_threshold = 0.1
+        
+        # 意図的に弱いシナプスを作る
+        jepa.predictor[0] = {0: 0.05, 1: 2.0} 
+        
+        # ターゲット発火=0、予測発火=1 の状態を作ってLTD(減衰)を発生させる
+        hidden = [1, 0, 0, 0, 0] # 入力0が発火
+        pred = [1, 0, 0, 0, 0]   # 出力0が発火
+        
+        # ネガティブシグナル(-1.0)を与えてSTDP更新を実行
+        jepa._update_weights_stdp(hidden, pred, jepa.predictor, signal=-1.0)
+        
+        # 元々0.05だった入力0への結合は、LTDによって閾値(0.1)を下回り削除されたはず
+        assert 0 not in jepa.predictor[0]
+        # 元々2.0だった入力1への結合は、ヘテロシナプティックLTDで多少減ったが残っているはず
+        assert 1 in jepa.predictor[0]
