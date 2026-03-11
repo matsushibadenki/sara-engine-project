@@ -85,6 +85,10 @@ class TestSpikingJEPA:
         jepa.threshold = 0.1
         
         # テスト環境の制御: 確実に探索と刈り込みが起きるように初期結線を仕込む
+        for i in range(5):
+            jepa.context_projector[i] = {}
+            jepa.predictor[i] = {}
+            
         # コンテキスト(0,1)入力で、意図的に間違った予測(0,1)が発火するように設定する
         jepa.context_projector[0] = {0: 1.0, 1: 1.0}
         jepa.context_projector[1] = {0: 1.0, 1: 1.0}
