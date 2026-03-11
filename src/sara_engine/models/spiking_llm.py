@@ -1,7 +1,7 @@
 # {
 #     "//": "ディレクトリパス: src/sara_engine/models/spiking_llm.py",
-#     "//": "ファイルの日本語タイトル: スパイキング・大規模言語モデル（MoE, LIF, Direct Wiring統合版）",
-#     "//": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。さらに「Direct Synaptic Wiring」を統合し、超高速な事前コーパス学習と、Fuzzy Recallによるリアルタイム適応（STDP）を同時に実現する。SaraTokenizerを導入し、単語・形態素レベルの推論に対応。"
+#     "//": "ファイルの日本語タイトル: スパイキング・大規模言語モデル（異言語混入防止・最終チューニング版）",
+#     "//": "ファイルの目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。英語出力時に日本語が混入する原因となっていたアスキー文字ペナルティを削除し、純粋なDirect WiringとH-JEPAの予測が正しくスコアに反映されるよう修正。"
 # }
 
 import os
@@ -16,6 +16,7 @@ from ..core.cortical_columns import SpikingCorticalColumns
 from ..learning.homeostasis import AdaptiveThresholdHomeostasis
 from ..utils.project_paths import ensure_output_directory
 from ..utils.tokenizer import SaraTokenizer
+from .spiking_jepa import SpikingJEPA
 
 
 class SpikingLayerNorm:
@@ -140,11 +141,6 @@ class MultiLayerSpikingTransformer:
 
 
 class SpikingLLM:
-    """
-    スパイキングLLM（Direct Wiring + MoE/LIF 統合版）。
-    Rustコアによる超高速事前学習（Direct Wiring）の静的知識と、
-    SDRやSTDPによる動的な会話記憶（Fuzzy Recall）を融合して推論を行う。
-    """
     _SDR_BITS_PER_TOKEN: int = 5
 
     def __init__(
@@ -163,6 +159,16 @@ class SpikingLLM:
 
         self.transformer = MultiLayerSpikingTransformer(
             num_layers, self.sdr_size, enable_learning)
+            
+        jepa_configs = [{"embed_dim": self.sdr_size, "hidden_dim": self.sdr_size * 2}]
+        time_scales = {"low": 1, "medium": 3, "high": 5}
+        self.jepa_predictor = SpikingJEPA(
+            layer_configs=jepa_configs,
+            ema_decay=0.99,
+            learning_rate=0.1,
+            time_scales=time_scales
+        )
+            
         self.lm_head_w: List[Dict[int, float]] = []
         self.global_t: int = 0
         self._sdr_cache: Dict[Tuple[int, ...], List[int]] = {}
@@ -189,14 +195,19 @@ class SpikingLLM:
         tokens = []
         for tid in token_ids:
             word = self.tokenizer.id_to_token.get(int(tid), "")
-            if word not in self.tokenizer.special_tokens:
+            if word not in ["<pad>", "<unk>", "<sos>", "<eos>"]:
                 tokens.append(word)
         return "".join(tokens)
 
     def reset_state(self) -> None:
         self.transformer.reset_state()
+        self.jepa_predictor.reset_state()
 
     def fit(self, text_data: str) -> 'SpikingLLM':
+        print("[SpikingLLM] Training BPE Tokenizer with the provided corpus...")
+        self.tokenizer.train([text_data])
+        self._sync_vocab_size_with_tokenizer()
+        
         tokens = self.encode_text(text_data)
         total_tokens = len(tokens)
         print(
@@ -276,7 +287,7 @@ class SpikingLLM:
             pos = len(context_tokens) - i
             for j in range(self._SDR_BITS_PER_TOKEN):
                 spike_id = (tok * 104729 + pos * 7919 +
-                            j * 2741) % self.sdr_size
+                            j * 100003) % self.sdr_size
                 spikes.add(spike_id)
 
         result = sorted(spikes)
@@ -303,6 +314,14 @@ class SpikingLLM:
                 context_tokens.pop(0)
 
             input_spikes = self._encode_to_sdr(context_tokens)
+            target_spikes = self._encode_to_sdr([next_token])
+            
+            self.jepa_predictor.forward(
+                x_spikes=input_spikes, 
+                y_spikes=target_spikes, 
+                learning=True
+            )
+
             sdr_k = self._sdr_key(input_spikes)
 
             if sdr_k not in self._direct_map:
@@ -342,12 +361,6 @@ class SpikingLLM:
         '。', '、', '\n', '　', ' ', '（', '）', '「', '」', '・',
         ')', '(', ',', '.', ':', ';',
     }
-
-    def _is_ascii_char(self, tok_id: int) -> bool:
-        char = self.tokenizer.id_to_token.get(int(tok_id), "")
-        if not char:
-            return False
-        return all(ord(c) < 128 for c in char) and char not in ('\n', '。', '、')
 
     def _sync_vocab_size_with_tokenizer(self) -> None:
         tokenizer_size = max(
@@ -478,7 +491,7 @@ class SpikingLLM:
                 scores[tok_id] *= (3.0 ** (hits - 1))
 
         should_block = False
-        if len(context_tokens) >= 2:
+        if len(context_tokens) >= 3:
             valid_hits = [
                 len(votes[tok_id]) for tok_id in scores.keys()
                 if tok_id not in exempt_ids and tok_id not in end_of_sentence_ids
@@ -487,12 +500,29 @@ class SpikingLLM:
 
         sdr_context = context_tokens[-min(5, len(context_tokens)):]
         current_spikes = self._encode_to_sdr(sdr_context)
+        
+        jepa_predicted_spikes, _ = self.jepa_predictor.forward(
+            x_spikes=current_spikes, 
+            learning=False
+        )
+        jepa_pred_set = set(jepa_predicted_spikes)
+        
+        # ★修正: Fuzzy Recallの過剰発火を防ぐためスコア加算の重みを低下 (0.1倍)
         recalled, confidence = self.recall(
-            self._sdr_key(current_spikes), threshold=0.75)
+            self._sdr_key(current_spikes), threshold=0.85)
         if recalled is not None:
             for tok_id, count in recalled.items():
                 if tok_id < self.vocab_size:
-                    scores[tok_id] += count * confidence * 2.0
+                    scores[tok_id] += count * confidence * 0.1
+                    
+        if jepa_pred_set:
+            for tok_id in list(scores.keys()):
+                if scores[tok_id] > 0.1:
+                    target_sdr = self._encode_to_sdr([tok_id])
+                    overlap = len(jepa_pred_set.intersection(target_sdr))
+                    if overlap > 0:
+                        bonus = (overlap / len(target_sdr))
+                        scores[tok_id] += bonus * scores[tok_id] * 0.5
 
         if suppress_initial_symbols:
             for pid in exempt_ids:
@@ -518,9 +548,8 @@ class SpikingLLM:
         for tok in recent_generated:
             recent_counts[tok] += 1
 
+        # ★修正: 英語トークンを一律にペナルティ(0.1倍)にしていたバグコードを完全削除！
         for tok_id in list(scores.keys()):
-            if self._is_ascii_char(tok_id):
-                scores[tok_id] *= 0.1
             if tok_id in recent_counts and tok_id not in exempt_ids:
                 scores[tok_id] /= repetition_penalty ** recent_counts[tok_id]
                 scores[tok_id] /= (1.0 + max(0.0, presence_penalty))
@@ -531,7 +560,7 @@ class SpikingLLM:
         if max_score < 0.1:
             return [], should_block
 
-        threshold = max(max_score * 0.2, 0.2)
+        threshold = max(max_score * 0.1, 0.1)
         filtered = [
             self._candidate_metadata(tok_id, score, max_score, votes)
             for tok_id, score in sorted(scores.items(), key=lambda item: item[1], reverse=True)
@@ -774,6 +803,7 @@ class SpikingLLM:
             "context_window": self.context_window,
             "vocab_size": self.vocab_size,
             "sdr_size": self.sdr_size,
+            "jepa_state": self.jepa_predictor.state_dict(),
         }
         with open(model_path, 'w', encoding='utf-8') as f:
             json.dump(model_data, f, ensure_ascii=False, indent=2)
@@ -824,6 +854,10 @@ class SpikingLLM:
         raw_direct_map = data.get("direct_map", {})
         instance._direct_map = {parse_tuple(k): {int(tk): float(
             tv) for tk, tv in v.items()} for k, v in raw_direct_map.items()}
+
+        if "jepa_state" in data:
+            if hasattr(instance.jepa_predictor, "load_state_dict"):
+                instance.jepa_predictor.load_state_dict(data["jepa_state"])
 
         print(f"[SpikingLLM] モデルをロードしました: {model_path}")
         return instance

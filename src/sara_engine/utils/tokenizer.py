@@ -1,7 +1,7 @@
 # {
 #     "//": "ディレクトリパス: src/sara_engine/utils/tokenizer.py",
 #     "//": "ファイルの日本語タイトル: SARA BPE トークナイザー",
-#     "//": "ファイルの目的や内容: SNNの推論速度と精度を劇的に向上させるため、BPE (Byte-Pair Encoding) サブワードアルゴリズムをネイティブ実装。頻出する文字列を自動結合し、行列演算なしで高速なトークン化を行う。正規表現のエスケープエラーを修正。"
+#     "//": "ファイルの目的や内容: SNNの推論速度と精度を劇的に向上させるため、BPE (Byte-Pair Encoding) サブワードアルゴリズムをネイティブ実装。頻出する文字列を自動結合し、行列演算なしで高速なトークン化を行う。さらに英語出力でのスペース欠落を防ぐため、単語のプレフィックスとしてスペースを結合してトークン化するよう最適化。"
 # }
 
 import json
@@ -36,24 +36,37 @@ class SaraTokenizer:
             self.load()
 
     def pre_tokenize(self, text: str) -> List[str]:
-        """単語境界を跨いだ不要な結合を防ぐための事前分割"""
+        """単語境界を跨いだ不要な結合を防ぐ事前分割。英語のスペース欠落を防ぐためスペースを次の単語に結合する。"""
         if not text:
             return []
 
         if _HAS_JANOME:
             if self._janome_tokenizer is None:
                 self._janome_tokenizer = JanomeTokenizer()
-            return [token.surface for token in self._janome_tokenizer.tokenize(text)]
+            # スペースを次の単語のプレフィックスとして結合する
+            tokens = []
+            space_buffer = ""
+            for token in self._janome_tokenizer.tokenize(text):
+                surf = token.surface
+                if surf.isspace():
+                    space_buffer += surf
+                else:
+                    tokens.append(space_buffer + surf)
+                    space_buffer = ""
+            if space_buffer:
+                tokens.append(space_buffer)
+            return tokens
         else:
-            # Janomeがない場合の簡易的な単語・句読点分割
-            return [w for w in re.split(r'(\s+|[。、！？.!,?])', text) if w]
+            # 簡易分割: スペース＋非スペース文字をひとまとめにする
+            return [w for w in re.findall(r'\s*\S+|\s+', text)]
 
     def split_text(self, text: str) -> List[str]:
-        """互換API: 学習済みBPE規則を考慮しつつ、空白や句読点を保持して分割する。"""
+        """互換API: 学習済みBPE規則を考慮しつつ分割する。"""
         pieces: List[str] = []
         for token in self.pre_tokenize(text):
             if token == "":
                 continue
+            # 空白のみのトークンや特定の記号はそのまま、それ以外はサブワード分割
             if token.isspace() or token in {"。", "、", "！", "？", ".", ",", "!", "?"}:
                 pieces.append(token)
                 continue
@@ -86,7 +99,6 @@ class SaraTokenizer:
         p = re.compile(r'(?<!\S)' + bigram + r'(?!\S)')
         replacement = ''.join(pair)
         for word in v_in:
-            # 修正箇所: 文字列を直接渡さず lambda を使うことで、エスケープ文字のエラーを回避
             w_out = p.sub(lambda _: replacement, word)
             v_out[w_out] = v_in[word]
         return v_out
@@ -99,25 +111,20 @@ class SaraTokenizer:
             for w in words:
                 word_freqs[w] = word_freqs.get(w, 0) + 1
 
-        # 初期状態: 各単語を文字単位に分割してスペースで結合
         splits = {" ".join(list(w)): freq for w, freq in word_freqs.items()}
 
-        # 基本となる文字をVocabに登録
         for word in word_freqs.keys():
             for char in word:
                 self._add_token(char)
 
-        # BPEマージループ (頻出する文字ペアを結合していく)
         num_merges = self.vocab_size - self.next_id
         for i in range(num_merges):
             stats = self._get_stats(splits)
             if not stats:
                 break
-            # 最も頻出するペアを取得
             best_pair = max(stats, key=lambda k: stats[k])
             splits = self._merge_vocab(best_pair, splits)
 
-            # 学習したマージ規則を順位付きで保存
             self.merge_ranks[best_pair] = len(self.merge_ranks)
             self._add_token("".join(best_pair))
 
@@ -137,7 +144,6 @@ class SaraTokenizer:
             if not pairs:
                 break
 
-            # 学習時と全く同じ順序（優先度）でマージを適用する
             best_pair = None
             lowest_rank = float('inf')
             for pair in pairs:
