@@ -1,9 +1,14 @@
 # パス: src/sara_engine/models/spiking_jepa.py
-# 英語タイトル: Spiking JEPA
-# 目的や内容: 誤差逆伝播の代替となる局所エネルギー（Surprise）計算を用いて、スパイクベースでの予測符号化と階層的な表現学習を行う Joint Embedding Predictive Architecture の実装。
+# 英語タイトル: Spiking JEPA & Active Inference
+# 目的や内容: 誤差逆伝播の代替となる局所エネルギー（Surprise）計算を用いて、スパイクベースでの予測符号化と階層的な表現学習を行う Joint Embedding Predictive Architecture の実装。加えて、フェーズ3に向けた時空間予測および報酬修飾型STDPを用いた能動的推論（Active Inference）を提供する。
 
 import random
 from typing import Dict, List, Tuple, Any, Optional
+
+try:
+    from sara_engine.sara_rust_core import RewardModulatedSTDP
+except ImportError:
+    RewardModulatedSTDP = None
 
 class EnergyMinimizer:
     """
@@ -305,7 +310,6 @@ class SpikingJEPA:
         """
         Hierarchical forward pass for H-JEPA.
         """
-        # (Rest of H-JEPA logic remains same but we use step for legacy)
         encodings: List[List[int]] = [x_spikes]
         for layer in self.layers:
             next_spikes = layer.forward_encoder(encodings[-1])
@@ -328,3 +332,54 @@ class SpikingJEPA:
                 current_input = encodings[i+1]
 
         return top_prediction, surprise_signal
+
+class ActiveInferenceJEPA(SpikingJEPA):
+    """
+    Phase 3 Step 4: マルチモーダル統合と能動的推論 (Active Inference) を実現する拡張層。
+    Rustバックエンドによる報酬修飾型STDP（Reward-Modulated STDP）を統合し、行動スパイクが未来予測に与える影響を学習する。
+    """
+    def __init__(self, state_dim: int, action_dim: int, embed_dim: int, learning_rate: float = 0.05):
+        super().__init__(
+            context_size=state_dim + action_dim, 
+            hidden_size=embed_dim, 
+            target_size=state_dim, 
+            learning_rate=learning_rate
+        )
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        
+        # Rust拡張が存在する場合はR-STDPを活用して行動学習を最適化する
+        if RewardModulatedSTDP is not None:
+            self.r_stdp_core = RewardModulatedSTDP(input_dim=state_dim + action_dim, trace_decay=0.95)
+        else:
+            self.r_stdp_core = None
+            
+    def predict_action_effects(self, current_state_spikes: List[int], action_spikes: List[int]) -> List[int]:
+        """現在の状態と行動スパイクから、未来の予測状態を推論する。"""
+        combined_context = list(set(current_state_spikes + [a + self.state_dim for a in action_spikes]))
+        hidden_spikes = self.layers[0].forward_encoder(combined_context)
+        predicted_state = self.layers[0].predict_top_down(hidden_spikes)
+        return predicted_state
+        
+    def active_learning_step(self, current_state_spikes: List[int], action_spikes: List[int], next_state_spikes: List[int], reward: float):
+        """能動的推論におけるステップ。Surpriseを最小化する行動と、外部報酬をリンクさせて自律学習を行う。"""
+        combined_context = list(set(current_state_spikes + [a + self.state_dim for a in action_spikes]))
+        
+        if self.r_stdp_core is not None:
+            # R-STDPを用いた適格度トレースの更新と報酬適用
+            hidden_spikes = self.layers[0].forward_encoder(combined_context)
+            self.r_stdp_core.update_trace(combined_context, hidden_spikes)
+            
+            # Surprise計算
+            predicted_state = self.layers[0].predict_top_down(hidden_spikes)
+            _, surprise_signal = self.minimizer.compute_surprise_signal(predicted_state, next_state_spikes)
+            
+            # 外部報酬 + 内部報酬(Surprise低減) を結合したドーパミン信号
+            dopamine_signal = reward + (0.5 * surprise_signal) 
+            self.r_stdp_core.apply_reward(dopamine_signal, self.learning_rate)
+            
+            # 既存のJEPAの予測器も更新
+            self.layers[0].update_stdp(hidden_spikes, next_state_spikes, self.layers[0].predictor_synapses, surprise_signal)
+        else:
+            # Fallback (Python only)
+            self.step(combined_context, next_state_spikes, learning=True)

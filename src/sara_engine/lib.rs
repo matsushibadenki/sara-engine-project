@@ -1,10 +1,12 @@
 // ディレクトリパス: src/sara_engine/lib.rs
-// ファイルの日本語タイトル: Rustハイブリッド SNNコア (フェーズ2予測符号化・スケーラブルLTM・Direct Synaptic Wiring統合版)
-// ファイルの目的や内容: 既存のWTAやSDR機能、Predictive Routingによる誤差主導の自律学習機能、数百万トークン規模の高速SDR連想メモリに加え、コーパスから直接シナプス結線を高速に構築するDirect Synaptic Wiring機能を統合。遅延シナプス（Polychronization）とPMIによるOne-Shot学習を超高速で処理する。
+// ファイルの英語タイトル: Rust Hybrid SNN Core (Complete Version)
+// ファイルの目的や内容: SARA Engineのコアとなるスパイクニューラルネットワークの演算を高速化するためのRust拡張モジュール。フェーズ2の予測符号化、WTAルーター、スケーラブルなSDRメモリから、フェーズ3のコーパス直接シナプス結線（Direct Synaptic Wiring）や能動的推論に向けた報酬修飾型STDP（R-STDP）、さらにフェーズ4に向けたバッチSDR生成やホメオスタシス機能まで、すべての処理を統合した完全版。
 
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
 use std::collections::{HashMap, HashSet};
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
 
 // =====================================================================
 // [1] 基本演算 & Fuzzy Recall (Phase 2)
@@ -478,15 +480,146 @@ fn build_direct_synapses(tokens: Vec<usize>, context_window: usize) -> PyResult<
     Ok(synapses)
 }
 
+// =====================================================================
+// [7] Reward-Modulated STDP for Active Inference (Phase 3 Step 4)
+// =====================================================================
+
+#[pyclass]
+pub struct RewardModulatedSTDP {
+    weights: Vec<HashMap<usize, f32>>,
+    eligibility_traces: Vec<HashMap<usize, f32>>,
+    trace_decay: f32,
+}
+
+#[pymethods]
+impl RewardModulatedSTDP {
+    #[new]
+    pub fn new(input_dim: usize, trace_decay: f32) -> Self {
+        let mut weights = Vec::with_capacity(input_dim);
+        let mut eligibility_traces = Vec::with_capacity(input_dim);
+        for _ in 0..input_dim {
+            weights.push(HashMap::new());
+            eligibility_traces.push(HashMap::new());
+        }
+        RewardModulatedSTDP { weights, eligibility_traces, trace_decay }
+    }
+
+    pub fn update_trace(&mut self, pre_spikes: Vec<usize>, post_spikes: Vec<usize>) {
+        let post_set: HashSet<usize> = post_spikes.into_iter().collect();
+        for &pre in &pre_spikes {
+            if pre < self.eligibility_traces.len() {
+                let traces = &mut self.eligibility_traces[pre];
+                for &post in &post_set {
+                    *traces.entry(post).or_insert(0.0) += 1.0;
+                }
+            }
+        }
+        
+        // Decay traces globally
+        for traces in &mut self.eligibility_traces {
+            let mut to_remove = Vec::new();
+            for (&target, trace) in traces.iter_mut() {
+                *trace *= self.trace_decay;
+                if *trace < 0.01 {
+                    to_remove.push(target);
+                }
+            }
+            for t in to_remove {
+                traces.remove(&t);
+            }
+        }
+    }
+
+    pub fn apply_reward(&mut self, reward: f32, learning_rate: f32) {
+        for i in 0..self.weights.len() {
+            let traces = &self.eligibility_traces[i];
+            let w_map = &mut self.weights[i];
+            for (&target, &trace) in traces.iter() {
+                let w = w_map.entry(target).or_insert(0.1);
+                *w += learning_rate * reward * trace;
+                if *w < 0.0 { *w = 0.0; }
+                if *w > 5.0 { *w = 5.0; }
+            }
+        }
+    }
+}
+
+// =====================================================================
+// [8] Batch Processing for Large Scale Training (Phase 4 Prep)
+// =====================================================================
+
+/// トークンのバッチを受け取り、それぞれをSDR（Sparse Distributed Representation）に変換します。
+/// 大規模なコーパスの事前学習を高速化するためのユーティリティです。
+#[pyfunction]
+fn batch_tokens_to_sdr(
+    batch_tokens: Vec<Vec<usize>>,
+    vocab_size: usize,
+    sdr_density: f32,
+    seed: u64,
+) -> PyResult<Vec<Vec<Vec<usize>>>> {
+    let mut rng = StdRng::seed_from_u64(seed);
+    let sdr_size = (vocab_size as f32 * sdr_density).ceil() as usize;
+    let sdr_size = sdr_size.max(1);
+
+    // TODO: 将来的にRayonを導入して par_iter() で並列化可能
+    let batch_sdrs: Vec<Vec<Vec<usize>>> = batch_tokens.into_iter().map(|seq| {
+        seq.into_iter().map(|token| {
+            // 簡易的なハッシュベースの擬似ランダムSDR生成
+            // 実際の運用ではより洗練されたエンコーダを使用する
+            let mut seq_rng = StdRng::seed_from_u64(seed ^ (token as u64));
+            let mut sdr = Vec::with_capacity(sdr_size);
+            for _ in 0..sdr_size {
+                sdr.push(seq_rng.gen_range(0..vocab_size));
+            }
+            sdr.sort_unstable();
+            sdr.dedup();
+            sdr
+        }).collect()
+    }).collect();
+
+    Ok(batch_sdrs)
+}
+
+// =====================================================================
+// [9] Homeostatic Scaling
+// =====================================================================
+
+/// 大規模ネットワークでの発火率の爆発/減衰を防ぐためのホメオスタシス機能
+#[pyfunction]
+fn apply_homeostatic_scaling(
+    mut weights: Vec<HashMap<usize, f32>>,
+    firing_rates: Vec<f32>,
+    target_rate: f32,
+    learning_rate: f32,
+) -> PyResult<Vec<HashMap<usize, f32>>> {
+    for (i, rate) in firing_rates.iter().enumerate() {
+        if i < weights.len() {
+            let error = target_rate - rate;
+            // 発火率が目標より高ければ重みを下げ、低ければ上げる
+            let scaling_factor = 1.0 + (learning_rate * error);
+            
+            for val in weights[i].values_mut() {
+                *val *= scaling_factor;
+                if *val < 0.0 { *val = 0.0; }
+                if *val > 5.0 { *val = 5.0; } // W_max
+            }
+        }
+    }
+    Ok(weights)
+}
+
 #[pymodule]
 fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calculate_sdr_overlap, m)?)?;
     m.add_function(wrap_pyfunction!(sparse_propagate_threshold, m)?)?;
     m.add_function(wrap_pyfunction!(build_direct_synapses, m)?)?;
+    m.add_function(wrap_pyfunction!(batch_tokens_to_sdr, m)?)?;
+    m.add_function(wrap_pyfunction!(apply_homeostatic_scaling, m)?)?;
     m.add_class::<SpikeEngine>()?;
     m.add_class::<SpikeWTARouter>()?;
     m.add_class::<LIFNetwork>()?;
     m.add_class::<CausalSynapses>()?;
     m.add_class::<ScalableSDRMemory>()?;
+    m.add_class::<RewardModulatedSTDP>()?;
     Ok(())
 }

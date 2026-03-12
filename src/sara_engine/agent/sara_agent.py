@@ -1,6 +1,6 @@
 # ディレクトリパス: src/sara_engine/agent/sara_agent.py
-# ファイルの日本語タイトル: 統合マルチモーダル・エージェント
-# ファイルの目的や内容: 検索時のキーワード判定を「メタデータを含む全体」と「クリーンな本文」で分離し、代名詞（指示語）を用いたフォローアップ質問に対する文脈解決能力を回復させた最終版。
+# ファイルの日本語タイトル: 統合マルチモーダル・エージェント (SpikingLLM Pipeline統合版)
+# ファイルの目的や内容: 検索時のキーワード判定を「メタデータを含む全体」と「クリーンな本文」で分離し、代名詞（指示語）を用いたフォローアップ質問に対する文脈解決能力を回復。さらにPhase 4のTextGenerationPipelineとストリーミング生成を統合した最終版。
 
 from ..memory.million_token_snn import DynamicSNNMemory
 from ..encoders.audio import AudioSpikeEncoder
@@ -11,7 +11,8 @@ from ..memory.hippocampus import CorticoHippocampalSystem
 from ..core.cortex import CorticalColumn
 from ..memory.sdr import SDREncoder
 from ..utils.dialogue import AdaptiveTopicTracker
-from typing import List, Dict, Any, Callable
+from ..pipelines.text_generation import pipeline  # 追加: パイプライン
+from typing import List, Dict, Any, Callable, Union, Generator
 import hashlib
 import random
 import os
@@ -54,6 +55,10 @@ class SaraAgent:
 
         self.llm = SpikingLLM(num_layers=2, sdr_size=128,
                               vocab_size=100000, enable_learning=True)
+                              
+        # 追加: TextGenerationPipelineの初期化
+        self.generator = pipeline("text-generation", model=self.llm, tokenizer=self.encoder.tokenizer)
+
         self.vision = ImageSpikeEncoder(output_size=input_size)
         self.audio = AudioSpikeEncoder(output_size=input_size)
         self.episodic_snn = DynamicSNNMemory(vocab_size=100000, sdr_size=3)
@@ -89,6 +94,8 @@ class SaraAgent:
             try:
                 from ..models.spiking_llm import SpikingLLM
                 self.llm = SpikingLLM.from_pretrained(load_dir)
+                # LLM再ロード後にパイプラインも更新
+                self.generator = pipeline("text-generation", model=self.llm, tokenizer=self.encoder.tokenizer)
             except Exception as e:
                 print(f"⚠️ LLMのロードに失敗しました: {e}")
         try:
@@ -254,7 +261,7 @@ class SaraAgent:
                 seen.append(item)
         return seen
 
-    def chat(self, user_text: str, teaching_mode: bool = False) -> str:
+    def chat(self, user_text: str, teaching_mode: bool = False, stream: bool = False) -> Union[str, Generator[str, None, None]]:
         self._register_dynamic_vocab(user_text)
         user_ids = self._text_to_ids(user_text)
 
@@ -273,7 +280,6 @@ class SaraAgent:
         input_sdr = self.encoder.encode(user_text)
         self.encoder.apply_vsa = original_vsa
 
-        # teaching_modeの場合でも、文脈をつなぐために履歴には記録しておく（出力はしない）
         if not teaching_mode:
             self._update_history("user", user_text, input_sdr)
         else:
@@ -395,7 +401,6 @@ class SaraAgent:
             content = m["content"]
             content_lower = content.lower()
 
-            # メタデータ（【文脈:...】）を除去したクリーンな本文を取得
             clean_content = content
             match_ctx = re.search(r'【文脈:.*?】\s*(.*)', content)
             if match_ctx:
@@ -407,7 +412,6 @@ class SaraAgent:
 
             m["clean_content"] = clean_content.strip()
 
-            # 💡【重要修正】現在のキーワードはクリーンな本文と照合し、文脈キーワードはメタデータを含む全体と照合する
             clean_lower = clean_content.lower()
             curr_match = sum(
                 1 for kw in current_keywords if kw.lower() in clean_lower)
@@ -426,7 +430,6 @@ class SaraAgent:
             total_match = sum(
                 1 for kw in all_kw if kw.lower() in content_lower)
 
-            # 現在のキーワードに合致したものをスコア的に強く優遇する
             m["keyword_score"] = total_match + (curr_match * 2)
 
             filtered_retrievals.append(m)
@@ -471,57 +474,81 @@ class SaraAgent:
                                  self.encoder.encode(final_generated_text))
             return full_response
 
-        num_candidates = 3
-        best_candidate = ""
-        best_score = -999.0
+        # プロンプトの構築
+        prompt_for_llm = f"{recent_context}{memory_context} {user_text}"
+        if mode == "definition":
+            prompt_for_llm += " つまり、"
+        elif mode == "summarize":
+            prompt_for_llm += " 要約すると、"
+        elif mode == "question":
+            prompt_for_llm += " 答えは、"
 
-        for attempt in range(num_candidates):
-            prompt_for_llm = f"{recent_context}{memory_context} {user_text}"
-            if mode == "definition":
-                prompt_for_llm += " つまり、"
-            elif mode == "summarize":
-                prompt_for_llm += " 要約すると、"
-            elif mode == "question":
-                prompt_for_llm += " 答えは、"
+        # =============== Phase 4: TextGenerationPipeline の利用 ===============
+        stop_conditions = ["。", "？", "！", "!", "?"]
 
-            current_prompt_ids = self._text_to_ids(prompt_for_llm)
-            generated_tokens: List[int] = []
+        if stream:
+            def response_generator() -> Generator[str, None, None]:
+                # ヘッダ情報と記憶情報を最初に送る
+                yield f"[MoE Router: {', '.join(active_experts)} 活性化 (Mode: {mode})]\n"
+                yield f" >> 海馬ブレンド記憶: {blended_memory}\n"
+                yield f" >> SARA回答: {memory_context}\n"
+                yield "[SNN生成による追記] "
 
-            max_agent_steps = 30
-            for step in range(max_agent_steps):
-                new_ids = self.llm.generate(
-                    prompt_tokens=current_prompt_ids, max_new_tokens=1, temperature=0.5)
-                if not new_ids or not isinstance(new_ids, list):
-                    break
+                generated_full = ""
+                # パイプラインストリーミングによる逐次生成
+                for chunk in self.generator.stream(
+                    prompt_for_llm, 
+                    max_new_tokens=30, 
+                    temperature=0.5, 
+                    stop_conditions=stop_conditions
+                ):
+                    text_val = chunk["text"] if isinstance(chunk, dict) and "text" in chunk else str(chunk)
+                    generated_full += text_val
+                    yield text_val
 
-                token_id = new_ids[0]
-                generated_tokens.append(token_id)
-                current_prompt_ids.append(token_id)
-
-                current_full_str = prompt_for_llm + \
-                    self._ids_to_text(generated_tokens)
-
-                if len(generated_tokens) > 5 and current_full_str.strip().endswith(("。", "？", "！", "!", "?")):
-                    break
-
-            candidate_text = self._ids_to_text(generated_tokens)
-            candidate_text = self._complete_sentence(candidate_text)
-
-            score = self._score_candidate(candidate_text, user_text)
-            if score > best_score:
-                best_score = score
-                best_candidate = candidate_text
-
-        if len(best_candidate) < 10 or best_score < 15.0:
-            final_generated_text = memory_context
+                final_text = memory_context + "\n[SNN生成による追記] " + generated_full
+                self._update_history("system", final_text, self.encoder.encode(final_text))
+            
+            return response_generator()
         else:
-            final_generated_text = memory_context + \
-                "\n[SNN生成による追記] " + best_candidate
+            # 非ストリーミング時は、複数の候補からスコアの一番高いものを選択する (ノイズ除去ロジックを継承)
+            num_candidates = 3
+            best_candidate = ""
+            best_score = -999.0
 
-        full_response = f"[MoE Router: {', '.join(active_experts)} 活性化 (Mode: {mode})]\n"
-        full_response += f" >> 海馬ブレンド記憶: {blended_memory}\n"
-        full_response += f" >> SARA回答: {final_generated_text}"
+            for attempt in range(num_candidates):
+                # パイプライン経由でのテキスト生成
+                gen_result = self.generator(
+                    prompt_for_llm,
+                    max_new_tokens=30,
+                    temperature=0.5 + (attempt * 0.1),  # 試行ごとに多様性を持たせる
+                    stop_conditions=stop_conditions
+                )
 
-        self._update_history("system", final_generated_text,
-                             self.encoder.encode(final_generated_text))
-        return full_response
+                # 生成されたテキストからプロンプト部分を削除する
+                if isinstance(gen_result, str):
+                    if gen_result.startswith(prompt_for_llm):
+                        candidate_text = gen_result[len(prompt_for_llm):]
+                    else:
+                        candidate_text = gen_result.replace(prompt_for_llm, "")
+                else:
+                    candidate_text = ""
+
+                candidate_text = self._complete_sentence(candidate_text)
+                score = self._score_candidate(candidate_text, user_text)
+
+                if score > best_score:
+                    best_score = score
+                    best_candidate = candidate_text
+
+            if len(best_candidate) < 10 or best_score < 15.0:
+                final_generated_text = memory_context
+            else:
+                final_generated_text = memory_context + "\n[SNN生成による追記] " + best_candidate
+
+            full_response = f"[MoE Router: {', '.join(active_experts)} 活性化 (Mode: {mode})]\n"
+            full_response += f" >> 海馬ブレンド記憶: {blended_memory}\n"
+            full_response += f" >> SARA回答: {final_generated_text}"
+
+            self._update_history("system", final_generated_text, self.encoder.encode(final_generated_text))
+            return full_response

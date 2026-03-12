@@ -1,6 +1,6 @@
-# src/sara_engine/models/spiking_llm.py
-# Spiking Large Language Model
-# 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。Dynamic Threshold Adaptation と K-Winner-Take-All メカニズムを導入し、ノイズ除去（精度向上）とスコア計算のO(N)ループ集約による推論高速化を実現。SDRエンコーディングに対するLRUキャッシュを追加して安定化。
+# パス: src/sara_engine/models/spiking_llm.py
+# 英語タイトル: Spiking Large Language Model
+# 目的や内容: 実モデルにPhase 3のCortical Columns (MoE) と LIF Attention を統合。Dynamic Threshold Adaptation と K-Winner-Take-All メカニズムを導入し、ノイズ除去（精度向上）とスコア計算のO(N)ループ集約による推論高速化を実現。SDRエンコーディングに対するLRUキャッシュを追加して安定化。誤差逆伝播、行列演算、GPUを使用せず、純粋なスパイク伝達と局所学習によって言語モデルを構築する。
 
 import os
 import json
