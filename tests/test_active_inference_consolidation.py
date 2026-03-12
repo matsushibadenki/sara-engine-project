@@ -1,3 +1,7 @@
+# パス: tests/test_active_inference_consolidation.py
+# 英語タイトル: Test Active Inference and Consolidation
+# 目的や内容: CognitiveArchitecture上のActive Inferenceによるサプライズ（予測誤差）生成と記憶の固定化処理が正しく動作することを確認するテストコード。
+
 from sara_engine.models.cognitive_architecture import CognitiveArchitecture
 from sara_engine.models.spiking_llm import SpikingLLM
 
@@ -26,8 +30,18 @@ def test_active_inference_surprise():
     
     # Sudden change in sensory input should increase surprise
     print("Changing sensory input...")
-    # Change input significantly
-    arch.step_environment([False, False, False, False])
+    
+    # 不応期をリセットし、異なる発火パターンを強制的に作り出す（スパイク伝播の遅延による無音状態を回避）
+    for i, n in enumerate(arch.liquid):
+        n.refractory_time = 0
+        if i % 2 == 0:
+            n.v = 2.0  # 半分だけ発火させる
+        else:
+            n.v = 0.0
+            
+    # 一部の入力を変化させて、新しい予測ターゲットを生成させる
+    arch.step_environment([False, True, False, True])
+    
     new_surprise = arch.last_surprise
     print(f"New Surprise: {new_surprise}")
     

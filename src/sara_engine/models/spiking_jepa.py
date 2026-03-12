@@ -1,3 +1,7 @@
+# パス: src/sara_engine/models/spiking_jepa.py
+# 英語タイトル: Spiking JEPA
+# 目的や内容: 誤差逆伝播の代替となる局所エネルギー（Surprise）計算を用いて、スパイクベースでの予測符号化と階層的な表現学習を行う Joint Embedding Predictive Architecture の実装。
+
 import random
 from typing import Dict, List, Tuple, Any, Optional
 

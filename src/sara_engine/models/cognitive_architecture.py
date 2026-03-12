@@ -61,7 +61,11 @@ class CognitiveArchitecture:
         self.spike_attention = SpikeDrivenAttention(context_size=128, threshold=2.0)
 
         # [修正] 実在する CorticoHippocampalSystem を正しく初期化
-        self.cortex = CorticalColumn()
+        self.cortex = CorticalColumn(
+            input_size=n_liquid,
+            hidden_size_per_comp=n_liquid,
+            compartment_names=self.supported_languages
+        )
         self.memory_system = CorticoHippocampalSystem(
             cortex=self.cortex,
             ltm_filepath="cognitive_arch_ltm.pkl",
