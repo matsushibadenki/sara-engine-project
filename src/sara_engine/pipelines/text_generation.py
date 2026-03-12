@@ -1,6 +1,6 @@
-# ディレクトリパス: src/sara_engine/pipelines/text_generation.py
-# ファイルの日本語タイトル: テキスト生成パイプライン
-# ファイルの目的や内容: SNNを用いたテキスト生成機能のTransformers互換パイプライン実装。
+# src/sara_engine/pipelines/text_generation.py
+# Text Generation Pipeline
+# SNNを用いたテキスト生成機能のTransformers互換パイプライン実装。ジェネレータ式への移行等によるメモリ効率と速度の向上。
 
 from typing import Any
 
@@ -14,6 +14,13 @@ class TextGenerationPipeline:
     def __init__(self, model: Any, tokenizer: Any):
         self.model = model
         self.tokenizer = tokenizer
+        
+        # モデルがサポートしているメソッドを事前にキャッシュして高速化
+        self._has_model_generate = hasattr(self.model, "generate") and callable(self.model.generate)
+        self._has_model_predict = hasattr(self.model, "predict_next_tokens")
+        self._has_model_stream = hasattr(self.model, "generate_stream")
+        self._has_tokenizer_encode = hasattr(self.tokenizer, "encode")
+        self._has_tokenizer_decode = hasattr(self.tokenizer, "decode")
 
     def __call__(self, text: str, max_new_tokens: int = 50, **kwargs) -> Any:
         """
@@ -34,7 +41,7 @@ class TextGenerationPipeline:
         output_scores = kwargs.get("output_scores", False)
         output_tokens = kwargs.get("output_tokens", False)
 
-        if hasattr(self.model, "generate") and callable(self.model.generate):
+        if self._has_model_generate:
             try:
                 generated = self.model.generate(
                     prompt=text,
@@ -46,14 +53,13 @@ class TextGenerationPipeline:
                     presence_penalty=presence_penalty,
                     frequency_penalty=frequency_penalty,
                     stop_conditions=stop_conditions,
-                    refractory_penalty=refractory_penalty,
                     refractory_period=refractory_period,
                     return_dict_in_generate=return_dict_in_generate,
                     output_scores=output_scores,
                     output_tokens=output_tokens,
                 )
             except TypeError:
-                if hasattr(self.tokenizer, "encode"):
+                if self._has_tokenizer_encode:
                     input_ids = self.tokenizer.encode(text)
                 else:
                     input_ids = [ord(c) for c in text]
@@ -67,7 +73,6 @@ class TextGenerationPipeline:
                     presence_penalty=presence_penalty,
                     frequency_penalty=frequency_penalty,
                     stop_conditions=stop_conditions,
-                    refractory_penalty=refractory_penalty,
                     refractory_period=refractory_period,
                     return_dict_in_generate=return_dict_in_generate,
                     output_scores=output_scores,
@@ -81,14 +86,15 @@ class TextGenerationPipeline:
                 return generated
             if isinstance(generated, str):
                 return generated
-            if hasattr(self.tokenizer, "decode"):
+            if self._has_tokenizer_decode:
                 return self.tokenizer.decode(generated)
-            return "".join([chr(i) for i in generated if i < 0x110000])
+            # ジェネレータ式を使用してメモリ効率を向上
+            return "".join(chr(i) for i in generated if i < 0x110000)
 
         return text
 
     def predict_next_tokens(self, text: str, top_k: int = 5, **kwargs) -> list[dict[str, Any]]:
-        if hasattr(self.model, "predict_next_tokens"):
+        if self._has_model_predict:
             try:
                 return self.model.predict_next_tokens(
                     prompt=text,
@@ -98,7 +104,7 @@ class TextGenerationPipeline:
                     frequency_penalty=kwargs.get("frequency_penalty", 0.0),
                 )
             except TypeError:
-                if hasattr(self.tokenizer, "encode"):
+                if self._has_tokenizer_encode:
                     input_ids = self.tokenizer.encode(text)
                 else:
                     input_ids = [ord(c) for c in text]
@@ -112,7 +118,7 @@ class TextGenerationPipeline:
         return []
 
     def stream(self, text: str, max_new_tokens: int = 50, **kwargs):
-        if hasattr(self.model, "generate_stream"):
+        if self._has_model_stream:
             try:
                 return self.model.generate_stream(
                     prompt=text,
@@ -126,7 +132,7 @@ class TextGenerationPipeline:
                     stop_conditions=kwargs.get("stop_conditions"),
                 )
             except TypeError:
-                if hasattr(self.tokenizer, "encode"):
+                if self._has_tokenizer_encode:
                     input_ids = self.tokenizer.encode(text)
                 else:
                     input_ids = [ord(c) for c in text]
@@ -149,7 +155,7 @@ class TextGenerationPipeline:
         This allows continuous, energy-efficient learning on the edge.
         """
         if hasattr(self.model, "learn_sequence"):
-            if hasattr(self.tokenizer, "encode"):
+            if self._has_tokenizer_encode:
                 input_ids = self.tokenizer.encode(text)
             else:
                 input_ids = [ord(c) for c in text]

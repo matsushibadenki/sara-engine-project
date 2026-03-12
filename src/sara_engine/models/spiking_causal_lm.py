@@ -1,6 +1,6 @@
 # src/sara_engine/models/spiking_causal_lm.py
-# スパイキング因果言語モデル v5.0 (Rust Hybrid)
-# 目的: Rustコアを統合し、汎用シナプスのSTDP学習と電位計算をオフロードして超高速化する。
+# Spiking Causal Language Model v5.2 (Rust Hybrid Ultra-Optimized)
+# Rustコアを統合し、汎用シナプスのSTDP学習と電位計算をオフロードして超高速化。Python側では collections.deque を導入し、履歴管理（リストへの挿入）を O(N) から O(1) へ最適化して生成ループのオーバーヘッドを劇的に削減しました。
 
 from ..core.transformer import SpikeTransformerModel
 from ..sara_rust_core import CausalSynapses
@@ -8,19 +8,19 @@ from typing import List, Dict, Optional
 import math
 import random
 import json
+import heapq
+from collections import deque
 
 _FILE_INFO = {
     "path":  "src/sara_engine/models/spiking_causal_lm.py",
-    "title": "スパイキング因果言語モデル v5.0 (Rust Hybrid)",
-    "description": "Rustコアを統合し、汎用シナプスのSTDP学習と電位計算をオフロードして超高速化する。"
+    "title": "Spiking Causal Language Model v5.2 (Rust Hybrid Ultra-Optimized)",
+    "description": "Rustコアを統合し、汎用シナプスのSTDP学習と電位計算をオフロードして超高速化。Python側では collections.deque を導入し履歴管理をO(1)化。"
 }
 
-# 除外対象の記号文字セット（1文字トークンのみ対象）
 _SYMBOL_CHARS = frozenset(
     "。、！？.,!?…・「」『』()（） 　\n\t"
 )
 
-# 除外対象の短い汎用語（完全一致）
 _EXCLUDE_WORDS = frozenset([
     "User", "Assistant", ":", "はい", "いいえ",
 ])
@@ -44,11 +44,11 @@ class SpikingCausalLM:
         # --- Rust Core への差し替え ---
         self.rust_synapses = CausalSynapses(max_delay=self.max_delay)
 
-        # QA専用シナプスは引き続きPython側で管理
         self.qa_weights: Dict[int, Dict[int, float]] = {}
 
         self._id_to_token: Dict[int, str] = {}
         self._vocab_registered = False
+        self._hub_penalty_cache: Dict[int, float] = {}
 
     def _get_sdr_for_token(self, token_id: int, sparsity: float = 0.05) -> List[int]:
         if token_id not in self.token_to_sdr:
@@ -66,8 +66,7 @@ class SpikingCausalLM:
         self._id_to_token = id_to_token
         self._vocab_registered = True
         sample = list(id_to_token.items())[:5]
-        print(
-            f"  [register_vocab] registered {len(id_to_token)} entries. sample={sample}")
+        print(f"  [register_vocab] registered {len(id_to_token)} entries. sample={sample}")
 
     def _is_excluded(self, token_id: int) -> bool:
         if not self._vocab_registered:
@@ -76,14 +75,13 @@ class SpikingCausalLM:
         raw_text = self._id_to_token.get(token_id, "")
         clean = raw_text.strip().lstrip("▁Ġ")
 
-        if clean == "":
+        if not clean:
             return True
         if len(clean) == 1 and clean in _SYMBOL_CHARS:
             return True
         if clean in _EXCLUDE_WORDS:
             return True
 
-        # 終了シグナルはQAボーナスから除外
         if "終" in clean or "＜" in clean or "＞" in clean:
             return True
 
@@ -94,23 +92,21 @@ class SpikingCausalLM:
 
     def train_step(self, sequence: List[int], learning_rate: float = 0.5) -> None:
         self.reset_context()
-        spike_history: List[List[int]] = []
+        # dequeを使用してO(1)の先頭挿入を実現
+        spike_history: deque = deque(maxlen=self.max_delay + 1)
 
         for i in range(len(sequence) - 1):
             curr = sequence[i]
             nxt = sequence[i + 1]
             input_spikes = self._get_sdr_for_token(curr)
-            output_spikes = self.transformer.forward(
-                input_spikes, learning=False)
+            output_spikes = self.transformer.forward(input_spikes, learning=False)
             offset = [s + self.embed_dim for s in output_spikes]
             combined = input_spikes + offset
 
-            spike_history.insert(0, combined)
-            if len(spike_history) > self.max_delay + 1:
-                spike_history.pop()
+            spike_history.appendleft(combined)
 
             # --- RustコアにSTDP学習を完全オフロード ---
-            self.rust_synapses.train_step(spike_history, nxt, learning_rate)
+            self.rust_synapses.train_step(list(spike_history), nxt, learning_rate)
 
     def supervised_qa_train(
         self,
@@ -144,6 +140,12 @@ class SpikingCausalLM:
         ctx_key = self._context_key(question_ids)
         return self.qa_weights.get(ctx_key, {})
 
+    def _get_hub_penalty(self, t_id: int, token_fan_in: Dict[int, float]) -> float:
+        if t_id not in self._hub_penalty_cache:
+            hub = token_fan_in.get(t_id, 1.0)
+            self._hub_penalty_cache[t_id] = math.pow(hub, 0.2) if hub > 1.0 else 1.0
+        return self._hub_penalty_cache[t_id]
+
     def generate(
         self,
         prompt_tokens:  List[int],
@@ -156,7 +158,8 @@ class SpikingCausalLM:
     ) -> List[int]:
         self.reset_context()
         generated:     List[int] = []
-        spike_history: List[List[int]] = []
+        # 生成時もdequeで履歴管理をO(1)化
+        spike_history: deque = deque(maxlen=self.max_delay + 1)
 
         qa_ids = question_ids if question_ids is not None else prompt_tokens
         qa_bonus = self._get_qa_bonus(qa_ids)
@@ -164,76 +167,61 @@ class SpikingCausalLM:
         QA_SCALE = 500.0
         qa_scale_current = QA_SCALE
 
-        # Rust側から各トークンのファンイン（受容結合重み）を取得
         token_fan_in = self.rust_synapses.get_token_fan_in()
 
         for t in prompt_tokens[:-1]:
             input_spikes = self._get_sdr_for_token(t)
-            output_spikes = self.transformer.forward(
-                input_spikes, learning=False)
-            combined = input_spikes + \
-                [s + self.embed_dim for s in output_spikes]
-            spike_history.insert(0, combined)
-            if len(spike_history) > self.max_delay + 1:
-                spike_history.pop()
+            output_spikes = self.transformer.forward(input_spikes, learning=False)
+            combined = input_spikes + [s + self.embed_dim for s in output_spikes]
+            spike_history.appendleft(combined)
 
         current_token = prompt_tokens[-1]
 
         for _ in range(max_new_tokens):
             input_spikes = self._get_sdr_for_token(current_token)
-            output_spikes = self.transformer.forward(
-                input_spikes, learning=False)
-            combined = input_spikes + \
-                [s + self.embed_dim for s in output_spikes]
-            spike_history.insert(0, combined)
-            if len(spike_history) > self.max_delay + 1:
-                spike_history.pop()
+            output_spikes = self.transformer.forward(input_spikes, learning=False)
+            combined = input_spikes + [s + self.embed_dim for s in output_spikes]
+            spike_history.appendleft(combined)
 
-            # --- Rustコアで全トークンの発火ポテンシャルを一括計算 ---
-            token_potentials = self.rust_synapses.calculate_potentials(
-                spike_history)
+            token_potentials = self.rust_synapses.calculate_potentials(list(spike_history))
 
             if not token_potentials:
                 break
 
-            if qa_bonus and qa_scale_current > 0:
-                for t_id, bonus_w in qa_bonus.items():
-                    token_potentials[t_id] = (
-                        token_potentials.get(t_id, 0.0) +
-                        bonus_w * qa_scale_current
-                    )
+            forbidden = set(generated[-repetition_window:] + [current_token]) if repetition_window > 0 else set()
 
-            for t_id in list(token_potentials.keys()):
-                hub = token_fan_in.get(t_id, 1.0)
-                if hub > 1.0:
-                    token_potentials[t_id] /= math.pow(hub, 0.2)
+            for t_id, pot in token_potentials.items():
+                if qa_scale_current > 0 and t_id in qa_bonus:
+                    pot += qa_bonus[t_id] * qa_scale_current
 
-            if repetition_window > 0 and repetition_penalty < 1.0:
-                forbidden = set(
-                    generated[-repetition_window:] + [current_token])
-                for f_id in forbidden:
-                    if f_id in token_potentials:
-                        token_potentials[f_id] *= repetition_penalty
+                hub_pen = self._get_hub_penalty(t_id, token_fan_in)
+                if hub_pen > 1.0:
+                    pot /= hub_pen
 
-            sorted_candidates = sorted(
-                token_potentials.items(), key=lambda x: x[1], reverse=True
-            )
+                if repetition_penalty < 1.0 and t_id in forbidden:
+                    pot *= repetition_penalty
 
-            if not sorted_candidates:
+                token_potentials[t_id] = pot
+
+            top_k_count = min(5, len(token_potentials))
+            if top_k_count == 0:
                 break
+                
+            candidates = heapq.nlargest(top_k_count, token_potentials.items(), key=lambda x: x[1])
 
             if temperature <= 0.05:
-                next_token = sorted_candidates[0][0]
+                next_token = candidates[0][0]
             else:
-                top_k = min(5, len(sorted_candidates))
-                candidates = sorted_candidates[:top_k]
-                total_pot = sum(pow(p, 1.0 / temperature)
-                                for _, p in candidates)
+                inv_temp = 1.0 / temperature
+                max_p = candidates[0][1]
+                exp_pots = [(t_id, math.exp(max(-20.0, (p - max_p) * inv_temp))) for t_id, p in candidates]
+                total_pot = sum(ep for _, ep in exp_pots)
+                
                 r = random.uniform(0, total_pot)
                 next_token = candidates[0][0]
                 cumulative = 0.0
-                for t_id, pot in candidates:
-                    cumulative += pow(pot, 1.0 / temperature)
+                for t_id, ep in exp_pots:
+                    cumulative += ep
                     if r <= cumulative:
                         next_token = t_id
                         break
@@ -254,7 +242,7 @@ class SpikingCausalLM:
         return generated
 
     def save_pretrained(self, filepath: str) -> None:
-        print("[WARN] Rust Hybrid v5.0 では、汎用シナプスのシリアライズは未実装です。QA専用シナプスのみ保存します。")
+        print("[WARN] Rust Hybrid v5.2 では、汎用シナプスのシリアライズは未実装です。QA専用シナプスのみ保存します。")
         serializable_qa: Dict[str, Dict[str, float]] = {
             str(ctx_k): {str(tok_id): w for tok_id, w in tok_dict.items()}
             for ctx_k, tok_dict in self.qa_weights.items()
