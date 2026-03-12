@@ -50,21 +50,21 @@ class DopamineSignalModel:
         # 累計報酬回数（ベースライン安定判定用）
         self.reward_count: int = 0
 
-    def deliver_reward(self, reward: float) -> float:
+    def deliver_reward(self, reward: float, intrinsic_surprise: float = 0.0) -> float:
         """環境から報酬を受け取り、報酬予測誤差 (RPE) を計算してドーパミン信号を更新する。
 
-        RPE: δ = r - V(s)  (報酬 - 期待報酬)
-        正のδ → 予想以上の報酬 → シナプス強化を促進
-        負のδ → 期待はずれ → シナプス弱化を促進
+        RPE: δ = (r + surprise) - V(s)  (報酬 + サプライズ - 期待報酬)
+        正のサプライズは「新しい発見」として報酬をブーストし、探索を促進する。
 
         Args:
             reward: 環境からの報酬スカラー値。
+            intrinsic_surprise: JEPA等から得られた内発的サプライズ信号。
 
         Returns:
             このタイムステップのドーパミンシグナル（トニック + フェーズィック）。
         """
-        # 報酬予測誤差の計算
-        rpe = (reward - self.reward_baseline) * self.rpe_scale
+        # 報酬予測誤差の計算 (内発的動機づけを加味)
+        rpe = (reward + intrinsic_surprise - self.reward_baseline) * self.rpe_scale
         self.last_rpe = rpe
 
         # フェーズィック成分にRPEを加算
@@ -377,17 +377,18 @@ class RewardModulatedSTDPManager:
         """
         self.eligibility.update_traces(pre_spikes, post_spikes, current_time)
 
-    def deliver_reward(self, reward: float) -> float:
+    def deliver_reward(self, reward: float, intrinsic_surprise: float = 0.0) -> float:
         """環境から報酬を受け取り、ドーパミン信号を更新する。
 
         Args:
             reward: 報酬スカラー値。
+            intrinsic_surprise: 内発的サプライズ信号。
 
         Returns:
             ドーパミンシグナル（RPEに基づく）。
         """
         self.cumulative_reward += reward
-        return self.dopamine.deliver_reward(reward)
+        return self.dopamine.deliver_reward(reward, intrinsic_surprise=intrinsic_surprise)
 
     def step(self) -> None:
         """1タイムステップを進め、トレースとドーパミンを減衰させる。"""

@@ -28,10 +28,17 @@ class RLSynapse:
         self.eligibility_trace = 0.0
         self.tau_e = 1000.0
 
+        # [NEW] Consolidation metadata
+        self.stability = 0.0 # 0 to 1, increases during consolidation
+        self.consolidated_weight = 0.0 # Weights that resist decay
+
     def step(self, dt: float = 1.0) -> float:
         self.u += (self.U - self.u) * dt / self.tau_f
         self.x += (1.0 - self.x) * dt / self.tau_d
-        self.eligibility_trace *= math.exp(-dt / self.tau_e)
+        
+        # [MODIFIED] Stable synapses have longer eligibility traces
+        effective_tau_e = self.tau_e * (1.0 + self.stability * 5.0)
+        self.eligibility_trace *= math.exp(-dt / effective_tau_e)
 
         pre_spike = getattr(self.pre, 'spike', False)
         post_spike = getattr(self.post, 'spike', False)
@@ -51,9 +58,9 @@ class RLSynapse:
             self.eligibility_trace += 0.5
 
         if self.is_inhibitory:
-            self.weight = max(-2.0, min(0.0, self.weight))
+            self.weight = max(-2.0, min(self.consolidated_weight, self.weight))
         else:
-            self.weight = max(0.0, min(2.0, self.weight))
+            self.weight = max(self.consolidated_weight, min(2.0, self.weight))
 
         return 0.0
 
@@ -61,7 +68,18 @@ class RLSynapse:
         dw = learning_rate * dopamine_delta * self.eligibility_trace
         if self.is_inhibitory:
             self.weight -= dw
-            self.weight = max(-2.0, min(0.0, self.weight))
+            self.weight = max(-2.0, min(self.consolidated_weight, self.weight))
         else:
             self.weight += dw
-            self.weight = max(0.0, min(2.0, self.weight))
+            self.weight = max(self.consolidated_weight, min(2.0, self.weight))
+
+    def consolidate(self):
+        """
+        [NEW] Consolidates the synapse by increasing stability and raising the baseline weight.
+        """
+        if abs(self.weight) > 1.2:
+            self.stability = min(1.0, self.stability + 0.2)
+            self.consolidated_weight = self.weight * 0.4
+        elif abs(self.weight) > 0.6:
+            self.stability = min(1.0, self.stability + 0.1)
+            self.consolidated_weight = self.weight * 0.2

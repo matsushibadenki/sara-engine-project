@@ -11,6 +11,7 @@ from typing import List
 from ..neuro.neuron import Neuron
 from ..neuro.synapse_rl import RLSynapse
 from ..cognitive.global_workspace import GlobalWorkspace
+from .spiking_jepa import SpikingJEPA
 
 
 class CognitiveArchitecture:
@@ -58,6 +59,18 @@ class CognitiveArchitecture:
         self.expected_reward = 0.0
         self.value_lr = 0.1
 
+        # [NEW] World Model for Active Inference
+        # In Active Inference, the internal state (liquid) predicts the sensory input
+        self.world_model = SpikingJEPA(
+            layer_configs=[{"input_dim": n_liquid, "embed_dim": n_liquid}], # Internal auto-encoder/predictor
+            learning_rate=0.05
+        )
+        # We need a separate predictor top-layer if we want to predict sensory directly,
+        # but for surprise, we can compare JEPA's internal prediction with sensory-derived SDRs.
+        # For simplicity, let's make JEPA layers match liquid, and we will use n_liquid as base.
+        self.last_surprise = 0.0
+        self.prev_liquid_spikes: List[int] = []
+
     def step_environment(self, sensory_input: List[bool]) -> int:
         """
         最終認知ループ: Perception -> Reservoir dynamics -> Workspace competition -> Action selection
@@ -65,7 +78,6 @@ class CognitiveArchitecture:
         # 1. Perception: 感覚入力の処理
         for i, fired in enumerate(sensory_input):
             if i < len(self.sensory):
-                # 感覚ニューロンの枝に電流を注入して発火させる
                 if fired:
                     self.sensory[i].branches[0].add_current(2.0)
                 self.sensory[i].step()
@@ -75,8 +87,22 @@ class CognitiveArchitecture:
             syn.step(dt=1.0)
 
         # 2. Reservoir dynamics: 内部状態空間の更新
-        for n in self.liquid:
+        current_liquid_spikes = []
+        for i, n in enumerate(self.liquid):
             n.step()
+            if n.spike:
+                current_liquid_spikes.append(i)
+
+        # [NEW] Active Inference: Compute surprise from prediction error in internal state
+        if self.prev_liquid_spikes and current_liquid_spikes:
+            _, surprise = self.world_model.forward(
+                x_spikes=self.prev_liquid_spikes,
+                y_spikes=current_liquid_spikes,
+                learning=True
+            )
+            self.last_surprise = surprise
+        
+        self.prev_liquid_spikes = current_liquid_spikes
 
         # 3. Action activity の収集
         action_potentials = []
@@ -91,12 +117,23 @@ class CognitiveArchitecture:
     def apply_reward(self, actual_reward: float):
         """
         Reward -> Dopamine -> Synaptic plasticity
-        報酬予測誤差(RPE)を計算し、局所的なシナプス可塑性(STDP)を更新する
+        報酬予測誤差(RPE)にJEPA由来のサプライズを加算し、能動的推論を実現
         """
-        dopamine_delta = actual_reward - self.expected_reward
+        # [MODIFIED] Include last_surprise for Active Inference
+        dopamine_delta = actual_reward + self.last_surprise - self.expected_reward
         self.expected_reward += self.value_lr * dopamine_delta
         
         # 誤差逆伝播法を使わず、各シナプスが持つ資格トレース(Eligibility trace)とDopamine信号で更新
         for syn in self.synapses:
             syn.apply_dopamine(
                 dopamine_delta=dopamine_delta, learning_rate=0.02)
+
+    def consolidate_memory(self):
+        """
+        [NEW] Hippocampal Consolidation: Transfers short-term knowledge to long-term structures.
+        Simulates "sleep" or reflection phases by stabilizing synapses.
+        """
+        print("[CognitiveArchitecture] Starting memory consolidation phase...")
+        for syn in self.synapses:
+            syn.consolidate()
+        print("[CognitiveArchitecture] Consolidation complete.")

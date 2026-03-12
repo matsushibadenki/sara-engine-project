@@ -20,6 +20,16 @@ from .spiking_jepa import SpikingJEPA
 
 
 class SpikingLayerNorm:
+    """
+    Population-based normalization for spiking neurons.
+    Ensures a target activation ratio through global inhibition and homeostasis.
+    """
+
+    DEFAULT_ADAPTATION_RATE = 0.08
+    DEFAULT_DECAY = 0.96
+    DEFAULT_MIN_THRESHOLD = 0.01
+    DEFAULT_GLOBAL_INHIBITION_WEIGHT = 0.1
+
     def __init__(
         self,
         sdr_size: int,
@@ -31,9 +41,9 @@ class SpikingLayerNorm:
         self.target_spikes = max(1, int(sdr_size * target_active_ratio))
         self.homeostasis = AdaptiveThresholdHomeostasis(
             target_rate=target_active_ratio,
-            adaptation_rate=0.08,
-            decay=0.96,
-            min_threshold=0.01,
+            adaptation_rate=self.DEFAULT_ADAPTATION_RATE,
+            decay=self.DEFAULT_DECAY,
+            min_threshold=self.DEFAULT_MIN_THRESHOLD,
             max_threshold=base_threshold * 3.0,
             global_weight=0.35,
         )
@@ -42,6 +52,9 @@ class SpikingLayerNorm:
         }
 
     def forward(self, input_potentials: List[float]) -> List[int]:
+        """
+        Processes input potentials and returns indices of neurons that fired.
+        """
         active_potentials = [(i, p)
                              for i, p in enumerate(input_potentials) if p > 0]
 
@@ -52,7 +65,7 @@ class SpikingLayerNorm:
         active_ratio = len(active_potentials) / self.sdr_size
         avg_potential = sum(p for _, p in active_potentials) / \
             len(active_potentials)
-        global_inhibition = avg_potential * active_ratio * 0.1
+        global_inhibition = avg_potential * active_ratio * self.DEFAULT_GLOBAL_INHIBITION_WEIGHT
 
         spikes: List[int] = []
         for i, p in enumerate(input_potentials):
@@ -60,6 +73,7 @@ class SpikingLayerNorm:
             if effective_p >= self.homeostasis.get_threshold(i, self.base_threshold):
                 spikes.append(i)
 
+        # Enforce target spike population constraints
         max_allowed = self.target_spikes * 2
         min_required = max(1, int(self.target_spikes * 0.5))
 
@@ -81,48 +95,80 @@ class SpikingLayerNorm:
 
 
 class SpikingTransformerBlock:
-    def __init__(self, sdr_size: int, enable_learning: bool = True):
+    """
+    Spiking Transformer block consisting of Spiking Attention and MoE Feed-Forward network.
+    """
+
+    def __init__(
+        self,
+        sdr_size: int,
+        enable_learning: bool = True,
+        density: float = 0.05,
+        target_active_ratio: float = 0.02
+    ):
         self.sdr_size = sdr_size
         self.enable_learning = enable_learning
 
         self.attention = LIFSpikeAttention(
-            embed_dim=sdr_size, density=0.05, decay_rate=0.95)
+            embed_dim=sdr_size, density=density, decay_rate=0.95)
 
         self.layer_norm1 = SpikingLayerNorm(
-            sdr_size, base_threshold=1.0, target_active_ratio=0.02)
+            sdr_size, base_threshold=1.0, target_active_ratio=target_active_ratio)
         self.layer_norm2 = SpikingLayerNorm(
-            sdr_size, base_threshold=1.2, target_active_ratio=0.02)
+            sdr_size, base_threshold=1.2, target_active_ratio=target_active_ratio)
 
         self.moe_ffn = SpikingCorticalColumns(
             embed_dim=sdr_size, num_experts=4, top_k=1, density=0.1)
 
     def reset_state(self) -> None:
+        """Resets the internal state of attention and MoE FFN."""
         if hasattr(self.attention, "reset_state"):
             self.attention.reset_state()
         if hasattr(self.moe_ffn, "reset_state"):
             self.moe_ffn.reset_state()
 
-    def forward(self, input_spikes: List[int], t_step: int = 0) -> List[int]:
+    def forward(
+        self, 
+        input_spikes: List[int], 
+        t_step: int = 0, 
+        predictive_prior: Optional[List[int]] = None
+    ) -> List[int]:
+        """Performs forward pass through the transformer block."""
         att_spikes = self.attention.forward(
             input_spikes, learning=self.enable_learning)
 
+        # Residual connection 1 + Predictive Prior Bias
         res_potentials_1 = [0.0] * self.sdr_size
-        for s in set(input_spikes).union(set(att_spikes)):
-            res_potentials_1[s] += 1.0
+        all_inputs = set(input_spikes).union(set(att_spikes))
+        
+        # [NEW] Top-down predictive prior bias
+        prior_set = set(predictive_prior) if predictive_prior else set()
+        
+        for s in range(self.sdr_size):
+            if s in all_inputs:
+                res_potentials_1[s] += 1.0
+            if s in prior_set:
+                # Top-down prior increases potential to favor predicted features
+                res_potentials_1[s] += 0.4 
+                
         norm1_spikes = self.layer_norm1.forward(res_potentials_1)
 
         ffn_spikes = self.moe_ffn.forward(
             norm1_spikes, learning=self.enable_learning)
 
+        # Residual connection 2
         res_potentials_2 = [0.0] * self.sdr_size
         for s in set(norm1_spikes).union(set(ffn_spikes)):
-            res_potentials_2[s] += 1.0
+            if s < self.sdr_size:
+                res_potentials_2[s] += 1.0
         output_spikes = self.layer_norm2.forward(res_potentials_2)
 
         return output_spikes
 
 
 class MultiLayerSpikingTransformer:
+    """Stacks multiple SpikingTransformerBlock layers."""
+
     def __init__(self, num_layers: int, sdr_size: int, enable_learning: bool = True):
         self.num_layers = num_layers
         self.sdr_size = sdr_size
@@ -130,18 +176,35 @@ class MultiLayerSpikingTransformer:
             sdr_size, enable_learning) for _ in range(num_layers)]
 
     def reset_state(self) -> None:
+        """Resets state for all layers."""
         for layer in self.layers:
             layer.reset_state()
 
-    def forward(self, input_spikes: List[int], t_step: int = 0) -> List[int]:
+    def forward(
+        self, 
+        input_spikes: List[int], 
+        t_step: int = 0, 
+        predictive_prior: Optional[List[int]] = None
+    ) -> List[int]:
+        """Sequential forward pass through all layers."""
         current_spikes = input_spikes
-        for layer in self.layers:
-            current_spikes = layer.forward(current_spikes, t_step=t_step)
+        for i, layer in enumerate(self.layers):
+            # Prior acts primarily on the first layer to influence early processing
+            layer_prior = predictive_prior if i == 0 else None
+            current_spikes = layer.forward(current_spikes, t_step=t_step, predictive_prior=layer_prior)
         return current_spikes
 
 
 class SpikingLLM:
+    """
+    Main Spiking Large Language Model class.
+    Uses Direct Wiring and H-JEPA for prediction without backpropagation.
+    """
+
     _SDR_BITS_PER_TOKEN: int = 5
+    DEFAULT_SDR_SIZE: int = 128
+    DEFAULT_VOCAB_SIZE: int = 65536
+    DEFAULT_CONTEXT_WINDOW: int = 15
 
     def __init__(
         self,
@@ -176,22 +239,21 @@ class SpikingLLM:
 
         self.pretrained_synapses: Dict[int, Dict[int, Dict[int, float]]] = {}
 
-        self.char_to_id: Dict[str, int] = {}
-        self.id_to_char: Dict[int, str] = {}
-        self.next_id = 0
-
         self.tokenizer = SaraTokenizer(vocab_size=self.vocab_size)
 
         self._init_lm_head_weights()
 
-    def _init_lm_head_weights(self, density: float = 0.3) -> None:
+    def _init_lm_head_weights(self) -> None:
+        """Initializes weights for the Language Model head."""
         self.lm_head_w = [{} for _ in range(self.sdr_size)]
 
     def encode_text(self, text: str) -> List[int]:
+        """Encodes input text into token IDs."""
         words = self.tokenizer.split_text(text)
         return [self.tokenizer._add_token(w) for w in words]
 
     def decode_text(self, token_ids: List[int]) -> str:
+        """Decodes token IDs back into text string."""
         tokens = []
         for tid in token_ids:
             word = self.tokenizer.id_to_token.get(int(tid), "")
@@ -204,6 +266,10 @@ class SpikingLLM:
         self.jepa_predictor.reset_state()
 
     def fit(self, text_data: str) -> 'SpikingLLM':
+        """
+        Trains the tokenizer and builds direct synaptic connections from the corpus.
+        Uses Rust core for acceleration if available.
+        """
         print("[SpikingLLM] Training BPE Tokenizer with the provided corpus...")
         self.tokenizer.train([text_data])
         self._sync_vocab_size_with_tokenizer()
@@ -265,8 +331,17 @@ class SpikingLLM:
 
         return self
 
-    def forward(self, input_spikes: list[int], t_step: int = 0) -> tuple[list[float], list[int]]:
-        hidden_spikes = self.transformer.forward(input_spikes, t_step=t_step)
+    def forward(self, input_spikes: List[int], t_step: int = 0) -> Tuple[List[float], List[int]]:
+        # [NEW] Compute Predictive Prior from JEPA
+        # This aligns with Active Inference: Prediction influences sensory processing
+        predicted_prior, _ = self.jepa_predictor.forward(
+            x_spikes=input_spikes,
+            learning=False
+        )
+        
+        hidden_spikes = self.transformer.forward(
+            input_spikes, t_step=t_step, predictive_prior=predicted_prior
+        )
         combined_spikes = list(set(input_spikes + hidden_spikes))
 
         vocab_potentials = [0.0] * self.vocab_size
@@ -406,7 +481,7 @@ class SpikingLLM:
                     prepared_tokens.append(dynamic_id)
 
             if not prepared_tokens and prompt.strip():
-                return [], True, "（未知の入力スパイクです。記憶にありません）"
+                return [], True, "(Unknown input spikes. No memory found.)"
 
             if prepared_tokens and max(prepared_tokens) >= self.vocab_size:
                 self.vocab_size = max(prepared_tokens) + 1
@@ -437,6 +512,99 @@ class SpikingLLM:
             "support_count": len(votes.get(tok_id, [])),
         }
 
+    def _apply_synaptic_scores(
+        self,
+        context_tokens: List[int],
+        scores: Dict[int, float],
+        votes: Dict[int, List[int]]
+    ) -> None:
+        """Applies scores from pretrained synaptic connections."""
+        active_recent = context_tokens[-self.context_window:]
+        for reversed_idx in range(len(active_recent)):
+            pre_token = active_recent[-(reversed_idx + 1)]
+            delay = reversed_idx + 1
+
+            if delay in self.pretrained_synapses and pre_token in self.pretrained_synapses[delay]:
+                context_factor = 0.75 ** (delay - 1)
+                for post_token, weight in self.pretrained_synapses[delay][pre_token].items():
+                    if post_token < self.vocab_size:
+                        scores[post_token] += weight * context_factor
+                        votes[post_token].append(delay)
+
+        # Apply multi-hit bonus
+        for tok_id in list(scores.keys()):
+            hits = len(votes[tok_id])
+            if hits > 1:
+                scores[tok_id] *= (3.0 ** (hits - 1))
+
+    def _apply_jepa_and_recall_bonus(
+        self,
+        context_tokens: List[int],
+        scores: Dict[int, float]
+    ) -> None:
+        """Applies bonuses from JEPA predictor and fuzzy recall."""
+        sdr_context = context_tokens[-min(5, len(context_tokens)):]
+        current_spikes = self._encode_to_sdr(sdr_context)
+        
+        # JEPA Prediction
+        jepa_predicted_spikes, _ = self.jepa_predictor.forward(
+            x_spikes=current_spikes, 
+            learning=False
+        )
+        jepa_pred_set = set(jepa_predicted_spikes)
+        
+        # Fuzzy Recall
+        recalled, confidence = self.recall(
+            self._sdr_key(current_spikes), threshold=0.85)
+        if recalled is not None:
+            for tok_id, count in recalled.items():
+                if tok_id < self.vocab_size:
+                    # Scaling down fuzzy recall to prevent over-firing
+                    scores[tok_id] += count * confidence * 0.1
+                    
+        # Apply JEPA overlap bonus to existing scores
+        if jepa_pred_set:
+            for tok_id in list(scores.keys()):
+                if scores[tok_id] > 0.1:
+                    target_sdr = self._encode_to_sdr([tok_id])
+                    overlap = len(jepa_pred_set.intersection(target_sdr))
+                    if overlap > 0:
+                        bonus = (overlap / len(target_sdr))
+                        scores[tok_id] += bonus * scores[tok_id] * 0.5
+
+    def _apply_penalties(
+        self,
+        context_tokens: List[int],
+        scores: Dict[int, float],
+        repetition_penalty: float,
+        presence_penalty: float,
+        frequency_penalty: float,
+        exempt_ids: Set[int]
+    ) -> None:
+        """Applies various penalties to the scores."""
+        recent_window = max(self.context_window, 20)
+        recent_generated = context_tokens[-recent_window:]
+        recent_counts: Dict[int, int] = defaultdict(int)
+        for tok in recent_generated:
+            recent_counts[tok] += 1
+
+        # Repetition, Presence, and Frequency penalties
+        for tok_id in list(scores.keys()):
+            if tok_id in recent_counts and tok_id not in exempt_ids:
+                scores[tok_id] /= repetition_penalty ** recent_counts[tok_id]
+                scores[tok_id] /= (1.0 + max(0.0, presence_penalty))
+                scores[tok_id] /= (1.0 + max(0.0, frequency_penalty) * recent_counts[tok_id])
+
+        # N-gram repetition blocking
+        for ngram_len in (2, 3, 4, 5, 6):
+            if len(context_tokens) >= ngram_len:
+                tail = tuple(context_tokens[-ngram_len:])
+                for idx in range(len(context_tokens) - ngram_len):
+                    if tuple(context_tokens[idx:idx + ngram_len]) == tail and idx + ngram_len < len(context_tokens):
+                        repeat_tok = context_tokens[idx + ngram_len]
+                        if repeat_tok in scores:
+                            scores[repeat_tok] = 0.0
+
     def _score_next_tokens(
         self,
         context_tokens: List[int],
@@ -446,6 +614,7 @@ class SpikingLLM:
         presence_penalty: float = 0.0,
         frequency_penalty: float = 0.0,
     ) -> Tuple[List[Dict[str, Any]], bool]:
+        """Scores candidate next tokens based on current context."""
         if not context_tokens:
             return [], False
         self._sync_vocab_size_with_tokenizer()
@@ -458,10 +627,11 @@ class SpikingLLM:
             self.tokenizer.vocab[c] for c in ('。', '！', '？', '\n')
             if c in self.tokenizer.vocab
         }
-        recent_window = max(self.context_window, 20)
+        
+        # Initialize fatigue if not provided
         if fatigue is None:
             fatigue = AdaptiveThresholdHomeostasis(
-                target_rate=1.0 / max(4.0, float(recent_window)),
+                target_rate=1.0 / max(4.0, float(max(self.context_window, 20))),
                 adaptation_rate=0.35,
                 decay=0.8,
                 min_threshold=0.0,
@@ -472,24 +642,14 @@ class SpikingLLM:
 
         scores: Dict[int, float] = defaultdict(float)
         votes: Dict[int, List[int]] = defaultdict(list)
-        active_recent = context_tokens[-self.context_window:]
 
-        for reversed_idx in range(len(active_recent)):
-            pre_token = active_recent[-(reversed_idx + 1)]
-            delay = reversed_idx + 1
+        # 1. Direct Synaptic Scoring
+        self._apply_synaptic_scores(context_tokens, scores, votes)
 
-            if delay in self.pretrained_synapses and pre_token in self.pretrained_synapses[delay]:
-                context_factor = 0.75 ** (delay - 1)
-                for post_token, weight in self.pretrained_synapses[delay][pre_token].items():
-                    if post_token < self.vocab_size:
-                        scores[post_token] += weight * context_factor
-                        votes[post_token].append(delay)
+        # 2. JEPA and Recall Bonus
+        self._apply_jepa_and_recall_bonus(context_tokens, scores)
 
-        for tok_id in list(scores.keys()):
-            hits = len(votes[tok_id])
-            if hits > 1:
-                scores[tok_id] *= (3.0 ** (hits - 1))
-
+        # Check for context block (no strong hits)
         should_block = False
         if len(context_tokens) >= 3:
             valid_hits = [
@@ -498,32 +658,7 @@ class SpikingLLM:
             ]
             should_block = (max(valid_hits) if valid_hits else 0) < 2
 
-        sdr_context = context_tokens[-min(5, len(context_tokens)):]
-        current_spikes = self._encode_to_sdr(sdr_context)
-        
-        jepa_predicted_spikes, _ = self.jepa_predictor.forward(
-            x_spikes=current_spikes, 
-            learning=False
-        )
-        jepa_pred_set = set(jepa_predicted_spikes)
-        
-        # ★修正: Fuzzy Recallの過剰発火を防ぐためスコア加算の重みを低下 (0.1倍)
-        recalled, confidence = self.recall(
-            self._sdr_key(current_spikes), threshold=0.85)
-        if recalled is not None:
-            for tok_id, count in recalled.items():
-                if tok_id < self.vocab_size:
-                    scores[tok_id] += count * confidence * 0.1
-                    
-        if jepa_pred_set:
-            for tok_id in list(scores.keys()):
-                if scores[tok_id] > 0.1:
-                    target_sdr = self._encode_to_sdr([tok_id])
-                    overlap = len(jepa_pred_set.intersection(target_sdr))
-                    if overlap > 0:
-                        bonus = (overlap / len(target_sdr))
-                        scores[tok_id] += bonus * scores[tok_id] * 0.5
-
+        # 3. Penalties & Modulation
         if suppress_initial_symbols:
             for pid in exempt_ids:
                 if pid in scores:
@@ -531,31 +666,14 @@ class SpikingLLM:
 
         for tok_id in list(scores.keys()):
             strength = 0.1 if tok_id in exempt_ids else 0.8
-            scores[tok_id] = fatigue.modulate(
-                tok_id, scores[tok_id], strength=strength)
+            scores[tok_id] = fatigue.modulate(tok_id, scores[tok_id], strength=strength)
 
-        for ngram_len in (2, 3, 4, 5, 6):
-            if len(context_tokens) >= ngram_len:
-                tail = tuple(context_tokens[-ngram_len:])
-                for idx in range(len(context_tokens) - ngram_len):
-                    if tuple(context_tokens[idx:idx + ngram_len]) == tail and idx + ngram_len < len(context_tokens):
-                        repeat_tok = context_tokens[idx + ngram_len]
-                        if repeat_tok in scores:
-                            scores[repeat_tok] = 0.0
+        self._apply_penalties(
+            context_tokens, scores, repetition_penalty, 
+            presence_penalty, frequency_penalty, exempt_ids
+        )
 
-        recent_generated = context_tokens[-recent_window:]
-        recent_counts: Dict[int, int] = defaultdict(int)
-        for tok in recent_generated:
-            recent_counts[tok] += 1
-
-        # ★修正: 英語トークンを一律にペナルティ(0.1倍)にしていたバグコードを完全削除！
-        for tok_id in list(scores.keys()):
-            if tok_id in recent_counts and tok_id not in exempt_ids:
-                scores[tok_id] /= repetition_penalty ** recent_counts[tok_id]
-                scores[tok_id] /= (1.0 + max(0.0, presence_penalty))
-                scores[tok_id] /= (1.0 + max(0.0, frequency_penalty)
-                                   * recent_counts[tok_id])
-
+        # 4. Final selection and ranking
         max_score = max(scores.values()) if scores else 0.0
         if max_score < 0.1:
             return [], should_block
@@ -578,7 +696,8 @@ class SpikingLLM:
         frequency_penalty: float = 0.0,
         **kwargs: Any,
     ) -> List[Dict[str, Any]]:
-        prepared_tokens, _return_string, error_message = self._prepare_prompt_tokens(
+        """Predicts the most likely next tokens."""
+        prepared_tokens, _, error_message = self._prepare_prompt_tokens(
             prompt=prompt,
             prompt_tokens=prompt_tokens,
             input_spikes=kwargs.get("input_spikes"),
@@ -586,6 +705,7 @@ class SpikingLLM:
         if error_message or not prepared_tokens:
             return []
 
+        # Validate context quality
         if len(prepared_tokens) >= 2:
             known_transitions = 0
             for idx in range(len(prepared_tokens) - 1):
@@ -596,7 +716,7 @@ class SpikingLLM:
             if known_transitions == 0:
                 return []
 
-        candidates, should_block = self._score_next_tokens(
+        candidates, _ = self._score_next_tokens(
             prepared_tokens,
             repetition_penalty=repetition_penalty,
             presence_penalty=presence_penalty,
@@ -618,7 +738,10 @@ class SpikingLLM:
         stop_conditions: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> Iterator[Dict[str, Any]]:
-        prepared_tokens, _return_string, error_message = self._prepare_prompt_tokens(
+        """
+        Generates text as a stream of tokens.
+        """
+        prepared_tokens, _, error_message = self._prepare_prompt_tokens(
             prompt=prompt,
             prompt_tokens=prompt_tokens,
             input_spikes=kwargs.get("input_spikes"),
@@ -749,7 +872,7 @@ class SpikingLLM:
                     known_transitions += 1
 
             if known_transitions == 0:
-                return "（知識ネットワークにこの文脈に続く概念が見つかりません。別の言葉で試してください）" if return_string else []
+                return "(Knowledge network does not contain concepts following this context. Please try another prompt.)" if return_string else []
 
         stream = list(self.generate_stream(
             prompt_tokens=prompt_tokens,
@@ -807,13 +930,13 @@ class SpikingLLM:
         }
         with open(model_path, 'w', encoding='utf-8') as f:
             json.dump(model_data, f, ensure_ascii=False, indent=2)
-        print(f"[SpikingLLM] モデルを保存しました: {model_path}")
+        print(f"[SpikingLLM] Model saved to: {model_path}")
 
     @classmethod
     def from_pretrained(cls, load_directory: str) -> 'SpikingLLM':
         model_path = os.path.join(load_directory, "spiking_llm_weights.json")
         if not os.path.exists(model_path):
-            raise FileNotFoundError(f"モデルファイルが見つかりません: {model_path}")
+            raise FileNotFoundError(f"Model file not found: {model_path}")
 
         with open(model_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -859,10 +982,13 @@ class SpikingLLM:
             if hasattr(instance.jepa_predictor, "load_state_dict"):
                 instance.jepa_predictor.load_state_dict(data["jepa_state"])
 
-        print(f"[SpikingLLM] モデルをロードしました: {model_path}")
+        print(f"[SpikingLLM] Model loaded from: {model_path}")
         return instance
 
     def recall(self, input_sdr_key: tuple, threshold: float = 0.75) -> tuple:
+        """
+        Retrieves stored concept maps based on SDR similarity.
+        """
         if getattr(self, "_direct_map", None) is None:
             self._direct_map = {}
         if input_sdr_key in self._direct_map:
