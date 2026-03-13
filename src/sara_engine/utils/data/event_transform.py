@@ -48,6 +48,23 @@ class EventDownsampler:
             
         return filtered
 
+    def temporal_downsample(
+        self,
+        events: List[Tuple[float, int, int, int]],
+        time_step: float = 0.01,
+    ) -> List[Tuple[float, int, int, int]]:
+        """
+        Bins timestamps into discrete steps to reduce temporal resolution.
+        """
+        if time_step <= 0:
+            return events
+
+        downsampled: List[Tuple[float, int, int, int]] = []
+        for t, x, y, p in events:
+            binned_t = (t // time_step) * time_step
+            downsampled.append((binned_t, x, y, p))
+        return downsampled
+
     def crop(
         self, 
         events: List[Tuple[float, int, int, int]], 

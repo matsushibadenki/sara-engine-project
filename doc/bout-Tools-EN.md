@@ -55,6 +55,8 @@ Scripts for gathering, parsing, and formatting corpora and datasets used for tra
   Collects project documentation and external technical papers, formatting them as a knowledge base (e.g., for SNN-RAG).  
 * **collect\_math.py**  
   Gathers and parses mathematical problems and formula datasets to enhance logical reasoning capabilities.
+* **collect\_dvs.py**  
+  Converts event-based DVS datasets (CSV/NPZ/AEDAT) into spike-train JSONL files with optional spatial and temporal downsampling.
 
 ## **5\. Utilities & Database Management (scripts/utils/)**
 
