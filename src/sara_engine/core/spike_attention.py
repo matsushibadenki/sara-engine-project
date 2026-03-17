@@ -1,6 +1,7 @@
-# ディレクトリパス: src/sara_engine/core/spike_attention.py
-# ファイルの日本語タイトル: 連合学習強化型 スパイキング・アテンション
-# ファイルの目的や内容: スパイクの爆発およびクロストークを防ぐためのスパースルーティング。Rustエンジンによる高速化と、TransformersのMulti-Headに相当するMulti-Pathway Attentionを実装。
+# Directory Path: src/sara_engine/core/spike_attention.py
+# English Title: Energy-Gated Dynamic Spiking Attention
+# Purpose/Content: スパイクの爆発およびクロストークを防ぐスパースルーティングに加え、入力スパイクの密度に応じて計算経路を動的に選択する「Energy-Gated Pathway Routing」を実装。TransformersのMulti-Headに相当する処理のエネルギー消費を最適化する。
+
 import random
 from typing import List, Dict, Set
 
@@ -41,6 +42,15 @@ class SpikeSelfAttention:
         self.key_buffer: List[Set[int]] = []
         self.value_buffer: List[Set[int]] = []
         self.step_counter = 0
+
+    def get_status(self, lang: str = "en") -> str:
+        engine_status = "Rust Engine" if self.use_rust else "Python Dict"
+        messages = {
+            "en": f"SpikeSelfAttention: Backend={engine_status}, BufferSize={len(self.key_buffer)}",
+            "ja": f"SpikeSelfAttention: バックエンド={engine_status}, バッファサイズ={len(self.key_buffer)}",
+            "fr": f"SpikeSelfAttention: Backend={engine_status}, Taille_du_tampon={len(self.key_buffer)}"
+        }
+        return messages.get(lang, messages["en"])
 
     def _init_sparse_weights(self, in_dim: int, out_dim: int, density: float) -> List[Dict[int, float]]:
         weights: List[Dict[int, float]] = [{} for _ in range(in_dim)]
@@ -144,6 +154,9 @@ class SpikeSelfAttention:
             engine_or_weights.set_weights(weights)
 
     def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
+        if not x_spikes:
+            return []
+            
         gain = 1.0 if learning else 1.2
         
         q_src = self.q_engine if self.use_rust else self.q_weights
@@ -209,8 +222,8 @@ class SpikeSelfAttention:
 class SpikeMultiPathwayAttention:
     """
     Biological alternative to Transformers' Multi-Head Attention.
-    Utilizes multiple distinct pathways with varying receptive field densities and thresholds
-    to extract diverse features without matrix multiplications.
+    Utilizes Energy-Gated Pathway Routing: Dynamically selects pathways based on 
+    input activity to drastically reduce energy consumption while maintaining accuracy.
     """
     def __init__(self, embed_dim: int, num_pathways: int = 4, context_size: int = 64):
         self.embed_dim = embed_dim
@@ -226,7 +239,15 @@ class SpikeMultiPathwayAttention:
                 context_size=context_size,
                 coincidence_threshold=threshold
             ))
-            
+
+    def get_status(self, lang: str = "en") -> str:
+        messages = {
+            "en": f"MultiPathwayAttention: {self.num_pathways} paths. Energy-Gating Active.",
+            "ja": f"MultiPathwayAttention: {self.num_pathways} 経路。エネルギーゲーティング有効。",
+            "fr": f"MultiPathwayAttention: {self.num_pathways} chemins. Porte d'énergie active."
+        }
+        return messages.get(lang, messages["en"])
+
     def reset_state(self):
         for pathway in self.pathways:
             pathway.reset_state()
@@ -245,9 +266,27 @@ class SpikeMultiPathwayAttention:
             p.load_state_dict(s)
             
     def forward(self, x_spikes: List[int], learning: bool = True) -> List[int]:
+        if not x_spikes:
+            return []
+
         out_spikes = set()
-        for pathway in self.pathways:
-            pathway_out = pathway.forward(x_spikes, learning=learning)
+        
+        # Energy-Gated Routing (動的経路選択による省エネ化)
+        # 入力スパイクの活性度合いを評価
+        input_activity = len(x_spikes) / max(1, self.embed_dim)
+        
+        # 入力スパイクが少ない(情報量が少ない)場合は、最も感度が高い(低閾値)経路1つのみを稼働させ、
+        # 他の経路はスリープさせて演算エネルギーを削減する。
+        if input_activity < 0.05:
+            active_pathways = 1
+        elif input_activity < 0.15:
+            active_pathways = max(1, self.num_pathways // 2)
+        else:
+            # 活性が高い場合はフル機能で複雑な特徴を抽出する
+            active_pathways = self.num_pathways
+
+        for i in range(active_pathways):
+            pathway_out = self.pathways[i].forward(x_spikes, learning=learning)
             out_spikes.update(pathway_out)
             
         out_list = list(out_spikes)

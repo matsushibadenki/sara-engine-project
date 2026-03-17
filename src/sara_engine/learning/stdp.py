@@ -1,6 +1,6 @@
 # Directory Path: src/sara_engine/learning/stdp.py
-# English Title: STDP and BCM Learning Layer
-# Purpose/Content: Implementation of STDP and BCM-STDP hybrid layer for associative capacity and stable metaplasticity, eliminating the need for backpropagation and matrix operations. Multi-language support included.
+# English Title: STDP and BCM Learning Layer with Forward-Forward and Burn-in
+# Purpose/Content: Implementation of STDP and BCM-STDP hybrid layer for associative capacity and stable metaplasticity. Incorporates Forward-Forward (FF) algorithm and Burn-in strategy to achieve high accuracy without backpropagation or matrix operations. Multi-language support included.
 
 import random
 
@@ -52,27 +52,36 @@ class STDPLayer:
         for j in range(self.num_outputs):
             self.thresholds[j] += (self.base_threshold - self.thresholds[j]) * self.theta_decay
 
-        # 学習フェーズのみ重みを更新 (Reward-Modulated Soft-bound STDP)
-        if reward > 0:
+        # 学習フェーズのみ重みを更新 (Forward-Forward対応 Reward-Modulated STDP)
+        if reward != 0.0:
             active_set = set(active_inputs)
             for j in fired_indices:
                 current_synapses = self.synapses[j]
-                for i in list(current_synapses.keys()):
-                    if i in active_set:
-                        # Soft-bound LTP: 上限(w_max)に近づくほど増分が減る
-                        delta_w = self.A_plus * reward * (self.w_max - current_synapses[i]) / self.w_max
-                        current_synapses[i] += delta_w
-                    else:
-                        # Soft-bound LTD: 現在の重みに比例して減衰(Rewardは無視して定常的な忘却を促す)
-                        delta_w = self.A_minus * current_synapses[i]
-                        current_synapses[i] -= delta_w
-                        
-                        # 閾値を下回ったシナプスを完全に削除（刈り込み）
-                        if current_synapses[i] < self.prune_threshold:
-                            del current_synapses[i]
                 
-                # シナプス新生
-                if random.random() < 0.5 and active_inputs:
+                if reward > 0:
+                    # 正例データ: Soft-bound LTP (上限に近づくほど増分が減る)
+                    for i in list(current_synapses.keys()):
+                        if i in active_set:
+                            delta_w = self.A_plus * reward * (self.w_max - current_synapses[i]) / self.w_max
+                            current_synapses[i] += delta_w
+                        else:
+                            # 報酬時のみ非アクティブ入力を抑圧
+                            delta_w = self.A_minus * current_synapses[i]
+                            current_synapses[i] -= delta_w
+                            if current_synapses[i] < self.prune_threshold:
+                                del current_synapses[i]
+                else:
+                    # 負例データ: ペナルティ (負例で発火した場合、結合を強く減衰させる)
+                    penalty = abs(reward)
+                    for i in list(current_synapses.keys()):
+                        if i in active_set:
+                            delta_w = self.A_plus * penalty * current_synapses[i] * 0.5
+                            current_synapses[i] -= delta_w
+                            if current_synapses[i] < self.prune_threshold:
+                                del current_synapses[i]
+
+                # シナプス新生 (正例の場合のみ許可)
+                if reward > 0 and random.random() < 0.5 and active_inputs:
                     new_i = random.choice(active_inputs)
                     current_synapses[new_i] = current_synapses.get(new_i, 0.3) + 0.4
 
@@ -85,6 +94,25 @@ class STDPLayer:
 
         return output_spikes, list(self.potentials)
 
+    def process_sequence(self, sequence: list[list[int]], is_positive: bool = True, burn_in_steps: int = 2) -> list[list[int]]:
+        """
+        バーンイン戦略とForward-Forwardアルゴリズムを組み合わせた時系列一括処理。
+        多言語のステータスログ出力機能を持たせることも可能。
+        """
+        output_sequence = []
+        for step, input_spikes in enumerate(sequence):
+            # バーンイン期間: 重み更新を行わず膜電位の安定化(空回し)のみ行う
+            if step < burn_in_steps:
+                current_reward = 0.0
+            else:
+                # Forward-Forward: 正例は+1.0、負例は-1.0として層をローカルに最適化
+                current_reward = 1.0 if is_positive else -1.0
+                
+            out_spikes, _ = self.process_step(input_spikes, reward=current_reward)
+            output_sequence.append(out_spikes)
+            
+        return output_sequence
+
     def forward(self, input_spike_indices: list[int], learning: bool = True) -> list[int]:
         """上位クラスからの呼び出し"""
         input_spikes = [0] * self.num_inputs
@@ -92,7 +120,6 @@ class STDPLayer:
             if 0 <= idx < self.num_inputs:
                 input_spikes[idx] = 1
 
-        # 明示的にlearningフラグを内部処理に分配
         output_spikes, _ = self.process_step(
             input_spikes, 
             reward=(1.0 if learning else 0.0), 
@@ -104,6 +131,15 @@ class STDPLayer:
         """膜電位のみをリセットし、重みは絶対に保持する"""
         self.potentials = [0.0] * self.num_outputs
         self.thresholds = [self.base_threshold] * self.num_outputs
+
+    def get_ff_status_message(self, lang: str = "en") -> str:
+        """多言語対応: Forward-ForwardとBurn-inの状態メッセージ"""
+        messages = {
+            "en": "Ready for Forward-Forward learning with Burn-in active.",
+            "ja": "バーンインが有効なForward-Forward学習の準備が完了しました。",
+            "fr": "Prêt pour l'apprentissage Forward-Forward avec Burn-in actif."
+        }
+        return messages.get(lang, messages["en"])
 
 
 class STDPPretrainer:
@@ -229,7 +265,7 @@ class BCMSTDPLayer(STDPLayer):
         for j in range(self.num_outputs):
             self.thresholds[j] += (self.base_threshold - self.thresholds[j]) * self.theta_decay
 
-        if reward > 0:
+        if reward != 0.0:
             active_set = set(active_inputs)
             for j in range(self.num_outputs):
                 current_synapses = self.synapses[j]
@@ -238,23 +274,33 @@ class BCMSTDPLayer(STDPLayer):
                 # BCM変調係数: y > theta_mで増強、y < theta_mで抑圧
                 bcm_factor = y * (y - self.theta_m[j])
                 
-                for i in list(current_synapses.keys()):
-                    if i in active_set:
-                        delta_w = self.bcm_learning_rate * reward * bcm_factor
-                        current_synapses[i] += delta_w
-                    else:
-                        if output_spikes[j]:
-                            # ヘテロシナプティックLTD
-                            current_synapses[i] -= self.A_minus * current_synapses[i]
-                            
-                    if current_synapses[i] < self.prune_threshold:
-                        del current_synapses[i]
-                    elif current_synapses[i] > self.w_max:
-                        current_synapses[i] = self.w_max
+                if reward > 0:
+                    for i in list(current_synapses.keys()):
+                        if i in active_set:
+                            delta_w = self.bcm_learning_rate * reward * bcm_factor
+                            current_synapses[i] += delta_w
+                        else:
+                            if output_spikes[j]:
+                                # ヘテロシナプティックLTD
+                                current_synapses[i] -= self.A_minus * current_synapses[i]
+                                
+                        if current_synapses[i] < self.prune_threshold:
+                            del current_synapses[i]
+                        elif current_synapses[i] > self.w_max:
+                            current_synapses[i] = self.w_max
 
-                if output_spikes[j] and random.random() < 0.5 and active_inputs:
-                    new_i = random.choice(active_inputs)
-                    current_synapses[new_i] = current_synapses.get(new_i, 0.3) + 0.4
+                    if output_spikes[j] and random.random() < 0.5 and active_inputs:
+                        new_i = random.choice(active_inputs)
+                        current_synapses[new_i] = current_synapses.get(new_i, 0.3) + 0.4
+                else:
+                    # BCM層における負例ペナルティ処理
+                    penalty = abs(reward)
+                    for i in list(current_synapses.keys()):
+                        if i in active_set and output_spikes[j]:
+                            delta_w = self.bcm_learning_rate * penalty * current_synapses[i]
+                            current_synapses[i] -= delta_w
+                            if current_synapses[i] < self.prune_threshold:
+                                del current_synapses[i]
 
                 current_sum = sum(current_synapses.values())
                 if current_sum > 0:

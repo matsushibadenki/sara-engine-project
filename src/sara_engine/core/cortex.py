@@ -1,19 +1,21 @@
-# ディレクトリパス: src/sara_engine/core/cortex.py
-# タイトル: 大脳皮質 (Cortex)
-# 目的: CorticalColumnに欠落していた短期記憶リセット(reset_short_term_memory)メソッドを追加し、AttributeErrorを解消する。
+# Directory Path: src/sara_engine/core/cortex.py
+# English Title: Cortex Layer with Structural Plasticity
+# Purpose/Content: 毎ステップのランダム接続計算を廃止し、構造的可塑性(Structural Plasticity)を備えた明示的な動的スパース結合を導入。イベント駆動化により計算量を劇的に削減し、破滅的忘却を防ぐコンテキストルーティングを強化。多言語対応。
+
 import random
-from typing import List, Dict
+from typing import List, Dict, Set
 
 class CortexLayer:
     """
-    DynamicLiquidLayerをラップし、より生物学的なパラメータセット（層構造など）を管理しやすくするためのクラス。
+    構造的可塑性(Structural Plasticity)を備えた動的コンパートメント。
+    事前定義されたスパースなシナプスのみをイベント駆動で計算し、
+    活動状態に応じてシナプスの刈り込み(Pruning)と新生(Regeneration)を行う。
     """
     def __init__(self, input_size: int, hidden_size: int, layer_type: str = "L2/3"):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.layer_type = layer_type
         
-        # 層タイプに応じたパラメータ設定
         if layer_type == "L2/3":
             decay = 0.95
             density = 0.05
@@ -27,50 +29,97 @@ class CortexLayer:
             decay = 0.9
             density = 0.05
             
-        # 内部状態
         self.decay = decay
-        self.density = density
+        self.target_density = density
         self.v: List[float] = [0.0] * hidden_size
         self.activity_ema: List[float] = [0.0] * hidden_size
         self.target_rate = 0.02
         self.dynamic_thresh: List[float] = [1.0] * hidden_size
         self.base_thresh = 1.0
-
-    def forward(self, input_indices: List[int]) -> List[int]:
-        """簡易的なフォワードパス"""
-        fired_indices = []
         
-        # 単純な入力統合（重みなし、接続チェックなしの簡易モデル）
+        # O(1)アクセス可能なスパースシナプス結合 [プレニューロン -> {ポストニューロン: 重み}]
+        self.synapses: Dict[int, Dict[int, float]] = {i: {} for i in range(input_size)}
+        self._initialize_topology()
+
+    def get_status(self, lang: str = "en") -> str:
+        messages = {
+            "en": f"CortexLayer {self.layer_type}: Structural Plasticity active. Target Density {self.target_density}",
+            "ja": f"大脳皮質層 {self.layer_type}: 構造的可塑性が有効。目標結合密度 {self.target_density}",
+            "fr": f"Couche Cortex {self.layer_type}: Plasticité structurelle active. Densité cible {self.target_density}"
+        }
+        return messages.get(lang, messages["en"])
+
+    def _initialize_topology(self):
+        for i in range(self.input_size):
+            num_targets = max(1, int(self.hidden_size * self.target_density))
+            targets = random.sample(range(self.hidden_size), num_targets)
+            for t in targets:
+                self.synapses[i][t] = random.uniform(0.5, 1.0)
+
+    def forward(self, input_indices: List[int], learning: bool = True) -> List[int]:
+        fired_indices = []
+        active_targets = set()
+        
+        # 1. イベント駆動型フォワードパス: 入力があったスパース接続のみ計算
+        for i in input_indices:
+            if i in self.synapses:
+                for target, weight in self.synapses[i].items():
+                    self.v[target] += weight
+                    active_targets.add(target)
+                    
+        # 2. 膜電位の減衰と発火判定
         for i in range(self.hidden_size):
-            self.v[i] *= self.decay
+            if self.v[i] > 0.0:
+                self.v[i] *= self.decay
+                if self.v[i] >= self.dynamic_thresh[i]:
+                    fired_indices.append(i)
+                    self.v[i] = 0.0
+                elif self.v[i] < 0.01:
+                    self.v[i] = 0.0
+                    
+        # 3. ホメオスタシスと構造的可塑性 (学習時)
+        if learning:
+            ema_decay = 0.1
+            fired_set = set(fired_indices)
             
-            # ランダムな接続をシミュレート
-            hits = 0
-            for _ in range(len(input_indices)):
-                if random.random() < self.density:
-                    hits += 1
-            
-            self.v[i] += hits * 1.0
-            
-            if self.v[i] >= self.dynamic_thresh[i]:
-                fired_indices.append(i)
-                self.v[i] = 0.0
+            for i in range(self.hidden_size):
+                is_fired = 1.0 if i in fired_set else 0.0
+                self.activity_ema[i] = (1 - ema_decay) * self.activity_ema[i] + ema_decay * is_fired
                 
-        # ホメオスタシス
-        ema_decay = 0.1
-        for i in range(self.hidden_size):
-            is_fired = 1.0 if i in fired_indices else 0.0
-            self.activity_ema[i] = (1 - ema_decay) * self.activity_ema[i] + ema_decay * is_fired
-            
-            diff = self.activity_ema[i] - self.target_rate
-            self.dynamic_thresh[i] += diff * 0.1
-            if self.dynamic_thresh[i] < self.base_thresh:
-                self.dynamic_thresh[i] = self.base_thresh
+                diff = self.activity_ema[i] - self.target_rate
+                self.dynamic_thresh[i] += diff * 0.1
+                if self.dynamic_thresh[i] < self.base_thresh:
+                    self.dynamic_thresh[i] = self.base_thresh
+
+            # 計算負荷軽減のため5%の確率でシナプスの刈り込みと新生を実行
+            if random.random() < 0.05:
+                self._structural_plasticity(input_indices, fired_set)
 
         return fired_indices
 
+    def _structural_plasticity(self, active_inputs: List[int], fired_outputs: Set[int]):
+        for pre in active_inputs:
+            if pre in self.synapses:
+                targets = list(self.synapses[pre].keys())
+                for target in targets:
+                    if target not in fired_outputs:
+                        # LTDと刈り込み
+                        self.synapses[pre][target] -= 0.01
+                        if self.synapses[pre][target] < 0.1:
+                            del self.synapses[pre][target]
+                    else:
+                        # LTP
+                        self.synapses[pre][target] = min(2.0, self.synapses[pre][target] + 0.05)
+                        
+                # 結合の新生 (Rewiring)
+                current_fanout = len(self.synapses[pre])
+                target_fanout = max(1, int(self.hidden_size * self.target_density))
+                if current_fanout < target_fanout and fired_outputs:
+                    new_target = random.choice(list(fired_outputs))
+                    if new_target not in self.synapses[pre]:
+                        self.synapses[pre][new_target] = 0.5
+
     def reset_state(self):
-        """短期的な膜電位状態をリセットする"""
         self.v = [0.0] * self.hidden_size
 
 
@@ -86,39 +135,34 @@ class CorticalColumn:
         self.compartments: Dict[str, CortexLayer] = {}
         
         for name in compartment_names:
-            # 各コンパートメントに独立したCortexLayerを割り当てる
             layer = CortexLayer(input_size=input_size, hidden_size=hidden_size_per_comp)
             layer.target_rate = target_rate
             self.compartments[name] = layer
             
+    def get_status(self, lang: str = "en") -> str:
+        messages = {
+            "en": f"CorticalColumn active with {len(self.compartments)} compartments.",
+            "ja": f"皮質カラムは {len(self.compartments)} 個のコンパートメントでアクティブです。",
+            "fr": f"Colonne corticale active avec {len(self.compartments)} compartiments."
+        }
+        return messages.get(lang, messages["en"])
+
     def forward_latent_chain(self, active_inputs: List[int], prev_active_hidden: List[int], 
                              current_context: str, learning: bool = False, 
                              reward_signal: float = 0.0) -> List[int]:
-        """
-        指定されたコンテキストのコンパートメントのみを駆動し、発火連鎖をシミュレートする。
-        他のコンテキストは完全に遮断されるため、干渉（破滅的忘却）を防ぐ。
-        """
         if current_context not in self.compartments:
             return []
             
         target_layer = self.compartments[current_context]
-        
-        # 本来はSTDPや報酬信号による学習のロジックが含まれるが、ここではフォワードパスのみ実行
-        fired_indices = target_layer.forward(active_inputs)
+        fired_indices = target_layer.forward(active_inputs, learning=learning)
         
         return fired_indices
 
     def reset_short_term_memory(self):
-        """
-        全コンパートメントの短期的な膜電位状態をクリアし、エラーを回避する。
-        """
         for layer in self.compartments.values():
             layer.reset_state()
         
     def get_compartment_states(self) -> Dict[str, Dict[str, int]]:
-        """
-        各コンパートメントの現在の状態（膜電位が0より大きい残存ニューロン数）を取得する。
-        """
         states = {}
         for name, layer in self.compartments.items():
             active_count = sum(1 for v in layer.v if v > 0.0)

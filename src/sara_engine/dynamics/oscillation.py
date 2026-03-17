@@ -1,64 +1,61 @@
-# {
-#     "//": "ディレクトリパス: src/sara_engine/dynamics/oscillation.py",
-#     "//": "ファイルの日本語タイトル: 神経振動と短期可塑性(STP)の統合ダイナミクス",
-#     "//": "ファイルの目的や内容: 脳波リズムによる時間的ゲーティングと、Tsodyks-Markramモデルによる短期シナプス可塑性(STP)を統合。誤差逆伝播なし・行列演算なしで、高度な時系列パターン認識を可能にする脳型コアエンジン。"
-# }
+# Directory Path: src/sara_engine/dynamics/oscillation.py
+# English Title: Neural Oscillations and Event-Driven STP Dynamics
+# Purpose/Content: 脳波リズムのLUT（ルックアップテーブル）による高速化と、スパース隣接リストを用いた完全イベント駆動型の短期可塑性(STP)。非発火時の無駄な演算を完全にスキップし、超低消費電力を実現する。多言語対応。
 
 import math
 import random
 from typing import Dict, List, Tuple
 
-# ==========================================================================
-# 1. OscillationManager (神経振動 / 時間的ゲーティング)
-# ==========================================================================
-
-
 class OscillationManager:
     """
     神経振動（Neural Oscillations）による時間的ゲーティングの管理。
+    計算負荷を下げるため Fast Sine LUT (Look-Up Table) を使用。
     """
 
     def __init__(self):
-        # 脳波の周波数定義 (Hz)
         self.frequencies = {
-            "theta": 6.0,   # 文脈・記憶保持 (sentence level)
-            "alpha": 10.0,  # 抑制・注意の切り替え
-            "beta":  20.0,  # 運動・予測の更新
-            "gamma": 40.0   # 知覚・特徴結合 (word level)
+            "theta": 6.0,   
+            "alpha": 10.0,  
+            "beta":  20.0,  
+            "gamma": 40.0   
         }
+        # 1000分割の高速参照用LUT
+        self._sin_lut = [math.sin(2 * math.pi * i / 1000.0) for i in range(1000)]
+
+    def get_status(self, lang: str = "en") -> str:
+        """多言語対応ステータス出力"""
+        messages = {
+            "en": "OscillationManager: Fast Sine LUT active.",
+            "ja": "OscillationManager: 高速サイン波LUTが有効です。",
+            "fr": "OscillationManager: LUT sinus rapide actif."
+        }
+        return messages.get(lang, messages["en"])
+
+    def _fast_sin(self, freq: float, t_sec: float) -> float:
+        """LUTを用いた O(1) のサイン波計算"""
+        idx = int((t_sec * freq * 1000.0)) % 1000
+        return self._sin_lut[idx]
 
     def get_phase_effects(self, current_time_ms: float) -> Dict[str, float]:
-        """
-        現在の時刻における各脳波の位相（-1.0 〜 1.0）を取得する。
-        """
         t_sec = current_time_ms / 1000.0
         effects = {}
         for name, freq in self.frequencies.items():
-            phase = math.sin(2 * math.pi * freq * t_sec)
-            effects[name] = phase
+            effects[name] = self._fast_sin(freq, t_sec)
         return effects
 
     def get_gating_factor(self, current_time_ms: float, mode: str = "theta_gamma") -> float:
-        """
-        特定のモードに基づいた閾値変動係数（Gating Factor）を計算。
-        """
         t_sec = current_time_ms / 1000.0
         if mode == "theta_gamma":
-            theta = math.sin(2 * math.pi * self.frequencies["theta"] * t_sec)
-            gamma = math.sin(2 * math.pi * self.frequencies["gamma"] * t_sec)
+            theta = self._fast_sin(self.frequencies["theta"], t_sec)
+            gamma = self._fast_sin(self.frequencies["gamma"], t_sec)
             return (theta * 0.5) + (gamma * 0.2)
-        return math.sin(2 * math.pi * self.frequencies["alpha"] * t_sec)
-
-# ==========================================================================
-# 2. STPSynapse (Tsodyks–Markram モデル / 短期可塑性)
-# ==========================================================================
+        return self._fast_sin(self.frequencies["alpha"], t_sec)
 
 
 class STPSynapse:
     """
-    短期シナプス可塑性（Short-Term Plasticity）を実装したシナプス。
-    u: 利用率 (release probability / facilitation)
-    x: 利用可能資源 (available resources / depression)
+    短期シナプス可塑性（Short-Term Plasticity）。
+    完全なイベント駆動型に最適化され、スパイク到達時のみ時間を進めて状態を更新する。
     """
 
     def __init__(
@@ -68,174 +65,140 @@ class STPSynapse:
         tau_f: float = 600.0,
         tau_d: float = 200.0
     ):
-        self.w = weight  # 長期的な基底重み
-        self.U = U       # 基本放出率
-        self.tau_f = tau_f  # 促通の回復時間 (ms)
-        self.tau_d = tau_d  # 抑圧の回復時間 (ms)
+        self.w = weight  
+        self.U = U       
+        self.tau_f = tau_f  
+        self.tau_d = tau_d  
 
-        self.u = self.U  # 現在の放出確率
-        self.x = 1.0     # 現在の資源量
+        self.u = self.U  
+        self.x = 1.0     
         self.last_update_t = 0.0
 
-    def update(self, current_time: float, pre_spike: bool) -> float:
+    def compute_on_event(self, current_time: float) -> float:
         """
-        シナプス状態を更新し、有効重み（w_eff）を返す。
+        プレニューロンが発火した時のみ呼び出される O(1) 更新メソッド。
+        発火しなかった期間の減衰を一括で計算し、直ちに新しい重みを返す。
         """
         dt = current_time - self.last_update_t
 
-        # 1. スパイクが無い時間の回復 (指数減衰・回復)
         if dt > 0:
-            self.u = self.U + (self.u - self.U) * math.exp(-dt / self.tau_f)
-            self.x = 1.0 + (self.x - 1.0) * math.exp(-dt / self.tau_d)
+            # 簡略化された指数減衰近似により math.exp の負荷を軽減
+            exp_f = 1.0 / (1.0 + dt / self.tau_f)
+            exp_d = 1.0 / (1.0 + dt / self.tau_d)
+            self.u = self.U + (self.u - self.U) * exp_f
+            self.x = 1.0 + (self.x - 1.0) * exp_d
 
-        # 2. 有効重みの計算 (w * u * x)
         effective_w = self.w * self.u * self.x
 
-        # 3. スパイク発生時の状態遷移
-        if pre_spike:
-            # 放出確率の増加 (Facilitation)
-            self.u += self.U * (1.0 - self.u)
-            # 資源の消費 (Depression)
-            self.x *= (1.0 - self.u)
-
+        self.u += self.U * (1.0 - self.u)
+        self.x *= (1.0 - self.u)
         self.last_update_t = current_time
+        
         return effective_w
-
-# ==========================================================================
-# 3. LIFNeuron (神経振動による動的閾値制御付き)
-# ==========================================================================
 
 
 class LIFNeuron:
-    """
-    Leaky Integrate-and-Fire (LIF) ニューロン。
-    神経振動（Oscillation）によって発火閾値が変動する。
-    """
+    """神経振動による動的閾値制御付きLIFニューロン"""
 
     def __init__(self, base_threshold: float = 1.0, leak: float = 0.95):
         self.v = 0.0
         self.base_threshold = base_threshold
         self.leak = leak
         self.spike = False
-        self.refractory_period = 0  # 不応期カウンタ
+        self.refractory_period = 0  
 
     def step(self, input_current: float, gating_factor: float = 0.0):
-        """
-        1ステップ更新。gating_factor によって閾値が上下する。
-        """
         if self.refractory_period > 0:
             self.refractory_period -= 1
             self.v = 0.0
             self.spike = False
             return False
 
-        # 1. 膜電位の蓄積とリーク
-        self.v = (self.v + input_current) * self.leak
+        if input_current == 0.0 and self.v < 0.01:
+            self.v = 0.0
+            self.spike = False
+            return False
 
-        # 2. 動的閾値の計算 (神経振動の位相を反映)
-        # gating_factorが正の時、閾値が上がり発火しにくくなる
+        self.v = (self.v + input_current) * self.leak
         dynamic_threshold = self.base_threshold + (gating_factor * 0.3)
 
-        # 3. 発火判定
         if self.v > dynamic_threshold:
             self.spike = True
             self.v = 0.0
-            self.refractory_period = 2  # 簡易的な不応期
+            self.refractory_period = 2  
         else:
             self.spike = False
 
         return self.spike
 
-# ==========================================================================
-# 4. DynamicSpikingNetwork (統合ネットワーク)
-# ==========================================================================
-
 
 class DynamicSpikingNetwork:
     """
-    神経振動 + STP + LIF を統合した自律学習型リザバー。
+    イベント駆動によるスパース隣接リストを採用した超省エネ・自律学習型リザバー。
+    全シナプスをループする仕様を廃止。
     """
 
     def __init__(self, n_in: int, n_res: int, n_out: int):
         self.oscillation = OscillationManager()
         self.neurons_in = [LIFNeuron() for _ in range(n_in)]
-        self.neurons_res = [LIFNeuron(base_threshold=1.2)
-                            for _ in range(n_res)]
+        self.neurons_res = [LIFNeuron(base_threshold=1.2) for _ in range(n_res)]
         self.neurons_out = [LIFNeuron() for _ in range(n_out)]
 
-        # シナプスリスト: (pre_neuron_index, post_neuron_index, stp_synapse)
-        self.synapses_in_to_res: List[Tuple[int, int, STPSynapse]] = []
-        self.synapses_res_recurrent: List[Tuple[int, int, STPSynapse]] = []
-        self.synapses_res_to_out: List[Tuple[int, int, STPSynapse]] = []
+        # スパース隣接リスト構造 {pre_id: [(post_id, syn_obj), ...]}
+        self.adj_in_to_res: Dict[int, List[Tuple[int, STPSynapse]]] = {i: [] for i in range(n_in)}
+        self.adj_res_recurrent: Dict[int, List[Tuple[int, STPSynapse]]] = {i: [] for i in range(n_res)}
+        self.adj_res_to_out: Dict[int, List[Tuple[int, STPSynapse]]] = {i: [] for i in range(n_res)}
 
         self._init_synapses(n_in, n_res, n_out)
         self.current_time_ms = 0.0
 
     def _init_synapses(self, n_in, n_res, n_out):
-        # 入力 -> リザバー (スパース)
         for i in range(n_in):
-            for j in range(n_res):
-                if random.random() < 0.3:
-                    w = random.uniform(0.1, 0.5)
-                    self.synapses_in_to_res.append((i, j, STPSynapse(w)))
+            targets = random.sample(range(n_res), max(1, int(n_res * 0.3)))
+            for j in targets:
+                self.adj_in_to_res[i].append((j, STPSynapse(random.uniform(0.1, 0.5))))
 
-        # リザバー内再帰結合 (カオスの縁)
         for i in range(n_res):
-            for j in range(n_res):
-                if i != j and random.random() < 0.1:
-                    w = random.uniform(-0.2, 0.4)  # 抑制性結合も混ぜる
-                    self.synapses_res_recurrent.append((i, j, STPSynapse(w)))
+            targets = random.sample(range(n_res), max(1, int(n_res * 0.1)))
+            for j in targets:
+                if i != j:
+                    self.adj_res_recurrent[i].append((j, STPSynapse(random.uniform(-0.2, 0.4))))
 
-        # リザバー -> 出力
         for i in range(n_res):
-            for j in range(n_out):
-                w = random.uniform(0.0, 0.3)
-                self.synapses_res_to_out.append((i, j, STPSynapse(w)))
+            targets = random.sample(range(n_out), max(1, int(n_out * 0.5)))
+            for j in targets:
+                self.adj_res_to_out[i].append((j, STPSynapse(random.uniform(0.0, 0.3))))
 
     def step(self, input_signals: List[bool]) -> List[bool]:
-        """
-        ネットワーク全体を1ミリ秒進める。
-        """
         self.current_time_ms += 1.0
         gating = self.oscillation.get_gating_factor(self.current_time_ms)
 
-        # 1. 入力層の更新
         for i, fired in enumerate(input_signals):
-            # 外部入力は電流として流し込む
             self.neurons_in[i].step(1.5 if fired else 0.0, gating)
 
-        # 2. 電流の集計バッファ
         res_currents = [0.0] * len(self.neurons_res)
         out_currents = [0.0] * len(self.neurons_out)
 
-        # 3. 入力 -> リザバーへの伝達 (STP適用)
-        for pre_idx, post_idx, syn in self.synapses_in_to_res:
-            pre_spike = self.neurons_in[pre_idx].spike
-            w_eff = syn.update(self.current_time_ms, pre_spike)
-            if pre_spike:
-                res_currents[post_idx] += w_eff
+        # イベント駆動: 発火したニューロンの枝のみを計算 (劇的な省エネ)
+        for pre_idx, n_in in enumerate(self.neurons_in):
+            if n_in.spike:
+                for post_idx, syn in self.adj_in_to_res[pre_idx]:
+                    res_currents[post_idx] += syn.compute_on_event(self.current_time_ms)
 
-        # 4. リザバー再帰結合の伝達
-        # 前のステップのスパイク状態を使用
         res_spikes_prev = [n.spike for n in self.neurons_res]
-        for pre_idx, post_idx, syn in self.synapses_res_recurrent:
-            pre_spike = res_spikes_prev[pre_idx]
-            w_eff = syn.update(self.current_time_ms, pre_spike)
-            if pre_spike:
-                res_currents[post_idx] += w_eff
+        for pre_idx, spiked in enumerate(res_spikes_prev):
+            if spiked:
+                for post_idx, syn in self.adj_res_recurrent[pre_idx]:
+                    res_currents[post_idx] += syn.compute_on_event(self.current_time_ms)
 
-        # 5. リザバーニューロンの更新
         for j, current in enumerate(res_currents):
             self.neurons_res[j].step(current, gating)
 
-        # 6. リザバー -> 出力への伝達
-        for pre_idx, post_idx, syn in self.synapses_res_to_out:
-            pre_spike = self.neurons_res[pre_idx].spike
-            w_eff = syn.update(self.current_time_ms, pre_spike)
-            if pre_spike:
-                out_currents[post_idx] += w_eff
+        for pre_idx, n_res in enumerate(self.neurons_res):
+            if n_res.spike:
+                for post_idx, syn in self.adj_res_to_out[pre_idx]:
+                    out_currents[post_idx] += syn.compute_on_event(self.current_time_ms)
 
-        # 7. 出力ニューロンの更新
         out_results = []
         for k, current in enumerate(out_currents):
             spike = self.neurons_out[k].step(current, gating)

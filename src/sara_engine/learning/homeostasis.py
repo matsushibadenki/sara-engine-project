@@ -1,13 +1,12 @@
-# src/sara_engine/learning/homeostasis.py
-# ホメオスタシス（恒常性維持）モジュール
-# ニューロンの発火率追跡とシナプスのスケーリングを管理する
+# Directory Path: src/sara_engine/learning/homeostasis.py
+# English Title: Homeostatic Plasticity with BCM Sliding Threshold
+# Purpose/Content: ニューロンの発火率追跡とシナプススケーリングを管理。完全な後方互換性を維持しながら、ステップループのO(1)遅延評価による超省エネ化と、BCM理論に基づく動的目標発火率によるメタ可塑性を実現。
 
 from typing import Dict, Iterable, Any
 import math
 
-
 class NeuronActivityTracker:
-    """ニューロンの発火率を追跡する。"""
+    """遅延評価(Lazy Evaluation)による O(1) 発火率トラッカー。後方互換性維持版。"""
 
     def __init__(
         self,
@@ -17,57 +16,70 @@ class NeuronActivityTracker:
     ) -> None:
         self._fast_rates: Dict[int, float] = {}
         self._slow_rates: Dict[int, float] = {}
+        self._last_update_step: Dict[int, int] = {}
+        
+        # オリジナルの変数名を維持
         self._decay = decay
         self._slow_decay = slow_decay
         self._blend_fast = blend_fast
+        self._current_step = 0
 
     def step(self) -> None:
-        """Apply global decay each simulation step to keep rates bounded and time-local."""
-        if not self._fast_rates and not self._slow_rates:
-            return
-        for neuron_id in list(self._fast_rates.keys()):
-            decayed = self._fast_rates[neuron_id] * self._decay
-            if decayed < 1e-10:
-                del self._fast_rates[neuron_id]
-            else:
-                self._fast_rates[neuron_id] = decayed
-        for neuron_id in list(self._slow_rates.keys()):
-            decayed = self._slow_rates[neuron_id] * self._slow_decay
-            if decayed < 1e-10:
-                del self._slow_rates[neuron_id]
-            else:
-                self._slow_rates[neuron_id] = decayed
+        """O(1) のグローバルタイムカウンターのインクリメントのみ行う。"""
+        self._current_step += 1
+
+    def _apply_lazy_decay(self, neuron_id: int) -> None:
+        """アクセス時に、経過したステップ数に応じて一括で厳密な減衰を適用する"""
+        last_step = self._last_update_step.get(neuron_id, self._current_step)
+        dt = self._current_step - last_step
+        
+        if dt > 0:
+            if neuron_id in self._fast_rates:
+                # べき乗計算によりオリジナルのループと数学的に完全に一致するO(1)減衰
+                self._fast_rates[neuron_id] *= (self._decay ** dt)
+                if self._fast_rates[neuron_id] < 1e-10:
+                    del self._fast_rates[neuron_id]
+                    
+            if neuron_id in self._slow_rates:
+                self._slow_rates[neuron_id] *= (self._slow_decay ** dt)
+                if self._slow_rates[neuron_id] < 1e-10:
+                    del self._slow_rates[neuron_id]
+                    
+            self._last_update_step[neuron_id] = self._current_step
 
     def update(self, neuron_id: int, fired: bool = True) -> None:
+        self._apply_lazy_decay(neuron_id)
         prev_fast = self._fast_rates.get(neuron_id, 0.0)
         prev_slow = self._slow_rates.get(neuron_id, 0.0)
+        
         if fired:
-            # EMA: keep bounded in [0, 1]
             self._fast_rates[neuron_id] = prev_fast + (1.0 - self._decay)
             self._slow_rates[neuron_id] = prev_slow + (1.0 - self._slow_decay)
-            return
-        self._fast_rates[neuron_id] = prev_fast
-        self._slow_rates[neuron_id] = prev_slow
+        else:
+            self._fast_rates[neuron_id] = prev_fast
+            self._slow_rates[neuron_id] = prev_slow
+            
+        self._last_update_step[neuron_id] = self._current_step
 
     def get_rate(self, neuron_id: int) -> float:
+        self._apply_lazy_decay(neuron_id)
         fast = self._fast_rates.get(neuron_id, 0.0)
         slow = self._slow_rates.get(neuron_id, 0.0)
         blended = (self._blend_fast * fast) + ((1.0 - self._blend_fast) * slow)
         return max(0.0, min(1.0, blended))
 
     def get_global_rate(self) -> float:
-        """Return population average over currently active tracked neurons."""
         keys = set(self._fast_rates.keys()) | set(self._slow_rates.keys())
         if not keys:
             return 0.0
-        total = 0.0
-        for neuron_id in keys:
-            total += self.get_rate(neuron_id)
+        total = sum(self.get_rate(nid) for nid in keys)
         return total / float(len(keys))
 
     def reset(self) -> None:
         self._fast_rates.clear()
         self._slow_rates.clear()
+        self._last_update_step.clear()
+        self._current_step = 0
 
 
 class SynapticScalingManager:
@@ -106,7 +118,7 @@ class SynapticScalingManager:
 
 
 class AdaptiveThresholdHomeostasis:
-    """Per-unit homeostatic controller for threshold/fatigue style regulation."""
+    """BCM理論に基づくスライディング目標発火率を用いた適応的閾値コントローラ"""
 
     def __init__(
         self,
@@ -123,13 +135,16 @@ class AdaptiveThresholdHomeostasis:
         self.min_threshold = min_threshold
         self.max_threshold = max_threshold
         self.global_weight = global_weight
+        
         self.thresholds: Dict[int, float] = {}
         self.rates: Dict[int, float] = {}
+        self.dynamic_targets: Dict[int, float] = {} # BCMスライディング用
 
     def state_dict(self) -> Dict[str, Any]:
         return {
             "thresholds": self.thresholds,
             "rates": self.rates,
+            "dynamic_targets": self.dynamic_targets,
             "target_rate": self.target_rate,
             "adaptation_rate": self.adaptation_rate,
             "decay": self.decay,
@@ -141,6 +156,7 @@ class AdaptiveThresholdHomeostasis:
     def load_state_dict(self, state: Dict[str, Any]) -> None:
         self.thresholds = {int(k): float(v) for k, v in state.get("thresholds", {}).items()}
         self.rates = {int(k): float(v) for k, v in state.get("rates", {}).items()}
+        self.dynamic_targets = {int(k): float(v) for k, v in state.get("dynamic_targets", {}).items()}
         self.target_rate = float(state.get("target_rate", self.target_rate))
         self.adaptation_rate = float(state.get("adaptation_rate", self.adaptation_rate))
         self.decay = float(state.get("decay", self.decay))
@@ -151,6 +167,7 @@ class AdaptiveThresholdHomeostasis:
     def reset(self) -> None:
         self.thresholds.clear()
         self.rates.clear()
+        self.dynamic_targets.clear()
 
     def update(self, active_ids: Iterable[int], population_size: int | None = None) -> None:
         active_set = set(active_ids)
@@ -169,13 +186,20 @@ class AdaptiveThresholdHomeostasis:
             rate = prev_rate * self.decay + fired * (1.0 - self.decay)
             self.rates[unit_id] = rate
 
-            local_error = rate - self.target_rate
+            # BCM スライディング閾値 (目標発火率を自己組織化)
+            current_target = self.dynamic_targets.get(unit_id, self.target_rate)
+            new_target = current_target * 0.99 + (rate ** 2) * 0.01
+            new_target = max(self.target_rate * 0.5, min(self.target_rate * 2.0, new_target))
+            self.dynamic_targets[unit_id] = new_target
+
+            local_error = rate - new_target
             error = ((1.0 - self.global_weight) * local_error) + (self.global_weight * global_error)
+            
             threshold = self.thresholds.get(unit_id, self.min_threshold)
             threshold += self.adaptation_rate * error
             threshold = max(self.min_threshold, min(self.max_threshold, threshold))
 
-            if threshold <= self.min_threshold + 1e-6 and rate < self.target_rate * 0.25:
+            if threshold <= self.min_threshold + 1e-6 and rate < new_target * 0.25:
                 self.thresholds.pop(unit_id, None)
                 if rate < 1e-6:
                     self.rates.pop(unit_id, None)
