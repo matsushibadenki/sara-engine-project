@@ -40,7 +40,6 @@ def run_noise_robustness_demo():
         layer_configs=[{"embed_dim": embed_dim, "hidden_dim": embed_dim}],
         ema_decay=0.5, # コンテキストとターゲットの表現を素早く同期
         learning_rate=0.1,
-        predict_threshold=0.6, # 誤発火(FP)を防ぐための厳格なしきい値
         time_scales={"low": 1, "medium": 3, "high": 5}
     )
 
@@ -80,8 +79,10 @@ def run_noise_robustness_demo():
         )
         
         # ターゲット表現との真の誤差（Symmetric Difference）を計算
-        s_y = jepa_model.target_encoder.forward(test_spikes_sequence[t + 1], learning=False)
-        true_surprise = len(set(s_y).symmetric_difference(set(predicted_s_y)))
+        surprise_spikes, _ = jepa_model.minimizer.compute_surprise_signal(
+            predicted_s_y, test_spikes_sequence[t + 1]
+        )
+        true_surprise = sum(surprise_spikes)
         pred_count = len(predicted_s_y)
         
         status = ""

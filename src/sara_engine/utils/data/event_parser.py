@@ -9,6 +9,8 @@ import struct
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any, Optional
 
+np: Any
+
 try:
     import numpy as np
 except ImportError:  # pragma: no cover - handled for minimal environments

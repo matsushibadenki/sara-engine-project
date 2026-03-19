@@ -1,4 +1,7 @@
 import os
+from typing import Any
+
+np: Any
 try:
     import numpy as np
 except ImportError:

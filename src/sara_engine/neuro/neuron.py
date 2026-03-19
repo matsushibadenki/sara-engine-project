@@ -64,7 +64,7 @@ class Neuron:
         self.spike = False
         
         self.refractory_time = 0
-        self.active_branches = set() # O(1)でアクティブな枝を管理
+        self.active_branches: set[int] = set() # O(1)でアクティブな枝を管理
 
     def add_input_to_branch(self, branch_index: int, current: float):
         """外部から特定の枝へ電流を注入する"""

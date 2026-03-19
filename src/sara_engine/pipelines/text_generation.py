@@ -2,7 +2,7 @@
 # 英語タイトル: Text Generation Pipeline
 # 目的や内容: SNNを用いたテキスト生成機能のTransformers互換パイプライン実装。ジェネレータ式への移行等によるメモリ効率と速度の向上を図り、GPU・誤差逆伝播なしでの自己回帰的な推論、オンライン学習(STDP)、ストリーミング生成を提供する。
 
-from typing import Any
+from typing import Any, Optional
 
 
 class TextGenerationPipeline:
@@ -14,29 +14,36 @@ class TextGenerationPipeline:
     def __init__(self, model: Any, tokenizer: Any = None):
         self.model = model
         # モデルがトークナイザを内包している場合のフォールバック
-        self.tokenizer = tokenizer if tokenizer is not None else getattr(model, "tokenizer", None)
+        self.tokenizer: Optional[Any] = tokenizer if tokenizer is not None else getattr(model, "tokenizer", None)
         
         # モデルがサポートしているメソッドを事前にキャッシュして高速化
         self._has_model_generate = hasattr(self.model, "generate") and callable(self.model.generate)
         self._has_model_predict = hasattr(self.model, "predict_next_tokens")
         self._has_model_stream = hasattr(self.model, "generate_stream")
-        self._has_tokenizer_encode = hasattr(self.tokenizer, "encode") or hasattr(self.tokenizer, "encode_text")
-        self._has_tokenizer_decode = hasattr(self.tokenizer, "decode") or hasattr(self.tokenizer, "decode_text")
+        tokenizer_obj = self.tokenizer
+        self._has_tokenizer_encode = tokenizer_obj is not None and (
+            hasattr(tokenizer_obj, "encode") or hasattr(tokenizer_obj, "encode_text")
+        )
+        self._has_tokenizer_decode = tokenizer_obj is not None and (
+            hasattr(tokenizer_obj, "decode") or hasattr(tokenizer_obj, "decode_text")
+        )
 
     def _encode(self, text: str) -> list[int]:
-        if hasattr(self.tokenizer, "encode"):
-            return self.tokenizer.encode(text)
-        elif hasattr(self.tokenizer, "encode_text"):
-            return self.tokenizer.encode_text(text)
+        tokenizer_obj = self.tokenizer
+        if tokenizer_obj is not None and hasattr(tokenizer_obj, "encode"):
+            return tokenizer_obj.encode(text)
+        elif tokenizer_obj is not None and hasattr(tokenizer_obj, "encode_text"):
+            return tokenizer_obj.encode_text(text)
         elif hasattr(self.model, "encode_text"):
             return self.model.encode_text(text)
         return [ord(c) for c in text]
 
     def _decode(self, tokens: list[int]) -> str:
-        if hasattr(self.tokenizer, "decode"):
-            return self.tokenizer.decode(tokens)
-        elif hasattr(self.tokenizer, "decode_text"):
-            return self.tokenizer.decode_text(tokens)
+        tokenizer_obj = self.tokenizer
+        if tokenizer_obj is not None and hasattr(tokenizer_obj, "decode"):
+            return tokenizer_obj.decode(tokens)
+        elif tokenizer_obj is not None and hasattr(tokenizer_obj, "decode_text"):
+            return tokenizer_obj.decode_text(tokens)
         elif hasattr(self.model, "decode_text"):
             return self.model.decode_text(tokens)
         return "".join(chr(i) for i in tokens if i < 0x110000)

@@ -77,12 +77,11 @@ def run_real_data_demo():
         layer_configs=layer_configs,
         ema_decay=0.99,
         learning_rate=0.15, # 学習を早めるために少し高めに設定
-        predict_threshold=0.6,
         time_scales=time_scales
     )
     
     print("\n【H-JEPA モデル設定】")
-    print(f"最大履歴保持ステップ数 (Max History): {jepa_model.max_history}")
+    print(f"履歴バッファ長 (History Size): {len(jepa_model.history)}")
     print(f"時間スケール設定: {jepa_model.time_scales}")
     print("学習を開始します...\n")
 
@@ -96,17 +95,17 @@ def run_real_data_demo():
         y_spikes = spikes_sequence[t + 1]  # 未来のターゲット（自己教師あり）
         
         # 潜在変数 z は今回はノイズや文脈タグとして空のまま、あるいは固定値として扱う
-        z_spikes = [] 
+        z_spikes: List[int] = [] 
         
         # H-JEPAによるフォワードパス (予測とPredictive Codingによる局所学習)
-        predicted_s_y, surprise_spikes = jepa_model.forward(
+        predicted_s_y, surprise_signal = jepa_model.forward(
             x_spikes=x_spikes, 
             y_spikes=y_spikes, 
-            z_spikes=z_spikes, 
             learning=True
         )
-        
-        surprise_count = len(surprise_spikes)
+
+        surprise_spikes, _ = jepa_model.minimizer.compute_surprise_signal(predicted_s_y, y_spikes)
+        surprise_count = sum(surprise_spikes)
         history_surprise_counts.append(surprise_count)
         
         # 進捗を10ステップごとに表示
@@ -122,7 +121,7 @@ def run_real_data_demo():
             
             # 予測表現の一部を表示
             if predicted_s_y:
-                print(f"          => 予測スパイク発火数: {len(predicted_s_y)} (Hit率: {jepa_model.total_hits}/{jepa_model.total_predictions})")
+                print(f"          => 予測スパイク発火数: {len(predicted_s_y)}")
             else:
                 print(f"          => 予測スパイクなし (学習初期または未学習パターン)")
 

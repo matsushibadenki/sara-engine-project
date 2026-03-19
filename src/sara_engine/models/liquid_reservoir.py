@@ -6,7 +6,8 @@
 
 import random
 import math
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Optional, Sequence, Tuple
+from ..learning.force import ForceReadout
 from ..neuro.dendrite import DendriticTree
 from ..metrics.branching_ratio import BranchingRatioEstimator
 
@@ -18,7 +19,12 @@ class LiquidReservoir:
         p_connect: float = 0.1,
         dt: float = 1.0,
         max_weight: float = 2.0,
-        max_delay_limit: int = 50
+        max_delay_limit: int = 50,
+        readout_decay: float = 0.9,
+        enable_force_readout: bool = True,
+        force_output_dim: int = 1,
+        force_alpha: float = 1.0,
+        force_forgetting_factor: float = 1.0,
     ):
         self.n = n_neurons
         self.dt = dt
@@ -69,6 +75,21 @@ class LiquidReservoir:
             smoothing_alpha=0.08)
         self.target_sigma = 1.0
         self.critical_gain = 1.0
+        self.readout_decay = max(0.0, min(0.999, readout_decay))
+        self.filtered_input_state = [0.0 for _ in range(n_neurons)]
+        self.filtered_spike_state = [0.0 for _ in range(n_neurons)]
+        self.force_readout: Optional[ForceReadout] = None
+        if enable_force_readout:
+            self.force_readout = ForceReadout(
+                input_size=self.state_size,
+                output_size=max(1, force_output_dim),
+                alpha=force_alpha,
+                forgetting_factor=force_forgetting_factor,
+            )
+
+    @property
+    def state_size(self) -> int:
+        return len(self.filtered_input_state) + len(self.filtered_spike_state)
 
     def step(self, external_currents: List[float], delay_manager: Any = None) -> List[int]:
         self.current_time += self.dt
@@ -152,8 +173,74 @@ class LiquidReservoir:
 
         sigma = self.branching_estimator.update(len(fired_neurons))
         self._apply_criticality_control(sigma)
+        self._update_filtered_state(external_currents, fired_neurons)
 
         return fired_neurons
+
+    def force_step(
+        self,
+        external_currents: Sequence[float],
+        target: Optional[Sequence[float]] = None,
+        learning: bool = True,
+        delay_manager: Any = None,
+    ) -> List[float]:
+        self.step(list(external_currents), delay_manager=delay_manager)
+        if self.force_readout is None:
+            raise RuntimeError('FORCE readout is not enabled for this reservoir')
+
+        state = self.get_reservoir_state()
+        if target is not None and learning:
+            return self.force_readout.update(state, target)
+        return self.force_readout.predict(state)
+
+    def predict_force(
+        self,
+        external_currents: Sequence[float],
+        delay_manager: Any = None,
+    ) -> List[float]:
+        return self.force_step(
+            external_currents,
+            target=None,
+            learning=False,
+            delay_manager=delay_manager,
+        )
+
+    def train_force(
+        self,
+        external_currents: Sequence[float],
+        target: Sequence[float],
+        delay_manager: Any = None,
+    ) -> List[float]:
+        return self.force_step(
+            external_currents,
+            target=target,
+            learning=True,
+            delay_manager=delay_manager,
+        )
+
+    def get_reservoir_state(self) -> List[float]:
+        return list(self.filtered_input_state) + list(self.filtered_spike_state)
+
+    def reset_dynamic_state(self, reset_readout: bool = False) -> None:
+        self.current_time = 0.0
+        self.u = [self.U_base] * self.n
+        self.x = [1.0] * self.n
+        self.pre_trace = [0.0] * self.n
+        self.post_trace = [0.0] * self.n
+        self.v = [-65.0 for _ in range(self.n)]
+        self.u_izh = [0.2 * val for val in self.v]
+        self.branching_estimator = BranchingRatioEstimator(smoothing_alpha=0.08)
+        self.critical_gain = 1.0
+        self.arrival_buffer = [
+            [[] for _ in range(self.n)] for _ in range(self.buffer_size)
+        ]
+        for tree in self.dendritic_trees:
+            tree.reset()
+        for idx in range(self.n):
+            self.filtered_input_state[idx] = 0.0
+            self.filtered_spike_state[idx] = 0.0
+        if reset_readout and self.force_readout is not None:
+            self.force_readout.reset()
 
     def _apply_criticality_control(self, sigma: float) -> None:
         sigma_error = sigma - self.target_sigma
@@ -185,3 +272,20 @@ class LiquidReservoir:
         else:
             w = max(0.0, min(self.max_weight, w + dw))
         self.synapses[pre_id][post_id] = w
+
+    def _update_filtered_state(
+        self,
+        external_currents: Sequence[float],
+        fired_neurons: Sequence[int],
+    ) -> None:
+        decay = self.readout_decay
+        fired_set = set(fired_neurons)
+        for idx in range(self.n):
+            current = float(external_currents[idx]) if idx < len(external_currents) else 0.0
+            self.filtered_input_state[idx] = (
+                self.filtered_input_state[idx] * decay + current
+            )
+            self.filtered_spike_state[idx] = (
+                self.filtered_spike_state[idx] * decay
+                + (1.0 if idx in fired_set else 0.0)
+            )

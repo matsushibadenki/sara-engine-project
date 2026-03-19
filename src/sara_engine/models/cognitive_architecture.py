@@ -3,7 +3,7 @@
 # 目的や内容: SNNベースのLiquid State Machineに、Spiking JEPA、乗算ゼロのSpike Attention、および皮質-海馬連動メモリ(CorticoHippocampalSystem)を統合した高効率・高精度な認知アーキテクチャ。行列演算、誤差逆伝播法、Numpyを一切排除して実装。
 
 import random
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Tuple, Set, Optional
 from ..neuro.neuron import Neuron
 from ..neuro.synapse_rl import RLSynapse
 from ..cognitive.global_workspace import GlobalWorkspace
@@ -13,7 +13,14 @@ from ..core.cortex import CorticalColumn
 from ..memory.hippocampus import CorticoHippocampalSystem
 
 class CognitiveArchitecture:
-    def __init__(self, n_sensory: int = 20, n_liquid: int = 100, n_actions: int = 4, memory_capacity: int = 1000000, supported_languages: List[str] = None):
+    def __init__(
+        self,
+        n_sensory: int = 20,
+        n_liquid: int = 100,
+        n_actions: int = 4,
+        memory_capacity: int = 1000000,
+        supported_languages: Optional[List[str]] = None,
+    ):
         self.n_actions = n_actions
         self.supported_languages = supported_languages if supported_languages else ["en", "ja", "zh", "fr"]
 

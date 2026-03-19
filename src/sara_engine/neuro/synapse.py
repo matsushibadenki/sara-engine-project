@@ -49,9 +49,11 @@ class Synapse:
             else:
                 self.weight += dw
 
-            # 実効電流を計算し、対象の枝へ注入 (API適合)
+            # Route the effective current into the post-synaptic branch when possible.
             current = self.weight * self.u * self.x
-            if hasattr(self.post, 'dendritic_tree'):
+            if hasattr(self.post, 'add_input_to_branch'):
+                self.post.add_input_to_branch(self.post_branch_idx, current)
+            elif hasattr(self.post, 'dendritic_tree'):
                 self.post.dendritic_tree.integrate_to_branch(
                     self.post_branch_idx, current)
 

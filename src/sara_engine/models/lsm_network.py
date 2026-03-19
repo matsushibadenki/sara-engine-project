@@ -5,7 +5,8 @@
 # }
 
 import random
-from typing import List
+from typing import List, Optional, Sequence
+from ..learning.force import ForceReadout
 from ..neuro.neuron import Neuron
 from ..neuro.synapse import Synapse
 from ..metrics.branching_ratio import BranchingRatioEstimator
@@ -16,7 +17,18 @@ class LSMNetwork:
     樹状突起計算(Dendritic Computation) と メタ可塑性 を備えた Liquid Transformer 代替コア。
     """
 
-    def __init__(self, n_input: int = 50, n_liquid: int = 500, n_output: int = 100, branches_per_neuron: int = 4):
+    def __init__(
+        self,
+        n_input: int = 50,
+        n_liquid: int = 500,
+        n_output: int = 100,
+        branches_per_neuron: int = 4,
+        readout_decay: float = 0.9,
+        enable_force_readout: bool = True,
+        force_output_dim: int = 1,
+        force_alpha: float = 1.0,
+        force_forgetting_factor: float = 1.0,
+    ):
         self.inputs = [Neuron(i, is_inhibitory=False, num_branches=1)
                        for i in range(n_input)]
         self.liquid = [Neuron(i, is_inhibitory=(
@@ -36,11 +48,32 @@ class LSMNetwork:
         self.prune_threshold = 0.01
         self.growth_prob = 0.1
 
+        self.readout_decay = max(0.0, min(0.999, readout_decay))
+        self.filtered_input_state = [0.0 for _ in range(n_input)]
+        self.filtered_liquid_state = [0.0 for _ in range(n_liquid)]
+        self.filtered_output_state = [0.0 for _ in range(n_output)]
+        self.force_readout: Optional[ForceReadout] = None
+        if enable_force_readout:
+            self.force_readout = ForceReadout(
+                input_size=self.state_size,
+                output_size=max(1, force_output_dim),
+                alpha=force_alpha,
+                forgetting_factor=force_forgetting_factor,
+            )
+
         # ネットワークの配線 (枝をランダムに指定)
         self._wire_population(self.inputs, self.liquid, prob=0.2)
         self._wire_population(self.liquid, self.liquid,
                               prob=0.1, avoid_self=True)
         self._wire_population(self.liquid, self.outputs, prob=0.5)
+
+    @property
+    def state_size(self) -> int:
+        return (
+            len(self.filtered_input_state)
+            + len(self.filtered_liquid_state)
+            + len(self.filtered_output_state)
+        )
 
     def _wire_population(self, pre_pop: List[Neuron], post_pop: List[Neuron], prob: float, avoid_self: bool = False):
         for pre_n in pre_pop:
@@ -61,9 +94,8 @@ class LSMNetwork:
         self.global_step += 1
 
         # 1. 外部入力の強制発火
-        for i, fired in enumerate(input_spikes):
-            if i < len(self.inputs):
-                self.inputs[i].spike = fired
+        for i, neuron in enumerate(self.inputs):
+            neuron.spike = bool(input_spikes[i]) if i < len(input_spikes) else False
 
         # 2. シナプス経由の電流伝達 (純粋なメッセージパッシング)
         # 各シナプスが pre の発火を確認し、post の特定の枝へ電流を注入する
@@ -73,16 +105,22 @@ class LSMNetwork:
         # 3. ニューロン状態の更新 (Dendrite統合とSoma発火)
         for n in self.liquid:
             n.step()
-            self.firing_rates[n] = self.firing_rates[n] * \
-                0.99 + (1.0 if n.spike else 0.0) * 0.01
+            self.firing_rates[n] = (
+                self.firing_rates[n] * 0.99
+                + (1.0 if n.spike else 0.0) * 0.01
+            )
 
         # 4. 出力層の更新
         out_spikes = []
         for n in self.outputs:
             spike = n.step()
             out_spikes.append(spike)
-            self.firing_rates[n] = self.firing_rates[n] * \
-                0.99 + (1.0 if n.spike else 0.0) * 0.01
+            self.firing_rates[n] = (
+                self.firing_rates[n] * 0.99
+                + (1.0 if n.spike else 0.0) * 0.01
+            )
+
+        self._update_filtered_state(input_spikes, self.liquid, self.outputs)
 
         sigma = self.branching_estimator.update(
             sum(1 for n in self.liquid if n.spike) + sum(1 for s in out_spikes if s)
@@ -97,6 +135,75 @@ class LSMNetwork:
             self._apply_structural_plasticity()
 
         return out_spikes
+
+    def force_step(
+        self,
+        input_spikes: Sequence[bool],
+        target: Optional[Sequence[float]] = None,
+        learning: bool = True,
+    ) -> List[float]:
+        """Advance the reservoir and optionally update the FORCE readout."""
+        self.step(list(input_spikes))
+        if self.force_readout is None:
+            raise RuntimeError('FORCE readout is not enabled for this network')
+
+        state = self.get_reservoir_state()
+        if target is not None and learning:
+            return self.force_readout.update(state, target)
+        return self.force_readout.predict(state)
+
+    def predict_force(self, input_spikes: Sequence[bool]) -> List[float]:
+        return self.force_step(input_spikes, target=None, learning=False)
+
+    def train_force(self, input_spikes: Sequence[bool], target: Sequence[float]) -> List[float]:
+        return self.force_step(input_spikes, target=target, learning=True)
+
+    def get_reservoir_state(self) -> List[float]:
+        return (
+            list(self.filtered_input_state)
+            + list(self.filtered_liquid_state)
+            + list(self.filtered_output_state)
+        )
+
+    def reset_dynamic_state(self, reset_readout: bool = False) -> None:
+        self.global_step = 0
+        for neuron in self.inputs + self.liquid + self.outputs:
+            neuron.v = 0.0
+            neuron.spike = False
+            neuron.refractory_time = 0
+            neuron.active_branches.clear()
+            for branch in neuron.branches:
+                branch.current_input = 0.0
+                branch.is_active = False
+        for idx in range(len(self.filtered_input_state)):
+            self.filtered_input_state[idx] = 0.0
+        for idx in range(len(self.filtered_liquid_state)):
+            self.filtered_liquid_state[idx] = 0.0
+        for idx in range(len(self.filtered_output_state)):
+            self.filtered_output_state[idx] = 0.0
+        if reset_readout and self.force_readout is not None:
+            self.force_readout.reset()
+
+    def _update_filtered_state(
+        self,
+        input_spikes: Sequence[bool],
+        liquid_neurons: Sequence[Neuron],
+        output_neurons: Sequence[Neuron],
+    ) -> None:
+        decay = self.readout_decay
+        for idx in range(len(self.filtered_input_state)):
+            spike_value = 1.0 if idx < len(input_spikes) and input_spikes[idx] else 0.0
+            self.filtered_input_state[idx] = self.filtered_input_state[idx] * decay + spike_value
+        for idx, neuron in enumerate(liquid_neurons):
+            self.filtered_liquid_state[idx] = (
+                self.filtered_liquid_state[idx] * decay
+                + (1.0 if neuron.spike else 0.0)
+            )
+        for idx, neuron in enumerate(output_neurons):
+            self.filtered_output_state[idx] = (
+                self.filtered_output_state[idx] * decay
+                + (1.0 if neuron.spike else 0.0)
+            )
 
     def _apply_criticality_control(self, sigma: float) -> None:
         sigma_error = sigma - self.target_sigma
