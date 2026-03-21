@@ -6,6 +6,7 @@ import msgpack
 import os
 from transformers import AutoTokenizer
 from sara_engine.models.spiking_llm import SpikingLLM
+from sara_engine.utils.direct_map import restore_direct_map, serialize_direct_map
 
 def fix_memory(target_context_text: str, wrong_word: str):
     model_path = "distilled_sara_llm.msgpack"
@@ -19,29 +20,31 @@ def fix_memory(target_context_text: str, wrong_word: str):
     # 1. 記憶の読み込み
     with open(model_path, "rb") as f:
         state = msgpack.unpack(f, raw=False)
+    direct_map = restore_direct_map(state.get("direct_map", {}))
     
     # 2. 修正対象の特定
     context_tokens = tokenizer.encode(target_context_text, add_special_tokens=False)
     sdr = student._encode_to_sdr(context_tokens[-8:])
-    sdr_k = str(tuple(sorted(list(sdr))))
-    
-    wrong_token_id = str(tokenizer.encode(wrong_word, add_special_tokens=False)[-1])
+    sdr_k = student._sdr_key(sdr)
 
-    if sdr_k in state["direct_map"]:
-        if wrong_token_id in state["direct_map"][sdr_k]:
+    wrong_token_id = tokenizer.encode(wrong_word, add_special_tokens=False)[-1]
+
+    if sdr_k in direct_map:
+        if wrong_token_id in direct_map[sdr_k]:
             # 3. 記憶の削除（LTDの極致）
-            del state["direct_map"][sdr_k][wrong_token_id]
+            del direct_map[sdr_k][wrong_token_id]
             print(f"✅ 修正完了: '{target_context_text}' に対する '{wrong_word}' の記憶を削除しました。")
             
             # もしその文脈に他の候補がなければ文脈ごと消す
-            if not state["direct_map"][sdr_k]:
-                del state["direct_map"][sdr_k]
+            if not direct_map[sdr_k]:
+                del direct_map[sdr_k]
         else:
             print(f"⚠️ 指定された回答 '{wrong_word}' はこの文脈に存在しません。")
     else:
         print(f"⚠️ 指定された文脈 '{target_context_text}' は記憶にありません。")
 
     # 4. 保存
+    state["direct_map"] = serialize_direct_map(direct_map)
     with open(model_path, "wb") as f:
         msgpack.pack(state, f)
 

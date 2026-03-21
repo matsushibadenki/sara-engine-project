@@ -11,14 +11,15 @@ from ..memory.hippocampus import CorticoHippocampalSystem
 from ..core.cortex import CorticalColumn
 from ..memory.sdr import SDREncoder
 from ..utils.dialogue import AdaptiveTopicTracker
+from ..safety.safety_guard import SafetyGuard, SafetyCheckResult
 from ..pipelines.text_generation import pipeline  # 追加: パイプライン
-from typing import List, Dict, Any, Callable, Union, Generator
+from typing import List, Dict, Any, Callable, Union, Generator, Optional
 import hashlib
 import random
 import os
 import re
 import pickle
-from ..utils.project_paths import ensure_output_directory, model_path, workspace_path
+from ..utils.project_paths import ensure_output_directory, ensure_parent_directory, model_path, workspace_path
 
 
 class SaraAgent:
@@ -33,6 +34,8 @@ class SaraAgent:
             "vision",
             "audio",
         ],
+        system_prompt: Optional[str] = None,
+        safety_guard: Optional[SafetyGuard] = None,
     ):
         self.encoder = SDREncoder(
             input_size=input_size, density=0.02, use_tokenizer=True, apply_vsa=True
@@ -70,6 +73,9 @@ class SaraAgent:
         self.topic_tracker = AdaptiveTopicTracker()
 
         self.tools: Dict[str, Callable[[str], str]] = {}
+        self.runtime_issues: List[Dict[str, str]] = []
+        self.system_prompt = system_prompt or ""
+        self.safety_guard = safety_guard
         self._bootstrap()
 
     def save_agent(self, save_dir: str = model_path("sara_agent")) -> None:
@@ -78,14 +84,14 @@ class SaraAgent:
             try:
                 self.llm.save_pretrained(save_dir)
             except Exception as e:
-                print(f"⚠️ LLMの保存に失敗しました: {e}")
+                self._record_issue("save_agent", f"Failed to save LLM weights: {e}")
         try:
             with open(os.path.join(save_dir, "episodic_snn.pkl"), "wb") as f:
                 pickle.dump(self.episodic_snn, f)
             with open(os.path.join(save_dir, "brain_ltm.pkl"), "wb") as f:
                 pickle.dump(self.brain, f)
         except Exception as e:
-            print(f"⚠️ 記憶の保存に失敗しました: {e}")
+            self._record_issue("save_agent", f"Failed to save memory state: {e}")
 
     def load_agent(self, load_dir: str = model_path("sara_agent")) -> None:
         if not os.path.exists(load_dir):
@@ -97,7 +103,7 @@ class SaraAgent:
                 # LLM再ロード後にパイプラインも更新
                 self.generator = pipeline("text-generation", model=self.llm, tokenizer=self.encoder.tokenizer)
             except Exception as e:
-                print(f"⚠️ LLMのロードに失敗しました: {e}")
+                self._record_issue("load_agent", f"Failed to load LLM weights: {e}")
         try:
             episodic_path = os.path.join(load_dir, "episodic_snn.pkl")
             if os.path.exists(episodic_path):
@@ -108,7 +114,7 @@ class SaraAgent:
                 with open(brain_path, "rb") as f:
                     self.brain = pickle.load(f)
         except Exception as e:
-            print(f"⚠️ 記憶のロードに失敗しました: {e}")
+            self._record_issue("load_agent", f"Failed to load memory state: {e}")
 
     def register_tool(self, trigger_spike: str, tool_func: Callable[[str], str]) -> None:
         self.tools[trigger_spike] = tool_func
@@ -178,6 +184,60 @@ class SaraAgent:
         self.dialogue_history.append({"role": role, "text": text, "sdr": sdr})
         if len(self.dialogue_history) > self.max_history_turns * 2:
             self.dialogue_history.pop(0)
+
+    def save_session(self, session_path: str) -> None:
+        session_path = ensure_parent_directory(session_path)
+        payload = {
+            "dialogue_history": self.dialogue_history,
+            "dialogue_state": self.dialogue_state,
+            "max_history_turns": self.max_history_turns,
+            "system_prompt": self.system_prompt,
+            "topic_tracker": self.topic_tracker.to_dict(),
+            "runtime_issues": list(self.runtime_issues),
+        }
+        with open(session_path, "wb") as handle:
+            pickle.dump(payload, handle)
+
+    def load_session(self, session_path: str) -> None:
+        if not os.path.exists(session_path):
+            return
+        with open(session_path, "rb") as handle:
+            payload = pickle.load(handle)
+        if isinstance(payload, dict):
+            self.dialogue_history = payload.get("dialogue_history", [])
+            self.dialogue_state = payload.get("dialogue_state", {})
+            self.max_history_turns = int(payload.get("max_history_turns", self.max_history_turns))
+            self.system_prompt = payload.get("system_prompt", self.system_prompt)
+            topic_state = payload.get("topic_tracker")
+            if isinstance(topic_state, dict):
+                self.topic_tracker.load_state(topic_state)
+            runtime_issues = payload.get("runtime_issues", [])
+            if isinstance(runtime_issues, list):
+                self.runtime_issues = [
+                    {
+                        "stage": str(item.get("stage", "")),
+                        "message": str(item.get("message", "")),
+                    }
+                    for item in runtime_issues
+                    if isinstance(item, dict)
+                ][-20:]
+
+    def get_recent_issues(self, limit: int = 5) -> List[Dict[str, str]]:
+        if limit <= 0:
+            return []
+        return self.runtime_issues[-limit:]
+
+    def clear_runtime_issues(self) -> None:
+        self.runtime_issues.clear()
+
+    def format_recent_issues(self, limit: int = 5) -> str:
+        issues = self.get_recent_issues(limit=limit)
+        if not issues:
+            return "No runtime issues recorded."
+        lines = ["Recent runtime issues:"]
+        for issue in issues:
+            lines.append(f"- [{issue['stage']}] {issue['message']}")
+        return "\n".join(lines)
 
     def _get_history_context_sdr(self) -> List[int]:
         combined_sdr: set[int] = set()
@@ -261,7 +321,36 @@ class SaraAgent:
                 seen.append(item)
         return seen
 
+    def _record_issue(self, stage: str, message: str) -> None:
+        issue = {"stage": stage, "message": message}
+        self.runtime_issues.append(issue)
+        if len(self.runtime_issues) > 20:
+            self.runtime_issues.pop(0)
+
+    def _execute_tools(self, user_text: str) -> tuple[List[str], List[str]]:
+        tool_results: List[str] = []
+        tool_failures: List[str] = []
+        for trigger_spike, tool_func in self.tools.items():
+            if trigger_spike not in user_text:
+                continue
+            try:
+                res = tool_func(user_text)
+            except Exception as exc:
+                failure = f"{trigger_spike}: {exc}"
+                tool_failures.append(failure)
+                self._record_issue("tool_execution", failure)
+                continue
+            if res and res != "計算できませんでした":
+                tool_results.append(res)
+        return tool_results, tool_failures
+
     def chat(self, user_text: str, teaching_mode: bool = False, stream: bool = False) -> Union[str, Generator[str, None, None]]:
+        safety_input: Optional[SafetyCheckResult] = None
+        if self.safety_guard is not None:
+            safety_input = self.safety_guard.check_input(user_text)
+            if not safety_input.is_safe:
+                return "Input was rejected by safety guard."
+            user_text = safety_input.sanitized_text
         self._register_dynamic_vocab(user_text)
         user_ids = self._text_to_ids(user_text)
 
@@ -346,15 +435,7 @@ class SaraAgent:
             response_text = f"[MoE Router: {context} Expert] 海馬とSpikingLLMに記憶を定着させました。"
             return response_text
 
-        pre_tool_results = []
-        for trigger_spike, tool_func in self.tools.items():
-            if trigger_spike in user_text:
-                try:
-                    res = tool_func(user_text)
-                    if res and res != "計算できませんでした":
-                        pre_tool_results.append(res)
-                except Exception:
-                    pass
+        pre_tool_results, tool_failures = self._execute_tools(user_text)
 
         tool_triggered_by_user = len(pre_tool_results) > 0
 
@@ -470,12 +551,16 @@ class SaraAgent:
             full_response = f"[MoE Router: {', '.join(active_experts)} (Tool Action)]\n"
             full_response += f" >> 海馬ブレンド記憶: {blended_memory}\n"
             full_response += f" >> SARA回答: {final_generated_text}"
+            if tool_failures:
+                full_response += f"\n >> Tool warnings: {' | '.join(tool_failures[:2])}"
             self._update_history("system", final_generated_text,
                                  self.encoder.encode(final_generated_text))
             return full_response
 
         # プロンプトの構築
         prompt_for_llm = f"{recent_context}{memory_context} {user_text}"
+        if self.system_prompt:
+            prompt_for_llm = f"{self.system_prompt}\n{prompt_for_llm}"
         if mode == "definition":
             prompt_for_llm += " つまり、"
         elif mode == "summarize":
@@ -507,6 +592,11 @@ class SaraAgent:
                     yield text_val
 
                 final_text = memory_context + "\n[SNN生成による追記] " + generated_full
+                if self.safety_guard is not None:
+                    safety_output = self.safety_guard.check_output(final_text)
+                    if not safety_output.is_safe:
+                        yield "\n[Output blocked by safety guard]"
+                        return
                 self._update_history("system", final_text, self.encoder.encode(final_text))
             
             return response_generator()
@@ -551,4 +641,8 @@ class SaraAgent:
             full_response += f" >> SARA回答: {final_generated_text}"
 
             self._update_history("system", final_generated_text, self.encoder.encode(final_generated_text))
+            if self.safety_guard is not None:
+                safety_output = self.safety_guard.check_output(full_response)
+                if not safety_output.is_safe:
+                    return "Output was blocked by safety guard."
             return full_response

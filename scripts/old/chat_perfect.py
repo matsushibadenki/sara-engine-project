@@ -4,7 +4,6 @@
     "//": "ファイルの目的や内容: 文字列レベルでの青空文庫補正と、BPEの分断を防ぐ「末尾トークン切り捨て検索」を実装し、あらゆる入力から記憶を引き出す。"
 }
 
-import msgpack
 import time
 import os
 import numpy as np
@@ -21,11 +20,9 @@ def run_perfect_chat():
         return
 
     print("Loading Perfect Memory (Hippocampus Engine)...")
-    with open(model_path, "rb") as f:
-        state = msgpack.unpack(f, raw=False)
-    
-    direct_map = state.get("direct_map", {})
-    print(f"🚀 Successfully loaded {len(direct_map)} pure memories!")
+    loaded_count = student.load_memory(model_path)
+    direct_map = student._direct_map
+    print(f"🚀 Successfully loaded {loaded_count} pure memories!")
 
     print("\n" + "="*50)
     print("⚡ SARA Hippocampus Session (BPE-Resilient Mode)")
@@ -67,11 +64,11 @@ def run_perfect_chat():
                 max_window = min(8, len(search_tokens))
                 for window in range(max_window, 0, -1):
                     context = search_tokens[-window:]
-                    sdr_k = str(student._sdr_key(student._encode_to_sdr(context)))
+                    sdr_k = student._sdr_key(student._encode_to_sdr(context))
                     
                     if sdr_k in direct_map:
                         valid_candidates = [
-                            (int(cid), w) for cid, w in direct_map[sdr_k].items() 
+                            (cid, w) for cid, w in direct_map[sdr_k].items() 
                         ]
                         
                         if valid_candidates:
@@ -104,12 +101,12 @@ def run_perfect_chat():
                 max_window = min(8, len(current_tokens))
                 for window in range(max_window, 0, -1):
                     context = current_tokens[-window:]
-                    sdr_k = str(student._sdr_key(student._encode_to_sdr(context)))
+                    sdr_k = student._sdr_key(student._encode_to_sdr(context))
                     
                     if sdr_k in direct_map:
                         valid_candidates = [
-                            (int(cid), w) for cid, w in direct_map[sdr_k].items() 
-                            if int(cid) not in refractory_buffer
+                            (cid, w) for cid, w in direct_map[sdr_k].items() 
+                            if cid not in refractory_buffer
                         ]
                         if valid_candidates:
                             top_k = min(3, len(valid_candidates))

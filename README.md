@@ -112,6 +112,8 @@ client.run(os.getenv('DISCORD\_TOKEN'))
 To understand the future direction and deep theoretical background of the SARA Engine, check the following documents:
 
 * doc/ROADMAP.md \- Short-term development goals.  
+* doc/RELEASE_CHECKLIST.md \- Pre-release validation and packaging checklist.  
+* doc/RELEASE_NOTES.md \- Current pre-release reliability and compatibility notes.  
 * doc/SARA\_EVOLUTION\_ROADMAP.md \- Long-term evolutionary roadmap.  
 * doc/stateful\_snn\_theory.md \- Theoretical background on Stateful SNNs and NeuroFEM.
 

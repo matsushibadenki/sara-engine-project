@@ -6,7 +6,6 @@ from .models.spiking_llm import SpikingLLM
 from .inference import SaraInference
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import tqdm
-import msgpack
 import torch
 import json
 import os
@@ -102,14 +101,8 @@ def train():
 
     if os.path.exists(args.model):
         print(f"Opening SNN memory file: {args.model}...")
-        with open(args.model, "rb") as f:
-            state = msgpack.unpack(f, raw=False)
-
-        raw_map = state.get("direct_map", {})
-        fixed_map = {eval(k): {int(tk): float(tv)
-                               for tk, tv in v.items()} for k, v in raw_map.items()}
-        student._direct_map = fixed_map
-        print(f"Loaded {len(fixed_map)} patterns.")
+        loaded_count = student.load_memory(args.model)
+        print(f"Loaded {loaded_count} patterns.")
     else:
         print("[Warning] No existing memory found. Creating new brain...")
         student._direct_map = {}
@@ -164,12 +157,6 @@ def train():
                     dm[tok_id] = 1000.0
 
     print("Saving updated memory...")
-    os.makedirs(os.path.dirname(args.model), exist_ok=True)
-    state = {
-        "direct_map": {str(k): {str(tk): v for tk, v in tv.items()} for k, tv in student._direct_map.items()},
-        "vocab_size": student.vocab_size
-    }
-    with open(args.model, "wb") as f:
-        msgpack.pack(state, f)
+    student.save_memory(args.model)
 
     print("Dialogue training completed successfully!")

@@ -1,6 +1,6 @@
 from sara_engine.models.spiking_llm import SpikingLLM
+from sara_engine.utils.direct_map import restore_direct_map
 from transformers import AutoTokenizer
-import torch
 import json
 _FILE_INFO = {
     "//": "ディレクトリパス: scripts/test_distilled_model.py",
@@ -23,15 +23,7 @@ def test_inference():
         state = json.load(f)
 
     # JSONで文字列化されたキーと値を数値に戻す
-    fixed_direct_map = {}
-    for str_sdr_k, next_tokens in state["direct_map"].items():
-        # SDRキー（タプル）の復元
-        sdr_k = eval(str_sdr_k)
-
-        # 次トークンID（int）とカウント（float）の復元
-        fixed_next_tokens = {int(tok_id): float(count)
-                             for tok_id, count in next_tokens.items()}
-        fixed_direct_map[sdr_k] = fixed_next_tokens
+    fixed_direct_map = restore_direct_map(state["direct_map"])
 
     student._direct_map = fixed_direct_map
     print(f"Successfully loaded {len(student._direct_map)} context patterns.")

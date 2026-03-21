@@ -7,7 +7,6 @@
     "//": "ファイルの目的や内容: 8192ニューロンのまま、助詞のハブ化のみを安全な対数ペナルティで抑制し、ワードサラダを完全に防ぐ。"
 }
 
-import msgpack
 import time
 import os
 import math
@@ -33,24 +32,20 @@ def run_rust_chat():
         return
 
     print(f"Loading distilled knowledge from {model_path}...")
-    with open(model_path, "rb") as f:
-        state = msgpack.unpack(f, raw=False)
-    
-    items = list(state.get("direct_map", {}).items())
+    student.load_memory(model_path)
+    direct_map = student._direct_map
+    items = list(direct_map.items())
     
     print("Analyzing neural pathways (Applying Safe Soft-Penalty)...")
     token_freq: dict[int, int] = {}
-    for str_sdr_k, next_tokens in items:
-        for str_tok_id, count in next_tokens.items():
-            tok_id = int(str_tok_id)
+    for _, next_tokens in items:
+        for tok_id, count in next_tokens.items():
             token_freq[tok_id] = token_freq.get(tok_id, 0) + 1
 
     weights: list[dict[int, float]] = [{} for _ in range(sdr_size)]
     
-    for str_sdr_k, next_tokens in tqdm.tqdm(items, desc="Transferring to Rust Core"):
-        sdr_k = eval(str_sdr_k)
-        for str_tok_id, count in next_tokens.items():
-            tok_id = int(str_tok_id)
+    for sdr_k, next_tokens in tqdm.tqdm(items, desc="Transferring to Rust Core"):
+        for tok_id, count in next_tokens.items():
             freq = token_freq.get(tok_id, 1)
             
             # 💡 修正点：希少な言葉を爆発させず、10回以上出現した言葉のみを対数で優しく抑制
@@ -65,7 +60,6 @@ def run_rust_chat():
 
     rust_engine.set_weights(weights)
     print(f"🚀 Successfully transferred {len(items)} patterns into Rust Core!")
-    del state
 
     print("\n" + "="*50)
     print("⚡ SARA Rust Core Session (Safe Hub-Suppression)")

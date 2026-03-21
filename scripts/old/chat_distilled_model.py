@@ -1,4 +1,5 @@
 from sara_engine.models.spiking_llm import SpikingLLM
+from sara_engine.utils.direct_map import restore_direct_map
 from transformers import AutoTokenizer
 import json
 _FILE_INFO = {
@@ -21,14 +22,7 @@ def run_chat():
         with open("distilled_sara_llm.json", "r", encoding="utf-8") as f:
             state = json.load(f)
 
-        fixed_direct_map = {}
-        for str_sdr_k, next_tokens in state["direct_map"].items():
-            sdr_k = eval(str_sdr_k)
-            fixed_next_tokens = {int(tok_id): float(count)
-                                 for tok_id, count in next_tokens.items()}
-            fixed_direct_map[sdr_k] = fixed_next_tokens
-
-        student._direct_map = fixed_direct_map
+        student._direct_map = restore_direct_map(state["direct_map"])
         print(
             f"✅ Successfully loaded {len(student._direct_map)} context patterns.")
     except FileNotFoundError:

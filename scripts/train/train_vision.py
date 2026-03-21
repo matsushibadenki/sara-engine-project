@@ -5,7 +5,6 @@
 import os
 import csv
 import torch
-import msgpack
 import tqdm
 import numpy as np
 from PIL import Image
@@ -24,11 +23,7 @@ def train_vision_association(csv_path, image_dir, model_path):
     # 既存モデルの読み込み
     if os.path.exists(model_path):
         print(f"Loading existing memory: {model_path}")
-        with open(model_path, "rb") as f:
-            state = msgpack.unpack(f, raw=False)
-        raw_map = state.get("direct_map", {})
-        # 保存用に文字列化されているキーをタプル(int型)に復元
-        student._direct_map = {eval(k): {int(tk): float(tv) for tk, tv in v.items()} for k, v in raw_map.items()}
+        student.load_memory(model_path)
     else:
         student._direct_map = {}
 
@@ -73,13 +68,7 @@ def train_vision_association(csv_path, image_dir, model_path):
             print(f"❌ エラー ({img_name}): {e}")
 
     print("Saving updated memory...")
-    # 💡 修正点: 内包表記内の変数名を tv から v に、または tk, tv から v.items() に修正
-    state = {
-        "direct_map": {str(k): {str(tk): v for tk, v in tv.items()} for k, tv in student._direct_map.items()},
-        "vocab_size": student.vocab_size
-    }
-    with open(model_path, "wb") as f:
-        msgpack.pack(state, f)
+    student.save_memory(model_path)
     print("✨ 視覚連想学習が完了しました！")
 
 if __name__ == "__main__":

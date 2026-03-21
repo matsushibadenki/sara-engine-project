@@ -3,7 +3,6 @@
 # ファイルの目的や内容: 記憶と汎化ネットワークの出力をそれぞれ確率分布（合計1.0）に変換してからブレンドすることで、スケールの不一致によるノイズの暴走を完全に防ぐ。
 
 from sara_engine.models.spiking_llm import SpikingLLM
-import msgpack
 import os
 import random
 from transformers import AutoTokenizer
@@ -25,15 +24,7 @@ def run_math_chat(model_path):
 
     print(f"Loading SNN memory from: {model_path}...")
 
-    if hasattr(student, "load_memory"):
-        loaded_count = student.load_memory(model_path)
-    else:
-        with open(model_path, "rb") as f:
-            state = msgpack.unpack(f, raw=False)
-        raw_map = state.get("direct_map", {})
-        student._direct_map = {eval(k): {int(tk): float(
-            tv) for tk, tv in v.items()} for k, v in raw_map.items()}
-        loaded_count = len(student._direct_map)
+    loaded_count = student.load_memory(model_path)
 
     print(f"✅ Loaded {loaded_count} patterns.")
 

@@ -4,10 +4,12 @@
 
 import json
 import math
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple, TYPE_CHECKING
 
 from ..encoders.time_series import TimeSeriesCurrentEncoder
-from ..models.liquid_reservoir import LiquidReservoir
+
+if TYPE_CHECKING:
+    from ..models.liquid_reservoir import LiquidReservoir
 
 
 def build_sine_series(length: int, frequency: float, phase: float = 0.0) -> List[float]:
@@ -23,35 +25,44 @@ def load_series(series_path: str) -> List[float]:
 
     if series_path.endswith(".json"):
         json_values = json.loads(raw_text)
+        if isinstance(json_values, dict):
+            for key in ("values", "series", "signal", "data"):
+                if key in json_values:
+                    json_values = json_values[key]
+                    break
         if not isinstance(json_values, list):
-            raise ValueError("JSON time-series must be a list of numbers.")
-        return [float(value) for value in json_values]
+            raise ValueError("JSON time-series must be a list of numbers or a dict containing 'values'.")
+        return _coerce_finite_series(json_values)
 
     normalized = raw_text.replace(",", "\n")
     values: List[float] = []
     for line in normalized.splitlines():
         stripped = line.strip()
-        if stripped:
-            values.append(float(stripped))
-    return values
+        if stripped and not stripped.startswith("#"):
+            values.append(_coerce_finite_float(stripped))
+    return _validate_series(values)
 
 
 def split_series(series: Sequence[float], test_ratio: float) -> Tuple[List[float], List[float]]:
-    if len(series) < 8:
+    validated = _validate_series(series)
+    if len(validated) < 8:
         raise ValueError("Time-series must contain at least 8 values.")
 
     clamped_ratio = min(0.5, max(0.05, test_ratio))
-    split_index = int(len(series) * (1.0 - clamped_ratio))
-    split_index = max(4, min(len(series) - 4, split_index))
-    return list(series[:split_index]), list(series[split_index:])
+    split_index = int(len(validated) * (1.0 - clamped_ratio))
+    split_index = max(4, min(len(validated) - 4, split_index))
+    return list(validated[:split_index]), list(validated[split_index:])
 
 
 def evaluate_force_sequence(
-    reservoir: LiquidReservoir,
+    reservoir: "LiquidReservoir",
     encoder: TimeSeriesCurrentEncoder,
     signal: Sequence[float],
     reset_readout: bool = False,
 ) -> Dict[str, Any]:
+    if len(signal) < 2:
+        raise ValueError("Signal must contain at least 2 values for next-step evaluation.")
+
     reservoir.reset_dynamic_state(reset_readout=reset_readout)
     predictions: List[float] = []
     mae_sum = 0.0
@@ -78,12 +89,15 @@ def evaluate_force_sequence(
 
 
 def train_force_sequence(
-    reservoir: LiquidReservoir,
+    reservoir: "LiquidReservoir",
     encoder: TimeSeriesCurrentEncoder,
     signal: Sequence[float],
     epochs: int,
     report_every: int,
 ) -> List[Dict[str, float]]:
+    if len(signal) < 2:
+        raise ValueError("Signal must contain at least 2 values for training.")
+
     history: List[Dict[str, float]] = []
     for epoch in range(epochs):
         reservoir.reset_dynamic_state(reset_readout=False)
@@ -109,3 +123,21 @@ def train_force_sequence(
                 f"train_rmse={train_metrics['rmse']:.4f}"
             )
     return history
+
+
+def _coerce_finite_series(values: Sequence[Any]) -> List[float]:
+    return _validate_series([_coerce_finite_float(value) for value in values])
+
+
+def _coerce_finite_float(value: Any) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"Time-series contains a non-finite value: {value}")
+    return number
+
+
+def _validate_series(series: Sequence[float]) -> List[float]:
+    validated = [_coerce_finite_float(value) for value in series]
+    if not validated:
+        raise ValueError("Time-series file is empty.")
+    return validated

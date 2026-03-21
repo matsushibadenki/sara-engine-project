@@ -13,6 +13,7 @@ if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
 from sara_engine.utils.project_paths import model_path
+from sara_engine.utils.direct_map import restore_direct_map, serialize_direct_map
 
 def prune_model_memory(model_path, threshold=50.0):
     if not os.path.exists(model_path):
@@ -28,7 +29,7 @@ def prune_model_memory(model_path, threshold=50.0):
     with open(model_path, "rb") as f:
         state = msgpack.unpack(f, raw=False)
     
-    raw_map = state.get("direct_map", {})
+    raw_map = restore_direct_map(state.get("direct_map", {}))
     
     original_patterns = len(raw_map)
     original_synapses = sum(len(v) for v in raw_map.values())
@@ -37,17 +38,17 @@ def prune_model_memory(model_path, threshold=50.0):
     pruned_synapses = 0
     
     # 2. 刈り込み（プルーニング）処理
-    for k_str, target_dict in raw_map.items():
+    for sdr_key, target_dict in raw_map.items():
         # 重みが閾値以上のシナプスだけを残す
-        filtered_targets = {tk: tv for tk, tv in target_dict.items() if tv >= threshold}
+        filtered_targets = {token_id: weight for token_id, weight in target_dict.items() if weight >= threshold}
         
         # 遷移先（連想先）が1つでも残っている場合のみ、その発火パターン（SDR）を記憶しておく
         if filtered_targets:
-            pruned_map[k_str] = filtered_targets
+            pruned_map[sdr_key] = filtered_targets
             pruned_synapses += len(filtered_targets)
             
     # 3. 更新された記憶で上書き保存
-    state["direct_map"] = pruned_map
+    state["direct_map"] = serialize_direct_map(pruned_map)
     
     with open(model_path, "wb") as f:
         msgpack.pack(state, f)

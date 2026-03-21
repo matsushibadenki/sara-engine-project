@@ -6,6 +6,7 @@ import os
 import random
 import math
 from transformers import AutoTokenizer
+from .utils.direct_map import restore_direct_map, serialize_direct_map
 
 # Try to import Rust core for Phase 3 (LIF Model)
 try:
@@ -47,14 +48,14 @@ class SaraInference:
 
         with open(self.model_path, "rb") as f:
             state = msgpack.unpack(f, raw=False)
-        self.direct_map = state.get("direct_map", {})
+        self.direct_map = restore_direct_map(state.get("direct_map", {}))
 
     def _encode_context_sdr(self, context_tokens):
         """
         Convert context tokens into a sparse representation key.
         Simple mock implementation for SDR encoding based on pure python hash.
         """
-        return str(hash(tuple(context_tokens)))
+        return (hash(tuple(context_tokens)),)
 
     def learn_sequence(self, input_ids):
         """
@@ -74,12 +75,8 @@ class SaraInference:
                 if sdr_k not in self.direct_map:
                     self.direct_map[sdr_k] = {}
 
-                cid_str = str(next_id)
-                if cid_str not in self.direct_map[sdr_k]:
-                    self.direct_map[sdr_k][cid_str] = 0.0
-
                 # STDP-like reinforcement: strengthen synapse based on co-occurrence
-                self.direct_map[sdr_k][cid_str] += 1.0
+                self.direct_map[sdr_k][next_id] = self.direct_map[sdr_k].get(next_id, 0.0) + 1.0
 
     def save_pretrained(self, save_path):
         """
@@ -95,7 +92,7 @@ class SaraInference:
             out_path = os.path.join(save_path, "dummy_model.msgpack")
 
         with open(out_path, "wb") as f:
-            msgpack.pack({"direct_map": self.direct_map}, f)
+            msgpack.pack({"direct_map": serialize_direct_map(self.direct_map)}, f)
         print(f"[INFO] Brain state saved to {out_path}")
 
     def generate(self, prompt, max_new_tokens=50, top_k=3, temperature=0.5,
@@ -189,8 +186,7 @@ class SaraInference:
 
     def _sample_next_token(self, sdr_k, top_k, temperature, refractory_penalty):
         valid_candidates = []
-        for cid_str, w in self.direct_map[sdr_k].items():
-            cid = int(cid_str)
+        for cid, w in self.direct_map[sdr_k].items():
             weight = float(w)
 
             # Apply biological refractory penalty for recently fired tokens

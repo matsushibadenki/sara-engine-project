@@ -3,7 +3,6 @@
 # ファイルの目的や内容: 学習済みのSNNモデルを使用して、入力画像から関連するテキスト（キャプション）を連想・復元できるか確認する。
 
 import os
-import msgpack
 import numpy as np
 from PIL import Image
 from sara_engine.models.spiking_llm import SpikingLLM
@@ -28,14 +27,8 @@ def run_vision_inference(image_path, model_path):
     vision_encoder = ImageSpikeEncoder(output_size=8192)
     tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b")
 
-    # 2. モデルデータの読み込み
-    with open(model_path, "rb") as f:
-        state = msgpack.unpack(f, raw=False)
-    
-    raw_map = state.get("direct_map", {})
-    # キーを復元
-    student._direct_map = {eval(k): {int(tk): float(tv) for tk, tv in v.items()} for k, v in raw_map.items()}
-    print(f"✅ {len(student._direct_map)} 件の記憶パターンをロードしました。")
+    loaded_count = student.load_memory(model_path)
+    print(f"✅ {loaded_count} 件の記憶パターンをロードしました。")
 
     # 3. 入力画像のSDR化
     try:

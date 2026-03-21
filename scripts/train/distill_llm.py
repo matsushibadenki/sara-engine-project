@@ -5,7 +5,6 @@
 }
 
 import torch
-import msgpack
 import os
 import json
 import tqdm
@@ -39,30 +38,14 @@ class SNNLLMDistiller:
     def load_student(self, path):
         if os.path.exists(path):
             print(f"Opening SNN memory file: {path}...")
-            with open(path, "rb") as f:
-                state = msgpack.unpack(f, raw=False)
-            
-            raw_map = state.get("direct_map", {})
-            print(f"Restoring {len(raw_map)} context patterns...")
-            
-            fixed_map = {}
-            for k, v in tqdm.tqdm(raw_map.items(), desc="Loading SNN Memory"):
-                fixed_map[eval(k)] = {int(tk): float(tv) for tk, tv in v.items()}
-            
-            self.student._direct_map = fixed_map
+            loaded_count = self.student.load_memory(path)
+            print(f"Restoring {loaded_count} context patterns...")
             print(f"✅ Successfully loaded memory.")
-            del state
         else:
             print(f"No existing memory found at {path}. Starting fresh.")
 
     def save_student(self, path):
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        state = {
-            "direct_map": {str(k): {str(tk): v for tk, v in tv.items()} for k, tv in self.student._direct_map.items()},
-            "vocab_size": self.student.vocab_size
-        }
-        with open(path, "wb") as f:
-            msgpack.pack(state, f)
+        self.student.save_memory(path)
 
     def distill_single_text(self, text):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=128).to(self.device)

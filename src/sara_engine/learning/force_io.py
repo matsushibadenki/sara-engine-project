@@ -5,17 +5,19 @@
 import json
 import os
 import shutil
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 from ..encoders.time_series import TimeSeriesCurrentEncoder
-from ..models.liquid_reservoir import LiquidReservoir
 from ..utils.project_paths import ensure_output_directory, ensure_parent_directory
+
+if TYPE_CHECKING:
+    from ..models.liquid_reservoir import LiquidReservoir
 
 
 def export_force_artifact(
     artifact_path: str,
     report_path: str,
-    reservoir: LiquidReservoir,
+    reservoir: "LiquidReservoir",
     encoder: TimeSeriesCurrentEncoder,
     metadata: Dict[str, Any],
 ) -> Tuple[str, str]:
@@ -87,7 +89,7 @@ def export_force_artifact(
     return ensured_artifact_path, ensured_report_path
 
 
-def load_force_artifact(artifact_path: str) -> Tuple[LiquidReservoir, TimeSeriesCurrentEncoder, Dict[str, Any]]:
+def load_force_artifact(artifact_path: str) -> Tuple["LiquidReservoir", TimeSeriesCurrentEncoder, Dict[str, Any]]:
     with open(artifact_path, "r", encoding="utf-8") as handle:
         payload = json.load(handle)
 
@@ -100,15 +102,32 @@ def load_force_artifact(artifact_path: str) -> Tuple[LiquidReservoir, TimeSeries
         raise ValueError(
             "Artifact is missing reservoir synapses. Re-export the model with the updated FORCE artifact format."
         )
+    if not isinstance(synapses_payload, list):
+        raise ValueError("Artifact reservoir synapses must be stored as a list.")
 
+    n_neurons = int(reservoir_payload["n_neurons"])
+    if len(synapses_payload) != n_neurons:
+        raise ValueError(
+            f"Artifact synapse row count ({len(synapses_payload)}) does not match n_neurons ({n_neurons})."
+        )
+
+    weights_payload = readout_payload.get("weights")
+    bias_payload = readout_payload.get("bias")
+    inverse_payload = readout_payload.get("inverse_correlation")
+    if not isinstance(weights_payload, list) or not isinstance(bias_payload, list) or not isinstance(inverse_payload, list):
+        raise ValueError("Artifact FORCE readout is incomplete. Expected weights, bias, and inverse_correlation lists.")
+    if len(weights_payload) != len(bias_payload):
+        raise ValueError("Artifact FORCE readout weights must align with bias dimension.")
+
+    from ..models.liquid_reservoir import LiquidReservoir
     reservoir = LiquidReservoir(
-        n_neurons=int(reservoir_payload["n_neurons"]),
+        n_neurons=n_neurons,
         dt=float(reservoir_payload.get("dt", 1.0)),
         max_weight=float(reservoir_payload.get("max_weight", 2.0)),
         max_delay_limit=int(reservoir_payload.get("max_delay_limit", 50)),
         readout_decay=float(reservoir_payload.get("readout_decay", 0.9)),
         enable_force_readout=True,
-        force_output_dim=max(1, len(readout_payload.get("bias", [0.0]))),
+        force_output_dim=max(1, len(bias_payload)),
         force_alpha=float(readout_payload.get("alpha", 1.0)),
         force_forgetting_factor=float(readout_payload.get("forgetting_factor", 1.0)),
     )
@@ -124,14 +143,27 @@ def load_force_artifact(artifact_path: str) -> Tuple[LiquidReservoir, TimeSeries
     if reservoir.force_readout is None:
         raise RuntimeError("Failed to create FORCE readout during artifact restore.")
 
+    expected_input_size = reservoir.force_readout.input_size
+    for row in weights_payload:
+        if not isinstance(row, list) or len(row) != expected_input_size:
+            raise ValueError(
+                f"Artifact FORCE weights must contain rows of length {expected_input_size}."
+            )
+    if len(inverse_payload) != expected_input_size or any(
+        not isinstance(row, list) or len(row) != expected_input_size for row in inverse_payload
+    ):
+        raise ValueError(
+            f"Artifact inverse_correlation must be a square matrix of size {expected_input_size}."
+        )
+
     reservoir.force_readout.weights = [
         [float(value) for value in row]
-        for row in readout_payload["weights"]
+        for row in weights_payload
     ]
-    reservoir.force_readout.bias = [float(value) for value in readout_payload["bias"]]
+    reservoir.force_readout.bias = [float(value) for value in bias_payload]
     reservoir.force_readout.inverse_correlation = [
         [float(value) for value in row]
-        for row in readout_payload["inverse_correlation"]
+        for row in inverse_payload
     ]
 
     encoder = TimeSeriesCurrentEncoder(

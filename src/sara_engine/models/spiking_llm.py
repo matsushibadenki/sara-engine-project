@@ -7,6 +7,7 @@ import json
 import math
 import random
 import heapq
+import msgpack
 from collections import defaultdict, OrderedDict
 from typing import Any, Dict, Iterator, List, Set, Tuple, Optional
 
@@ -15,6 +16,7 @@ from ..core.cortical_columns import SpikingCorticalColumns
 from ..learning.homeostasis import AdaptiveThresholdHomeostasis
 from ..utils.project_paths import ensure_output_directory
 from ..utils.tokenizer import SaraTokenizer
+from ..utils.direct_map import restore_direct_map, serialize_direct_map
 from .spiking_jepa import SpikingJEPA
 
 
@@ -851,8 +853,7 @@ class SpikingLLM:
                 serializable_synapses[str(delay)][str(pre)] = {
                     str(post): w for post, w in post_dict.items()}
 
-        raw_direct_map = {str(k): {str(tk): float(tv) for tk, tv in v.items()}
-                          for k, v in self._direct_map.items()}
+        raw_direct_map = serialize_direct_map(self._direct_map)
 
         model_data = {
             "pretrained_synapses": serializable_synapses,
@@ -865,6 +866,25 @@ class SpikingLLM:
         with open(model_path, 'w', encoding='utf-8') as f:
             json.dump(model_data, f, ensure_ascii=False, indent=2)
         print(f"[SpikingLLM] Model saved to: {model_path}")
+
+    def save_memory(self, model_path: str) -> None:
+        parent = os.path.dirname(model_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        state = {
+            "direct_map": serialize_direct_map(self._direct_map),
+            "vocab_size": self.vocab_size,
+            "sdr_size": self.sdr_size,
+        }
+        with open(model_path, "wb") as handle:
+            msgpack.pack(state, handle)
+
+    def load_memory(self, model_path: str) -> int:
+        with open(model_path, "rb") as handle:
+            state = msgpack.unpack(handle, raw=False)
+        raw_direct_map = state.get("direct_map", {})
+        self._direct_map = restore_direct_map(raw_direct_map)
+        return len(self._direct_map)
 
     @classmethod
     def from_pretrained(cls, load_directory: str) -> 'SpikingLLM':
@@ -901,15 +921,8 @@ class SpikingLLM:
                 for post_str, w in post_dict.items():
                     instance.pretrained_synapses[delay][pre][int(post_str)] = float(w)
 
-        def parse_tuple(s: str) -> Tuple[int, ...]:
-            s = s.strip("()")
-            if not s:
-                return ()
-            return tuple(int(x.strip()) for x in s.split(",") if x.strip())
-
         raw_direct_map = data.get("direct_map", {})
-        instance._direct_map = {parse_tuple(k): {int(tk): float(
-            tv) for tk, tv in v.items()} for k, v in raw_direct_map.items()}
+        instance._direct_map = restore_direct_map(raw_direct_map)
 
         if "jepa_state" in data:
             if hasattr(instance.jepa_predictor, "load_state_dict"):

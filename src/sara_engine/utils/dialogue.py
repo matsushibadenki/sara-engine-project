@@ -1,3 +1,7 @@
+# ディレクトリパス: src/sara_engine/utils/dialogue.py
+# ファイルの日本語タイトル: ダイアログ・トピック・トラッカー
+# ファイルの目的や内容: 対話中の重要な概念（トピック）を追跡し、適応的閾値ホメオスタシスを用いてサリエンス（重要度）を動的に管理する。
+
 from typing import Dict, Iterable, List
 
 from ..learning.homeostasis import AdaptiveThresholdHomeostasis
@@ -45,6 +49,35 @@ class AdaptiveTopicTracker:
             reverse=True,
         )
         return [self._id_to_term[term_id] for term_id, _ in ranked[:limit]]
+
+    def to_dict(self) -> Dict[str, object]:
+        return {
+            "term_to_id": dict(self._term_to_id),
+            "id_to_term": dict(self._id_to_term),
+            "next_id": self._next_id,
+            "salience": dict(self._salience),
+            "homeostasis": self._homeostasis.state_dict(),
+        }
+
+    def load_state(self, payload: Dict[str, object]) -> None:
+        term_to_id = payload.get("term_to_id", {})
+        id_to_term = payload.get("id_to_term", {})
+        salience = payload.get("salience", {})
+
+        if isinstance(term_to_id, dict) and isinstance(id_to_term, dict):
+            self._term_to_id = {str(k): int(v) for k, v in term_to_id.items() if isinstance(v, (int, str))}
+            self._id_to_term = {int(k): str(v) for k, v in id_to_term.items() if isinstance(k, (int, str))}
+        
+        next_id = payload.get("next_id")
+        if isinstance(next_id, int):
+            self._next_id = next_id
+
+        if isinstance(salience, dict):
+            self._salience = {int(k): float(v) for k, v in salience.items() if isinstance(k, (int, str)) and isinstance(v, (float, int, str))}
+
+        homeostasis = payload.get("homeostasis")
+        if isinstance(homeostasis, dict):
+            self._homeostasis.load_state_dict(homeostasis)
 
     def _ensure_term(self, term: str) -> int:
         if term in self._term_to_id:
