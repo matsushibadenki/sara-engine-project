@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Mapping, cast
 
 import pytest
 
@@ -26,8 +27,9 @@ def test_restore_direct_map_rejects_unsafe_key_expression():
 
 
 def test_restore_direct_map_rejects_non_mapping_values():
+    raw_map = cast(Mapping[object, Mapping[object, object]], {"(1, 2)": [1, 2, 3]})
     with pytest.raises(ValueError, match="must be dictionaries"):
-        restore_direct_map({"(1, 2)": [1, 2, 3]})
+        restore_direct_map(raw_map)
 
 
 def test_serialize_direct_map_roundtrip():
@@ -37,6 +39,7 @@ def test_serialize_direct_map_roundtrip():
     }
 
     serialized = serialize_direct_map(direct_map)
-    restored = restore_direct_map(serialized)
+    serialized_map = cast(Mapping[object, Mapping[object, object]], serialized)
+    restored = restore_direct_map(serialized_map)
 
     assert restored == direct_map

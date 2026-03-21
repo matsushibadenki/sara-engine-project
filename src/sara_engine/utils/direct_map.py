@@ -15,7 +15,14 @@ def restore_direct_map(raw_map: Mapping[object, Mapping[object, object]]) -> Dir
         key = _parse_direct_map_key(raw_key)
         if not isinstance(raw_values, Mapping):
             raise ValueError("direct_map values must be dictionaries.")
-        restored[key] = {int(token_id): float(weight) for token_id, weight in raw_values.items()}
+        normalized_values: Dict[int, float] = {}
+        for token_id, weight in raw_values.items():
+            if not isinstance(token_id, (int, str)):
+                raise ValueError("direct_map token ids must be integers or strings.")
+            if not isinstance(weight, (int, float, str)):
+                raise ValueError("direct_map weights must be numeric values.")
+            normalized_values[int(token_id)] = float(weight)
+        restored[key] = normalized_values
     return restored
 
 

@@ -1,3 +1,4 @@
+import importlib.util
 import os
 import sys
 
@@ -6,6 +7,18 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 from sara_engine.agent.sara_agent import SaraAgent
 from sara_engine.inference import SaraInference
 from sara_engine.utils.project_paths import model_path, workspace_path
+
+
+def _load_release_soak_module():
+    module_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "scripts", "eval", "release_soak.py")
+    )
+    spec = importlib.util.spec_from_file_location("release_soak_script", module_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_agent_soak_dialogue_keeps_bounded_state():
@@ -71,3 +84,50 @@ def test_inference_soak_learning_and_memory_roundtrip():
     reloaded._load_memory()
 
     assert reloaded.direct_map == engine.direct_map
+
+
+def test_release_soak_sections_report_minimum_workload_flags():
+    module = _load_release_soak_module()
+    agent_report = module.run_agent_soak(duration_seconds=0.5, max_turns=12, min_turns=4)
+    inference_report = module.run_inference_soak(duration_seconds=0.5, max_iterations=16, min_iterations=6)
+
+    assert agent_report["turns"] >= 4
+    assert agent_report["meets_min_turns"] is True
+    assert agent_report["min_turns_required"] == 4
+
+    assert inference_report["iterations"] >= 6
+    assert inference_report["meets_min_iterations"] is True
+    assert inference_report["min_iterations_required"] == 6
+
+
+def test_release_soak_profile_resolution_supports_extended_shipping_profile():
+    module = _load_release_soak_module()
+    settings = module.resolve_soak_profile(
+        profile_name="extended",
+        duration_seconds=None,
+        max_agent_turns=None,
+        min_agent_turns=None,
+        max_inference_iterations=None,
+        min_inference_iterations=None,
+    )
+
+    assert settings["profile_name"] == "extended"
+    assert settings["duration_seconds"] == 30.0
+    assert settings["min_agent_turns"] == 60
+    assert settings["min_inference_iterations"] == 96
+    assert settings["shipping_ready"] is True
+
+
+def test_release_soak_profile_resolution_downgrades_shipping_ready_when_thresholds_are_lowered():
+    module = _load_release_soak_module()
+    settings = module.resolve_soak_profile(
+        profile_name="extended",
+        duration_seconds=1.0,
+        max_agent_turns=8,
+        min_agent_turns=4,
+        max_inference_iterations=12,
+        min_inference_iterations=6,
+    )
+
+    assert settings["profile_name"] == "extended"
+    assert settings["shipping_ready"] is False

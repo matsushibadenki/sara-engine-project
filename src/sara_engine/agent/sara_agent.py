@@ -74,6 +74,7 @@ class SaraAgent:
 
         self.tools: Dict[str, Callable[[str], str]] = {}
         self.runtime_issues: List[Dict[str, str]] = []
+        self.retrieval_diagnostics: List[Dict[str, Any]] = []
         self.system_prompt = system_prompt or ""
         self.safety_guard = safety_guard
         self._bootstrap()
@@ -194,6 +195,7 @@ class SaraAgent:
             "system_prompt": self.system_prompt,
             "topic_tracker": self.topic_tracker.to_dict(),
             "runtime_issues": list(self.runtime_issues),
+            "retrieval_diagnostics": list(self.retrieval_diagnostics),
         }
         with open(session_path, "wb") as handle:
             pickle.dump(payload, handle)
@@ -221,14 +223,26 @@ class SaraAgent:
                     for item in runtime_issues
                     if isinstance(item, dict)
                 ][-20:]
+            retrieval_diagnostics = payload.get("retrieval_diagnostics", [])
+            if isinstance(retrieval_diagnostics, list):
+                self.retrieval_diagnostics = [
+                    item for item in retrieval_diagnostics
+                    if isinstance(item, dict)
+                ][-10:]
 
     def get_recent_issues(self, limit: int = 5) -> List[Dict[str, str]]:
         if limit <= 0:
             return []
         return self.runtime_issues[-limit:]
 
+    def get_recent_retrieval_diagnostics(self, limit: int = 3) -> List[Dict[str, Any]]:
+        if limit <= 0:
+            return []
+        return self.retrieval_diagnostics[-limit:]
+
     def clear_runtime_issues(self) -> None:
         self.runtime_issues.clear()
+        self.retrieval_diagnostics.clear()
 
     def format_recent_issues(self, limit: int = 5) -> str:
         issues = self.get_recent_issues(limit=limit)
@@ -237,6 +251,23 @@ class SaraAgent:
         lines = ["Recent runtime issues:"]
         for issue in issues:
             lines.append(f"- [{issue['stage']}] {issue['message']}")
+        return "\n".join(lines)
+
+    def format_recent_retrieval_diagnostics(self, limit: int = 3) -> str:
+        diagnostics = self.get_recent_retrieval_diagnostics(limit=limit)
+        if not diagnostics:
+            return "No retrieval diagnostics recorded."
+
+        lines = ["Recent retrieval diagnostics:"]
+        for item in diagnostics:
+            lines.append(
+                "- "
+                f"{item.get('clean_content', '')[:60]} | "
+                f"total={item.get('keyword_score', 0.0):.2f} "
+                f"current={item.get('current_keyword_coverage', 0.0):.2f} "
+                f"context={item.get('context_keyword_coverage', 0.0):.2f} "
+                f"metadata={item.get('metadata_keyword_coverage', 0.0):.2f}"
+            )
         return "\n".join(lines)
 
     def _get_history_context_sdr(self) -> List[int]:
@@ -321,11 +352,261 @@ class SaraAgent:
                 seen.append(item)
         return seen
 
+    def _keyword_overlap_stats(self, query_keywords: set[str], candidate_text: str) -> Dict[str, float]:
+        if not query_keywords:
+            return {
+                "match_count": 0.0,
+                "coverage": 0.0,
+                "density": 0.0,
+            }
+
+        candidate_lower = candidate_text.lower()
+        match_count = sum(1 for kw in query_keywords if kw.lower() in candidate_lower)
+        coverage = match_count / max(1, len(query_keywords))
+        density = match_count / max(1, len(candidate_text.split()))
+        return {
+            "match_count": float(match_count),
+            "coverage": coverage,
+            "density": density,
+        }
+
+    def _prepare_teaching_memory(
+        self,
+        user_text: str,
+        context: str,
+        context_keywords: set[str],
+        current_keywords: set[str],
+    ) -> tuple[str, Dict[str, Any]]:
+        selected_keywords: List[str] = []
+        for keyword in list(current_keywords) + list(context_keywords):
+            normalized = keyword.strip().lower()
+            if not normalized or normalized in selected_keywords:
+                continue
+            selected_keywords.append(normalized)
+            if len(selected_keywords) >= 6:
+                break
+
+        metadata = {
+            "context": context,
+            "keywords": selected_keywords,
+        }
+        keyword_prefix = " ".join(selected_keywords)
+        content_to_store = f"【文脈: {keyword_prefix}】 {user_text}" if keyword_prefix else user_text
+        return content_to_store, metadata
+
+    def _score_retrieval_candidate(
+        self,
+        candidate: Dict[str, Any],
+        current_keywords: set[str],
+        context_keywords: set[str],
+        has_demonstrative: bool,
+    ) -> Optional[Dict[str, Any]]:
+        content = str(candidate.get("content", ""))
+        content_lower = content.lower()
+
+        clean_content = content
+        match_ctx = re.search(r'【文脈:.*?】\s*(.*)', content)
+        if match_ctx:
+            clean_content = match_ctx.group(1)
+
+        match_qa = re.search(r'回答は「(.*?)」', clean_content)
+        if match_qa:
+            clean_content = match_qa.group(1)
+
+        clean_content = clean_content.strip()
+        clean_lower = clean_content.lower()
+        metadata = candidate.get("metadata", {})
+        metadata_keywords = set()
+        if isinstance(metadata, dict):
+            raw_keywords = metadata.get("keywords", [])
+            if isinstance(raw_keywords, list):
+                metadata_keywords = {
+                    str(keyword).strip().lower()
+                    for keyword in raw_keywords
+                    if str(keyword).strip()
+                }
+
+        current_stats = self._keyword_overlap_stats(current_keywords, clean_lower)
+        context_stats = self._keyword_overlap_stats(context_keywords, content_lower)
+        all_keywords = set(current_keywords) | set(context_keywords)
+        total_stats = self._keyword_overlap_stats(all_keywords, content_lower)
+        metadata_stats = self._keyword_overlap_stats(all_keywords, " ".join(sorted(metadata_keywords)))
+
+        if current_keywords and not has_demonstrative and current_stats["match_count"] <= 0:
+            return None
+        if (has_demonstrative or not current_keywords) and context_keywords and context_stats["match_count"] <= 0:
+            return None
+
+        retrieval_score = float(candidate.get("score", 0.0))
+        candidate["clean_content"] = clean_content
+        candidate["keyword_score"] = (
+            current_stats["match_count"] * 3.0
+            + current_stats["coverage"] * 4.0
+            + context_stats["match_count"] * 1.5
+            + context_stats["coverage"] * 2.0
+            + metadata_stats["match_count"] * 2.0
+            + metadata_stats["coverage"] * 3.0
+            + total_stats["density"] * 2.5
+            + retrieval_score * 5.0
+        )
+        candidate["match_count"] = total_stats["match_count"]
+        candidate["current_keyword_coverage"] = current_stats["coverage"]
+        candidate["context_keyword_coverage"] = context_stats["coverage"]
+        candidate["metadata_keyword_coverage"] = metadata_stats["coverage"]
+        candidate["retrieval_score_base"] = retrieval_score
+        return candidate
+
+    def _capture_retrieval_diagnostics(self, retrievals: List[Dict[str, Any]], limit: int = 3) -> None:
+        captured: List[Dict[str, Any]] = []
+        for item in retrievals[:limit]:
+            captured.append(
+                {
+                    "clean_content": str(item.get("clean_content", "")),
+                    "keyword_score": float(item.get("keyword_score", 0.0)),
+                    "current_keyword_coverage": float(item.get("current_keyword_coverage", 0.0)),
+                    "context_keyword_coverage": float(item.get("context_keyword_coverage", 0.0)),
+                    "metadata_keyword_coverage": float(item.get("metadata_keyword_coverage", 0.0)),
+                    "retrieval_score_base": float(item.get("retrieval_score_base", 0.0)),
+                }
+            )
+        self.retrieval_diagnostics = captured[-10:]
+
     def _record_issue(self, stage: str, message: str) -> None:
         issue = {"stage": stage, "message": message}
         self.runtime_issues.append(issue)
         if len(self.runtime_issues) > 20:
             self.runtime_issues.pop(0)
+
+    def _score_expert_routing(
+        self,
+        routing_sdr: set[int],
+        current_keywords: set[str],
+        context_keywords: set[str],
+    ) -> List[tuple[str, float]]:
+        scored_experts: List[tuple[str, float]] = []
+        combined_keywords = {keyword.lower() for keyword in (current_keywords | context_keywords) if keyword}
+
+        for comp, anchor in self.prefrontal.context_anchors.items():
+            anchor_overlap = float(len(routing_sdr.intersection(set(anchor))))
+            lexical_hits = 0.0
+
+            comp_terms = {
+                token.lower()
+                for token in comp.replace("_", " ").split()
+                if token
+            }
+            lexical_hits += sum(1.0 for token in comp_terms if token in combined_keywords)
+
+            for keyword in combined_keywords:
+                if keyword in comp.lower():
+                    lexical_hits += 1.5
+
+            topic_bonus = 0.0
+            if comp == self.dialogue_state.get("current_topic"):
+                topic_bonus += 1.0
+
+            if comp != "general":
+                anchor_overlap += 2.0 if anchor_overlap > 0 else 0.0
+                if anchor_overlap > 0 or lexical_hits > 0.0:
+                    topic_bonus += 0.5
+            else:
+                lexical_hits *= 0.5
+
+            score = anchor_overlap + lexical_hits + topic_bonus
+            scored_experts.append((comp, score))
+
+        scored_experts.sort(key=lambda item: item[1], reverse=True)
+        return scored_experts
+
+    def _blend_retrieval_memories(
+        self,
+        retrievals: List[Dict[str, Any]],
+        current_keywords: set[str],
+        context_keywords: set[str],
+    ) -> tuple[str, str]:
+        if not retrievals:
+            return "", ""
+
+        deduped: List[Dict[str, Any]] = []
+        seen_contents: set[str] = set()
+        for item in retrievals:
+            clean_content = str(item.get("clean_content", "")).strip()
+            if not clean_content or clean_content in seen_contents:
+                continue
+            seen_contents.add(clean_content)
+            deduped.append(item)
+
+        if not deduped:
+            return "", ""
+
+        selected = [deduped[0]["clean_content"]]
+        query_terms = {term.lower() for term in (current_keywords | context_keywords) if term}
+        primary_terms = set(self._extract_keywords(deduped[0]["clean_content"]))
+        support_terms = primary_terms | query_terms
+
+        for item in deduped[1:4]:
+            clean_content = item["clean_content"]
+            candidate_terms = set(self._extract_keywords(clean_content))
+            if not candidate_terms:
+                continue
+
+            overlap = len(candidate_terms.intersection(support_terms))
+            coverage = overlap / max(1, len(candidate_terms))
+            if overlap <= 0 or coverage < 0.2:
+                continue
+
+            selected.append(clean_content)
+            support_terms.update(candidate_terms)
+            if len(selected) >= 2:
+                break
+
+        blended_memory = " | ".join(selected)
+        memory_context = selected[0]
+        if len(selected) > 1:
+            memory_context = f"{selected[0]} 補足: {selected[1]}"
+        if len(memory_context) > 150:
+            memory_context = memory_context[:150] + "..."
+        return memory_context, blended_memory
+
+    def _build_topic_aware_fallback(
+        self,
+        user_text: str,
+        current_keywords: set[str],
+        context_keywords: set[str],
+        active_experts: List[str],
+        mode: str,
+        has_demonstrative: bool,
+    ) -> str:
+        if len(user_text) <= 10 and mode == "general":
+            return "はい、SARAです。何かお手伝いできることはありますか？"
+
+        active_terms = self.topic_tracker.active_terms(limit=3)
+        topic_hint = active_terms[0] if active_terms else active_experts[0]
+        query_terms = [term for term in list(current_keywords)[:2] if term]
+        context_terms = [term for term in list(context_keywords)[:2] if term]
+
+        if has_demonstrative and context_terms:
+            detail_hint = " / ".join(context_terms)
+            return (
+                f"関連知識は十分に取り出せませんでした。現在の話題候補は「{topic_hint}」です。"
+                f"「{detail_hint}」のどの点を知りたいか、主語を補って聞き直してください。"
+            )
+
+        if query_terms:
+            detail_hint = " / ".join(query_terms)
+            return (
+                f"関連知識は十分に取り出せませんでした。現在の話題候補は「{topic_hint}」です。"
+                f"「{detail_hint}」について、対象や条件をもう少し具体的にしてください。"
+            )
+
+        if active_terms:
+            detail_hint = " / ".join(active_terms)
+            return (
+                f"関連知識は十分に取り出せませんでした。現在の話題候補は「{detail_hint}」です。"
+                "主語や対象を補って聞き直してください。"
+            )
+
+        return "申し訳ありませんが、その質問に関連する十分な知識が記憶に見つかりません。別の表現で試していただくか、関連する知識を教えていただけますか？"
 
     def _execute_tools(self, user_text: str) -> tuple[List[str], List[str]]:
         tool_results: List[str] = []
@@ -357,6 +638,7 @@ class SaraAgent:
         mode = self._determine_response_mode(user_text)
         self.dialogue_state["last_intent"] = mode
         extracted_now = self._extract_keywords(user_text)
+        current_keywords = set(extracted_now)
         self.topic_tracker.update(extracted_now)
 
         if user_ids and teaching_mode:
@@ -381,23 +663,6 @@ class SaraAgent:
             routing_sdr.update(random.sample(
                 history_context_sdr, int(len(history_context_sdr) * 0.1)))
 
-        overlaps = {}
-        for comp, anchor in self.prefrontal.context_anchors.items():
-            intersect_len = len(routing_sdr.intersection(set(anchor)))
-            if intersect_len > 0 and comp != "general":
-                overlaps[comp] = intersect_len + 2
-            else:
-                overlaps[comp] = intersect_len
-
-        sorted_experts = sorted(
-            overlaps.items(), key=lambda x: x[1], reverse=True)
-        active_experts = [comp for comp,
-                          score in sorted_experts[:2] if score > 0]
-        if not active_experts:
-            active_experts = ["general"]
-
-        self.dialogue_state["current_topic"] = active_experts[0]
-
         context_keywords = set()
         prev_user = ""
         if len(self.dialogue_history) > 0:
@@ -408,6 +673,16 @@ class SaraAgent:
                     context_keywords.update(
                         self._extract_keywords(msg["text"]))
         context_keywords.update(self.topic_tracker.active_terms(limit=6))
+        sorted_experts = self._score_expert_routing(
+            routing_sdr=routing_sdr,
+            current_keywords=current_keywords,
+            context_keywords=context_keywords,
+        )
+        active_experts = [comp for comp, score in sorted_experts[:2] if score > 0]
+        if not active_experts:
+            active_experts = ["general"]
+
+        self.dialogue_state["current_topic"] = active_experts[0]
 
         if teaching_mode:
             context = active_experts[0]
@@ -427,11 +702,20 @@ class SaraAgent:
                 self.prefrontal.context_anchors[context] = set(random.sample(
                     list(anchor_set), target_bits) if len(anchor_set) > target_bits else anchor_set)
 
-            kw_prefix = f"【文脈: {' '.join(context_keywords)}】 " if context_keywords else ""
-            content_to_store = f"{kw_prefix}{user_text}"
+            content_to_store, memory_metadata = self._prepare_teaching_memory(
+                user_text=user_text,
+                context=context,
+                context_keywords=context_keywords,
+                current_keywords=current_keywords,
+            )
 
             self.brain.experience_and_memorize(
-                input_sdr, content=content_to_store, context=context, learning=True)
+                input_sdr,
+                content=content_to_store,
+                context=context,
+                learning=True,
+                metadata=memory_metadata,
+            )
             response_text = f"[MoE Router: {context} Expert] 海馬とSpikingLLMに記憶を定着させました。"
             return response_text
 
@@ -440,8 +724,6 @@ class SaraAgent:
         tool_triggered_by_user = len(pre_tool_results) > 0
 
         recent_context = f"前回の質問「{prev_user[:30]}」を踏まえ、" if prev_user else ""
-        current_keywords = set(extracted_now)
-
         has_demonstrative = any(d in user_text for d in [
                                 "それ", "これ", "あれ", "その", "この", "あの", "彼", "彼女"])
         if has_demonstrative or len(current_keywords) <= 1:
@@ -477,74 +759,49 @@ class SaraAgent:
         valid_retrievals = [
             m for m in all_retrieved if m.get("score", 0) > 0.01]
         filtered_retrievals = []
-
         for m in valid_retrievals:
-            content = m["content"]
-            content_lower = content.lower()
-
-            clean_content = content
-            match_ctx = re.search(r'【文脈:.*?】\s*(.*)', content)
-            if match_ctx:
-                clean_content = match_ctx.group(1)
-
-            match_qa = re.search(r'回答は「(.*?)」', clean_content)
-            if match_qa:
-                clean_content = match_qa.group(1)
-
-            m["clean_content"] = clean_content.strip()
-
-            clean_lower = clean_content.lower()
-            curr_match = sum(
-                1 for kw in current_keywords if kw.lower() in clean_lower)
-            ctx_match = sum(
-                1 for kw in context_keywords if kw.lower() in content_lower)
-
-            if current_keywords and not has_demonstrative:
-                if curr_match == 0:
-                    continue
-
-            if (has_demonstrative or not current_keywords) and context_keywords:
-                if ctx_match == 0:
-                    continue
-
-            all_kw = set(current_keywords) | context_keywords
-            total_match = sum(
-                1 for kw in all_kw if kw.lower() in content_lower)
-
-            m["keyword_score"] = total_match + (curr_match * 2)
-
-            filtered_retrievals.append(m)
+            scored = self._score_retrieval_candidate(
+                m,
+                current_keywords=current_keywords,
+                context_keywords=context_keywords,
+                has_demonstrative=has_demonstrative,
+            )
+            if scored is not None:
+                filtered_retrievals.append(scored)
 
         filtered_retrievals.sort(key=lambda x: (
-            x.get("keyword_score", 0), x.get("score", 0)), reverse=True)
+            x.get("keyword_score", 0.0),
+            x.get("current_keyword_coverage", 0.0),
+            x.get("context_keyword_coverage", 0.0),
+            x.get("metadata_keyword_coverage", 0.0),
+            x.get("score", 0.0),
+        ), reverse=True)
         valid_retrievals = filtered_retrievals
+        self._capture_retrieval_diagnostics(valid_retrievals)
 
         if not valid_retrievals and not tool_triggered_by_user:
-            if len(user_text) <= 10 and mode == "general":
-                fallback_msg = "はい、SARAです。何かお手伝いできることはありますか？"
-                self._update_history("system", fallback_msg,
-                                     self.encoder.encode(fallback_msg))
-                return f"[MoE Router: {active_experts[0]}]\n >> {fallback_msg}"
-
-            active_terms = self.topic_tracker.active_terms(limit=3)
-            if active_terms:
-                hint = " / ".join(active_terms)
-                fallback_msg = f"関連知識は十分に取り出せませんでした。現在の話題候補は「{hint}」です。主語を補って聞き直してください。"
-            else:
-                fallback_msg = "申し訳ありませんが、その質問に関連する十分な知識が記憶に見つかりません。別の表現で試していただくか、関連する知識を教えていただけますか？"
+            fallback_msg = self._build_topic_aware_fallback(
+                user_text=user_text,
+                current_keywords=current_keywords,
+                context_keywords=context_keywords,
+                active_experts=active_experts,
+                mode=mode,
+                has_demonstrative=has_demonstrative,
+            )
             self._update_history("system", fallback_msg,
                                  self.encoder.encode(fallback_msg))
-            return f"[MoE Router: {active_experts[0]} (Fallback)]\n >> {fallback_msg}"
+            router_suffix = "" if len(user_text) <= 10 and mode == "general" else " (Fallback)"
+            return f"[MoE Router: {active_experts[0]}{router_suffix}]\n >> {fallback_msg}"
 
         if tool_triggered_by_user:
             memory_context = " ".join(pre_tool_results)
             blended_memory = "[外部ツール実行結果による事実情報]"
         else:
-            best_memories = [m["clean_content"] for m in valid_retrievals[:2]]
-            blended_memory = " | ".join(best_memories)
-            memory_context = best_memories[0]
-            if len(memory_context) > 150:
-                memory_context = memory_context[:150] + "..."
+            memory_context, blended_memory = self._blend_retrieval_memories(
+                valid_retrievals,
+                current_keywords=current_keywords,
+                context_keywords=context_keywords,
+            )
 
         if tool_triggered_by_user:
             final_generated_text = f"【システム情報】 {pre_tool_results[0]}"

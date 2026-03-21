@@ -14,6 +14,8 @@ import subprocess
 scripts_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(scripts_dir, ".."))
 src_dir = os.path.join(project_root, "src")
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 sys.path.insert(0, scripts_dir)
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
@@ -23,8 +25,8 @@ from data.collect_math import generate_math_corpus, default_math_database
 from data.collect_docs import process_document
 from eval.test_math_chat import run_math_chat
 from eval.test_vision_inference import run_vision_inference
-from utils.prune_memory import prune_model_memory
-from utils.manage_db import SaraCorpusDB
+from scripts.utils.prune_memory import prune_model_memory
+from scripts.utils.manage_db import SaraCorpusDB
 
 def main():
     parser = argparse.ArgumentParser(description="SARA Engine 統合管理CLI - Data & Learning Pipeline")

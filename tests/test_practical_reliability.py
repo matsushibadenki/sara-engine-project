@@ -10,6 +10,8 @@ from sara_engine.encoders.time_series import TimeSeriesCurrentEncoder
 from sara_engine.agent.sara_agent import SaraAgent
 from sara_engine.learning.force_io import load_force_artifact
 from sara_engine.learning.force_workflow import load_series, split_series
+from sara_engine.core.cortex import CorticalColumn
+from sara_engine.memory.hippocampus import CorticoHippocampalSystem
 from sara_engine.models.liquid_reservoir import LiquidReservoir
 from sara_engine.models.readout_layer import SpikeReadoutLayer
 from sara_engine.models.unified_snn import UnifiedSNNModel
@@ -160,6 +162,42 @@ def test_agent_formats_recent_issues():
     assert "[tool_execution]" in diagnostics
 
 
+def test_agent_session_restores_retrieval_diagnostics():
+    agent = SaraAgent(
+        input_size=256,
+        hidden_size=256,
+        compartments=["general", "python_expert"],
+    )
+    session_path = workspace_path("tests", "agent_session_with_retrieval_diagnostics.pkl")
+    os.makedirs(os.path.dirname(session_path), exist_ok=True)
+
+    agent._capture_retrieval_diagnostics(
+        [
+            {
+                "clean_content": "Pythonの関数は再利用できます。",
+                "keyword_score": 9.5,
+                "current_keyword_coverage": 1.0,
+                "context_keyword_coverage": 0.5,
+                "metadata_keyword_coverage": 0.5,
+                "retrieval_score_base": 0.8,
+            }
+        ]
+    )
+
+    restored = SaraAgent(
+        input_size=256,
+        hidden_size=256,
+        compartments=["general", "python_expert"],
+    )
+    agent.save_session(session_path)
+    restored.load_session(session_path)
+
+    diagnostics = restored.get_recent_retrieval_diagnostics()
+    assert diagnostics
+    assert diagnostics[0]["keyword_score"] == 9.5
+    assert "Pythonの関数" in restored.format_recent_retrieval_diagnostics()
+
+
 def test_unified_snn_force_readout_matches_single_reservoir_step():
     reservoir = LiquidReservoir(
         n_neurons=8,
@@ -254,3 +292,36 @@ def test_load_force_artifact_rejects_invalid_readout_shapes():
 
     with pytest.raises(ValueError, match="weights must contain rows of length"):
         load_force_artifact(artifact_path)
+
+
+def test_hippocampus_preserves_memory_metadata_in_search_results():
+    ltm_path = model_path("tests", "hippocampus_metadata.pkl")
+    if os.path.exists(ltm_path):
+        os.remove(ltm_path)
+
+    cortex = CorticalColumn(
+        input_size=64,
+        hidden_size_per_comp=64,
+        compartment_names=["general"],
+    )
+    system = CorticoHippocampalSystem(
+        cortex=cortex,
+        ltm_filepath=ltm_path,
+        max_working_memory_size=4,
+        snn_input_size=64,
+    )
+
+    sensory_sdr = [1, 3, 5, 7]
+    system.experience_and_memorize(
+        sensory_sdr=sensory_sdr,
+        content="【文脈: python 関数】 Pythonの関数は再利用できます。",
+        context="general",
+        learning=False,
+        metadata={"context": "general", "keywords": ["python", "関数"]},
+    )
+
+    results = system.in_context_inference(current_sensory_sdr=sensory_sdr, context="general")
+
+    assert results
+    assert results[0]["metadata"]["context"] == "general"
+    assert "python" in results[0]["metadata"]["keywords"]

@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Any, Deque, Dict, List
+from typing import Any, Deque, Dict, List, Optional
 
 from sara_engine.core.cortex import CorticalColumn
 from sara_engine.memory.ltm import SparseMemoryStore
@@ -21,7 +21,14 @@ class CorticoHippocampalSystem:
         self.st_snn = SpatioTemporalSNN(
             n_in=snn_input_size, n_low=200, n_high=100)
 
-    def experience_and_memorize(self, sensory_sdr: List[int], content: str, context: str, learning: bool = True) -> List[int]:
+    def experience_and_memorize(
+        self,
+        sensory_sdr: List[int],
+        content: str,
+        context: str,
+        learning: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> List[int]:
         self.cortex.reset_short_term_memory()
 
         cortical_t1 = self.cortex.forward_latent_chain(
@@ -32,7 +39,7 @@ class CorticoHippocampalSystem:
         hippocampal_input = list(set(cortical_t2) | set(sensory_sdr))
 
         self.ltm.add(sdr=hippocampal_input,
-                     content=content, memory_type=context)
+                     content=content, memory_type=context, metadata=metadata)
         self.working_memory.append(hippocampal_input)
 
         if learning:

@@ -17,6 +17,10 @@ def test_inference_save_and_load_memory_roundtrip():
         (12345,): {7: 1.0, 8: 2.0},
         (67890,): {9: 3.5},
     }
+    writer.context_index = {
+        (12345,): (1, 2, 3),
+        (67890,): (4, 5),
+    }
     writer.refractory_buffer = []
     writer.lif_network = None
     writer.save_pretrained(memory_path)
@@ -24,8 +28,10 @@ def test_inference_save_and_load_memory_roundtrip():
     reader = SaraInference.__new__(SaraInference)
     reader.model_path = memory_path
     reader.direct_map = {}
+    reader.context_index = {}
     reader.refractory_buffer = []
     reader.lif_network = None
     reader._load_memory()
 
     assert reader.direct_map == writer.direct_map
+    assert reader.context_index == writer.context_index

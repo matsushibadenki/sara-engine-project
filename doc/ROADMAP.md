@@ -49,7 +49,7 @@ ANN系AIに正面から追随するのではなく、まず「CPU中心・低消
   * 軽量 soak test、CLI dispatch test、release metadata test の追加。  
   * `scripts/old/` の legacy 扱いの明文化。  
 * **残タスク:**  
-  * wall-clock を長めに取った soak run の運用基準策定。  
+  * wall-clock を長めに取った soak run の運用基準策定と `extended` profile の運用定着。  
   * 配布前チェックリストに基づく最終確認フローの固定。  
   * README / release notes / packaging metadata の継続整備。  
   * 主要 CLI コマンドの end-to-end カバレッジ拡張。  
@@ -76,6 +76,8 @@ ANN系AIに正面から追随するのではなく、まず「CPU中心・低消
 * **完了条件:**  
   * 少なくとも限定タスク群で、ANN 系と比較可能な精度/安定性/電力効率のレポートが揃う。  
   * 推論品質が「省エネルギーの代償として大きく劣る」状態から脱却する。
+* **進行中の実装:**  
+  * `AgentDialogueEvaluator` と `scripts/eval/agent_dialogue_benchmark.py` により、`response_keyword_recall`、`fallback_control`、`retrieval_grounding` を lightweight benchmark として継続観測可能にした。  
 
 ### **Phase 4: Scale-out & Continuous Learning (中期)**
 

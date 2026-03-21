@@ -4,7 +4,7 @@
 import pickle
 import os
 import time
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class SparseMemoryStore:
     """
@@ -15,13 +15,20 @@ class SparseMemoryStore:
         self.memories: List[Dict[str, Any]] = []
         self.load()
 
-    def add(self, sdr: List[int], content: str, memory_type: str = "episodic"):
+    def add(
+        self,
+        sdr: List[int],
+        content: str,
+        memory_type: str = "episodic",
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
         """記憶を追加して即時保存"""
         entry = {
             'sdr': sdr,
             'content': content,
             'timestamp': time.time(),
-            'type': memory_type
+            'type': memory_type,
+            'metadata': dict(metadata) if isinstance(metadata, dict) else {},
         }
         self.memories.append(entry)
         self.save()
@@ -50,7 +57,8 @@ class SparseMemoryStore:
                     'score': score,
                     'type': mem['type'],
                     'timestamp': mem['timestamp'],
-                    'sdr': mem['sdr']  # 皮質へのフィードバック(ICL)のためにSDRを含める
+                    'sdr': mem['sdr'],  # 皮質へのフィードバック(ICL)のためにSDRを含める
+                    'metadata': dict(mem.get('metadata', {})),
                 })
 
         results.sort(key=lambda x: x['score'], reverse=True)

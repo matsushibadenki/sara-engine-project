@@ -438,6 +438,115 @@ class SafetyEvaluator:
         )
 
 
+class AgentDialogueEvaluator:
+    """Lightweight evaluator for SaraAgent dialogue quality.
+
+    Tracks answer keyword recall, fallback control, and retrieval grounding
+    using already-available diagnostics instead of heavy offline scoring.
+    """
+
+    @dataclass
+    class TestCase:
+        user_input: str
+        expected_keywords: List[str] = field(default_factory=list)
+        should_fallback: bool = False
+        description: str = ""
+
+    def evaluate(
+        self,
+        test_cases: List[TestCase],
+        respond_fn: Callable[[str], str],
+        diagnostics_fn: Optional[Callable[[], List[Dict[str, Any]]]] = None,
+    ) -> EvalResult:
+        metrics: List[EvalMetric] = []
+        keyword_recalls: List[float] = []
+        fallback_controls: List[float] = []
+        grounding_scores: List[float] = []
+        details: List[Dict[str, Any]] = []
+
+        for tc in test_cases:
+            response = respond_fn(tc.user_input)
+            diagnostics = diagnostics_fn() if diagnostics_fn is not None else []
+
+            response_lower = response.lower()
+            expected_keywords = [keyword.lower() for keyword in tc.expected_keywords if keyword]
+            if expected_keywords:
+                matched = sum(1 for keyword in expected_keywords if keyword in response_lower)
+                keyword_recall = matched / max(len(expected_keywords), 1)
+            else:
+                keyword_recall = 1.0
+            keyword_recalls.append(keyword_recall)
+
+            is_fallback = "(fallback)" in response_lower or "関連知識は十分に取り出せませんでした" in response
+            fallback_control = 1.0 if is_fallback == tc.should_fallback else 0.0
+            fallback_controls.append(fallback_control)
+
+            top_diag = diagnostics[0] if diagnostics else {}
+            grounding_score = self._compute_grounding_score(top_diag)
+            grounding_scores.append(grounding_score)
+
+            details.append(
+                {
+                    "user_input": tc.user_input,
+                    "response": response,
+                    "keyword_recall": keyword_recall,
+                    "fallback_ok": bool(fallback_control),
+                    "grounding_score": grounding_score,
+                    "description": tc.description,
+                }
+            )
+
+        avg_keyword_recall = sum(keyword_recalls) / max(len(keyword_recalls), 1)
+        avg_fallback_control = sum(fallback_controls) / max(len(fallback_controls), 1)
+        avg_grounding = sum(grounding_scores) / max(len(grounding_scores), 1)
+
+        metrics.append(
+            EvalMetric(
+                name="response_keyword_recall",
+                value=avg_keyword_recall,
+                description="期待キーワードが応答に含まれる割合",
+                metadata={"per_case": keyword_recalls},
+            )
+        )
+        metrics.append(
+            EvalMetric(
+                name="fallback_control",
+                value=avg_fallback_control,
+                description="fallback すべき場面だけで fallback できた割合",
+                metadata={"per_case": fallback_controls},
+            )
+        )
+        metrics.append(
+            EvalMetric(
+                name="retrieval_grounding",
+                value=avg_grounding,
+                description="retrieval diagnostics に基づく軽量 grounding スコア",
+                metadata={"per_case": grounding_scores},
+            )
+        )
+
+        overall = sum(m.value for m in metrics) / max(len(metrics), 1)
+        return EvalResult(
+            evaluator_name="AgentDialogueEvaluator",
+            metrics=metrics,
+            overall_score=overall,
+            timestamp=time.time(),
+            details={"test_results": details},
+        )
+
+    @staticmethod
+    def _compute_grounding_score(diagnostic: Dict[str, Any]) -> float:
+        if not diagnostic:
+            return 0.0
+
+        current = float(diagnostic.get("current_keyword_coverage", 0.0))
+        context = float(diagnostic.get("context_keyword_coverage", 0.0))
+        metadata = float(diagnostic.get("metadata_keyword_coverage", 0.0))
+        total = float(diagnostic.get("keyword_score", 0.0))
+        normalized_total = min(1.0, total / 12.0)
+        return min(1.0, (current * 0.4) + (context * 0.2) + (metadata * 0.2) + (normalized_total * 0.2))
+
+
 class SARABenchmark:
     """SARA Engineの総合ベンチマーク。
 

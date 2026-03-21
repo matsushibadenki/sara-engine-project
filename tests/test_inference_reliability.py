@@ -26,13 +26,32 @@ def test_inference_learn_sequence_uses_tuple_keys_and_integer_tokens():
     engine = SaraInference.__new__(SaraInference)
     engine.model_path = ""
     engine.direct_map = {}
+    engine.context_index = {}
     engine.refractory_buffer = []
     engine.lif_network = None
 
     engine.learn_sequence([10, 11, 12])
 
     assert engine.direct_map
+    assert engine.context_index
     for key, values in engine.direct_map.items():
         assert isinstance(key, tuple)
         assert all(isinstance(item, int) for item in key)
         assert all(isinstance(token_id, int) for token_id in values.keys())
+
+
+def test_inference_fuzzy_context_match_recovers_nearby_sequence():
+    engine = SaraInference.__new__(SaraInference)
+    engine.model_path = ""
+    engine.direct_map = {}
+    engine.context_index = {}
+    engine.refractory_buffer = []
+    engine.lif_network = None
+
+    engine.learn_sequence([101, 102, 103, 999])
+
+    matched_key = engine._find_best_matching_key([102, 103])
+
+    assert matched_key is not None
+    assert matched_key in engine.direct_map
+    assert 999 in engine.direct_map[matched_key]

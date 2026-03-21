@@ -3,6 +3,7 @@
 # ファイルの目的や内容: 評価基盤の単体テスト
 
 from sara_engine.evaluation.evaluator import (
+    AgentDialogueEvaluator,
     EvalMetric,
     EvalResult,
     RAGEvaluator,
@@ -208,6 +209,74 @@ class TestSafetyEvaluator:
         )
         f1 = next(m for m in result.metrics if m.name == "f1_score")
         assert 0.0 <= f1.value <= 1.0
+
+
+class TestAgentDialogueEvaluator:
+
+    def test_dialogue_evaluator_scores_keyword_recall_and_grounding(self) -> None:
+        evaluator = AgentDialogueEvaluator()
+        responses = iter(
+            [
+                "Pythonの関数は再利用でき、引数を受け取れます。",
+                "[MoE Router: general (Fallback)]\n >> 関連知識は十分に取り出せませんでした。",
+            ]
+        )
+        diagnostics = iter(
+            [
+                [
+                    {
+                        "keyword_score": 12.0,
+                        "current_keyword_coverage": 1.0,
+                        "context_keyword_coverage": 0.5,
+                        "metadata_keyword_coverage": 0.5,
+                    }
+                ],
+                [],
+            ]
+        )
+
+        result = evaluator.evaluate(
+            test_cases=[
+                AgentDialogueEvaluator.TestCase(
+                    user_input="Pythonの関数とは？",
+                    expected_keywords=["Python", "関数", "引数"],
+                    should_fallback=False,
+                ),
+                AgentDialogueEvaluator.TestCase(
+                    user_input="未知の話題について教えて",
+                    expected_keywords=[],
+                    should_fallback=True,
+                ),
+            ],
+            respond_fn=lambda _text: next(responses),
+            diagnostics_fn=lambda: next(diagnostics),
+        )
+
+        keyword_recall = next(m for m in result.metrics if m.name == "response_keyword_recall")
+        fallback_control = next(m for m in result.metrics if m.name == "fallback_control")
+        grounding = next(m for m in result.metrics if m.name == "retrieval_grounding")
+
+        assert keyword_recall.value > 0.8
+        assert fallback_control.value == 1.0
+        assert grounding.value >= 0.4
+
+    def test_dialogue_evaluator_penalizes_wrong_fallback_behavior(self) -> None:
+        evaluator = AgentDialogueEvaluator()
+
+        result = evaluator.evaluate(
+            test_cases=[
+                AgentDialogueEvaluator.TestCase(
+                    user_input="Pythonの関数とは？",
+                    expected_keywords=["Python"],
+                    should_fallback=False,
+                )
+            ],
+            respond_fn=lambda _text: "[MoE Router: general (Fallback)]\n >> 関連知識は十分に取り出せませんでした。",
+            diagnostics_fn=lambda: [],
+        )
+
+        fallback_control = next(m for m in result.metrics if m.name == "fallback_control")
+        assert fallback_control.value == 0.0
 
 
 # --- SARABenchmark テスト ---
