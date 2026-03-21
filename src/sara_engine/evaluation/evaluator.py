@@ -547,6 +547,164 @@ class AgentDialogueEvaluator:
         return min(1.0, (current * 0.4) + (context * 0.2) + (metadata * 0.2) + (normalized_total * 0.2))
 
 
+class InferenceSequenceEvaluator:
+    """Lightweight evaluator for SaraInference sequence memory quality."""
+
+    @dataclass
+    class TestCase:
+        case_type: str
+        expected_success: bool = True
+        description: str = ""
+
+    def evaluate(
+        self,
+        test_cases: List[TestCase],
+        run_case_fn: Callable[[TestCase], Dict[str, Any]],
+    ) -> EvalResult:
+        metrics: List[EvalMetric] = []
+        one_shot_scores: List[float] = []
+        fuzzy_scores: List[float] = []
+        retention_scores: List[float] = []
+        details: List[Dict[str, Any]] = []
+
+        for tc in test_cases:
+            outcome = run_case_fn(tc)
+            success = bool(outcome.get("success", False))
+            score = 1.0 if success == tc.expected_success else 0.0
+
+            if tc.case_type == "one_shot":
+                one_shot_scores.append(score)
+            elif tc.case_type == "fuzzy":
+                fuzzy_scores.append(score)
+            elif tc.case_type == "continual":
+                retention_scores.append(score)
+
+            details.append(
+                {
+                    "case_type": tc.case_type,
+                    "success": success,
+                    "expected_success": tc.expected_success,
+                    "predicted_token": outcome.get("predicted_token"),
+                    "expected_token": outcome.get("expected_token"),
+                    "description": tc.description,
+                }
+            )
+
+        metrics.append(
+            EvalMetric(
+                name="one_shot_accuracy",
+                value=sum(one_shot_scores) / max(len(one_shot_scores), 1),
+                description="One-shot sequence memory recall accuracy",
+                metadata={"per_case": one_shot_scores},
+            )
+        )
+        metrics.append(
+            EvalMetric(
+                name="fuzzy_retrieval_accuracy",
+                value=sum(fuzzy_scores) / max(len(fuzzy_scores), 1),
+                description="Nearby context recovery accuracy without dense similarity",
+                metadata={"per_case": fuzzy_scores},
+            )
+        )
+        metrics.append(
+            EvalMetric(
+                name="continual_retention",
+                value=sum(retention_scores) / max(len(retention_scores), 1),
+                description="Retention after additional online sequence learning",
+                metadata={"per_case": retention_scores},
+            )
+        )
+
+        overall = sum(metric.value for metric in metrics) / max(len(metrics), 1)
+        return EvalResult(
+            evaluator_name="InferenceSequenceEvaluator",
+            metrics=metrics,
+            overall_score=overall,
+            timestamp=time.time(),
+            details={"test_results": details},
+        )
+
+
+class SpikingLLMSequenceEvaluator:
+    """Lightweight evaluator for SpikingLLM next-token and streaming quality."""
+
+    @dataclass
+    class TestCase:
+        case_type: str
+        expected_success: bool = True
+        description: str = ""
+
+    def evaluate(
+        self,
+        test_cases: List[TestCase],
+        run_case_fn: Callable[[TestCase], Dict[str, Any]],
+    ) -> EvalResult:
+        metrics: List[EvalMetric] = []
+        next_token_scores: List[float] = []
+        streaming_scores: List[float] = []
+        retention_scores: List[float] = []
+        details: List[Dict[str, Any]] = []
+
+        for tc in test_cases:
+            outcome = run_case_fn(tc)
+            success = bool(outcome.get("success", False))
+            score = 1.0 if success == tc.expected_success else 0.0
+
+            if tc.case_type == "next_token":
+                next_token_scores.append(score)
+            elif tc.case_type == "stream":
+                streaming_scores.append(score)
+            elif tc.case_type == "continual":
+                retention_scores.append(score)
+
+            details.append(
+                {
+                    "case_type": tc.case_type,
+                    "success": success,
+                    "expected_success": tc.expected_success,
+                    "predicted_token": outcome.get("predicted_token"),
+                    "expected_token": outcome.get("expected_token"),
+                    "generated_tokens": outcome.get("generated_tokens", []),
+                    "expected_tokens": outcome.get("expected_tokens", []),
+                    "description": tc.description,
+                }
+            )
+
+        metrics.append(
+            EvalMetric(
+                name="next_token_accuracy",
+                value=sum(next_token_scores) / max(len(next_token_scores), 1),
+                description="Top candidate accuracy for known token transitions",
+                metadata={"per_case": next_token_scores},
+            )
+        )
+        metrics.append(
+            EvalMetric(
+                name="stream_completion_rate",
+                value=sum(streaming_scores) / max(len(streaming_scores), 1),
+                description="Streaming generation completion rate for short known sequences",
+                metadata={"per_case": streaming_scores},
+            )
+        )
+        metrics.append(
+            EvalMetric(
+                name="continual_memory_retention",
+                value=sum(retention_scores) / max(len(retention_scores), 1),
+                description="Retention after adding additional lightweight knowledge paths",
+                metadata={"per_case": retention_scores},
+            )
+        )
+
+        overall = sum(metric.value for metric in metrics) / max(len(metrics), 1)
+        return EvalResult(
+            evaluator_name="SpikingLLMSequenceEvaluator",
+            metrics=metrics,
+            overall_score=overall,
+            timestamp=time.time(),
+            details={"test_results": details},
+        )
+
+
 class SARABenchmark:
     """SARA Engineの総合ベンチマーク。
 

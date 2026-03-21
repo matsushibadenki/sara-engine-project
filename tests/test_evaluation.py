@@ -6,11 +6,14 @@ from sara_engine.evaluation.evaluator import (
     AgentDialogueEvaluator,
     EvalMetric,
     EvalResult,
+    InferenceSequenceEvaluator,
     RAGEvaluator,
     SARABenchmark,
     SafetyEvaluator,
+    SpikingLLMSequenceEvaluator,
     ToolEvaluator,
 )
+from typing import Any, Dict, Iterator
 import os
 import sys
 
@@ -277,6 +280,66 @@ class TestAgentDialogueEvaluator:
 
         fallback_control = next(m for m in result.metrics if m.name == "fallback_control")
         assert fallback_control.value == 0.0
+
+
+class TestInferenceSequenceEvaluator:
+
+    def test_sequence_evaluator_tracks_one_shot_fuzzy_and_retention(self) -> None:
+        evaluator = InferenceSequenceEvaluator()
+        outcomes: Iterator[Dict[str, Any]] = iter(
+            [
+                {"success": True, "predicted_token": 30, "expected_token": 30},
+                {"success": True, "predicted_token": 999, "expected_token": 999},
+                {"success": True, "predicted_token": 3, "expected_token": 3},
+            ]
+        )
+
+        result = evaluator.evaluate(
+            test_cases=[
+                InferenceSequenceEvaluator.TestCase(case_type="one_shot"),
+                InferenceSequenceEvaluator.TestCase(case_type="fuzzy"),
+                InferenceSequenceEvaluator.TestCase(case_type="continual"),
+            ],
+            run_case_fn=lambda _case: next(outcomes),
+        )
+
+        one_shot = next(m for m in result.metrics if m.name == "one_shot_accuracy")
+        fuzzy = next(m for m in result.metrics if m.name == "fuzzy_retrieval_accuracy")
+        retention = next(m for m in result.metrics if m.name == "continual_retention")
+
+        assert one_shot.value == 1.0
+        assert fuzzy.value == 1.0
+        assert retention.value == 1.0
+
+
+class TestSpikingLLMSequenceEvaluator:
+
+    def test_spiking_llm_evaluator_tracks_next_token_stream_and_retention(self) -> None:
+        evaluator = SpikingLLMSequenceEvaluator()
+        outcomes: Iterator[Dict[str, Any]] = iter(
+            [
+                {"success": True, "predicted_token": 2, "expected_token": 2},
+                {"success": True, "generated_tokens": [2, 3], "expected_tokens": [2, 3]},
+                {"success": True, "predicted_token": 2, "expected_token": 2},
+            ]
+        )
+
+        result = evaluator.evaluate(
+            test_cases=[
+                SpikingLLMSequenceEvaluator.TestCase(case_type="next_token"),
+                SpikingLLMSequenceEvaluator.TestCase(case_type="stream"),
+                SpikingLLMSequenceEvaluator.TestCase(case_type="continual"),
+            ],
+            run_case_fn=lambda _case: next(outcomes),
+        )
+
+        next_token = next(m for m in result.metrics if m.name == "next_token_accuracy")
+        stream = next(m for m in result.metrics if m.name == "stream_completion_rate")
+        retention = next(m for m in result.metrics if m.name == "continual_memory_retention")
+
+        assert next_token.value == 1.0
+        assert stream.value == 1.0
+        assert retention.value == 1.0
 
 
 # --- SARABenchmark テスト ---

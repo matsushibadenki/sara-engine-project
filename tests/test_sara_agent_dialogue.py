@@ -281,3 +281,16 @@ def test_agent_retrieval_diagnostics_capture_score_breakdown():
     assert diagnostics[0]["keyword_score"] == 11.5
     assert "Recent retrieval diagnostics:" in formatted
     assert "metadata=0.50" in formatted
+
+
+def test_agent_extract_keywords_preserves_followup_focus_terms():
+    agent = SaraAgent(
+        input_size=256,
+        hidden_size=256,
+        compartments=["general", "python_expert"],
+    )
+
+    keywords = agent._extract_keywords("それを書くメリットとデメリットは何ですか？")
+
+    assert "メリット" in keywords
+    assert "デメリット" in keywords

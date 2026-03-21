@@ -19,6 +19,7 @@ This pre-release focuses on production hardening for the CPU-first SNN stack.
 - Added lightweight soak tests for repeated `SaraAgent` dialogue turns and repeated `SaraInference` memory updates.
 - Added explicit release soak acceptance thresholds so the release gate now checks minimum workload, bounded diagnostics, and memory round-trip integrity together.
 - Added a lightweight `SaraAgent` dialogue benchmark report under `workspace/evaluation/` so Phase 3 quality work can be tracked numerically.
+- Added lightweight Phase 3 accuracy benchmarks for `SaraInference` and `SpikingLLM`, plus an aggregated `phase3_accuracy_suite.py` report under `workspace/evaluation/`.
 - Marked `scripts/old/` as legacy and documented that it is not the recommended production path.
 
 ### Operational Notes

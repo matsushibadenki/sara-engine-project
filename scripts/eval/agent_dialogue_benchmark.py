@@ -47,6 +47,13 @@ def build_benchmark_agent() -> SaraAgent:
 def run_agent_dialogue_benchmark() -> Dict[str, Any]:
     agent = build_benchmark_agent()
     evaluator = AgentDialogueEvaluator()
+
+    def _respond(text: str) -> str:
+        response = agent.chat(text, teaching_mode=False)
+        if isinstance(response, str):
+            return response
+        return "".join(str(chunk) for chunk in response)
+
     test_cases = [
         AgentDialogueEvaluator.TestCase(
             user_input="Pythonの関数とは？",
@@ -76,7 +83,7 @@ def run_agent_dialogue_benchmark() -> Dict[str, Any]:
 
     result = evaluator.evaluate(
         test_cases=test_cases,
-        respond_fn=lambda text: agent.chat(text, teaching_mode=False),
+        respond_fn=_respond,
         diagnostics_fn=lambda: agent.get_recent_retrieval_diagnostics(limit=3),
     )
 

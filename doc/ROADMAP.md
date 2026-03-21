@@ -58,7 +58,7 @@ ANN系AIに正面から追随するのではなく、まず「CPU中心・低消
   * CPU-only 環境で回帰テストと soak run が安定完走する。  
   * モデル保存・復元・CLI 導線・診断導線に致命的不整合がない。
 
-### **Phase 3: Accuracy Uplift for Learning & Inference (リリース後の最優先)**
+### **Phase 3: Accuracy Uplift for Learning & Inference (baseline implementation complete)**
 
 * **目標:** 学習精度・推論精度を段階的に引き上げ、用途を絞った領域で ANN 系に見劣りしない水準を目指す。  
 * **基本方針:**  
@@ -78,6 +78,11 @@ ANN系AIに正面から追随するのではなく、まず「CPU中心・低消
   * 推論品質が「省エネルギーの代償として大きく劣る」状態から脱却する。
 * **進行中の実装:**  
   * `AgentDialogueEvaluator` と `scripts/eval/agent_dialogue_benchmark.py` により、`response_keyword_recall`、`fallback_control`、`retrieval_grounding` を lightweight benchmark として継続観測可能にした。  
+  * `InferenceSequenceEvaluator` / `SpikingLLMSequenceEvaluator` と `scripts/eval/inference_accuracy_benchmark.py` / `scripts/eval/spiking_llm_accuracy_benchmark.py` により、`SaraInference` と `SpikingLLM` の one-shot / fuzzy retrieval / continual retention / short streaming を CPU-only で継続観測可能にした。  
+  * `scripts/eval/phase3_accuracy_suite.py` により、`SaraAgent` / `SaraInference` / `SpikingLLM` をまとめた lightweight accuracy gate を運用できる状態にした。  
+* **現在の到達点:**  
+  * lightweight benchmark と aggregated suite が通る状態まで実装済みで、Phase 3 の baseline instrumentation と品質 gate は一段完了。  
+  * より広い ANN 比較、タスク拡張、長期 continual learning の大規模検証は Phase 4 以降の拡張テーマとして継続する。  
 
 ### **Phase 4: Scale-out & Continuous Learning (中期)**
 
