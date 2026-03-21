@@ -40,7 +40,7 @@ os.environ.setdefault("MPLCONFIGDIR", _MPL_CACHE_DIR)
 # ディレクトリパス: src/sara_engine/__init__.py
 # ファイルの日本語タイトル: パッケージ初期化モジュール
 # ファイルの目的や内容: ユーザーがSARA Engineを利用する際の最上位APIエントリーポイント。pipelineとAutoクラス群を最優先で公開。RAG/ツール/安全制御/評価基盤を統合。
-__version__ = "0.4.5"  # RAG/ツール/安全制御/評価基盤の強化
+__version__ = "0.4.6"  # RAG/ツール/安全制御/評価基盤の強化
 
 # --- Hugging Face Transformers-like API (Main Public Interface) ---
 

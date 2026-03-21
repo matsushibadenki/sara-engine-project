@@ -39,7 +39,7 @@ ANN系AIに正面から追随するのではなく、まず「CPU中心・低消
 * **成果:** `sara_rust_core` によるバックエンド統合、SNN Transformer、Spatiotemporal STDPモジュールの完成。CPU上での高速推論の達成。  
 * **位置づけ:** 以後のリリース安定化と精度改善の土台フェーズ。
 
-### **Phase 2: Release Readiness & Practical Stability (最優先 / 直近)**
+### **Phase 2: Release Readiness & Practical Stability (完了 / 直近)**
 
 * **目標:** 現行のSNN基盤を「試作」から「安全に配布できるプレリリース品質」へ引き上げる。  
 * **完了済み/進行中の項目:**  
