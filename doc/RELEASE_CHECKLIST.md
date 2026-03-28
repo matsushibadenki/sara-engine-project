@@ -3,15 +3,25 @@
 ## Pre-Release Validation
 
 1. Run the focused regression suite:
-   `pytest -q tests/test_release_soak.py tests/test_sara_cli_dispatch.py tests/test_inference_reliability.py tests/test_inference_memory_io.py tests/test_spiking_llm_memory_io.py tests/test_direct_map_utils.py tests/test_chat_agent_calculator.py tests/test_sara_agent_dialogue.py tests/test_practical_reliability.py`
+   `pytest -q tests/test_release_soak.py tests/test_sara_cli_dispatch.py tests/test_cli_entrypoints.py tests/test_inference_reliability.py tests/test_inference_memory_io.py tests/test_spiking_llm_memory_io.py tests/test_direct_map_utils.py tests/test_chat_agent_calculator.py tests/test_sara_agent_dialogue.py tests/test_practical_reliability.py`
 2. Run the wall-clock soak script:
    `python scripts/eval/release_soak.py --duration-seconds 5 --min-agent-turns 24 --min-inference-iterations 32`
+   To embed the latest Phase 3 accuracy summary into the managed soak report:
+   `python scripts/eval/release_soak.py --duration-seconds 5 --min-agent-turns 24 --min-inference-iterations 32 --include-accuracy`
    For the final shipping decision, run the extended profile:
    `python scripts/eval/release_soak.py --profile extended`
 3. Run the automated release gate:
    `python scripts/eval/release_gate.py`
+   Confirm the Phase 3 accuracy summary is written under:
+   `workspace/evaluation/phase3_accuracy_summary.txt`
 4. Confirm the soak report is written under:
    `workspace/release/release_soak_report.json`
+   Confirm the human-readable summary is written under:
+   `workspace/release/release_soak_summary.txt`
+   Review the summary `overall_status` and section-level `PASS/WARN` markers before proceeding.
+   If `Gate` shows `WARN`, review the listed errors before running the standalone release gate.
+   If accuracy is embedded, also review the `Phase 3 Focus` section for `few_shot` and `continual` status.
+   The report should now also include `release_metadata` so version alignment, console scripts, and release notes context can be reviewed from one place.
 5. Confirm the soak report records:
    `agent.turns >= 24`
    `agent.issue_count == 0`

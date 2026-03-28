@@ -289,7 +289,9 @@ class TestInferenceSequenceEvaluator:
         outcomes: Iterator[Dict[str, Any]] = iter(
             [
                 {"success": True, "predicted_token": 30, "expected_token": 30},
+                {"success": True, "predicted_token": 90, "expected_token": 90},
                 {"success": True, "predicted_token": 999, "expected_token": 999},
+                {"success": True, "predicted_token": 3, "expected_token": 3},
                 {"success": True, "predicted_token": 3, "expected_token": 3},
             ]
         )
@@ -297,19 +299,25 @@ class TestInferenceSequenceEvaluator:
         result = evaluator.evaluate(
             test_cases=[
                 InferenceSequenceEvaluator.TestCase(case_type="one_shot"),
+                InferenceSequenceEvaluator.TestCase(case_type="few_shot"),
                 InferenceSequenceEvaluator.TestCase(case_type="fuzzy"),
                 InferenceSequenceEvaluator.TestCase(case_type="continual"),
+                InferenceSequenceEvaluator.TestCase(case_type="long_continual"),
             ],
             run_case_fn=lambda _case: next(outcomes),
         )
 
         one_shot = next(m for m in result.metrics if m.name == "one_shot_accuracy")
+        few_shot = next(m for m in result.metrics if m.name == "few_shot_accuracy")
         fuzzy = next(m for m in result.metrics if m.name == "fuzzy_retrieval_accuracy")
         retention = next(m for m in result.metrics if m.name == "continual_retention")
+        long_retention = next(m for m in result.metrics if m.name == "long_horizon_retention")
 
         assert one_shot.value == 1.0
+        assert few_shot.value == 1.0
         assert fuzzy.value == 1.0
         assert retention.value == 1.0
+        assert long_retention.value == 1.0
 
 
 class TestSpikingLLMSequenceEvaluator:
@@ -319,7 +327,9 @@ class TestSpikingLLMSequenceEvaluator:
         outcomes: Iterator[Dict[str, Any]] = iter(
             [
                 {"success": True, "predicted_token": 2, "expected_token": 2},
+                {"success": True, "predicted_token": 3, "expected_token": 3},
                 {"success": True, "generated_tokens": [2, 3], "expected_tokens": [2, 3]},
+                {"success": True, "predicted_token": 2, "expected_token": 2},
                 {"success": True, "predicted_token": 2, "expected_token": 2},
             ]
         )
@@ -327,19 +337,25 @@ class TestSpikingLLMSequenceEvaluator:
         result = evaluator.evaluate(
             test_cases=[
                 SpikingLLMSequenceEvaluator.TestCase(case_type="next_token"),
+                SpikingLLMSequenceEvaluator.TestCase(case_type="few_shot"),
                 SpikingLLMSequenceEvaluator.TestCase(case_type="stream"),
                 SpikingLLMSequenceEvaluator.TestCase(case_type="continual"),
+                SpikingLLMSequenceEvaluator.TestCase(case_type="long_continual"),
             ],
             run_case_fn=lambda _case: next(outcomes),
         )
 
         next_token = next(m for m in result.metrics if m.name == "next_token_accuracy")
+        few_shot = next(m for m in result.metrics if m.name == "few_shot_context_accuracy")
         stream = next(m for m in result.metrics if m.name == "stream_completion_rate")
         retention = next(m for m in result.metrics if m.name == "continual_memory_retention")
+        long_retention = next(m for m in result.metrics if m.name == "long_horizon_memory_retention")
 
         assert next_token.value == 1.0
+        assert few_shot.value == 1.0
         assert stream.value == 1.0
         assert retention.value == 1.0
+        assert long_retention.value == 1.0
 
 
 # --- SARABenchmark テスト ---

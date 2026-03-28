@@ -1,6 +1,6 @@
 # Directory Path: scripts/eval/spiking_llm_accuracy_benchmark.py
 # English Title: SpikingLLM Accuracy Benchmark
-# Purpose/Content: Runs a lightweight Phase 3 benchmark for SpikingLLM next-token prediction, short streaming, and continual retention.
+# Purpose/Content: Runs a lightweight Phase 3 benchmark for SpikingLLM next-token prediction, few-shot contextual recall, short streaming, and continual retention.
 
 import argparse
 import json
@@ -77,7 +77,30 @@ def run_spiking_llm_accuracy_benchmark() -> Dict[str, Any]:
                 "expected_tokens": expected_tokens,
             }
 
+        if test_case.case_type == "few_shot":
+            candidates = model.predict_next_tokens(
+                prompt_tokens=[token_ids["python"], token_ids["function"]],
+                top_k=3,
+            )
+            predicted = int(candidates[0]["token_id"]) if candidates else None
+            return {
+                "success": predicted == token_ids["argument"],
+                "predicted_token": predicted,
+                "expected_token": token_ids["argument"],
+            }
+
         if test_case.case_type == "continual":
+            candidates = model.predict_next_tokens(prompt_tokens=[token_ids["python"]], top_k=3)
+            predicted = int(candidates[0]["token_id"]) if candidates else None
+            return {
+                "success": predicted == token_ids["function"],
+                "predicted_token": predicted,
+                "expected_token": token_ids["function"],
+            }
+
+        if test_case.case_type == "long_continual":
+            model.pretrained_synapses[1][token_ids["function"]][token_ids["cell"]] = 0.2
+            model.pretrained_synapses[1][token_ids["cell"]][token_ids["stop"]] = 0.1
             candidates = model.predict_next_tokens(prompt_tokens=[token_ids["python"]], top_k=3)
             predicted = int(candidates[0]["token_id"]) if candidates else None
             return {
@@ -95,12 +118,20 @@ def run_spiking_llm_accuracy_benchmark() -> Dict[str, Any]:
                 description="Known transition should surface as the top candidate.",
             ),
             SpikingLLMSequenceEvaluator.TestCase(
+                case_type="few_shot",
+                description="A short prompt with two aligned tokens should recover the contextual continuation.",
+            ),
+            SpikingLLMSequenceEvaluator.TestCase(
                 case_type="stream",
                 description="Short streaming completion should preserve the learned local path.",
             ),
             SpikingLLMSequenceEvaluator.TestCase(
                 case_type="continual",
                 description="Adding a second lightweight path should not erase the original path.",
+            ),
+            SpikingLLMSequenceEvaluator.TestCase(
+                case_type="long_continual",
+                description="Additional low-weight paths should not erase the strongest base transition.",
             ),
         ],
         run_case_fn=run_case,
@@ -109,8 +140,10 @@ def run_spiking_llm_accuracy_benchmark() -> Dict[str, Any]:
     metrics = {metric.name: metric.value for metric in result.metrics}
     thresholds = {
         "next_token_accuracy": 1.0,
+        "few_shot_context_accuracy": 1.0,
         "stream_completion_rate": 1.0,
         "continual_memory_retention": 1.0,
+        "long_horizon_memory_retention": 1.0,
     }
     threshold_results = {
         name: metrics.get(name, 0.0) >= threshold

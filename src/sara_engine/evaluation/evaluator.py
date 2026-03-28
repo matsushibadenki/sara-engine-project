@@ -563,8 +563,10 @@ class InferenceSequenceEvaluator:
     ) -> EvalResult:
         metrics: List[EvalMetric] = []
         one_shot_scores: List[float] = []
+        few_shot_scores: List[float] = []
         fuzzy_scores: List[float] = []
         retention_scores: List[float] = []
+        long_horizon_scores: List[float] = []
         details: List[Dict[str, Any]] = []
 
         for tc in test_cases:
@@ -574,10 +576,14 @@ class InferenceSequenceEvaluator:
 
             if tc.case_type == "one_shot":
                 one_shot_scores.append(score)
+            elif tc.case_type == "few_shot":
+                few_shot_scores.append(score)
             elif tc.case_type == "fuzzy":
                 fuzzy_scores.append(score)
             elif tc.case_type == "continual":
                 retention_scores.append(score)
+            elif tc.case_type == "long_continual":
+                long_horizon_scores.append(score)
 
             details.append(
                 {
@@ -600,6 +606,14 @@ class InferenceSequenceEvaluator:
         )
         metrics.append(
             EvalMetric(
+                name="few_shot_accuracy",
+                value=sum(few_shot_scores) / max(len(few_shot_scores), 1),
+                description="Few-shot adaptation accuracy after repeated local exposure",
+                metadata={"per_case": few_shot_scores},
+            )
+        )
+        metrics.append(
+            EvalMetric(
                 name="fuzzy_retrieval_accuracy",
                 value=sum(fuzzy_scores) / max(len(fuzzy_scores), 1),
                 description="Nearby context recovery accuracy without dense similarity",
@@ -612,6 +626,14 @@ class InferenceSequenceEvaluator:
                 value=sum(retention_scores) / max(len(retention_scores), 1),
                 description="Retention after additional online sequence learning",
                 metadata={"per_case": retention_scores},
+            )
+        )
+        metrics.append(
+            EvalMetric(
+                name="long_horizon_retention",
+                value=sum(long_horizon_scores) / max(len(long_horizon_scores), 1),
+                description="Retention after a longer continual-learning sequence",
+                metadata={"per_case": long_horizon_scores},
             )
         )
 
@@ -641,8 +663,10 @@ class SpikingLLMSequenceEvaluator:
     ) -> EvalResult:
         metrics: List[EvalMetric] = []
         next_token_scores: List[float] = []
+        few_shot_context_scores: List[float] = []
         streaming_scores: List[float] = []
         retention_scores: List[float] = []
+        long_horizon_scores: List[float] = []
         details: List[Dict[str, Any]] = []
 
         for tc in test_cases:
@@ -652,10 +676,14 @@ class SpikingLLMSequenceEvaluator:
 
             if tc.case_type == "next_token":
                 next_token_scores.append(score)
+            elif tc.case_type == "few_shot":
+                few_shot_context_scores.append(score)
             elif tc.case_type == "stream":
                 streaming_scores.append(score)
             elif tc.case_type == "continual":
                 retention_scores.append(score)
+            elif tc.case_type == "long_continual":
+                long_horizon_scores.append(score)
 
             details.append(
                 {
@@ -680,6 +708,14 @@ class SpikingLLMSequenceEvaluator:
         )
         metrics.append(
             EvalMetric(
+                name="few_shot_context_accuracy",
+                value=sum(few_shot_context_scores) / max(len(few_shot_context_scores), 1),
+                description="Few-shot contextual transition accuracy for short prompts",
+                metadata={"per_case": few_shot_context_scores},
+            )
+        )
+        metrics.append(
+            EvalMetric(
                 name="stream_completion_rate",
                 value=sum(streaming_scores) / max(len(streaming_scores), 1),
                 description="Streaming generation completion rate for short known sequences",
@@ -692,6 +728,14 @@ class SpikingLLMSequenceEvaluator:
                 value=sum(retention_scores) / max(len(retention_scores), 1),
                 description="Retention after adding additional lightweight knowledge paths",
                 metadata={"per_case": retention_scores},
+            )
+        )
+        metrics.append(
+            EvalMetric(
+                name="long_horizon_memory_retention",
+                value=sum(long_horizon_scores) / max(len(long_horizon_scores), 1),
+                description="Retention after longer continual exposure to additional paths",
+                metadata={"per_case": long_horizon_scores},
             )
         )
 

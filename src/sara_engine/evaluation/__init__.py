@@ -10,6 +10,13 @@ from .evaluator import (
     SafetyEvaluator,
     ToolEvaluator,
 )
+from .phase3_tracking import (
+    append_phase3_history,
+    build_phase3_trend,
+    flatten_phase3_metrics,
+    latest_phase3_report,
+    load_phase3_history,
+)
 
 __all__ = [
     "EvalMetric",
@@ -18,4 +25,9 @@ __all__ = [
     "SARABenchmark",
     "SafetyEvaluator",
     "ToolEvaluator",
+    "append_phase3_history",
+    "build_phase3_trend",
+    "flatten_phase3_metrics",
+    "latest_phase3_report",
+    "load_phase3_history",
 ]

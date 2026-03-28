@@ -1,6 +1,6 @@
 # Directory Path: scripts/eval/inference_accuracy_benchmark.py
 # English Title: SaraInference Accuracy Benchmark
-# Purpose/Content: Runs a lightweight Phase 3 benchmark for SaraInference one-shot, fuzzy retrieval, and continual retention under CPU-only constraints.
+# Purpose/Content: Runs a lightweight Phase 3 benchmark for SaraInference one-shot, few-shot, fuzzy retrieval, and continual retention under CPU-only constraints.
 
 import argparse
 import json
@@ -77,10 +77,34 @@ def run_inference_accuracy_benchmark() -> Dict[str, Any]:
                 "expected_token": 999,
             }
 
+        if test_case.case_type == "few_shot":
+            engine = _build_engine()
+            for _ in range(3):
+                engine.learn_sequence([70, 80, 90])
+            engine.learn_sequence([70, 81, 91])
+            predicted = _predict_next_token(engine, [70, 80])
+            return {
+                "success": predicted == 90,
+                "predicted_token": predicted,
+                "expected_token": 90,
+            }
+
         if test_case.case_type == "continual":
             engine = _build_engine()
             engine.learn_sequence([1, 2, 3])
             engine.learn_sequence([4, 5, 6])
+            predicted = _predict_next_token(engine, [1, 2])
+            return {
+                "success": predicted == 3,
+                "predicted_token": predicted,
+                "expected_token": 3,
+            }
+
+        if test_case.case_type == "long_continual":
+            engine = _build_engine()
+            engine.learn_sequence([1, 2, 3])
+            for offset in range(10, 22):
+                engine.learn_sequence([offset, offset + 1, offset + 2])
             predicted = _predict_next_token(engine, [1, 2])
             return {
                 "success": predicted == 3,
@@ -97,12 +121,20 @@ def run_inference_accuracy_benchmark() -> Dict[str, Any]:
                 description="One-shot sequence memory should recover the next token.",
             ),
             InferenceSequenceEvaluator.TestCase(
+                case_type="few_shot",
+                description="Repeated local exposure should stabilize a preferred continuation.",
+            ),
+            InferenceSequenceEvaluator.TestCase(
                 case_type="fuzzy",
                 description="Nearby context should recover a compatible continuation.",
             ),
             InferenceSequenceEvaluator.TestCase(
                 case_type="continual",
                 description="Continual learning should preserve an earlier lightweight memory path.",
+            ),
+            InferenceSequenceEvaluator.TestCase(
+                case_type="long_continual",
+                description="A longer continual-learning sequence should still retain the earliest path.",
             ),
         ],
         run_case_fn=run_case,
@@ -111,8 +143,10 @@ def run_inference_accuracy_benchmark() -> Dict[str, Any]:
     metrics = {metric.name: metric.value for metric in result.metrics}
     thresholds = {
         "one_shot_accuracy": 1.0,
+        "few_shot_accuracy": 1.0,
         "fuzzy_retrieval_accuracy": 1.0,
         "continual_retention": 1.0,
+        "long_horizon_retention": 1.0,
     }
     threshold_results = {
         name: metrics.get(name, 0.0) >= threshold

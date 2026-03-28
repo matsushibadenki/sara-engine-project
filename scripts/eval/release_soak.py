@@ -5,13 +5,17 @@
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from typing import Any, Dict, Optional
 
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+SCRIPT_PATH = os.path.dirname(__file__)
 SRC_PATH = os.path.join(PROJECT_ROOT, "src")
+if SCRIPT_PATH not in sys.path:
+    sys.path.insert(0, SCRIPT_PATH)
 if SRC_PATH not in sys.path:
     sys.path.insert(0, SRC_PATH)
 
@@ -24,6 +28,8 @@ os.environ.setdefault("XDG_CACHE_HOME", os.path.join(PROJECT_ROOT, "workspace", 
 from sara_engine.agent.sara_agent import SaraAgent
 from sara_engine.inference import SaraInference
 from sara_engine.utils.project_paths import ensure_parent_directory, model_path, workspace_path
+from phase3_accuracy_suite import run_phase3_accuracy_suite
+from release_gate import validate_packaging_metadata, validate_release_report
 
 
 SOAK_PROFILES: Dict[str, Dict[str, Any]] = {
@@ -52,6 +58,45 @@ SOAK_PROFILES: Dict[str, Dict[str, Any]] = {
         "shipping_ready": True,
     },
 }
+
+
+def _read_text(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as handle:
+        return handle.read()
+
+
+def collect_release_metadata(project_root: str = PROJECT_ROOT) -> Dict[str, Any]:
+    pyproject_path = os.path.join(project_root, "pyproject.toml")
+    cargo_path = os.path.join(project_root, "Cargo.toml")
+    notes_path = os.path.join(project_root, "doc", "RELEASE_NOTES.md")
+
+    pyproject = _read_text(pyproject_path)
+    cargo = _read_text(cargo_path)
+    notes = _read_text(notes_path)
+
+    pyproject_version_match = re.search(r'^version = "([^"]+)"', pyproject, re.MULTILINE)
+    cargo_version_match = re.search(r'^version = "([^"]+)"', cargo, re.MULTILINE)
+    current_release_heading = re.search(r"^##\s+(.+)$", notes, re.MULTILINE)
+    note_sections = re.findall(r"^###\s+(.+)$", notes, re.MULTILINE)
+
+    pyproject_version = pyproject_version_match.group(1) if pyproject_version_match else ""
+    cargo_version = cargo_version_match.group(1) if cargo_version_match else ""
+    console_scripts = []
+    if 'sara-chat = "sara_engine.cli:chat"' in pyproject:
+        console_scripts.append("sara-chat")
+    if 'sara-train = "sara_engine.cli:train"' in pyproject:
+        console_scripts.append("sara-train")
+
+    return {
+        "pyproject_version": pyproject_version,
+        "cargo_version": cargo_version,
+        "versions_match": bool(pyproject_version and pyproject_version == cargo_version),
+        "console_scripts": console_scripts,
+        "has_expected_console_scripts": set(console_scripts) == {"sara-chat", "sara-train"},
+        "release_notes_heading": current_release_heading.group(1) if current_release_heading else "",
+        "release_note_sections": note_sections,
+        "release_notes_path": notes_path,
+    }
 
 
 def resolve_soak_profile(
@@ -152,6 +197,186 @@ def run_inference_soak(duration_seconds: float, max_iterations: int, min_iterati
     }
 
 
+def run_accuracy_soak(
+    history_path: Optional[str] = None,
+    history_limit: int = 50,
+) -> Dict[str, Any]:
+    report = run_phase3_accuracy_suite(
+        history_path=history_path,
+        persist_history=bool(history_path),
+        history_limit=history_limit,
+    )
+    return {
+        "suite_name": report.get("suite_name", "Phase3AccuracySuite"),
+        "overall_score": float(report.get("overall_score", 0.0)),
+        "passed": bool(report.get("passed", False)),
+        "trend": report.get("trend", {}),
+        "component_reports": report.get("component_reports", {}),
+        "focus_summary": report.get("focus_summary", {}),
+        "history_length": int(report.get("history_length", 0)) if history_path else 0,
+    }
+
+
+def _status_label(passed: bool) -> str:
+    return "PASS" if passed else "WARN"
+
+
+def _agent_status(agent: Dict[str, Any]) -> bool:
+    return bool(
+        agent.get("meets_min_turns", False)
+        and agent.get("history_bounded", False)
+        and int(agent.get("issue_count", 0)) == 0
+    )
+
+
+def _inference_status(inference: Dict[str, Any]) -> bool:
+    return bool(
+        inference.get("meets_min_iterations", False)
+        and inference.get("roundtrip_ok", False)
+        and inference.get("tuple_keys_only", False)
+        and int(inference.get("pattern_count", 0)) >= 1
+    )
+
+
+def _metadata_status(metadata: Dict[str, Any]) -> bool:
+    return bool(
+        metadata.get("versions_match", False)
+        and metadata.get("has_expected_console_scripts", False)
+        and str(metadata.get("release_notes_heading", "")).strip()
+    )
+
+
+def _accuracy_status(accuracy: Dict[str, Any]) -> bool:
+    trend = accuracy.get("trend", {}) if isinstance(accuracy.get("trend"), dict) else {}
+    return bool(
+        accuracy.get("passed", False)
+        and int(trend.get("regression_count", 0)) == 0
+    )
+
+
+def collect_release_gate_feedback(
+    report: Dict[str, Any],
+    project_root: str = PROJECT_ROOT,
+) -> Dict[str, Any]:
+    errors = []
+    errors.extend(validate_release_report(report))
+    errors.extend(validate_packaging_metadata(project_root))
+    return {
+        "passed": len(errors) == 0,
+        "error_count": len(errors),
+        "errors": errors,
+    }
+
+
+def format_release_summary(report: Dict[str, Any]) -> str:
+    criteria = report.get("criteria", {}) if isinstance(report.get("criteria"), dict) else {}
+    agent = report.get("agent", {}) if isinstance(report.get("agent"), dict) else {}
+    inference = report.get("inference", {}) if isinstance(report.get("inference"), dict) else {}
+    accuracy = report.get("accuracy", {}) if isinstance(report.get("accuracy"), dict) else {}
+    metadata = report.get("release_metadata", {}) if isinstance(report.get("release_metadata"), dict) else {}
+    gate = report.get("release_gate", {}) if isinstance(report.get("release_gate"), dict) else {}
+    accuracy_required = bool(criteria.get("require_phase3_accuracy", False))
+
+    agent_ok = _agent_status(agent)
+    inference_ok = _inference_status(inference)
+    metadata_ok = _metadata_status(metadata)
+    accuracy_ok = _accuracy_status(accuracy) if accuracy else (not accuracy_required)
+    gate_ok = bool(gate.get("passed", False)) if gate else False
+    overall_ok = agent_ok and inference_ok and metadata_ok and accuracy_ok and gate_ok
+
+    lines = [
+        "SARA Engine Release Soak Summary",
+        f"overall_status: {_status_label(overall_ok)}",
+        f"profile: {criteria.get('profile_name', 'unknown')}",
+        f"duration_seconds: {report.get('duration_seconds', 0.0)}",
+        f"shipping_ready_profile: {criteria.get('shipping_ready', False)}",
+        "",
+        "Agent",
+        f"- status: {_status_label(agent_ok)}",
+        f"- turns: {agent.get('turns', 0)} / min {agent.get('min_turns_required', 0)}",
+        f"- history_bounded: {agent.get('history_bounded', False)}",
+        f"- issue_count: {agent.get('issue_count', 0)}",
+        "",
+        "Inference",
+        f"- status: {_status_label(inference_ok)}",
+        f"- iterations: {inference.get('iterations', 0)} / min {inference.get('min_iterations_required', 0)}",
+        f"- roundtrip_ok: {inference.get('roundtrip_ok', False)}",
+        f"- tuple_keys_only: {inference.get('tuple_keys_only', False)}",
+        f"- pattern_count: {inference.get('pattern_count', 0)}",
+        "",
+        "Release Metadata",
+        f"- status: {_status_label(metadata_ok)}",
+        f"- version: {metadata.get('pyproject_version', '')}",
+        f"- versions_match: {metadata.get('versions_match', False)}",
+        f"- console_scripts: {', '.join(metadata.get('console_scripts', []))}",
+        f"- release_notes_heading: {metadata.get('release_notes_heading', '')}",
+    ]
+
+    if accuracy:
+        trend = accuracy.get("trend", {}) if isinstance(accuracy.get("trend"), dict) else {}
+        focus_summary = accuracy.get("focus_summary", {}) if isinstance(accuracy.get("focus_summary"), dict) else {}
+        lines.extend(
+            [
+                "",
+                "Accuracy",
+                f"- status: {_status_label(accuracy_ok)}",
+                f"- suite_name: {accuracy.get('suite_name', '')}",
+                f"- passed: {accuracy.get('passed', False)}",
+                f"- overall_score: {accuracy.get('overall_score', 0.0):.3f}",
+                f"- regression_count: {trend.get('regression_count', 0)}",
+            ]
+        )
+        if focus_summary:
+            few_shot = focus_summary.get("few_shot", {}) if isinstance(focus_summary.get("few_shot"), dict) else {}
+            continual = focus_summary.get("continual", {}) if isinstance(focus_summary.get("continual"), dict) else {}
+            lines.extend(
+                [
+                    "",
+                    "Phase 3 Focus",
+                    f"- few_shot_status: {_status_label(bool(few_shot.get('passed', False)))}",
+                    f"- few_shot_score: {float(few_shot.get('score', 0.0)):.3f}",
+                    f"- continual_status: {_status_label(bool(continual.get('passed', False)))}",
+                    f"- continual_score: {float(continual.get('score', 0.0)):.3f}",
+                ]
+            )
+    elif accuracy_required:
+        lines.extend(
+            [
+                "",
+                "Accuracy",
+                f"- status: {_status_label(False)}",
+                "- suite_name: missing",
+                "- passed: False",
+                "- overall_score: 0.000",
+                "- regression_count: 0",
+            ]
+        )
+        lines.extend(
+            [
+                "",
+                "Phase 3 Focus",
+                f"- few_shot_status: {_status_label(False)}",
+                "- few_shot_score: 0.000",
+                f"- continual_status: {_status_label(False)}",
+                "- continual_score: 0.000",
+            ]
+        )
+
+    lines.extend(
+        [
+            "",
+            "Gate",
+            f"- status: {_status_label(gate_ok)}",
+            f"- error_count: {gate.get('error_count', 0) if gate else 0}",
+        ]
+    )
+    if gate and isinstance(gate.get("errors"), list) and gate["errors"]:
+        for error in gate["errors"]:
+            lines.append(f"- error: {error}")
+
+    return "\n".join(lines) + "\n"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run lightweight release soak checks.")
     parser.add_argument(
@@ -184,6 +409,27 @@ def main() -> None:
         "--report-path",
         default=workspace_path("release", "release_soak_report.json"),
         help="Managed output path for the soak report.",
+    )
+    parser.add_argument(
+        "--summary-path",
+        default=workspace_path("release", "release_soak_summary.txt"),
+        help="Managed output path for the human-readable release summary.",
+    )
+    parser.add_argument(
+        "--include-accuracy",
+        action="store_true",
+        help="Run the Phase 3 accuracy suite and embed its summary into the release soak report.",
+    )
+    parser.add_argument(
+        "--accuracy-history-path",
+        default=workspace_path("evaluation", "phase3_accuracy_history.json"),
+        help="Managed output path for Phase 3 accuracy history snapshots.",
+    )
+    parser.add_argument(
+        "--accuracy-history-limit",
+        type=int,
+        default=50,
+        help="Maximum number of embedded Phase 3 accuracy history snapshots to keep.",
     )
     args = parser.parse_args()
 
@@ -233,15 +479,30 @@ def main() -> None:
             "min_pattern_count": 1,
             "shipping_ready": settings["shipping_ready"],
         },
+        "release_metadata": collect_release_metadata(),
     }
+    if args.include_accuracy:
+        report["accuracy"] = run_accuracy_soak(
+            history_path=args.accuracy_history_path,
+            history_limit=args.accuracy_history_limit,
+        )
+        report["criteria"]["require_phase3_accuracy"] = True
+    else:
+        report["criteria"]["require_phase3_accuracy"] = False
+    report["release_gate"] = collect_release_gate_feedback(report)
 
     report_path = ensure_parent_directory(args.report_path)
     with open(report_path, "w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2, ensure_ascii=False)
+    summary_path = ensure_parent_directory(args.summary_path)
+    summary_text = format_release_summary(report)
+    with open(summary_path, "w", encoding="utf-8") as handle:
+        handle.write(summary_text)
 
     print("Release soak completed.")
     print(json.dumps(report, indent=2, ensure_ascii=False))
     print(f"Saved report: {report_path}")
+    print(f"Saved summary: {summary_path}")
 
 
 if __name__ == "__main__":

@@ -131,3 +131,204 @@ def test_release_soak_profile_resolution_downgrades_shipping_ready_when_threshol
 
     assert settings["profile_name"] == "extended"
     assert settings["shipping_ready"] is False
+
+
+def test_release_soak_accuracy_summary_embeds_phase3_suite(monkeypatch):
+    module = _load_release_soak_module()
+
+    monkeypatch.setattr(
+        module,
+        "run_phase3_accuracy_suite",
+        lambda history_path, persist_history, history_limit: {
+            "suite_name": "Phase3AccuracySuite",
+            "overall_score": 0.92,
+            "passed": True,
+            "trend": {"has_previous": True, "regression_count": 0},
+            "component_reports": {"agent_dialogue": {"passed": True}},
+            "focus_summary": {
+                "few_shot": {"score": 1.0, "passed": True},
+                "continual": {"score": 1.0, "passed": True},
+            },
+            "history_length": 3,
+        },
+    )
+
+    report = module.run_accuracy_soak(
+        history_path=workspace_path("tests", "release_soak_accuracy_history.json"),
+        history_limit=5,
+    )
+
+    assert report["suite_name"] == "Phase3AccuracySuite"
+    assert report["passed"] is True
+    assert report["history_length"] == 3
+    assert report["trend"]["regression_count"] == 0
+    assert report["focus_summary"]["few_shot"]["score"] == 1.0
+
+
+def test_release_soak_collects_release_metadata():
+    module = _load_release_soak_module()
+
+    metadata = module.collect_release_metadata()
+
+    assert metadata["pyproject_version"] == metadata["cargo_version"]
+    assert metadata["versions_match"] is True
+    assert "sara-chat" in metadata["console_scripts"]
+    assert "sara-train" in metadata["console_scripts"]
+    assert metadata["release_notes_heading"] == "Current Pre-Release"
+    assert "Highlights" in metadata["release_note_sections"]
+
+
+def test_release_soak_collects_release_gate_feedback():
+    module = _load_release_soak_module()
+    report = {
+        "duration_seconds": 5.0,
+        "criteria": {
+            "min_duration_seconds": 5.0,
+            "min_agent_turns": 24,
+            "min_inference_iterations": 32,
+            "min_pattern_count": 1,
+            "profile_name": "release",
+            "require_phase3_accuracy": False,
+            "shipping_ready": False,
+        },
+        "agent": {
+            "turns": 24,
+            "history_bounded": True,
+            "issue_count": 0,
+            "meets_min_turns": True,
+        },
+        "inference": {
+            "iterations": 32,
+            "roundtrip_ok": True,
+            "tuple_keys_only": True,
+            "pattern_count": 12,
+            "meets_min_iterations": True,
+        },
+        "release_metadata": {
+            "versions_match": True,
+            "has_expected_console_scripts": True,
+            "release_notes_heading": "Current Pre-Release",
+        },
+    }
+
+    feedback = module.collect_release_gate_feedback(report)
+
+    assert feedback["passed"] is True
+    assert feedback["error_count"] == 0
+    assert feedback["errors"] == []
+
+
+def test_release_soak_formats_human_readable_summary():
+    module = _load_release_soak_module()
+    report = {
+        "duration_seconds": 5.0,
+        "criteria": {
+            "profile_name": "release",
+            "shipping_ready": False,
+            "require_phase3_accuracy": True,
+        },
+        "agent": {
+            "turns": 24,
+            "min_turns_required": 24,
+            "history_bounded": True,
+            "issue_count": 0,
+            "meets_min_turns": True,
+        },
+        "inference": {
+            "iterations": 32,
+            "min_iterations_required": 32,
+            "roundtrip_ok": True,
+            "tuple_keys_only": True,
+            "pattern_count": 12,
+            "meets_min_iterations": True,
+        },
+        "release_metadata": {
+            "pyproject_version": "0.4.6",
+            "versions_match": True,
+            "has_expected_console_scripts": True,
+            "console_scripts": ["sara-chat", "sara-train"],
+            "release_notes_heading": "Current Pre-Release",
+        },
+        "release_gate": {
+            "passed": True,
+            "error_count": 0,
+            "errors": [],
+        },
+        "accuracy": {
+            "suite_name": "Phase3AccuracySuite",
+            "passed": True,
+            "overall_score": 0.91,
+            "trend": {"regression_count": 0},
+            "focus_summary": {
+                "few_shot": {"score": 1.0, "passed": True},
+                "continual": {"score": 1.0, "passed": True},
+            },
+        },
+    }
+
+    summary = module.format_release_summary(report)
+
+    assert "SARA Engine Release Soak Summary" in summary
+    assert "overall_status: PASS" in summary
+    assert "profile: release" in summary
+    assert "- status: PASS" in summary
+    assert "- turns: 24 / min 24" in summary
+    assert "- iterations: 32 / min 32" in summary
+    assert "- version: 0.4.6" in summary
+    assert "- suite_name: Phase3AccuracySuite" in summary
+    assert "Phase 3 Focus" in summary
+    assert "- few_shot_status: PASS" in summary
+    assert "- continual_status: PASS" in summary
+    assert "Gate" in summary
+    assert "- error_count: 0" in summary
+
+
+def test_release_soak_summary_warns_when_required_accuracy_is_missing():
+    module = _load_release_soak_module()
+    report = {
+        "duration_seconds": 5.0,
+        "criteria": {
+            "profile_name": "release",
+            "shipping_ready": False,
+            "require_phase3_accuracy": True,
+        },
+        "agent": {
+            "turns": 24,
+            "min_turns_required": 24,
+            "history_bounded": True,
+            "issue_count": 0,
+            "meets_min_turns": True,
+        },
+        "inference": {
+            "iterations": 32,
+            "min_iterations_required": 32,
+            "roundtrip_ok": True,
+            "tuple_keys_only": True,
+            "pattern_count": 12,
+            "meets_min_iterations": True,
+        },
+        "release_metadata": {
+            "pyproject_version": "0.4.6",
+            "versions_match": True,
+            "has_expected_console_scripts": True,
+            "console_scripts": ["sara-chat", "sara-train"],
+            "release_notes_heading": "Current Pre-Release",
+        },
+        "release_gate": {
+            "passed": False,
+            "error_count": 1,
+            "errors": ["Release soak report requires embedded Phase 3 accuracy results."],
+        },
+    }
+
+    summary = module.format_release_summary(report)
+
+    assert "overall_status: WARN" in summary
+    assert "Accuracy" in summary
+    assert "- status: WARN" in summary
+    assert "- suite_name: missing" in summary
+    assert "Phase 3 Focus" in summary
+    assert "- few_shot_status: WARN" in summary
+    assert "Gate" in summary
+    assert "- error_count: 1" in summary
+    assert "embedded Phase 3 accuracy" in summary
