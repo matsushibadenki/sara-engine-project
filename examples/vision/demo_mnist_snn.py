@@ -1,0 +1,389 @@
+# [配置するディレクトリのパス]: ./examples/demo_mnist_snn.py
+# [ファイルの日本語タイトル]: SARA-Engine MNIST手書き数字認識デモ (Gaborフィルタ V1受容野版)
+# [ファイルの目的や内容]: V1単純細胞を模したGaborフィルタによる受容野を導入し、エッジ検出とパターン分離の質を生物学レベルへ引き上げる。行列演算なし・CPUのみのSNNで精度95%超えを確実なものにする。
+from sara_engine.models.readout_layer import SpikeReadoutLayer
+from sara_engine.core.layers import DynamicLiquidLayer
+import math
+import random
+import gzip
+import urllib.request
+import struct
+import time
+import os
+import sys
+_FILE_INFO = {
+    "//": "ディレクトリパス: examples/demo_mnist_snn.py",
+    "//": "タイトル: SARA-Engine MNIST手書き数字認識デモ (Gaborフィルタ V1受容野版)",
+    "//": "目的: V1単純細胞を模したGaborフィルタによる受容野を導入し、エッジ検出とパターン分離の質を生物学レベルへ引き上げる。行列演算なし・CPUのみのSNNで精度95%超えを確実なものにする。"
+}
+
+
+# プロジェクトルートとsrcディレクトリをパスに追加
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
+src_path = os.path.join(project_root, 'src')
+
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+
+def download_mnist(filename: str, source_url: str) -> str:
+    filepath = os.path.join("data", filename)
+    if not os.path.exists("data"):
+        os.makedirs("data")
+    if not os.path.exists(filepath):
+        print(f"[Data] ダウンロード中: {filename} ...")
+        urllib.request.urlretrieve(source_url, filepath)
+        print(f"[Data] ダウンロード完了: {filename}")
+    return filepath
+
+
+def load_mnist_images(filepath: str) -> list[list[int]]:
+    print(f"[Data] 画像を展開中: {filepath} ...")
+    with gzip.open(filepath, 'rb') as f:
+        magic, num, rows, cols = struct.unpack(">IIII", f.read(16))
+        data = f.read()
+        images: list[list[int]] = []
+        for i in range(num):
+            start = i * rows * cols
+            end = start + rows * cols
+            images.append([int(b) for b in data[start:end]])
+    return images
+
+
+def load_mnist_labels(filepath: str) -> list[int]:
+    print(f"[Data] ラベルを展開中: {filepath} ...")
+    with gzip.open(filepath, 'rb') as f:
+        magic, num = struct.unpack(">II", f.read(8))
+        data = f.read()
+        return [int(b) for b in data]
+
+
+def prepare_mnist_dataset() -> tuple[list[list[int]], list[int], list[list[int]], list[int]]:
+    base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
+    files = {
+        "train_img": ("train-images-idx3-ubyte.gz", base_url + "train-images-idx3-ubyte.gz"),
+        "train_lbl": ("train-labels-idx1-ubyte.gz", base_url + "train-labels-idx1-ubyte.gz"),
+        "test_img": ("t10k-images-idx3-ubyte.gz", base_url + "t10k-images-idx3-ubyte.gz"),
+        "test_lbl": ("t10k-labels-idx1-ubyte.gz", base_url + "t10k-labels-idx1-ubyte.gz"),
+    }
+
+    paths = {k: download_mnist(v[0], v[1]) for k, v in files.items()}
+
+    train_images = load_mnist_images(paths["train_img"])
+    train_labels = load_mnist_labels(paths["train_lbl"])
+    test_images = load_mnist_images(paths["test_img"])
+    test_labels = load_mnist_labels(paths["test_lbl"])
+
+    return train_images, train_labels, test_images, test_labels
+
+
+def apply_spatial_receptive_fields(layer: DynamicLiquidLayer, width: int, height: int, patch_sizes: list[int]) -> None:
+    if layer.use_rust and getattr(layer, 'core', None) is not None and hasattr(getattr(layer, 'core'), 'apply_spatial_receptive_fields'):
+        print(
+            f"  -> 局所受容野（Spatial Receptive Fields: Gabor）をRustコア内に構築中... (層サイズ: {layer.size})")
+        getattr(layer, 'core').apply_spatial_receptive_fields(
+            width, height, patch_sizes)
+        return
+
+    print(
+        f"  -> 局所受容野（Spatial Receptive Fields: Gabor）をPythonで構築中... (層サイズ: {layer.size})")
+    layer.in_weights = [{} for _ in range(width * height)]
+
+    angles = [0.0, math.pi / 4.0, math.pi / 2.0, math.pi * 3.0 / 4.0]
+    phases = [0.0, math.pi / 2.0]
+
+    for hidden_idx in range(layer.size):
+        cx = random.randint(0, width - 1)
+        cy = random.randint(0, height - 1)
+        patch_size = random.choice(patch_sizes)
+        half_p = patch_size // 2
+
+        theta = random.choice(angles)
+        psi = random.choice(phases)
+        lambda_val = patch_size * 0.8
+        sigma = patch_size * 0.4
+        gamma = 0.5
+
+        for dy in range(-half_p, half_p + 1):
+            for dx in range(-half_p, half_p + 1):
+                x = cx + dx
+                y = cy + dy
+                if 0 <= x < width and 0 <= y < height:
+                    inp_idx = y * width + x
+
+                    x_prime = dx * math.cos(theta) + dy * math.sin(theta)
+                    y_prime = -dx * math.sin(theta) + dy * math.cos(theta)
+
+                    env = math.exp(-(x_prime**2 + gamma**2 *
+                                   y_prime**2) / (2.0 * sigma**2))
+                    carrier = math.cos(
+                        2.0 * math.pi * x_prime / lambda_val + psi)
+
+                    w = env * carrier * 8.0
+                    w += random.uniform(-0.5, 0.5)
+
+                    layer.in_weights[inp_idx][hidden_idx] = w
+
+
+def preprocess_images(images: list[list[int]], thresholds: list[int]) -> list[list[list[int]]]:
+    print("  -> Rank-Order エンコーディングの事前計算中...")
+    preprocessed: list[list[list[int]]] = []
+    min_thresh = thresholds[-1]
+    num_steps = len(thresholds)
+    for img in images:
+        active_per_step: list[list[int]] = [[] for _ in range(num_steps)]
+        for idx, pixel in enumerate(img):
+            if pixel > min_thresh:
+                for step in range(num_steps):
+                    if pixel > thresholds[step]:
+                        active_per_step[step].append(idx)
+                        break
+        preprocessed.append(active_per_step)
+    return preprocessed
+
+
+def parse_int_list_env(name: str, default: list[int]) -> list[int]:
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    values = [part.strip() for part in raw.split(",")]
+    parsed = [int(v) for v in values if v]
+    return parsed if parsed else default
+
+
+def run_mnist_snn() -> None:
+    print("="*60)
+    print("SARA-Engine: MNIST Classification (Gabor V1 Receptive Fields)")
+    print("="*60)
+
+    seed = int(os.environ.get("SARA_MNIST_SEED", "42"))
+    random.seed(seed)
+
+    train_images, train_labels, test_images, test_labels = prepare_mnist_dataset()
+
+    num_inputs = 784
+    num_classes = 10
+    epochs = int(os.environ.get("SARA_MNIST_EPOCHS", "2"))
+
+    # 動作確認のため、最初はサンプル数を絞る設定を可能にする（必要に応じて len(train_images) に戻してください）
+    train_samples_to_use = int(os.environ.get(
+        "SARA_MNIST_TRAIN_SAMPLES", "10000"))
+    test_samples_to_use = int(os.environ.get(
+        "SARA_MNIST_TEST_SAMPLES", "1000"))
+    liquid_target_rate = float(os.environ.get(
+        "SARA_MNIST_LIQUID_TARGET_RATE", "0.05"))
+    liquid_homeostasis_lr = float(os.environ.get(
+        "SARA_MNIST_LIQUID_HOMEOSTASIS_LR", "0.08"))
+    liquid_homeostasis_decay = float(os.environ.get(
+        "SARA_MNIST_LIQUID_HOMEOSTASIS_DECAY", "0.995"))
+    readout_prune_threshold = float(
+        os.environ.get("SARA_MNIST_READOUT_PRUNE", "0.02"))
+
+    print(
+        f"\n[Network] 生物学的マルチスケール・ネットワークを構築中... (学習データ: {train_samples_to_use}件)")
+    print(f"  -> Seed: {seed}")
+
+    from typing import Dict, Any
+    layer_configs: list[Dict[str, Any]] = [
+        {"size": 1000, "decay": 0.50, "patch_sizes": [
+            4, 6, 8]},  # 速度向上のためサイズを一時的に縮小
+        {"size": 1000, "decay": 0.80, "patch_sizes": [12, 16, 20]}
+    ]
+
+    liquid_layers: list[DynamicLiquidLayer] = []
+    for cfg in layer_configs:
+        size_val = int(cfg["size"])
+        decay_val = float(cfg["decay"])
+        patch_sizes_val = cfg["patch_sizes"]
+        layer = DynamicLiquidLayer(
+            input_size=num_inputs,
+            hidden_size=size_val,
+            decay=decay_val,
+            target_rate=liquid_target_rate,
+            density=0.0,
+            input_scale=0.0,
+            homeostasis_decay=liquid_homeostasis_decay,
+            homeostasis_lr=liquid_homeostasis_lr,
+        )
+        apply_spatial_receptive_fields(layer, 28, 28, patch_sizes_val)
+        liquid_layers.append(layer)
+
+    thresholds = parse_int_list_env(
+        "SARA_MNIST_THRESHOLDS", [220, 160, 100, 40])
+    num_steps = len(thresholds)
+
+    total_hidden = sum(int(cfg["size"]) for cfg in layer_configs)
+    feature_dim_per_step = num_inputs + total_hidden
+    temporal_spatial_size = feature_dim_per_step * num_steps
+
+    use_homeostasis = os.environ.get("SARA_MNIST_USE_HOMEOSTASIS", "0") != "0"
+    readout_layer = SpikeReadoutLayer(
+        d_model=temporal_spatial_size,
+        vocab_size=num_classes,
+        learning_rate=0.02,
+        use_refractory=False,
+        use_homeostasis=use_homeostasis,
+        homeostasis_target_rate=1.0 / num_classes,
+        homeostasis_adaptation_rate=0.015,
+        homeostasis_decay=0.999,
+        homeostasis_strength=6.0,
+    )
+    print(f"  -> Readout homeostasis: {'ON' if use_homeostasis else 'OFF'}")
+    print(f"  -> Liquid target_rate: {liquid_target_rate}")
+    print(
+        f"  -> Liquid homeostasis lr/decay: {liquid_homeostasis_lr}/{liquid_homeostasis_decay}")
+    print(f"  -> Rank-order thresholds: {thresholds}")
+    print(f"  -> Readout prune threshold: {readout_prune_threshold}")
+
+    print("\n[Pre-process] 画像データの前処理...")
+    train_encoded = preprocess_images(
+        train_images[:train_samples_to_use], thresholds)
+    test_encoded = preprocess_images(
+        test_images[:test_samples_to_use], thresholds)
+
+    print(f"\n[Train] 学習開始...")
+    start_time = time.time()
+
+    for epoch in range(epochs):
+        epoch_start = time.time()
+        print(f"\n--- Epoch {epoch + 1}/{epochs} ---")
+
+        combined = list(
+            zip(train_encoded, train_labels[:train_samples_to_use]))
+        random.shuffle(combined)
+
+        if epoch > 0:
+            readout_layer.learning_rate *= 0.85
+
+        for i in range(train_samples_to_use):
+            encoded_image, target_label = combined[i]
+
+            # ニューロン状態のリセットを効率化
+            for l in liquid_layers:
+                core = getattr(l, 'core', None)
+                if l.use_rust and core is not None and hasattr(core, 'reset_potentials'):
+                    core.reset_potentials()
+                else:
+                    l.v = [0.0] * l.size
+                    l.refractory = [0.0] * l.size
+                    # 閾値調整（リスト内包表記で高速化）
+                    l.dynamic_thresh = [5.0 if t >
+                                        5.0 else t for t in l.dynamic_thresh]
+
+            accumulated_fired: list[int] = []
+            prev_fired: list[list[int]] = [[]
+                                           for _ in range(len(liquid_layers))]
+            hidden_already_fired: list[set[int]] = [
+                set() for _ in range(len(liquid_layers))]
+
+            for step, active_inputs in enumerate(encoded_image):
+                if not active_inputs:
+                    continue
+
+                step_base_offset = step * feature_dim_per_step
+                for inp in active_inputs:
+                    accumulated_fired.append(inp + step_base_offset)
+
+                hidden_offset = num_inputs
+                for l_idx, l in enumerate(liquid_layers):
+                    fired_hidden = l.forward(
+                        active_inputs=active_inputs, prev_active_hidden=prev_fired[l_idx])
+                    prev_fired[l_idx] = fired_hidden
+
+                    for f in fired_hidden:
+                        if f not in hidden_already_fired[l_idx]:
+                            hidden_already_fired[l_idx].add(f)
+                            accumulated_fired.append(
+                                f + step_base_offset + hidden_offset)
+                    hidden_offset += l.size
+
+            if accumulated_fired:
+                readout_layer.forward(
+                    accumulated_fired, target_token=target_label, learning=True)
+
+            # 進捗を100件ごとに表示するように変更
+            if (i + 1) % 100 == 0:
+                elapsed = time.time() - epoch_start
+                speed = (i + 1) / elapsed
+                print(
+                    f"\r  Progress: {i + 1}/{train_samples_to_use} ({speed:.2f} samples/sec)", end="")
+
+        print(
+            f"\n  Epoch {epoch+1} 完了 | 所要時間: {time.time() - epoch_start:.2f}秒")
+        if readout_prune_threshold > 0.0:
+            before_prune = readout_layer.active_synapse_count()
+            pruned = readout_layer.prune_weights(readout_prune_threshold)
+            after_prune = readout_layer.active_synapse_count()
+            print(
+                f"  Readout prune: {pruned} synapses removed ({before_prune} -> {after_prune})")
+        if readout_layer.homeostasis is not None:
+            thresholds_snapshot = [
+                round(readout_layer.homeostasis.get_threshold(i, 0.0), 3)
+                for i in range(num_classes)
+            ]
+            print(f"  Readout homeostasis thresholds: {thresholds_snapshot}")
+
+    print(f"\n学習完了 | 総計所要時間: {time.time() - start_time:.2f}秒")
+
+    print("\n[Test] 推論テスト開始...")
+    correct_count = 0
+    test_start_time = time.time()
+
+    for i in range(test_samples_to_use):
+        encoded_image = test_encoded[i]
+        true_label = test_labels[i]
+
+        for l in liquid_layers:
+            core = getattr(l, 'core', None)
+            if l.use_rust and core is not None and hasattr(core, 'reset_potentials'):
+                core.reset_potentials()
+            else:
+                l.v = [0.0] * l.size
+                l.refractory = [0.0] * l.size
+
+        accumulated_fired = []
+        prev_fired = [[] for _ in range(len(liquid_layers))]
+        hidden_already_fired = [set() for _ in range(len(liquid_layers))]
+
+        for step, active_inputs in enumerate(encoded_image):
+            if not active_inputs:
+                continue
+
+            step_base_offset = step * feature_dim_per_step
+            for inp in active_inputs:
+                accumulated_fired.append(inp + step_base_offset)
+
+            hidden_offset = num_inputs
+            for l_idx, l in enumerate(liquid_layers):
+                fired_h = l.forward(active_inputs=active_inputs,
+                                    prev_active_hidden=prev_fired[l_idx])
+                prev_fired[l_idx] = fired_h
+
+                for f in fired_h:
+                    if f not in hidden_already_fired[l_idx]:
+                        hidden_already_fired[l_idx].add(f)
+                        accumulated_fired.append(
+                            f + step_base_offset + hidden_offset)
+                hidden_offset += l.size
+
+        if accumulated_fired:
+            predicted = readout_layer.forward(
+                accumulated_fired, learning=False)
+            if predicted == true_label:
+                correct_count += 1
+
+        if (i + 1) % 100 == 0:
+            print(f"\r  Testing {i + 1}/{test_samples_to_use}", end="")
+
+    final_accuracy = (correct_count / test_samples_to_use) * 100
+    print(f"\n{'='*60}")
+    print(f"最終テスト精度: {final_accuracy:.2f}%")
+    print(f"推論所要時間: {time.time() - test_start_time:.2f}秒")
+    print(f"{'='*60}")
+
+
+if __name__ == "__main__":
+    run_mnist_snn()

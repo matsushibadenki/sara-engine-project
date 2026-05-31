@@ -1,0 +1,73 @@
+# ディレクトリパス: pyproject.toml
+# ファイルの日本語タイトル: プロジェクト設定ファイル
+# ファイルの目的や内容: CLIコマンド、依存関係の追加と、既存のmypy設定・Rust連携の統合。
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "sara_engine"
+version = "1.1.0"
+description = "A CPU-first bio-inspired Spiking Neural Network engine with bounded-state CLI, evaluation, and release validation flows."
+authors = [
+    { name = "matsushibadenki", email = "apple.darwin@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["snn", "spiking-neural-network", "cpu-only", "neuromorphic", "backprop-free", "agent"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+dependencies = [
+    "transformers",
+    "msgpack",
+    "numpy",
+    "torch",
+    "tqdm"
+]
+
+[project.urls]
+Homepage = "https://github.com/matsushibadenki/sara-engine-project"
+Repository = "https://github.com/matsushibadenki/sara-engine-project"
+Documentation = "https://github.com/matsushibadenki/sara-engine-project/tree/main/doc"
+Issues = "https://github.com/matsushibadenki/sara-engine-project/issues"
+
+[project.scripts]
+sara-chat = "sara_engine.cli:chat"
+sara-train = "sara_engine.cli:train"
+
+[tool.maturin]
+python-source = "src"
+module-name = "sara_engine.sara_rust_core"
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+# scripts/old/ 配下の古いテストファイルを収集対象から除外
+addopts = "--ignore=scripts/old"
+
+[tool.mypy]
+# src を唯一のモジュール探索ルートに設定
+mypy_path = "src"
+# チェック対象を明示的にパッケージ名で指定
+packages = ["sara_engine"]
+
+# 二重解決を防止するための設定変更
+# explicit_package_bases を False に戻し、namespace_packages を制限する
+explicit_package_bases = false
+namespace_packages = false
+
+# 基本設定
+warn_unused_configs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "sara_engine.*"
+ignore_missing_imports = true

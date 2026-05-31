@@ -1,0 +1,4 @@
+# One feed URL per line
+https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml
+https://feeds.arstechnica.com/arstechnica/index
+https://www.theverge.com/rss/index.xml

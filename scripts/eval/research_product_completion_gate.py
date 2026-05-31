@@ -1,0 +1,528 @@
+#!/usr/bin/env python3
+"""Validate SARA's research-product completion surface from managed artifacts."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Mapping
+
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+SRC_PATH = os.path.join(PROJECT_ROOT, "src")
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+if SRC_PATH not in sys.path:
+    sys.path.insert(0, SRC_PATH)
+
+from sara_engine.core.hal import MockNeuromorphicBackend, PythonBackend  # noqa: E402
+from sara_engine.utils.project_paths import ensure_allowed_output_path, ensure_parent_directory, workspace_path  # noqa: E402
+
+
+DEFAULT_PHASE3_REPORT_PATH = workspace_path("evaluation", "phase3_accuracy_suite.json")
+DEFAULT_PHASE4_REPORT_PATH = workspace_path("evaluation", "phase4_scale_continual_benchmark.json")
+DEFAULT_PHASE5_COMPLETION_REPORT_PATH = workspace_path("evaluation", "phase5_completion_gate_report.json")
+DEFAULT_OPERATIONAL_REPORT_PATH = workspace_path("release", "operational_readiness_report.json")
+DEFAULT_ANN_EFFICIENCY_ROADMAP_REPORT_PATH = workspace_path("evaluation", "ann_efficiency_roadmap_gate.json")
+DEFAULT_SPARSE_DIFFUSION_BLOCK_REPORT_PATH = workspace_path("evaluation", "sparse_diffusion_block_readiness.json")
+DEFAULT_ENERGY_MEASUREMENT_SESSION_PLAN_PATH = workspace_path("evaluation", "energy_measurement_session_plan.json")
+DEFAULT_OUTPUT_REPORT_PATH = workspace_path("evaluation", "research_product_completion_gate_report.json")
+DEFAULT_OUTPUT_SUMMARY_PATH = workspace_path("evaluation", "research_product_completion_gate_summary.txt")
+
+
+def _load_module_from_path(module_name: str, path: str) -> Any:
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load module from path: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_json(path: str) -> Dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise ValueError(f"JSON artifact is not an object: {path}")
+    return payload
+
+
+def _passed_check(details: Dict[str, Any]) -> Dict[str, Any]:
+    return {"passed": True, "errors": [], "details": details}
+
+
+def _failed_check(errors: List[str], details: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    return {"passed": False, "errors": errors, "details": details or {}}
+
+
+def _check_policy_text(policy_text: str) -> Dict[str, Any]:
+    required = [
+        "Do not make runtime learning depend on backpropagation.",
+        "Do not make dense matrix operations the primary runtime design.",
+        "Do not require GPUs for correctness or normal operation.",
+        "Generated files must stay in managed directories",
+        "Prefer `src/sara_engine/utils/project_paths.py`",
+    ]
+    missing = [item for item in required if item not in policy_text]
+    if missing:
+        return _failed_check(["policy.md is missing required research-product constraints."], {"missing": missing})
+    return _passed_check({"required_constraint_count": len(required)})
+
+
+def _check_roadmap_audit(roadmap_report: Mapping[str, Any]) -> Dict[str, Any]:
+    errors: List[str] = []
+    if not bool(roadmap_report.get("passed", False)):
+        errors.append("ROADMAP closure audit is not passed.")
+    if int(roadmap_report.get("closure_done_count", 0) or 0) < 4:
+        errors.append("ROADMAP closure audit does not include all required DONE markers.")
+    if int(roadmap_report.get("unchecked_marker_count", 0) or 0) > 0:
+        errors.append("ROADMAP still contains unchecked completion markers.")
+    if errors:
+        return _failed_check(errors, dict(roadmap_report))
+    return _passed_check(
+        {
+            "closure_done_count": int(roadmap_report.get("closure_done_count", 0) or 0),
+            "candidate_line_count": int(roadmap_report.get("candidate_line_count", 0) or 0),
+        }
+    )
+
+
+def _check_phase3_completion(phase3_report: Mapping[str, Any]) -> Dict[str, Any]:
+    phase3_completion = phase3_report.get("phase3_completion", {})
+    if not isinstance(phase3_completion, Mapping):
+        return _failed_check(["Phase 3 report is missing phase3_completion."])
+    errors: List[str] = []
+    if not bool(phase3_completion.get("passed", False)):
+        errors.append("Phase 3 completion did not pass.")
+    if float(phase3_completion.get("completion_score", 0.0) or 0.0) < 1.0:
+        errors.append("Phase 3 completion_score is below 1.0.")
+    checks = phase3_completion.get("checks", {})
+    if isinstance(checks, Mapping):
+        failed = sorted(str(name) for name, value in checks.items() if not bool(value))
+        if failed:
+            errors.append("Phase 3 completion contains failed checks: " + ", ".join(failed))
+    if errors:
+        return _failed_check(errors, dict(phase3_completion))
+    return _passed_check(
+        {
+            "completion_score": float(phase3_completion.get("completion_score", 0.0) or 0.0),
+            "check_count": len(checks) if isinstance(checks, Mapping) else 0,
+        }
+    )
+
+
+def _check_phase4_completion(phase4_report: Mapping[str, Any]) -> Dict[str, Any]:
+    required_metrics = [
+        "structural_plasticity_stability",
+        "hippocampal_transfer_integrity",
+        "scale_out_retention_integrity",
+        "continual_drift_recovery_integrity",
+    ]
+    metrics = phase4_report.get("metrics", {})
+    metrics = metrics if isinstance(metrics, Mapping) else {}
+    errors: List[str] = []
+    if not bool(phase4_report.get("passed", False)):
+        errors.append("Phase 4 benchmark did not pass.")
+    missing_or_failed = [
+        name for name in required_metrics if float(metrics.get(name, 0.0) or 0.0) < 1.0
+    ]
+    if missing_or_failed:
+        errors.append("Phase 4 required metrics failed: " + ", ".join(missing_or_failed))
+    quality_metrics = phase4_report.get("quality_metrics", {})
+    if not isinstance(quality_metrics, Mapping):
+        errors.append("Phase 4 report is missing quality_metrics.")
+    if errors:
+        return _failed_check(errors, {"required_metrics": required_metrics})
+    return _passed_check(
+        {
+            "overall_score": float(phase4_report.get("overall_score", 0.0) or 0.0),
+            "required_metric_count": len(required_metrics),
+        }
+    )
+
+
+def _check_phase5_completion(phase5_report: Mapping[str, Any]) -> Dict[str, Any]:
+    errors: List[str] = []
+    if not bool(phase5_report.get("passed", False)):
+        errors.append("Phase 5 completion gate did not pass.")
+    failed_checks = phase5_report.get("failed_checks", [])
+    if isinstance(failed_checks, list) and failed_checks:
+        errors.append("Phase 5 completion failed checks: " + ", ".join(str(item) for item in failed_checks))
+    check_count = int(phase5_report.get("check_count", 0) or 0)
+    pass_count = int(phase5_report.get("pass_count", 0) or 0)
+    if check_count > 0 and pass_count < check_count:
+        errors.append(f"Phase 5 completion pass_count is incomplete ({pass_count}/{check_count}).")
+    if errors:
+        return _failed_check(errors, {"check_count": check_count, "pass_count": pass_count})
+    return _passed_check(
+        {
+            "phase5_overall_score": float(phase5_report.get("phase5_overall_score", 0.0) or 0.0),
+            "check_count": check_count,
+            "pass_count": pass_count,
+        }
+    )
+
+
+def _check_operational_readiness(operational_report: Mapping[str, Any]) -> Dict[str, Any]:
+    required_checks = [
+        "phase3_accuracy",
+        "phase3_completion",
+        "phase4_completion",
+        "phase5_entry_gate",
+        "phase5_completion_gate",
+        "external_validity",
+        "external_validity_ladder",
+        "release_gate",
+        "production_profile",
+    ]
+    checks = operational_report.get("checks", {})
+    checks = checks if isinstance(checks, Mapping) else {}
+    errors: List[str] = []
+    if not bool(operational_report.get("passed", False)):
+        errors.append("Operational readiness did not pass.")
+    if not bool(operational_report.get("strict_production", False)):
+        errors.append("Operational readiness is not marked strict_production=true.")
+    failed = [
+        name
+        for name in required_checks
+        if not isinstance(checks.get(name), Mapping) or not bool(checks.get(name, {}).get("passed", False))
+    ]
+    if failed:
+        errors.append("Operational readiness required checks failed or are missing: " + ", ".join(failed))
+    if errors:
+        return _failed_check(errors, {"required_checks": required_checks})
+    return _passed_check(
+        {
+            "readiness_score": float(operational_report.get("readiness_score", 0.0) or 0.0),
+            "required_check_count": len(required_checks),
+        }
+    )
+
+
+def _check_ann_efficiency_roadmap(roadmap_report: Mapping[str, Any]) -> Dict[str, Any]:
+    stages = roadmap_report.get("stages", [])
+    stages = stages if isinstance(stages, list) else []
+    errors: List[str] = []
+    if not bool(roadmap_report.get("passed", False)):
+        errors.append("ANN efficiency roadmap gate did not pass.")
+    if float(roadmap_report.get("completion_score", 0.0) or 0.0) < 1.0:
+        errors.append("ANN efficiency roadmap completion_score is below 1.0.")
+    failed_stages = [
+        str(stage.get("name", ""))
+        for stage in stages
+        if isinstance(stage, Mapping) and not bool(stage.get("passed", False))
+    ]
+    if failed_stages:
+        errors.append("ANN efficiency roadmap failed stages: " + ", ".join(failed_stages))
+    stage_names = {str(stage.get("name", "")) for stage in stages if isinstance(stage, Mapping)}
+    required_stages = {
+        "stage_1_instrumented_sparse_proxy",
+        "stage_2_limited_real_data_advantage",
+        "stage_3_scale_ladder_advantage",
+        "stage_4_production_regression_guard",
+        "stage_5_neuromorphic_transfer_readiness",
+        "stage_6_real_joule_measurement_readiness",
+    }
+    missing_stages = sorted(required_stages - stage_names)
+    if missing_stages:
+        errors.append("ANN efficiency roadmap is missing stages: " + ", ".join(missing_stages))
+    if errors:
+        return _failed_check(errors, dict(roadmap_report))
+    return _passed_check(
+        {
+            "completion_score": float(roadmap_report.get("completion_score", 0.0) or 0.0),
+            "stage_count": int(roadmap_report.get("stage_count", len(stages)) or 0),
+            "passed_stage_count": int(roadmap_report.get("passed_stage_count", 0) or 0),
+        }
+    )
+
+
+def _check_sparse_diffusion_block_readiness(report: Mapping[str, Any]) -> Dict[str, Any]:
+    metrics = report.get("metrics", {})
+    metrics = metrics if isinstance(metrics, Mapping) else {}
+    thresholds = report.get("threshold_results", {})
+    thresholds = thresholds if isinstance(thresholds, Mapping) else {}
+    required_metrics = {
+        "sparse_diffusion_partition_integrity": 1.0,
+        "sparse_diffusion_independent_block_integrity": 1.0,
+        "sparse_diffusion_denoise_accuracy": 1.0,
+        "sparse_diffusion_event_cost_advantage": 2.0,
+        "sparse_diffusion_block_ablation_integrity": 1.0,
+        "sparse_diffusion_single_pass_recurrent_integrity": 1.0,
+        "sparse_diffusion_policy_compatibility": 1.0,
+    }
+    errors: List[str] = []
+    if str(report.get("suite_name", "")) != "SparseDiffusionBlockReadiness":
+        errors.append("Sparse diffusion block readiness report has an unexpected suite name.")
+    if not bool(report.get("passed", False)):
+        errors.append("Sparse diffusion block readiness did not pass.")
+    failed_thresholds = sorted(str(name) for name, passed in thresholds.items() if not bool(passed))
+    if failed_thresholds:
+        errors.append("Sparse diffusion block thresholds failed: " + ", ".join(failed_thresholds))
+    missing_or_failed = [
+        name
+        for name, required_min in required_metrics.items()
+        if float(metrics.get(name, 0.0) or 0.0) < required_min
+    ]
+    if missing_or_failed:
+        errors.append("Sparse diffusion block required metrics failed: " + ", ".join(missing_or_failed))
+    if errors:
+        return _failed_check(errors, {"required_metrics": required_metrics})
+    return _passed_check(
+        {
+            "overall_score": float(report.get("overall_score", 0.0) or 0.0),
+            "block_count": int(report.get("block_count", 0) or 0),
+            "required_metric_count": len(required_metrics),
+        }
+    )
+
+
+def _check_energy_measurement_session_plan(session_plan: Mapping[str, Any]) -> Dict[str, Any]:
+    planned_runs = (
+        session_plan.get("planned_runs", [])
+        if isinstance(session_plan.get("planned_runs"), list)
+        else []
+    )
+    pairing_matrix = (
+        session_plan.get("pairing_matrix", {})
+        if isinstance(session_plan.get("pairing_matrix"), Mapping)
+        else {}
+    )
+    errors: List[str] = []
+    if str(session_plan.get("schema", "")) != "sara-energy-measurement-session-plan-v1":
+        errors.append("Energy measurement session plan has an unexpected schema.")
+    if str(session_plan.get("status", "")) not in {"pending_measurement", "ready_for_real_joule_claim"}:
+        errors.append("Energy measurement session plan has an unexpected status.")
+    planned_run_count = int(session_plan.get("planned_run_count", -1) or 0)
+    if planned_run_count != len(planned_runs):
+        errors.append("Energy measurement session plan planned_run_count does not match planned_runs.")
+    systems = pairing_matrix.get("systems", []) if isinstance(pairing_matrix.get("systems"), list) else []
+    if sorted(str(system) for system in systems) != ["ann", "sara"]:
+        errors.append("Energy measurement session plan pairing matrix must include sara and ann systems.")
+    if int(pairing_matrix.get("required_rows_per_task", 0) or 0) < 2:
+        errors.append("Energy measurement session plan must require paired rows per task.")
+    if str(session_plan.get("status", "")) == "pending_measurement" and planned_run_count <= 0:
+        errors.append("Pending energy measurement session plan has no planned runs.")
+    for index, run in enumerate(planned_runs):
+        if not isinstance(run, Mapping):
+            errors.append(f"Energy measurement planned run {index} is not an object.")
+            continue
+        system = str(run.get("system", "") or "")
+        task = str(run.get("task", "") or "")
+        command = str(run.get("command_template", "") or "")
+        run_id_template = str(run.get("run_id_template", "") or "")
+        if system not in {"sara", "ann"}:
+            errors.append(f"Energy measurement planned run {index} has invalid system.")
+        if not task:
+            errors.append(f"Energy measurement planned run {index} is missing task.")
+        if "<replicate>" not in run_id_template:
+            errors.append(f"Energy measurement planned run {index} is missing replicate placeholder.")
+        if "record-energy-measurement" not in command or "--source real_energy_session" not in command:
+            errors.append(f"Energy measurement planned run {index} command is not a real-energy recording command.")
+    if errors:
+        return _failed_check(errors, dict(session_plan))
+    return _passed_check(
+        {
+            "status": str(session_plan.get("status", "")),
+            "session_id": str(session_plan.get("session_id", "")),
+            "planned_run_count": planned_run_count,
+            "task_count": len(pairing_matrix.get("tasks", [])) if isinstance(pairing_matrix.get("tasks"), list) else 0,
+        }
+    )
+
+
+def _check_memory_operations(source_texts: Mapping[str, str]) -> Dict[str, Any]:
+    fix_memory_text = source_texts.get("fix_memory", "")
+    sara_cli_text = source_texts.get("sara_cli", "")
+    tools_text = source_texts.get("tools", "")
+    required_pairs = {
+        "fix_inference_memory": fix_memory_text,
+        "dry_run": fix_memory_text,
+        "ensure_parent_directory": fix_memory_text,
+        "fix-memory": sara_cli_text + tools_text,
+        "memory_fix_report": fix_memory_text,
+    }
+    missing = [needle for needle, haystack in required_pairs.items() if needle not in haystack]
+    if missing:
+        return _failed_check(["Memory repair command surface is incomplete."], {"missing": missing})
+    return _passed_check({"memory_repair_contract_terms": sorted(required_pairs.keys())})
+
+
+def _check_managed_output_boundary() -> Dict[str, Any]:
+    errors: List[str] = []
+    try:
+        ensure_allowed_output_path(workspace_path("evaluation", "research_product_completion_probe.json"))
+    except ValueError as exc:
+        errors.append(f"Managed workspace output was rejected unexpectedly: {exc}")
+    try:
+        ensure_allowed_output_path("README.md")
+        errors.append("Repository-root output path was accepted unexpectedly.")
+    except ValueError:
+        pass
+    if errors:
+        return _failed_check(errors)
+    return _passed_check({"root_output_rejected": True, "workspace_output_accepted": True})
+
+
+def _check_neuromorphic_hal_smoke() -> Dict[str, Any]:
+    weights = [
+        {0: 0.75, 1: 0.25},
+        {1: 0.75},
+    ]
+    python_backend = PythonBackend()
+    mock_backend = MockNeuromorphicBackend()
+    python_backend.set_weights(weights)
+    mock_backend.set_weights(weights)
+    python_output = python_backend.propagate([0, 1], threshold=0.5, max_out=2)
+    mock_output = mock_backend.propagate([0, 1], threshold=0.5, max_out=2)
+    mapping_report = mock_backend.mapping_report()
+    if mock_output != python_output:
+        return _failed_check(
+            ["Neuromorphic HAL smoke output diverged from PythonBackend."],
+            {"python_output": python_output, "mock_output": mock_output, "mapping_report": mapping_report},
+        )
+    if mapping_report.get("last_event_cost", 0.0) <= 0.0:
+        return _failed_check(["Neuromorphic HAL did not report event cost."], mapping_report)
+    return _passed_check(
+        {
+            "backend": mock_backend.get_name(),
+            "output": mock_output,
+            "mapping_report": mapping_report,
+        }
+    )
+
+
+def build_research_product_completion_report(
+    *,
+    policy_text: str,
+    roadmap_report: Mapping[str, Any],
+    phase3_report: Mapping[str, Any],
+    phase4_report: Mapping[str, Any],
+    phase5_completion_report: Mapping[str, Any],
+    operational_report: Mapping[str, Any],
+    ann_efficiency_roadmap_report: Mapping[str, Any],
+    sparse_diffusion_block_report: Mapping[str, Any],
+    energy_measurement_session_plan: Mapping[str, Any],
+    source_texts: Mapping[str, str],
+) -> Dict[str, Any]:
+    checks = {
+        "policy_core_constraints": _check_policy_text(policy_text),
+        "roadmap_closure_audit": _check_roadmap_audit(roadmap_report),
+        "managed_output_boundary": _check_managed_output_boundary(),
+        "phase3_completion": _check_phase3_completion(phase3_report),
+        "phase4_completion": _check_phase4_completion(phase4_report),
+        "phase5_completion": _check_phase5_completion(phase5_completion_report),
+        "operational_strict_production": _check_operational_readiness(operational_report),
+        "ann_efficiency_roadmap": _check_ann_efficiency_roadmap(ann_efficiency_roadmap_report),
+        "sparse_diffusion_block_readiness": _check_sparse_diffusion_block_readiness(sparse_diffusion_block_report),
+        "energy_measurement_session_plan": _check_energy_measurement_session_plan(energy_measurement_session_plan),
+        "memory_repair_operations": _check_memory_operations(source_texts),
+        "neuromorphic_hal_smoke": _check_neuromorphic_hal_smoke(),
+    }
+    failed_checks = [name for name, check in checks.items() if not bool(check.get("passed", False))]
+    pass_count = len(checks) - len(failed_checks)
+    completion_score = pass_count / max(len(checks), 1)
+    return {
+        "schema": "sara-research-product-completion-gate-v1",
+        "passed": not failed_checks,
+        "completion_score": completion_score,
+        "check_count": len(checks),
+        "pass_count": pass_count,
+        "failed_checks": failed_checks,
+        "checks": checks,
+        "status": "complete" if not failed_checks else "needs_repair",
+    }
+
+
+def format_research_product_completion_summary(report: Mapping[str, Any]) -> str:
+    lines = [
+        "# SARA Research Product Completion Gate",
+        f"- passed: {bool(report.get('passed', False))}",
+        f"- status: {str(report.get('status', ''))}",
+        f"- completion_score: {float(report.get('completion_score', 0.0) or 0.0):.3f}",
+        f"- pass_count: {int(report.get('pass_count', 0) or 0)}",
+        f"- check_count: {int(report.get('check_count', 0) or 0)}",
+    ]
+    failed_checks = report.get("failed_checks", [])
+    lines.append("- failed_checks: " + (", ".join(str(item) for item in failed_checks) if failed_checks else "none"))
+    checks = report.get("checks", {})
+    if isinstance(checks, Mapping):
+        for name in sorted(checks):
+            check = checks[name] if isinstance(checks[name], Mapping) else {}
+            lines.append(f"- {name}: {'PASS' if bool(check.get('passed', False)) else 'FAIL'}")
+            for error in check.get("errors", []) if isinstance(check.get("errors", []), list) else []:
+                lines.append(f"  - error: {error}")
+    return "\n".join(lines) + "\n"
+
+
+def _build_roadmap_report(roadmap_path: str) -> Dict[str, Any]:
+    module_path = os.path.join(PROJECT_ROOT, "scripts", "eval", "roadmap_completion_audit.py")
+    module = _load_module_from_path("roadmap_completion_audit", module_path)
+    return module.audit_roadmap_path(Path(roadmap_path))
+
+
+def main(argv: List[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Validate SARA research-product completion.")
+    parser.add_argument("--policy-path", default=os.path.join(PROJECT_ROOT, "doc", "policy.md"))
+    parser.add_argument("--roadmap-path", default=os.path.join(PROJECT_ROOT, "doc", "ROADMAP.md"))
+    parser.add_argument("--phase3-report-path", default=DEFAULT_PHASE3_REPORT_PATH)
+    parser.add_argument("--phase4-report-path", default=DEFAULT_PHASE4_REPORT_PATH)
+    parser.add_argument("--phase5-completion-report-path", default=DEFAULT_PHASE5_COMPLETION_REPORT_PATH)
+    parser.add_argument("--operational-report-path", default=DEFAULT_OPERATIONAL_REPORT_PATH)
+    parser.add_argument("--ann-efficiency-roadmap-report-path", default=DEFAULT_ANN_EFFICIENCY_ROADMAP_REPORT_PATH)
+    parser.add_argument("--sparse-diffusion-block-report-path", default=DEFAULT_SPARSE_DIFFUSION_BLOCK_REPORT_PATH)
+    parser.add_argument("--energy-measurement-session-plan-path", default=DEFAULT_ENERGY_MEASUREMENT_SESSION_PLAN_PATH)
+    parser.add_argument("--output-report-path", default=DEFAULT_OUTPUT_REPORT_PATH)
+    parser.add_argument("--output-summary-path", default=DEFAULT_OUTPUT_SUMMARY_PATH)
+    args = parser.parse_args(argv)
+
+    required_paths = [
+        args.policy_path,
+        args.roadmap_path,
+        args.phase3_report_path,
+        args.phase4_report_path,
+        args.phase5_completion_report_path,
+        args.operational_report_path,
+        args.ann_efficiency_roadmap_report_path,
+        args.sparse_diffusion_block_report_path,
+        args.energy_measurement_session_plan_path,
+    ]
+    missing_paths = [path for path in required_paths if not os.path.exists(path)]
+    if missing_paths:
+        print("Research product completion gate failed: missing artifacts")
+        for path in missing_paths:
+            print(f"- {path}")
+        return 1
+
+    report = build_research_product_completion_report(
+        policy_text=Path(args.policy_path).read_text(encoding="utf-8"),
+        roadmap_report=_build_roadmap_report(args.roadmap_path),
+        phase3_report=_load_json(args.phase3_report_path),
+        phase4_report=_load_json(args.phase4_report_path),
+        phase5_completion_report=_load_json(args.phase5_completion_report_path),
+        operational_report=_load_json(args.operational_report_path),
+        ann_efficiency_roadmap_report=_load_json(args.ann_efficiency_roadmap_report_path),
+        sparse_diffusion_block_report=_load_json(args.sparse_diffusion_block_report_path),
+        energy_measurement_session_plan=_load_json(args.energy_measurement_session_plan_path),
+        source_texts={
+            "fix_memory": Path(os.path.join(PROJECT_ROOT, "scripts", "utils", "fix_memory.py")).read_text(encoding="utf-8"),
+            "sara_cli": Path(os.path.join(PROJECT_ROOT, "scripts", "sara_cli.py")).read_text(encoding="utf-8"),
+            "tools": Path(os.path.join(PROJECT_ROOT, "doc", "TOOLS.md")).read_text(encoding="utf-8"),
+        },
+    )
+    output_report_path = ensure_parent_directory(args.output_report_path)
+    output_summary_path = ensure_parent_directory(args.output_summary_path)
+    with open(output_report_path, "w", encoding="utf-8") as handle:
+        json.dump(report, handle, indent=2, ensure_ascii=False, sort_keys=True)
+    with open(output_summary_path, "w", encoding="utf-8") as handle:
+        handle.write(format_research_product_completion_summary(report))
+    print(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True))
+    return 0 if bool(report.get("passed", False)) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

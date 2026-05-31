@@ -1,0 +1,60 @@
+name: Phase4 Operational Cycle
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      execute_cycle:
+        description: "Run full cycle (false runs dry-run only)"
+        required: false
+        default: "false"
+      runbook_max_actions:
+        description: "Runbook manifest max actions"
+        required: false
+        default: "50"
+      runbook_max_per_source:
+        description: "Runbook manifest max actions per source (0=unlimited)"
+        required: false
+        default: "0"
+      runbook_drop_rate_threshold:
+        description: "Runbook drop-rate alert threshold"
+        required: false
+        default: "0.9"
+      v1_actions_max_age_seconds:
+        description: "Max age for imported v1 recovery actions"
+        required: false
+        default: "86400"
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-ci-phase4.txt
+      - name: Validate cycle contract tests
+        run: pytest -q tests/test_phase4_operational_cycle.py tests/test_operational_readiness.py
+      - name: Run dry-run cycle by default
+        if: ${{ github.event_name == 'schedule' || inputs.execute_cycle != 'true' }}
+        run: >
+          python scripts/eval/phase4_operational_cycle.py --dry-run
+          --runbook-max-actions ${{ inputs.runbook_max_actions || '50' }}
+          --runbook-max-per-source ${{ inputs.runbook_max_per_source || '0' }}
+          --runbook-drop-rate-threshold ${{ inputs.runbook_drop_rate_threshold || '0.9' }}
+          --v1-actions-max-age-seconds ${{ inputs.v1_actions_max_age_seconds || '86400' }}
+      - name: Run full operational cycle
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.execute_cycle == 'true' }}
+        run: >
+          python scripts/eval/phase4_operational_cycle.py
+          --runbook-max-actions ${{ inputs.runbook_max_actions || '50' }}
+          --runbook-max-per-source ${{ inputs.runbook_max_per_source || '0' }}
+          --runbook-drop-rate-threshold ${{ inputs.runbook_drop_rate_threshold || '0.9' }}
+          --v1-actions-max-age-seconds ${{ inputs.v1_actions_max_age_seconds || '86400' }}

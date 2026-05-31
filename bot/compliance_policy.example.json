@@ -1,0 +1,18 @@
+{
+  "default": {
+    "allowed": true,
+    "level": "warn",
+    "reason": "unknown_domain_manual_policy_recommended"
+  },
+  "domains": {
+    "en.wikipedia.org": {"allowed": true, "level": "allow", "reason": "cc-by-sa_reference"},
+    "ja.wikipedia.org": {"allowed": true, "level": "allow", "reason": "cc-by-sa_reference"},
+    "commons.wikimedia.org": {"allowed": true, "level": "allow", "reason": "open_media_repository"},
+    "arxiv.org": {"allowed": true, "level": "warn", "reason": "mixed_license_preprint"},
+    "example-deny.com": {"allowed": false, "level": "deny", "reason": "policy_blocked"}
+  },
+  "source_types": {
+    "web": {"allowed": true, "level": "warn", "reason": "web_license_review_required"},
+    "hot_inbox": {"allowed": true, "level": "allow", "reason": "local_operator_provided"}
+  }
+}
