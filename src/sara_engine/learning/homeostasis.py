@@ -1,12 +1,13 @@
 # Directory Path: src/sara_engine/learning/homeostasis.py
 # English Title: Homeostatic Plasticity with BCM Sliding Threshold
-# Purpose/Content: ニューロンの発火率追跡とシナプススケーリングを管理。完全な後方互換性を維持しながら、ステップループのO(1)遅延評価による超省エネ化と、BCM理論に基づく動的目標発火率によるメタ可塑性を実現。
+# Purpose/Content: Manage neuron firing-rate tracking and synaptic scaling with
+# lazy O(1) decay updates and BCM-inspired dynamic target rates.
 
-from typing import Dict, Iterable, Any
+from typing import Any, Dict, Iterable, Optional
 import math
 
 class NeuronActivityTracker:
-    """遅延評価(Lazy Evaluation)による O(1) 発火率トラッカー。後方互換性維持版。"""
+    """O(1) firing-rate tracker using lazy decay evaluation."""
 
     def __init__(
         self,
@@ -18,24 +19,22 @@ class NeuronActivityTracker:
         self._slow_rates: Dict[int, float] = {}
         self._last_update_step: Dict[int, int] = {}
         
-        # オリジナルの変数名を維持
         self._decay = decay
         self._slow_decay = slow_decay
         self._blend_fast = blend_fast
         self._current_step = 0
 
     def step(self) -> None:
-        """O(1) のグローバルタイムカウンターのインクリメントのみ行う。"""
+        """Advance the global time counter in O(1)."""
         self._current_step += 1
 
     def _apply_lazy_decay(self, neuron_id: int) -> None:
-        """アクセス時に、経過したステップ数に応じて一括で厳密な減衰を適用する"""
+        """Apply exact accumulated decay when a neuron is accessed."""
         last_step = self._last_update_step.get(neuron_id, self._current_step)
         dt = self._current_step - last_step
         
         if dt > 0:
             if neuron_id in self._fast_rates:
-                # べき乗計算によりオリジナルのループと数学的に完全に一致するO(1)減衰
                 self._fast_rates[neuron_id] *= (self._decay ** dt)
                 if self._fast_rates[neuron_id] < 1e-10:
                     del self._fast_rates[neuron_id]
@@ -83,7 +82,7 @@ class NeuronActivityTracker:
 
 
 class SynapticScalingManager:
-    """恒常性シナプススケーリングを管理する。"""
+    """Manage homeostatic synaptic scaling."""
 
     def __init__(
         self,
@@ -101,7 +100,7 @@ class SynapticScalingManager:
         self.deadband = deadband
         self.global_weight = global_weight
 
-    def compute_scaling_factor(self, current_rate: float, population_rate: float | None = None) -> float:
+    def compute_scaling_factor(self, current_rate: float, population_rate: Optional[float] = None) -> float:
         target = max(1e-6, self.target_rate)
         local_rel_error = (target - current_rate) / target
         global_rel_error = 0.0
@@ -118,7 +117,7 @@ class SynapticScalingManager:
 
 
 class AdaptiveThresholdHomeostasis:
-    """BCM理論に基づくスライディング目標発火率を用いた適応的閾値コントローラ"""
+    """Adaptive threshold controller with BCM-inspired sliding target rates."""
 
     def __init__(
         self,
@@ -138,7 +137,7 @@ class AdaptiveThresholdHomeostasis:
         
         self.thresholds: Dict[int, float] = {}
         self.rates: Dict[int, float] = {}
-        self.dynamic_targets: Dict[int, float] = {} # BCMスライディング用
+        self.dynamic_targets: Dict[int, float] = {}
 
     def state_dict(self) -> Dict[str, Any]:
         return {
@@ -169,7 +168,7 @@ class AdaptiveThresholdHomeostasis:
         self.rates.clear()
         self.dynamic_targets.clear()
 
-    def update(self, active_ids: Iterable[int], population_size: int | None = None) -> None:
+    def update(self, active_ids: Iterable[int], population_size: Optional[int] = None) -> None:
         active_set = set(active_ids)
         tracked_ids = set(self.thresholds.keys()) | set(self.rates.keys()) | active_set
         if not tracked_ids:
@@ -186,7 +185,6 @@ class AdaptiveThresholdHomeostasis:
             rate = prev_rate * self.decay + fired * (1.0 - self.decay)
             self.rates[unit_id] = rate
 
-            # BCM スライディング閾値 (目標発火率を自己組織化)
             current_target = self.dynamic_targets.get(unit_id, self.target_rate)
             new_target = current_target * 0.99 + (rate ** 2) * 0.01
             new_target = max(self.target_rate * 0.5, min(self.target_rate * 2.0, new_target))

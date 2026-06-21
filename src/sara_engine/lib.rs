@@ -1,17 +1,40 @@
 #![allow(non_local_definitions)]
 
-// ディレクトリパス: src/sara_engine/lib.rs
-// ファイルの英語タイトル: Rust Hybrid SNN Core (Complete Version)
-// ファイルの目的や内容: SARA Engineのコアとなるスパイクニューラルネットワークの演算を高速化するためのRust拡張モジュール。フェーズ2の予測符号化、WTAルーター、スケーラブルなSDRメモリから、フェーズ3のコーパス直接シナプス結線（Direct Synaptic Wiring）や能動的推論に向けた報酬修飾型STDP（R-STDP）、さらにフェーズ4に向けたバッチSDR生成やホメオスタシス機能まで、すべての処理を統合した完全版。
+// Directory path: src/sara_engine/lib.rs
+// English title: Rust Hybrid SNN Core
+// Purpose: PyO3 extension for sparse, CPU-first SNN primitives used by SARA Engine.
 
 use pyo3::prelude::*;
+use pyo3::exceptions::PyValueError;
 use pyo3::types::{PyDict, PyList, PyTuple};
 use std::collections::{HashMap, HashSet};
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
+use rayon::prelude::*;
+
+fn value_error(message: &str) -> PyErr {
+    PyValueError::new_err(message.to_string())
+}
+
+fn validate_finite(name: &str, value: f32) -> PyResult<()> {
+    if value.is_finite() {
+        Ok(())
+    } else {
+        Err(value_error(&format!("{name} must be finite")))
+    }
+}
+
+fn validate_probability_like(name: &str, value: f32) -> PyResult<()> {
+    validate_finite(name, value)?;
+    if (0.0..=1.0).contains(&value) {
+        Ok(())
+    } else {
+        Err(value_error(&format!("{name} must be between 0.0 and 1.0")))
+    }
+}
 
 // =====================================================================
-// [1] 基本演算 & Fuzzy Recall (Phase 2)
+// [1] Basic operations and fuzzy recall
 // =====================================================================
 
 #[pyfunction]
@@ -30,6 +53,7 @@ fn sparse_propagate_threshold(
     out_size: usize,
     threshold: f32,
 ) -> PyResult<Vec<usize>> {
+    validate_finite("threshold", threshold)?;
     let mut potentials = vec![0.0; out_size];
 
     if let Ok(weights_list) = weights.downcast::<PyList>() {
@@ -81,7 +105,7 @@ fn sparse_propagate_threshold(
 }
 
 // =====================================================================
-// [2] SpikeEngine (Transformer / Attention Core)
+// [2] SpikeEngine sparse propagation core
 // =====================================================================
 
 #[pyclass]
@@ -95,19 +119,21 @@ pub struct SpikeEngine {
 impl SpikeEngine {
     #[new]
     #[pyo3(signature = (decay_rate=0.9))]
-    pub fn new(decay_rate: f32) -> Self {
-        SpikeEngine {
+    pub fn new(decay_rate: f32) -> PyResult<Self> {
+        validate_probability_like("decay_rate", decay_rate)?;
+        Ok(SpikeEngine {
             weights: Vec::new(),
             potentials: HashMap::new(),
             decay_rate,
-        }
+        })
     }
 
     pub fn set_weights(&mut self, weights: Vec<HashMap<usize, f32>>) { self.weights = weights; }
     pub fn get_weights(&self) -> Vec<HashMap<usize, f32>> { self.weights.clone() }
     pub fn reset_potentials(&mut self) { self.potentials.clear(); }
 
-    pub fn propagate(&mut self, active_spikes: Vec<usize>, threshold: f32, max_spikes: usize) -> Vec<usize> {
+    pub fn propagate(&mut self, active_spikes: Vec<usize>, threshold: f32, max_spikes: usize) -> PyResult<Vec<usize>> {
+        validate_finite("threshold", threshold)?;
         for val in self.potentials.values_mut() { *val *= self.decay_rate; }
         
         for &spike in &active_spikes {
@@ -131,10 +157,14 @@ impl SpikeEngine {
             out_spikes.push(target);
             self.potentials.insert(target, 0.0);
         }
-        out_spikes
+        Ok(out_spikes)
     }
 
-    pub fn apply_stdp(&mut self, pre_spikes: Vec<usize>, post_spikes: Vec<usize>, lr: f32) {
+    pub fn apply_stdp(&mut self, pre_spikes: Vec<usize>, post_spikes: Vec<usize>, lr: f32) -> PyResult<()> {
+        validate_finite("lr", lr)?;
+        if lr < 0.0 {
+            return Err(value_error("lr must be non-negative"));
+        }
         let post_set: HashSet<usize> = post_spikes.into_iter().collect();
         for &pre in &pre_spikes {
             if pre < self.weights.len() {
@@ -154,19 +184,25 @@ impl SpikeEngine {
                 }
             }
         }
+        Ok(())
     }
 
-    pub fn normalize_weights(&mut self, max_weight: f32) {
+    pub fn normalize_weights(&mut self, max_weight: f32) -> PyResult<()> {
+        validate_finite("max_weight", max_weight)?;
+        if max_weight < 0.0 {
+            return Err(value_error("max_weight must be non-negative"));
+        }
         for targets in &mut self.weights {
             for w in targets.values_mut() {
                 if *w > max_weight { *w = max_weight; }
             }
         }
+        Ok(())
     }
 }
 
 // =====================================================================
-// [3] Cortical Columns (MoE) / Winner-Take-All Router with Homeostasis
+// [3] Cortical columns / winner-take-all router with homeostasis
 // =====================================================================
 
 #[pyclass]
@@ -180,16 +216,31 @@ pub struct SpikeWTARouter {
 #[pymethods]
 impl SpikeWTARouter {
     #[new]
-    pub fn new(input_dim: usize, num_experts: usize, top_k: usize) -> Self {
+    pub fn new(input_dim: usize, num_experts: usize, top_k: usize) -> PyResult<Self> {
+        if num_experts == 0 {
+            return Err(value_error("num_experts must be positive"));
+        }
+        if top_k == 0 || top_k > num_experts {
+            return Err(value_error("top_k must be between 1 and num_experts"));
+        }
         let mut weights = Vec::with_capacity(input_dim);
         for _ in 0..input_dim { weights.push(HashMap::new()); }
-        SpikeWTARouter { weights, num_experts, top_k, thresholds: vec![0.0; num_experts] }
+        Ok(SpikeWTARouter { weights, num_experts, top_k, thresholds: vec![0.0; num_experts] })
     }
 
     pub fn set_weights(&mut self, weights: Vec<HashMap<usize, f32>>) { self.weights = weights; }
     pub fn get_weights(&self) -> Vec<HashMap<usize, f32>> { self.weights.clone() }
     pub fn get_thresholds(&self) -> Vec<f32> { self.thresholds.clone() }
-    pub fn set_thresholds(&mut self, thresholds: Vec<f32>) { self.thresholds = thresholds; }
+    pub fn set_thresholds(&mut self, thresholds: Vec<f32>) -> PyResult<()> {
+        if thresholds.len() != self.num_experts {
+            return Err(value_error("thresholds length must equal num_experts"));
+        }
+        for value in &thresholds {
+            validate_finite("threshold", *value)?;
+        }
+        self.thresholds = thresholds;
+        Ok(())
+    }
 
     pub fn route(&mut self, input_spikes: Vec<usize>, learning: bool) -> Vec<usize> {
         let mut potentials = vec![0.0; self.num_experts];
@@ -220,7 +271,11 @@ impl SpikeWTARouter {
         winners
     }
 
-    pub fn update_weights(&mut self, input_spikes: Vec<usize>, winners: Vec<usize>, lr: f32) {
+    pub fn update_weights(&mut self, input_spikes: Vec<usize>, winners: Vec<usize>, lr: f32) -> PyResult<()> {
+        validate_finite("lr", lr)?;
+        if lr < 0.0 {
+            return Err(value_error("lr must be non-negative"));
+        }
         let winner_set: HashSet<usize> = winners.into_iter().collect();
         for &spike in &input_spikes {
             if spike < self.weights.len() {
@@ -236,9 +291,11 @@ impl SpikeWTARouter {
                 }
             }
         }
+        Ok(())
     }
     
-    pub fn decay_weights(&mut self, decay_rate: f32) {
+    pub fn decay_weights(&mut self, decay_rate: f32) -> PyResult<()> {
+        validate_probability_like("decay_rate", decay_rate)?;
         for targets in &mut self.weights {
             let mut to_remove = Vec::new();
             for (&exp_id, w) in targets.iter_mut() {
@@ -247,11 +304,12 @@ impl SpikeWTARouter {
             }
             for t in to_remove { targets.remove(&t); }
         }
+        Ok(())
     }
 }
 
 // =====================================================================
-// [4] LIF & Predictive Synapses
+// [4] LIF and predictive synapses
 // =====================================================================
 
 #[pyclass]
@@ -264,8 +322,10 @@ pub struct LIFNetwork {
 #[pymethods]
 impl LIFNetwork {
     #[new]
-    pub fn new(decay_rate: f32, threshold: f32) -> Self {
-        LIFNetwork { potentials: HashMap::new(), decay_rate, threshold }
+    pub fn new(decay_rate: f32, threshold: f32) -> PyResult<Self> {
+        validate_probability_like("decay_rate", decay_rate)?;
+        validate_finite("threshold", threshold)?;
+        Ok(LIFNetwork { potentials: HashMap::new(), decay_rate, threshold })
     }
     pub fn reset(&mut self) { self.potentials.clear(); }
     pub fn forward(&mut self, input_spikes: Vec<usize>) -> Vec<usize> {
@@ -291,13 +351,17 @@ pub struct CausalSynapses {
 #[pymethods]
 impl CausalSynapses {
     #[new]
-    pub fn new(max_delay: usize) -> Self {
+    pub fn new(max_delay: usize) -> PyResult<Self> {
         let mut weights = Vec::with_capacity(max_delay + 1);
         for _ in 0..=max_delay { weights.push(HashMap::new()); }
-        CausalSynapses { weights, max_delay }
+        Ok(CausalSynapses { weights, max_delay })
     }
 
-    pub fn train_step(&mut self, spike_history: Vec<Vec<usize>>, next_token: usize, learning_rate: f32) {
+    pub fn train_step(&mut self, spike_history: Vec<Vec<usize>>, next_token: usize, learning_rate: f32) -> PyResult<()> {
+        validate_finite("learning_rate", learning_rate)?;
+        if learning_rate < 0.0 {
+            return Err(value_error("learning_rate must be non-negative"));
+        }
         for (delay, active_spikes) in spike_history.iter().enumerate() {
             if delay > self.max_delay { break; }
             let eff_lr = learning_rate * (1.0 - (delay as f32) * 0.08);
@@ -311,6 +375,7 @@ impl CausalSynapses {
                 targets.insert(next_token, old_w + eff_lr * (1.0 - old_w));
             }
         }
+        Ok(())
     }
 
     pub fn calculate_potentials(&self, spike_history: Vec<Vec<usize>>) -> HashMap<usize, f32> {
@@ -378,7 +443,7 @@ impl CausalSynapses {
 }
 
 // =====================================================================
-// [5] Scalable SDR Memory (Phase 3: Million-token LTM)
+// [5] Scalable SDR memory
 // =====================================================================
 
 #[pyclass]
@@ -391,11 +456,12 @@ pub struct ScalableSDRMemory {
 impl ScalableSDRMemory {
     #[new]
     #[pyo3(signature = (threshold=0.1))]
-    pub fn new(threshold: f32) -> Self {
-        ScalableSDRMemory {
+    pub fn new(threshold: f32) -> PyResult<Self> {
+        validate_probability_like("threshold", threshold)?;
+        Ok(ScalableSDRMemory {
             records: Vec::new(),
             threshold,
-        }
+        })
     }
 
     pub fn add_memory(&mut self, mem_id: usize, sdr: Vec<usize>) {
@@ -426,21 +492,25 @@ impl ScalableSDRMemory {
 }
 
 // =====================================================================
-// [6] Direct Synaptic Wiring (One-Shot Corpus Learning)
+// [6] Direct synaptic wiring for one-shot corpus learning
 // =====================================================================
 
-/// テキストコーパスから抽出された文字IDリスト（tokens）を走査し、
-/// 遅延時間（Polychronization）とPMI（Pointwise Mutual Information）による重み正規化を用いて、
-/// 高速にシナプス結線を構築します。
+/// Builds sparse delay-aware synapses from token IDs.
+///
+/// The weighting keeps the runtime sparse and CPU-first by using local
+/// co-occurrence statistics instead of dense matrix training.
 #[pyfunction]
 fn build_direct_synapses(tokens: Vec<usize>, context_window: usize) -> PyResult<HashMap<usize, HashMap<usize, HashMap<usize, f32>>>> {
+    if context_window == 0 {
+        return Err(value_error("context_window must be positive"));
+    }
     // delay -> pre_token -> post_token -> count
     let mut co_occurrence: HashMap<usize, HashMap<usize, HashMap<usize, f64>>> = HashMap::new();
     let mut unigram_counts: HashMap<usize, usize> = HashMap::new();
     
     let total_tokens = tokens.len();
     
-    // 1パス目: ウィンドウ内の遅延距離ごとの共起カウント
+    // First pass: count delay-specific co-occurrences inside the context window.
     for i in 0..total_tokens {
         let current = tokens[i];
         *unigram_counts.entry(current).or_insert(0) += 1;
@@ -456,7 +526,7 @@ fn build_direct_synapses(tokens: Vec<usize>, context_window: usize) -> PyResult<
         }
     }
     
-    // 2パス目: カウントを確率的重みに正規化（PMI的アプローチ）
+    // Second pass: normalize counts with a PMI-like sparse weighting scheme.
     let mut synapses: HashMap<usize, HashMap<usize, HashMap<usize, f32>>> = HashMap::new();
     for (delay, pre_dict) in co_occurrence.iter() {
         let mut delay_synapses = HashMap::new();
@@ -468,7 +538,7 @@ fn build_direct_synapses(tokens: Vec<usize>, context_window: usize) -> PyResult<
                 for (post, count) in posts.iter() {
                     if let Some(&post_count) = unigram_counts.get(post) {
                         let post_count_f64 = post_count as f64;
-                        // 無限ループを防ぐため、出現頻度の高い文字（空白など）への偏りを補正
+                        // Down-weight high-frequency tokens so common symbols do not dominate recall.
                         let weight = count / (pre_count_f64 * post_count_f64).sqrt();
                         target_map.insert(*post, weight as f32);
                     }
@@ -496,14 +566,15 @@ pub struct RewardModulatedSTDP {
 #[pymethods]
 impl RewardModulatedSTDP {
     #[new]
-    pub fn new(input_dim: usize, trace_decay: f32) -> Self {
+    pub fn new(input_dim: usize, trace_decay: f32) -> PyResult<Self> {
+        validate_probability_like("trace_decay", trace_decay)?;
         let mut weights = Vec::with_capacity(input_dim);
         let mut eligibility_traces = Vec::with_capacity(input_dim);
         for _ in 0..input_dim {
             weights.push(HashMap::new());
             eligibility_traces.push(HashMap::new());
         }
-        RewardModulatedSTDP { weights, eligibility_traces, trace_decay }
+        Ok(RewardModulatedSTDP { weights, eligibility_traces, trace_decay })
     }
 
     pub fn update_trace(&mut self, pre_spikes: Vec<usize>, post_spikes: Vec<usize>) {
@@ -532,7 +603,12 @@ impl RewardModulatedSTDP {
         }
     }
 
-    pub fn apply_reward(&mut self, reward: f32, learning_rate: f32) {
+    pub fn apply_reward(&mut self, reward: f32, learning_rate: f32) -> PyResult<()> {
+        validate_finite("reward", reward)?;
+        validate_finite("learning_rate", learning_rate)?;
+        if learning_rate < 0.0 {
+            return Err(value_error("learning_rate must be non-negative"));
+        }
         for i in 0..self.weights.len() {
             let traces = &self.eligibility_traces[i];
             let w_map = &mut self.weights[i];
@@ -543,15 +619,18 @@ impl RewardModulatedSTDP {
                 if *w > 5.0 { *w = 5.0; }
             }
         }
+        Ok(())
     }
+
+    pub fn get_weights(&self) -> Vec<HashMap<usize, f32>> { self.weights.clone() }
+    pub fn get_traces(&self) -> Vec<HashMap<usize, f32>> { self.eligibility_traces.clone() }
 }
 
 // =====================================================================
-// [8] Batch Processing for Large Scale Training (Phase 4 Prep)
+// [8] Batch processing for large-scale sparse encoding
 // =====================================================================
 
-/// トークンのバッチを受け取り、それぞれをSDR（Sparse Distributed Representation）に変換します。
-/// 大規模なコーパスの事前学習を高速化するためのユーティリティです。
+/// Converts token batches into deterministic sparse distributed representations.
 #[pyfunction]
 fn batch_tokens_to_sdr(
     batch_tokens: Vec<Vec<usize>>,
@@ -559,15 +638,21 @@ fn batch_tokens_to_sdr(
     sdr_density: f32,
     seed: u64,
 ) -> PyResult<Vec<Vec<Vec<usize>>>> {
+    if vocab_size == 0 {
+        return Err(value_error("vocab_size must be positive"));
+    }
+    validate_probability_like("sdr_density", sdr_density)?;
+    if sdr_density <= 0.0 {
+        return Err(value_error("sdr_density must be greater than 0.0"));
+    }
     let sdr_size = (vocab_size as f32 * sdr_density).ceil() as usize;
     let sdr_size = sdr_size.max(1);
 
-    // TODO: 将来的にRayonを導入して par_iter() で並列化可能
-    let batch_sdrs: Vec<Vec<Vec<usize>>> = batch_tokens.into_iter().map(|seq| {
-        seq.into_iter().map(|token| {
-            // 簡易的なハッシュベースの擬似ランダムSDR生成
-            // 実際の運用ではより洗練されたエンコーダを使用する
-            let mut seq_rng = StdRng::seed_from_u64(seed ^ (token as u64));
+    // Rayon preserves collection order here; each token uses an independent seed.
+    let batch_sdrs: Vec<Vec<Vec<usize>>> = batch_tokens.par_iter().map(|seq| {
+        seq.par_iter().map(|token| {
+            // Hash-seeded pseudo-random SDR generation keeps tokens stable across runs.
+            let mut seq_rng = StdRng::seed_from_u64(seed ^ (*token as u64));
             let mut sdr = Vec::with_capacity(sdr_size);
             for _ in 0..sdr_size {
                 sdr.push(seq_rng.gen_range(0..vocab_size));
@@ -585,7 +670,7 @@ fn batch_tokens_to_sdr(
 // [9] Homeostatic Scaling
 // =====================================================================
 
-/// 大規模ネットワークでの発火率の爆発/減衰を防ぐためのホメオスタシス機能
+/// Applies local homeostatic weight scaling to keep firing rates bounded.
 #[pyfunction]
 fn apply_homeostatic_scaling(
     mut weights: Vec<HashMap<usize, f32>>,
@@ -593,16 +678,23 @@ fn apply_homeostatic_scaling(
     target_rate: f32,
     learning_rate: f32,
 ) -> PyResult<Vec<HashMap<usize, f32>>> {
+    validate_finite("target_rate", target_rate)?;
+    validate_finite("learning_rate", learning_rate)?;
+    if learning_rate < 0.0 {
+        return Err(value_error("learning_rate must be non-negative"));
+    }
+    for rate in &firing_rates {
+        validate_finite("firing_rate", *rate)?;
+    }
     for (i, rate) in firing_rates.iter().enumerate() {
         if i < weights.len() {
             let error = target_rate - rate;
-            // 発火率が目標より高ければ重みを下げ、低ければ上げる
             let scaling_factor = 1.0 + (learning_rate * error);
             
             for val in weights[i].values_mut() {
                 *val *= scaling_factor;
                 if *val < 0.0 { *val = 0.0; }
-                if *val > 5.0 { *val = 5.0; } // W_max
+                if *val > 5.0 { *val = 5.0; }
             }
         }
     }
@@ -623,4 +715,144 @@ fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<ScalableSDRMemory>()?;
     m.add_class::<RewardModulatedSTDP>()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn assert_close(actual: f32, expected: f32) {
+        assert!(
+            (actual - expected).abs() < 1.0e-5,
+            "expected {expected}, got {actual}"
+        );
+    }
+
+    #[test]
+    fn calculate_sdr_overlap_uses_unique_sparse_indices() {
+        assert_close(calculate_sdr_overlap(vec![1, 2, 2, 3], vec![2, 3, 4]).unwrap(), 2.0 / 3.0);
+        assert_close(calculate_sdr_overlap(vec![], vec![1, 2]).unwrap(), 0.0);
+    }
+
+    #[test]
+    fn spike_engine_propagates_decays_learns_and_resets() {
+        let mut engine = SpikeEngine::new(0.5).unwrap();
+        engine.set_weights(vec![HashMap::from([(1usize, 1.0f32), (2, 0.3)])]);
+
+        assert_eq!(engine.propagate(vec![0], 0.8, 4).unwrap(), vec![1]);
+        assert_eq!(engine.propagate(vec![], 0.4, 4).unwrap(), Vec::<usize>::new());
+
+        engine.apply_stdp(vec![0], vec![2], 0.5).unwrap();
+        let weights = engine.get_weights();
+        assert!(weights[0][&2] > 0.3);
+        assert!(weights[0][&1] < 1.0);
+
+        engine.reset_potentials();
+        assert_eq!(engine.propagate(vec![], 0.01, 4).unwrap(), Vec::<usize>::new());
+    }
+
+    #[test]
+    fn wta_router_selects_top_k_adapts_thresholds_and_decays_weights() {
+        let mut router = SpikeWTARouter::new(2, 3, 2).unwrap();
+        router.set_weights(vec![
+            HashMap::from([(0usize, 1.0f32), (1, 0.5)]),
+            HashMap::from([(1usize, 0.7f32), (2, 0.2)]),
+        ]);
+
+        let winners = router.route(vec![0, 1], true);
+        assert_eq!(winners, vec![1, 0]);
+        let thresholds = router.get_thresholds();
+        assert!(thresholds[1] > thresholds[2]);
+
+        router.decay_weights(0.01).unwrap();
+        assert!(router.get_weights()[0].is_empty());
+    }
+
+    #[test]
+    fn lif_network_fires_at_threshold_and_resets() {
+        let mut lif = LIFNetwork::new(0.5, 2.0).unwrap();
+        assert_eq!(lif.forward(vec![7]), Vec::<usize>::new());
+        assert_eq!(lif.forward(vec![7, 7]), vec![7]);
+        lif.reset();
+        assert_eq!(lif.forward(vec![7]), Vec::<usize>::new());
+    }
+
+    #[test]
+    fn causal_synapses_learn_delay_aware_prediction_errors() {
+        let mut synapses = CausalSynapses::new(2).unwrap();
+        synapses.train_step(vec![vec![1], vec![2]], 9, 0.5).unwrap();
+
+        let potentials = synapses.calculate_potentials(vec![vec![1], vec![2]]);
+        assert!(potentials[&9] > 0.0);
+
+        let (errors_before, rate_before) = synapses.predict_and_learn(vec![vec![3]], vec![8], 0.4, 0.1);
+        assert_eq!(errors_before, vec![8]);
+        assert_close(rate_before, 1.0);
+
+        let (errors_after, rate_after) = synapses.predict_and_learn(vec![vec![3]], vec![8], 0.4, 0.1);
+        assert!(errors_after.is_empty());
+        assert_close(rate_after, 0.0);
+    }
+
+    #[test]
+    fn scalable_sdr_memory_searches_top_k_and_handles_empty_query() {
+        let mut memory = ScalableSDRMemory::new(0.34).unwrap();
+        memory.add_memory(10, vec![1, 2, 3]);
+        memory.add_memory(20, vec![1, 4, 5]);
+
+        assert_eq!(memory.search(vec![], 2), Vec::<(usize, f32)>::new());
+        let results = memory.search(vec![1, 2, 9], 1);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].0, 10);
+        assert!(results[0].1 > 0.6);
+    }
+
+    #[test]
+    fn reward_modulated_stdp_updates_traces_and_bounds_weights() {
+        let mut learner = RewardModulatedSTDP::new(2, 0.5).unwrap();
+        learner.update_trace(vec![0], vec![1]);
+        assert!(learner.get_traces()[0][&1] > 0.0);
+
+        learner.apply_reward(100.0, 1.0).unwrap();
+        assert_close(learner.get_weights()[0][&1], 5.0);
+
+        learner.apply_reward(-100.0, 1.0).unwrap();
+        assert_close(learner.get_weights()[0][&1], 0.0);
+    }
+
+    #[test]
+    fn direct_synapses_batch_sdr_and_homeostasis_stay_sparse_and_bounded() {
+        let synapses = build_direct_synapses(vec![1, 2, 1, 3], 2).unwrap();
+        assert!(synapses[&1][&1].contains_key(&2));
+        assert!(synapses[&2][&2].contains_key(&3));
+
+        let sdrs = batch_tokens_to_sdr(vec![vec![1, 2], vec![1]], 16, 0.125, 42).unwrap();
+        assert_eq!(sdrs[0][0], sdrs[1][0]);
+        assert!(sdrs.iter().flatten().flatten().all(|idx| *idx < 16));
+
+        let scaled = apply_homeostatic_scaling(
+            vec![HashMap::from([(1usize, 2.0f32)]), HashMap::from([(2usize, 2.0f32)])],
+            vec![0.5, 2.0],
+            1.0,
+            0.5,
+        )
+        .unwrap();
+        assert!(scaled[0][&1] > 2.0);
+        assert!(scaled[1][&2] < 2.0);
+        assert!(scaled.iter().flat_map(|m| m.values()).all(|w| (0.0..=5.0).contains(w)));
+    }
+
+    #[test]
+    fn invalid_runtime_parameters_return_errors() {
+        assert!(SpikeEngine::new(1.5).is_err());
+        assert!(SpikeWTARouter::new(4, 0, 1).is_err());
+        assert!(SpikeWTARouter::new(4, 2, 3).is_err());
+        assert!(LIFNetwork::new(-0.1, 1.0).is_err());
+        assert!(ScalableSDRMemory::new(1.5).is_err());
+        assert!(RewardModulatedSTDP::new(2, 1.5).is_err());
+        assert!(build_direct_synapses(vec![1, 2, 3], 0).is_err());
+        assert!(batch_tokens_to_sdr(vec![vec![1]], 0, 0.1, 1).is_err());
+        assert!(batch_tokens_to_sdr(vec![vec![1]], 16, 0.0, 1).is_err());
+        assert!(apply_homeostatic_scaling(vec![HashMap::new()], vec![f32::NAN], 1.0, 0.1).is_err());
+    }
 }

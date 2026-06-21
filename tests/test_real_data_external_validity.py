@@ -62,13 +62,50 @@ def test_real_data_external_validity_passes_and_reports_ann_cost_advantage(tmp_p
     assert report["metrics"]["real_data_qa_accuracy"] >= 0.80
     assert report["metrics"]["ann_proxy_qa_accuracy"] >= 0.80
     assert report["metrics"]["dense_embedding_ann_proxy_qa_accuracy"] >= 0.80
+    assert report["metrics"]["bm25_offline_proxy_qa_accuracy"] >= 0.80
     assert report["metrics"]["ann_cost_advantage_proxy"] >= 2.0
     assert report["metrics"]["dense_embedding_ann_cost_advantage_proxy"] >= 2.0
+    assert report["metrics"]["bm25_offline_cost_advantage_proxy"] >= 2.0
+    assert report["metrics"]["real_pretrained_embedding_reference_available"] == 0.0
+    assert report["metrics"]["real_pretrained_embedding_reference_qa_accuracy"] == 0.0
+    assert report["metrics"]["real_pretrained_embedding_reference_cost_advantage_proxy"] == 0.0
+    assert report["metrics"]["real_pretrained_embedding_faiss_reference_available"] == 0.0
+    assert report["metrics"]["real_pretrained_embedding_faiss_reference_qa_accuracy"] == 0.0
+    assert report["metrics"]["real_pretrained_embedding_faiss_reference_cost_advantage_proxy"] == 0.0
+    assert report["metrics"]["real_cross_encoder_reference_available"] == 0.0
+    assert report["metrics"]["real_cross_encoder_reference_qa_accuracy"] == 0.0
+    assert report["metrics"]["real_cross_encoder_reference_cost_advantage_proxy"] == 0.0
+    assert report["ann_pretrained_embedding_reference"]["available"] is False
+    assert report["ann_pretrained_embedding_reference"]["reason"] == "not_configured"
+    assert report["ann_pretrained_embedding_faiss_reference"]["available"] is False
+    assert report["ann_pretrained_embedding_faiss_reference"]["reason"] == "not_configured"
+    assert report["ann_cross_encoder_reference"]["available"] is False
+    assert report["ann_cross_encoder_reference"]["reason"] == "not_configured"
+    assert report["bm25_offline_proxy"]["accuracy"] >= 0.80
     assert report["metrics"]["performance_energy_ratio_proxy"] >= 2.0
     assert report["benchmark_context"]["max_docs"] == 8
     assert report["benchmark_context"]["max_cases"] == 8
+    assert report["benchmark_context"]["pretrained_embedding_reference_available"] is False
+    assert report["benchmark_context"]["pretrained_embedding_reference_reason"] == "not_configured"
+    assert report["benchmark_context"]["pretrained_embedding_faiss_reference_available"] is False
+    assert report["benchmark_context"]["pretrained_embedding_faiss_reference_reason"] == "not_configured"
+    assert report["benchmark_context"]["cross_encoder_reference_available"] is False
+    assert report["benchmark_context"]["cross_encoder_reference_reason"] == "not_configured"
     assert len(report["benchmark_context"]["corpus_sha256"]) == 64
     assert report["benchmark_context"]["retriever_strategy"]
+    per_task_summary = report["per_task_external_validity_summary"]
+    assert per_task_summary["schema"] == "sara-per-task-external-validity-summary-v1"
+    assert per_task_summary["case_count"] == 8
+    assert per_task_summary["failure_type_counts"]["none"] == 8
+    assert per_task_summary["abstention_rate"] == 0.0
+    assert per_task_summary["avg_dense_cost_advantage_proxy"] >= 2.0
+    first_case = per_task_summary["cases"][0]
+    assert set(first_case) == {"case_id", "query", "quality", "cost", "abstention", "failure_type"}
+    assert first_case["quality"]["sara_correct"] is True
+    assert first_case["cost"]["dense_cost_advantage_proxy"] >= 1.0
+    assert first_case["abstention"]["expected_behavior"] == "retrieve"
+    assert report["metrics"]["per_task_external_validity_summary_available"] == 1.0
+    assert report["metrics"]["per_task_external_validity_case_count"] == 8.0
     assert report["thresholds"]["min_performance_energy_ratio_proxy"] == 2.0
     assert report["check_details"]["performance_energy_ratio_proxy"]["passed"] is True
     assert report["check_details"]["performance_energy_ratio_proxy"]["required_min"] == 2.0
@@ -111,6 +148,14 @@ def test_real_data_external_validity_passes_and_reports_ann_cost_advantage(tmp_p
     assert report["check_details"]["sparse_diffusion_real_data_denoise_accuracy"]["passed"] is True
     assert report["check_details"]["sparse_diffusion_real_data_event_cost_advantage"]["passed"] is True
     assert report["sparse_diffusion_real_data"]["observed_only"] is True
+    assert report["repository_fixture_probe"]["observed_only"] is True
+    assert report["repository_fixture_probe"]["passed"] is True
+    assert report["repository_fixture_probe"]["case_count"] == 8
+    assert report["metrics"]["repository_fixture_retrieval_accuracy"] == 1.0
+    assert report["metrics"]["repository_fixture_abstention_integrity"] == 1.0
+    assert report["repository_fixture_probe"]["accuracy_by_task_type"]["noisy"] == 1.0
+    assert report["repository_fixture_probe"]["accuracy_by_task_type"]["adversarial"] == 1.0
+    assert report["repository_fixture_probe"]["accuracy_by_task_type"]["delayed"] == 1.0
     assert report["metrics"]["rag_query_decomposition_bounded_count_observed"] == 1.0
     assert report["metrics"]["rag_query_decomposition_coverage_observed"] == 1.0
     assert report["metrics"]["rag_query_decomposition_nonempty_observed"] == 1.0
@@ -121,6 +166,66 @@ def test_real_data_external_validity_passes_and_reports_ann_cost_advantage(tmp_p
     assert report["metrics"]["rag_query_decomposition_merged_source_diversity_observed"] == 1.0
     assert report["rag_query_decomposition"]["observed_only"] is True
     assert all(report["checks"].values())
+
+
+def test_real_data_external_validity_marks_missing_pretrained_embedding_directory(tmp_path):
+    module = _load_script()
+    corpus = tmp_path / "external_validity_corpus.txt"
+    corpus.write_text(
+        "\n".join(
+            [
+                "alpha sparse spikes reduce event cost for retrieval and memory.",
+                "beta dense scan baseline spends more work across every document.",
+                "gamma predictive coding stabilizes low energy summaries.",
+                "delta continual memory keeps useful facts available after updates.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    report = module.run_real_data_external_validity(
+        corpus_path=str(corpus),
+        max_docs=4,
+        max_cases=4,
+        pretrained_embedding_model_path=str(tmp_path / "missing-model"),
+    )
+
+    assert report["ann_pretrained_embedding_reference"]["available"] is False
+    assert report["ann_pretrained_embedding_reference"]["reason"] == "missing_directory"
+    assert report["ann_pretrained_embedding_faiss_reference"]["available"] is False
+    assert report["ann_pretrained_embedding_faiss_reference"]["reason"] == "missing_directory"
+    assert report["ann_cross_encoder_reference"]["available"] is False
+    assert report["ann_cross_encoder_reference"]["reason"] == "not_configured"
+    assert report["metrics"]["real_pretrained_embedding_reference_available"] == 0.0
+    assert report["metrics"]["real_pretrained_embedding_faiss_reference_available"] == 0.0
+    assert report["metrics"]["real_cross_encoder_reference_available"] == 0.0
+
+
+def test_real_data_external_validity_marks_missing_cross_encoder_directory(tmp_path):
+    module = _load_script()
+    corpus = tmp_path / "external_validity_corpus.txt"
+    corpus.write_text(
+        "\n".join(
+            [
+                "alpha sparse spikes reduce event cost for retrieval and memory.",
+                "beta dense scan baseline spends more work across every document.",
+                "gamma predictive coding stabilizes low energy summaries.",
+                "delta continual memory keeps useful facts available after updates.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    report = module.run_real_data_external_validity(
+        corpus_path=str(corpus),
+        max_docs=4,
+        max_cases=4,
+        cross_encoder_model_path=str(tmp_path / "missing-cross-encoder"),
+    )
+
+    assert report["ann_cross_encoder_reference"]["available"] is False
+    assert report["ann_cross_encoder_reference"]["reason"] == "missing_directory"
+    assert report["metrics"]["real_cross_encoder_reference_available"] == 0.0
 
 
 def test_metabolic_sparse_retriever_early_stops_on_discriminative_token():
@@ -138,6 +243,98 @@ def test_metabolic_sparse_retriever_early_stops_on_discriminative_token():
     assert event_cost < module.SparseEventRetriever(docs).search("alpha sparse retrieval memory")[1]
     assert retriever.last_diagnostics["early_stopped"] is True
     assert retriever.last_diagnostics["processed_token_count"] < retriever.last_diagnostics["query_token_count"]
+
+
+def test_bm25_offline_proxy_matches_rare_keyword_tasks_with_dense_cost():
+    module = _load_script()
+    docs = [
+        "common retrieval alpha sparse spikes reduce event cost for memory.",
+        "common retrieval beta dense scans spend more event cost for memory.",
+        "common retrieval gamma predictive coding stabilizes summaries.",
+    ]
+    tasks = module.build_real_data_tasks(docs, max_cases=3)
+
+    bm25 = module._score_retriever(module.BM25OfflineProxyRetriever(docs), tasks, docs)
+    sparse = module._score_retriever(module.MetabolicSparseEventRetriever(docs), tasks, docs)
+
+    assert bm25["accuracy"] == 1.0
+    assert bm25["avg_event_cost_proxy"] > sparse["avg_event_cost_proxy"]
+
+
+def test_repository_fixture_probe_covers_noisy_adversarial_and_delayed_cases():
+    module = _load_script()
+
+    report = module._score_repository_fixture_cases()
+
+    assert report["passed"] is True
+    assert report["metrics"]["repository_fixture_retrieval_accuracy"] == 1.0
+    assert report["metrics"]["repository_fixture_abstention_integrity"] == 1.0
+    assert report["accuracy_by_task_type"]["noisy"] == 1.0
+    assert report["accuracy_by_task_type"]["adversarial"] == 1.0
+    assert report["accuracy_by_task_type"]["delayed"] == 1.0
+    partial_case = next(case for case in report["cases"] if case["task_type"] == "partial")
+    assert partial_case["expected_behavior"] == "abstain"
+    assert partial_case["sara_predicted_doc_index"] == -1
+
+
+def test_per_task_external_validity_summary_separates_failure_types():
+    module = _load_script()
+    tasks = [
+        {"case_id": "ok", "query": "alpha", "expected_doc_index": 0},
+        {"case_id": "miss", "query": "beta", "expected_doc_index": 1},
+        {"case_id": "abstain", "query": "gamma", "expected_doc_index": 2},
+    ]
+    sparse_score = {
+        "case_results": [
+            {
+                "case_id": "ok",
+                "correct": True,
+                "predicted_doc_index": 0,
+                "event_cost_proxy": 2,
+                "summary_keyword_coverage": 1.0,
+            },
+            {
+                "case_id": "miss",
+                "correct": False,
+                "predicted_doc_index": 0,
+                "event_cost_proxy": 3,
+                "summary_keyword_coverage": 0.75,
+            },
+            {
+                "case_id": "abstain",
+                "correct": False,
+                "predicted_doc_index": -1,
+                "event_cost_proxy": 1,
+                "summary_keyword_coverage": 0.0,
+            },
+        ]
+    }
+    dense_score = {
+        "case_results": [
+            {"case_id": "ok", "correct": True, "event_cost_proxy": 10},
+            {"case_id": "miss", "correct": True, "event_cost_proxy": 12},
+            {"case_id": "abstain", "correct": True, "event_cost_proxy": 8},
+        ]
+    }
+    embedding_score = {
+        "case_results": [
+            {"case_id": "ok", "correct": True, "event_cost_proxy": 64},
+            {"case_id": "miss", "correct": True, "event_cost_proxy": 64},
+            {"case_id": "abstain", "correct": True, "event_cost_proxy": 64},
+        ]
+    }
+
+    summary = module.build_per_task_external_validity_summary(
+        tasks,
+        sparse_score,
+        dense_score,
+        embedding_score,
+    )
+
+    assert summary["failure_type_counts"] == {"abstained": 1, "none": 1, "wrong_document": 1}
+    assert summary["abstention_rate"] == 1 / 3
+    assert summary["cases"][1]["failure_type"] == "wrong_document"
+    assert summary["cases"][2]["abstention"]["sara_abstained"] is True
 
 
 def test_metabolic_sparse_retriever_abstains_on_partial_evidence():

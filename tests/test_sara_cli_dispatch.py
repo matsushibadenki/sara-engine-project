@@ -139,6 +139,241 @@ def test_build_replay_data_dispatches_to_replay_builder(monkeypatch):
     )
 
 
+def test_build_autobot_dataset_dispatches_to_builder_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "build-autobot-dataset",
+            "--records-path",
+            "data/processed/autobot/test_records.jsonl",
+            "--candidate-path",
+            "data/interim/autobot/test_candidates.jsonl",
+            "--rejected-path",
+            "data/interim/autobot/test_rejected.jsonl",
+            "--accepted-path",
+            "data/processed/autobot/test_materials.jsonl",
+            "--curriculum-path",
+            "data/processed/autobot/test_curriculum.jsonl",
+            "--report-path",
+            "workspace/autobot/test_dataset_report.json",
+            "--summary-path",
+            "workspace/autobot/test_dataset_summary.txt",
+            "--fixture-request-plan-path",
+            "workspace/autobot/test_fixture_request_plan.json",
+            "--collection-targets-path",
+            "workspace/autobot/test_collection_targets.json",
+            "--evaluation-gap",
+            "negative_control",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "bot/dataset_builder.py"]
+    assert "--records-path" in args
+    assert "data/processed/autobot/test_records.jsonl" in args
+    assert "--candidate-path" in args
+    assert "data/interim/autobot/test_candidates.jsonl" in args
+    assert "--curriculum-path" in args
+    assert "data/processed/autobot/test_curriculum.jsonl" in args
+    assert "--fixture-request-plan-path" in args
+    assert "workspace/autobot/test_fixture_request_plan.json" in args
+    assert "--collection-targets-path" in args
+    assert "workspace/autobot/test_collection_targets.json" in args
+    assert "--evaluation-gap" in args
+    assert "negative_control" in args
+
+
+def test_build_autobot_gap_materials_dispatches_to_builder_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "build-autobot-gap-materials",
+            "--accepted-path",
+            "data/processed/autobot/test_materials.jsonl",
+            "--targets-path",
+            "workspace/autobot/test_collection_targets.json",
+            "--output-path",
+            "data/processed/autobot/test_gap_materials.jsonl",
+            "--report-path",
+            "workspace/autobot/test_gap_materials_report.json",
+            "--summary-path",
+            "workspace/autobot/test_gap_materials_summary.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "bot/gap_materials_builder.py"]
+    assert "--accepted-path" in args
+    assert "data/processed/autobot/test_materials.jsonl" in args
+    assert "--targets-path" in args
+    assert "workspace/autobot/test_collection_targets.json" in args
+
+
+def test_enqueue_autobot_gap_curriculum_dispatches_to_builder_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "enqueue-autobot-gap-curriculum",
+            "--curriculum-path",
+            "data/processed/autobot/test_gap_curriculum.jsonl",
+            "--queue-path",
+            "workspace/autobot/test_gap_train_queue.json",
+            "--report-path",
+            "workspace/autobot/test_gap_enqueue_report.json",
+            "--summary-path",
+            "workspace/autobot/test_gap_enqueue_summary.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "bot/enqueue_curriculum.py"]
+    assert "--curriculum-path" in args
+    assert "data/processed/autobot/test_gap_curriculum.jsonl" in args
+
+
+def test_run_autobot_gap_loop_dispatches_to_runner_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "run-autobot-gap-loop",
+            "--records-path",
+            "data/processed/autobot/test_records.jsonl",
+            "--candidate-path",
+            "data/interim/autobot/test_candidates.jsonl",
+            "--rejected-path",
+            "data/interim/autobot/test_rejected.jsonl",
+            "--accepted-path",
+            "data/processed/autobot/test_materials.jsonl",
+            "--curriculum-path",
+            "data/processed/autobot/test_curriculum.jsonl",
+            "--fixture-request-plan-path",
+            "workspace/autobot/test_fixture_request_plan.json",
+            "--collection-targets-path",
+            "workspace/autobot/test_collection_targets.json",
+            "--gap-output-path",
+            "data/processed/autobot/test_gap_materials.jsonl",
+            "--gap-curriculum-path",
+            "data/processed/autobot/test_gap_curriculum.jsonl",
+            "--queue-path",
+            "workspace/autobot/test_train_queue.json",
+            "--report-path",
+            "workspace/autobot/test_gap_loop_report.json",
+            "--summary-path",
+            "workspace/autobot/test_gap_loop_summary.txt",
+            "--evaluation-gap",
+            "negative_control",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "bot/run_gap_loop.py"]
+    assert "--candidate-path" in args
+    assert "data/interim/autobot/test_candidates.jsonl" in args
+    assert "--rejected-path" in args
+    assert "data/interim/autobot/test_rejected.jsonl" in args
+    assert "--gap-curriculum-path" in args
+    assert "data/processed/autobot/test_gap_curriculum.jsonl" in args
+
+
+def test_eval_autobot_gap_loop_readiness_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-autobot-gap-loop-readiness",
+            "--loop-report-path",
+            "workspace/autobot/test_gap_loop_report.json",
+            "--collection-targets-path",
+            "workspace/autobot/test_collection_targets.json",
+            "--dataset-report-path",
+            "workspace/autobot/test_dataset_report.json",
+            "--gap-report-path",
+            "workspace/autobot/test_gap_report.json",
+            "--enqueue-report-path",
+            "workspace/autobot/test_enqueue_report.json",
+            "--report-path",
+            "workspace/evaluation/test_autobot_gap_loop_readiness.json",
+            "--summary-path",
+            "workspace/evaluation/test_autobot_gap_loop_readiness.txt",
+            "--min-accepted-count",
+            "6",
+            "--min-gap-build-coverage",
+            "0.75",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/autobot_gap_loop_readiness.py"]
+    assert "--loop-report-path" in args
+    assert "workspace/autobot/test_gap_loop_report.json" in args
+    assert "--collection-targets-path" in args
+    assert "workspace/autobot/test_collection_targets.json" in args
+    assert "--dataset-report-path" in args
+    assert "workspace/autobot/test_dataset_report.json" in args
+    assert "--gap-report-path" in args
+    assert "workspace/autobot/test_gap_report.json" in args
+    assert "--enqueue-report-path" in args
+    assert "workspace/autobot/test_enqueue_report.json" in args
+    assert "--min-accepted-count" in args
+    assert "6" in args
+    assert "--min-gap-build-coverage" in args
+    assert "0.75" in args
+
+
 def test_fix_memory_dispatches_to_managed_repair_utility(monkeypatch):
     sara_cli = _load_sara_cli_module()
     fix_mock = Mock(return_value={"matched_token": True})
@@ -356,6 +591,36 @@ def test_record_energy_measurement_dispatches_to_readiness_script(monkeypatch):
             "0.5",
             "--notes",
             "pilot run",
+            "--pair-id",
+            "qa-pair-1",
+            "--replicate-index",
+            "1",
+            "--environment-fingerprint",
+            "env-sha256",
+            "--task-fixture-hash",
+            "fixture-sha256",
+            "--success-criterion-id",
+            "exact-match-v1",
+            "--measurement-boundary",
+            "query-only-v1",
+            "--measurement-tool",
+            "powermetrics-v1",
+            "--cpu-model",
+            "test-cpu",
+            "--thread-count",
+            "1",
+            "--process-affinity",
+            "core-0",
+            "--power-mode",
+            "ac-fixed",
+            "--warmup-count",
+            "2",
+            "--measured-repetitions",
+            "5",
+            "--trial-count",
+            "5",
+            "--run-order",
+            "1",
             "--report-path",
             "workspace/evaluation/test_energy_measurement.json",
             "--summary-path",
@@ -388,10 +653,50 @@ def test_record_energy_measurement_dispatches_to_readiness_script(monkeypatch):
     assert "lab-session" in args
     assert "--notes" in args
     assert "pilot run" in args
+    assert "--pair-id" in args
+    assert "qa-pair-1" in args
+    assert "--success-criterion-id" in args
+    assert "exact-match-v1" in args
+    assert "--trial-count" in args
     assert "--session-plan-path" in args
     assert "workspace/evaluation/test_energy_measurement_session_plan.json" in args
     assert "--session-plan-summary-path" in args
     assert "workspace/evaluation/test_energy_measurement_session_plan.txt" in args
+
+
+def test_physical_energy_pair_dispatches_to_runner(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "run-physical-energy-pair",
+            "--pair-id",
+            "pilot-1",
+            "--replicate-index",
+            "1",
+            "--repetitions",
+            "2",
+            "--dry-run",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/physical_energy_pair_runner.py",
+    ]
+    assert "--pair-id" in args
+    assert "pilot-1" in args
+    assert "--dry-run" in args
 
 
 def test_sparse_diffusion_block_readiness_dispatches_to_eval_script(monkeypatch):
@@ -427,6 +732,594 @@ def test_sparse_diffusion_block_readiness_dispatches_to_eval_script(monkeypatch)
     assert "workspace/evaluation/test_sparse_diffusion.json" in args
     assert "--summary-path" in args
     assert "workspace/evaluation/test_sparse_diffusion.txt" in args
+
+
+def test_rust_core_readiness_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-rust-core-readiness",
+            "--report-path",
+            "workspace/evaluation/test_rust_readiness.json",
+            "--summary-path",
+            "workspace/evaluation/test_rust_readiness.txt",
+            "--run-cargo-test",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/rust_core_readiness.py"]
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_rust_readiness.json" in args
+    assert "--summary-path" in args
+    assert "workspace/evaluation/test_rust_readiness.txt" in args
+    assert "--run-cargo-test" in args
+
+
+def test_rust_core_benchmark_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-rust-core-benchmark",
+            "--iterations",
+            "7",
+            "--report-path",
+            "workspace/evaluation/test_rust_benchmark.json",
+            "--summary-path",
+            "workspace/evaluation/test_rust_benchmark.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/rust_core_benchmark.py"]
+    assert "--iterations" in args
+    assert "7" in args
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_rust_benchmark.json" in args
+    assert "--summary-path" in args
+    assert "workspace/evaluation/test_rust_benchmark.txt" in args
+
+
+def test_research_benchmark_suite_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-research-benchmark-suite",
+            "--dry-run",
+            "--rust-iterations",
+            "9",
+            "--manifest-path",
+            "workspace/evaluation/test_research_benchmark_manifest.json",
+            "--summary-path",
+            "workspace/evaluation/test_research_benchmark_summary.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/research_benchmark_suite.py"]
+    assert "--dry-run" in args
+    assert "--rust-iterations" in args
+    assert "9" in args
+    assert "--manifest-path" in args
+    assert "workspace/evaluation/test_research_benchmark_manifest.json" in args
+    assert "--summary-path" in args
+    assert "workspace/evaluation/test_research_benchmark_summary.txt" in args
+
+
+def test_research_fixture_readiness_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-research-fixture-readiness",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/external_validity_cases.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_fixture_readiness.json",
+            "--summary-path",
+            "workspace/evaluation/test_fixture_readiness.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/research_fixture_readiness.py"]
+    assert "--fixture-path" in args
+    assert "data/processed/benchmark_fixtures/external_validity_cases.jsonl" in args
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_fixture_readiness.json" in args
+    assert "--summary-path" in args
+    assert "workspace/evaluation/test_fixture_readiness.txt" in args
+
+
+def test_neuromorphic_capability_matrix_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-neuromorphic-capability-matrix",
+            "--profile",
+            "lava",
+            "--profile",
+            "akida",
+            "--active-row-count",
+            "12",
+            "--context-length",
+            "24",
+            "--total-readout-size",
+            "96",
+            "--quantization-bits",
+            "3",
+            "--report-path",
+            "workspace/evaluation/test_neuromorphic_matrix.json",
+            "--summary-path",
+            "workspace/evaluation/test_neuromorphic_matrix.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/neuromorphic_capability_matrix.py"]
+    assert "--profile" in args
+    assert "lava" in args
+    assert "akida" in args
+    assert "--active-row-count" in args
+    assert "12" in args
+    assert "--context-length" in args
+    assert "24" in args
+    assert "--total-readout-size" in args
+    assert "96" in args
+    assert "--quantization-bits" in args
+    assert "3" in args
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_neuromorphic_matrix.json" in args
+    assert "--summary-path" in args
+    assert "workspace/evaluation/test_neuromorphic_matrix.txt" in args
+
+
+def test_own_latent_learning_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-own-latent-learning",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/test_own_latent.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_own_latent.json",
+            "--summary-path",
+            "workspace/evaluation/test_own_latent.txt",
+            "--history-path",
+            "workspace/evaluation/test_own_latent_history.json",
+            "--train-sizes",
+            "4,8",
+            "--no-history-update",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/own_latent_learning_benchmark.py"]
+    assert "--fixture-path" in args
+    assert "data/processed/benchmark_fixtures/test_own_latent.jsonl" in args
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_own_latent.json" in args
+    assert "--history-path" in args
+    assert "workspace/evaluation/test_own_latent_history.json" in args
+    assert "--train-sizes" in args
+    assert "4,8" in args
+    assert "--no-history-update" in args
+
+
+def test_operator_llm_assistant_readiness_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-operator-llm-assistant-readiness",
+            "--report-path",
+            "workspace/evaluation/test_operator_llm.json",
+            "--summary-path",
+            "workspace/evaluation/test_operator_llm.txt",
+            "--enabled",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/operator_llm_assistant_readiness.py"]
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_operator_llm.json" in args
+    assert "--summary-path" in args
+    assert "workspace/evaluation/test_operator_llm.txt" in args
+    assert "--enabled" in args
+
+
+def test_dendritic_feedback_gate_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-dendritic-feedback-gate",
+            "--event-budget",
+            "48",
+            "--report-path",
+            "workspace/evaluation/test_dendritic_gate.json",
+            "--summary-path",
+            "workspace/evaluation/test_dendritic_gate.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/dendritic_feedback_gate_benchmark.py"]
+    assert "--event-budget" in args
+    assert "48" in args
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_dendritic_gate.json" in args
+    assert "--summary-path" in args
+    assert "workspace/evaluation/test_dendritic_gate.txt" in args
+
+
+def test_build_own_latent_manifest_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "build-own-latent-manifest",
+            "--materials-path",
+            "data/processed/autobot/test_materials.jsonl",
+            "--manifest-path",
+            "data/processed/autobot/test_latent_manifest.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_latent_manifest.json",
+            "--summary-path",
+            "workspace/evaluation/test_latent_manifest.txt",
+            "--width",
+            "512",
+            "--max-events",
+            "16",
+            "--max-terms",
+            "8",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/own_latent_manifest_builder.py"]
+    assert "--materials-path" in args
+    assert "data/processed/autobot/test_materials.jsonl" in args
+    assert "--manifest-path" in args
+    assert "data/processed/autobot/test_latent_manifest.jsonl" in args
+    assert "--width" in args
+    assert "512" in args
+    assert "--max-events" in args
+    assert "16" in args
+
+
+def test_sparse_plan_trace_verifier_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-sparse-plan-trace-verifier",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/test_plan_cases.jsonl",
+            "--repair-path",
+            "data/processed/autobot/test_plan_repairs.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_plan_trace.json",
+            "--summary-path",
+            "workspace/evaluation/test_plan_trace.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/sparse_plan_trace_verifier.py"]
+    assert "--fixture-path" in args
+    assert "data/processed/benchmark_fixtures/test_plan_cases.jsonl" in args
+    assert "--repair-path" in args
+    assert "data/processed/autobot/test_plan_repairs.jsonl" in args
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_plan_trace.json" in args
+
+
+def test_synesthetic_multimodal_binding_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-synesthetic-multimodal-binding",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/test_synesthetic_cases.jsonl",
+            "--cross-link-path",
+            "data/interim/autobot/test_synesthetic_links.jsonl",
+            "--binding-manifest-path",
+            "data/processed/autobot/test_synesthetic_manifest.jsonl",
+            "--latent-manifest-path",
+            "data/processed/autobot/test_latent_manifest.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_synesthetic_binding.json",
+            "--window-ms",
+            "40",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/synesthetic_multimodal_binding_benchmark.py",
+    ]
+    assert "data/processed/benchmark_fixtures/test_synesthetic_cases.jsonl" in args
+    assert "data/interim/autobot/test_synesthetic_links.jsonl" in args
+    assert "data/processed/autobot/test_synesthetic_manifest.jsonl" in args
+    assert "data/processed/autobot/test_latent_manifest.jsonl" in args
+    assert "workspace/evaluation/test_synesthetic_binding.json" in args
+    assert "40.0" in args
+
+
+def test_sparse_reasoning_prior_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-sparse-reasoning-prior",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/test_reasoning_prior.jsonl",
+            "--trace-path",
+            "workspace/evaluation/test_reasoning_prior_traces.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_reasoning_prior.json",
+            "--summary-path",
+            "workspace/evaluation/test_reasoning_prior.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/sparse_reasoning_prior_benchmark.py"]
+    assert "data/processed/benchmark_fixtures/test_reasoning_prior.jsonl" in args
+    assert "workspace/evaluation/test_reasoning_prior_traces.jsonl" in args
+    assert "workspace/evaluation/test_reasoning_prior.json" in args
+
+
+def test_resonance_credit_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-resonance-credit",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/test_resonance.jsonl",
+            "--state-path",
+            "workspace/evaluation/test_resonance_state.json",
+            "--report-path",
+            "workspace/evaluation/test_resonance.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/resonance_credit_benchmark.py"]
+    assert "data/processed/benchmark_fixtures/test_resonance.jsonl" in args
+    assert "workspace/evaluation/test_resonance_state.json" in args
+    assert "workspace/evaluation/test_resonance.json" in args
+
+
+def test_resonance_credit_integration_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-resonance-credit-integration",
+            "--report-path",
+            "workspace/evaluation/test_resonance_integration.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/resonance_credit_integration_benchmark.py",
+    ]
+    assert "workspace/evaluation/test_resonance_integration.json" in args
+
+
+def test_event_state_cache_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-event-state-cache",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/test_event_cache.jsonl",
+            "--state-path",
+            "workspace/evaluation/test_event_cache_state.json",
+            "--report-path",
+            "workspace/evaluation/test_event_cache.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/event_state_cache_benchmark.py",
+    ]
+    assert "data/processed/benchmark_fixtures/test_event_cache.jsonl" in args
+    assert "workspace/evaluation/test_event_cache_state.json" in args
+    assert "workspace/evaluation/test_event_cache.json" in args
+
+
+def test_event_state_cache_integration_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-event-state-cache-integration",
+            "--manifest-path",
+            "data/processed/autobot/test_latent_manifest.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_event_cache_integration.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/event_state_cache_integration_benchmark.py",
+    ]
+    assert "data/processed/autobot/test_latent_manifest.jsonl" in args
+    assert "workspace/evaluation/test_event_cache_integration.json" in args
 
 
 def test_db_status_without_database_prints_empty_notice(monkeypatch, capsys):
@@ -1081,3 +1974,17 @@ def test_clean_removes_non_gitkeep_items(monkeypatch):
 
     assert removed_files == ["data/interim/tmp.txt"]
     assert removed_dirs == ["data/processed/subdir"]
+
+
+def test_eval_event_memory_ingest_pipeline_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", ["sara_cli.py", "eval-event-memory-ingest-pipeline"])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once_with([sys.executable, "scripts/eval/event_memory_ingest_pipeline.py"])

@@ -198,6 +198,11 @@ def test_ann_efficiency_roadmap_gate_passes_all_stages():
     assert report["completion_score"] == 1.0
     assert report["stage_count"] == 6
     assert report["failed_stages"] == []
+    assert report["artifact_state"]["energy_efficiency_benchmark"] == "passed"
+    assert report["artifact_state"]["real_data_external_validity"] == "passed"
+    assert report["artifact_state"]["real_data_external_validity_ladder"] == "passed"
+    assert report["artifact_state"]["energy_measurement_readiness"] == "present"
+    assert report["artifact_state"]["operational_readiness"] == "passed"
     assert report["next_evidence_action_count"] == 1
     assert report["next_evidence_actions"][0]["source"] == "energy_measurement_session_plan"
     assert report["next_evidence_actions"][0]["category"] == "collect_missing_pair"
@@ -206,6 +211,7 @@ def test_ann_efficiency_roadmap_gate_passes_all_stages():
 
     summary = module.format_ann_efficiency_roadmap_summary(report)
     assert "SARA ANN Efficiency Roadmap Gate" in summary
+    assert "- artifact_state: proxy=passed, phase8_single=passed, phase8_ladder=passed, phase6=present, operational=passed" in summary
     assert "stage_3_scale_ladder_advantage: PASS" in summary
     assert "Next Evidence Actions: 1" in summary
     assert "real_energy_session" in summary

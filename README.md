@@ -83,6 +83,9 @@ python scripts/sara_cli.py db-export
 python scripts/sara_cli.py train-self-org
 python scripts/sara_cli.py train-curriculum --stage small --dry-run
 python scripts/sara_cli.py eval-external-validity --regression-tolerance 0.05
+python scripts/sara_cli.py eval-research-benchmark-suite --dry-run
+python scripts/sara_cli.py eval-neuromorphic-capability-matrix
+python scripts/sara_cli.py eval-own-latent-learning --no-history-update
 python scripts/sara_cli.py inspect-memory
 python scripts/sara_cli.py fix-memory --context-tokens "1,2,3" --wrong-token-id 7 --dry-run
 python scripts/eval/research_product_completion_gate.py
@@ -145,7 +148,7 @@ python scripts/eval/phase4_operational_cycle.py --dry-run
 python scripts/eval/v1_release_gate.py
 ```
 
-The v1.1 gate explicitly validates strict operational readiness, Phase 3 completion, Stage B reward/policy minimums, Phase 4 quality, target-version alignment, Phase 5 entry metrics from the Phase 3 report, the Phase 5 operational snapshot propagated into `operational_readiness_report.json`, the standalone `phase5_completion_gate_report.json` artifact, and the research-product completion report. The strict operational refresh path regenerates the standalone Phase 5 predictive-coding benchmark, Phase 5 entry gate, sparse diffusion block readiness, and Phase 5 completion gate artifacts before release soak validation. The Phase 5 completion, operational, and v1 summaries expose macro/subgoal efficiency, micro-ES low-rank/event-cost detail values, and sparse diffusion block completion checks for release review.
+The v1.1 gate explicitly validates strict operational readiness, Phase 3 completion, Stage B reward/policy minimums, Phase 4 quality, target-version alignment, Phase 5 entry metrics from the Phase 3 report, the Phase 5 operational snapshot propagated into `operational_readiness_report.json`, the standalone `phase5_completion_gate_report.json` artifact, and the research-product completion report. The research-product completion report includes Rust core source readiness, Cargo test status, and managed Rust benchmark evidence while keeping built-extension import readiness visible separately. The strict operational refresh path regenerates the standalone Phase 5 predictive-coding benchmark, Phase 5 entry gate, sparse diffusion block readiness, and Phase 5 completion gate artifacts before release soak validation. The Phase 5 completion, operational, and v1 summaries expose macro/subgoal efficiency, micro-ES low-rank/event-cost detail values, and sparse diffusion block completion checks for release review.
 
 It also validates `workspace/evaluation/real_data_external_validity.json`, which keeps real-data QA, summary coverage, continual memory, ANN-style cost-advantage, and real-data sparse diffusion block regressions visible at the final promotion gate.
 Strict operational readiness also validates `workspace/evaluation/real_data_external_validity_ladder.json`, which aggregates small/medium/large external-validity evidence and blocks promotion when the scale ladder loses sparse-vs-ANN energy advantage or sparse diffusion block integrity.

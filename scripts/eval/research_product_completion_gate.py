@@ -20,6 +20,7 @@ if SRC_PATH not in sys.path:
     sys.path.insert(0, SRC_PATH)
 
 from sara_engine.core.hal import MockNeuromorphicBackend, PythonBackend  # noqa: E402
+from sara_engine.evaluation.report_artifacts import artifact_state, format_artifact_state_line  # noqa: E402
 from sara_engine.utils.project_paths import ensure_allowed_output_path, ensure_parent_directory, workspace_path  # noqa: E402
 
 
@@ -30,6 +31,9 @@ DEFAULT_OPERATIONAL_REPORT_PATH = workspace_path("release", "operational_readine
 DEFAULT_ANN_EFFICIENCY_ROADMAP_REPORT_PATH = workspace_path("evaluation", "ann_efficiency_roadmap_gate.json")
 DEFAULT_SPARSE_DIFFUSION_BLOCK_REPORT_PATH = workspace_path("evaluation", "sparse_diffusion_block_readiness.json")
 DEFAULT_ENERGY_MEASUREMENT_SESSION_PLAN_PATH = workspace_path("evaluation", "energy_measurement_session_plan.json")
+DEFAULT_RUST_CORE_READINESS_REPORT_PATH = workspace_path("evaluation", "rust_core_readiness.json")
+DEFAULT_RESEARCH_FIXTURE_READINESS_REPORT_PATH = workspace_path("evaluation", "research_fixture_readiness.json")
+DEFAULT_AUTOBOT_GAP_LOOP_READINESS_REPORT_PATH = workspace_path("evaluation", "autobot_gap_loop_readiness.json")
 DEFAULT_OUTPUT_REPORT_PATH = workspace_path("evaluation", "research_product_completion_gate_report.json")
 DEFAULT_OUTPUT_SUMMARY_PATH = workspace_path("evaluation", "research_product_completion_gate_summary.txt")
 
@@ -293,7 +297,7 @@ def _check_energy_measurement_session_plan(session_plan: Mapping[str, Any]) -> D
         else {}
     )
     errors: List[str] = []
-    if str(session_plan.get("schema", "")) != "sara-energy-measurement-session-plan-v1":
+    if str(session_plan.get("schema", "")) != "sara-energy-measurement-session-plan-v2":
         errors.append("Energy measurement session plan has an unexpected schema.")
     if str(session_plan.get("status", "")) not in {"pending_measurement", "ready_for_real_joule_claim"}:
         errors.append("Energy measurement session plan has an unexpected status.")
@@ -305,6 +309,17 @@ def _check_energy_measurement_session_plan(session_plan: Mapping[str, Any]) -> D
         errors.append("Energy measurement session plan pairing matrix must include sara and ann systems.")
     if int(pairing_matrix.get("required_rows_per_task", 0) or 0) < 2:
         errors.append("Energy measurement session plan must require paired rows per task.")
+    if int(pairing_matrix.get("required_paired_replicates_per_task", 0) or 0) < 3:
+        errors.append("Energy measurement session plan must require repeated paired runs.")
+    fairness = (
+        session_plan.get("fair_comparison_contract", {})
+        if isinstance(session_plan.get("fair_comparison_contract"), Mapping)
+        else {}
+    )
+    if str(fairness.get("protocol_version", "")) != "sara-energy-fair-comparison-v2":
+        errors.append("Energy measurement session plan is missing the v2 fairness contract.")
+    if str(fairness.get("aggregation", "")) != "per-task median joule_per_success with MAD":
+        errors.append("Energy measurement session plan must use median and MAD aggregation.")
     if str(session_plan.get("status", "")) == "pending_measurement" and planned_run_count <= 0:
         errors.append("Pending energy measurement session plan has no planned runs.")
     for index, run in enumerate(planned_runs):
@@ -323,6 +338,20 @@ def _check_energy_measurement_session_plan(session_plan: Mapping[str, Any]) -> D
             errors.append(f"Energy measurement planned run {index} is missing replicate placeholder.")
         if "record-energy-measurement" not in command or "--source real_energy_session" not in command:
             errors.append(f"Energy measurement planned run {index} command is not a real-energy recording command.")
+        for required_option in (
+            "--pair-id",
+            "--environment-fingerprint",
+            "--task-fixture-hash",
+            "--success-criterion-id",
+            "--measurement-boundary",
+            "--measurement-tool",
+            "--trial-count",
+            "--run-order",
+        ):
+            if required_option not in command:
+                errors.append(
+                    f"Energy measurement planned run {index} is missing {required_option}."
+                )
     if errors:
         return _failed_check(errors, dict(session_plan))
     return _passed_check(
@@ -331,6 +360,141 @@ def _check_energy_measurement_session_plan(session_plan: Mapping[str, Any]) -> D
             "session_id": str(session_plan.get("session_id", "")),
             "planned_run_count": planned_run_count,
             "task_count": len(pairing_matrix.get("tasks", [])) if isinstance(pairing_matrix.get("tasks"), list) else 0,
+        }
+    )
+
+
+def _check_rust_core_readiness(report: Mapping[str, Any]) -> Dict[str, Any]:
+    checks = report.get("checks", {})
+    checks = checks if isinstance(checks, Mapping) else {}
+    export_contract = report.get("export_contract", {})
+    export_contract = export_contract if isinstance(export_contract, Mapping) else {}
+    benchmark_report = report.get("benchmark_report", {})
+    benchmark_report = benchmark_report if isinstance(benchmark_report, Mapping) else {}
+    errors: List[str] = []
+    if str(report.get("schema", "")) != "sara-rust-core-readiness-v1":
+        errors.append("Rust core readiness report has an unexpected schema.")
+    if not bool(report.get("source_readiness_passed", False)):
+        errors.append("Rust core source readiness did not pass.")
+    required_checks = [
+        "versions_match",
+        "cargo_feature_split_ready",
+        "pymodule_exports_registered",
+        "rust_core_comments_english",
+        "batch_sdr_parallelized",
+        "benchmark_report_present",
+    ]
+    failed = [name for name in required_checks if not bool(checks.get(name, False))]
+    if failed:
+        errors.append("Rust core readiness required checks failed: " + ", ".join(failed))
+    cargo_test = checks.get("cargo_test_passed")
+    if cargo_test is False:
+        errors.append("Rust core cargo test failed in readiness report.")
+    missing_exports = export_contract.get("missing_from_pymodule_registration", [])
+    if isinstance(missing_exports, list) and missing_exports:
+        errors.append("Rust core missing PyO3 exports: " + ", ".join(str(item) for item in missing_exports))
+    if not bool(benchmark_report.get("present", False)):
+        errors.append("Rust core benchmark report is missing.")
+    if errors:
+        return _failed_check(errors, dict(report))
+    return _passed_check(
+        {
+            "status": str(report.get("status", "")),
+            "source_readiness_passed": bool(report.get("source_readiness_passed", False)),
+            "built_extension_readiness_passed": bool(report.get("built_extension_readiness_passed", False)),
+            "cargo_test_passed": cargo_test,
+            "benchmark_report_present": bool(benchmark_report.get("present", False)),
+            "batch_sdr_parallelized": bool(checks.get("batch_sdr_parallelized", False)),
+        }
+    )
+
+
+def _check_research_fixture_readiness(report: Mapping[str, Any]) -> Dict[str, Any]:
+    coverage = report.get("coverage", {})
+    coverage = coverage if isinstance(coverage, Mapping) else {}
+    errors: List[str] = []
+    if str(report.get("schema", "")) != "sara-research-fixture-readiness-v1":
+        errors.append("Research fixture readiness report has an unexpected schema.")
+    if not bool(report.get("passed", False)):
+        errors.append("Research fixture readiness did not pass.")
+    required_task_types = {"qa", "negative", "partial", "contrastive", "noisy", "adversarial", "delayed"}
+    task_types = {
+        str(item)
+        for item in report.get("task_types", [])
+        if isinstance(item, str)
+    }
+    missing_task_types = sorted(required_task_types - task_types)
+    if missing_task_types:
+        errors.append("Research fixtures are missing task types: " + ", ".join(missing_task_types))
+    required_coverage = [
+        "has_repository_safe_fixture",
+        "has_noisy_case",
+        "has_adversarial_case",
+        "has_delayed_recall_case",
+        "has_abstention_cases",
+        "has_retrieval_cases",
+    ]
+    failed_coverage = [name for name in required_coverage if not bool(coverage.get(name, False))]
+    if failed_coverage:
+        errors.append("Research fixture coverage failed: " + ", ".join(failed_coverage))
+    if int(report.get("case_count", 0) or 0) < 8:
+        errors.append("Research fixtures must include at least 8 cases.")
+    if errors:
+        return _failed_check(errors, dict(report))
+    return _passed_check(
+        {
+            "case_count": int(report.get("case_count", 0) or 0),
+            "task_type_count": len(task_types),
+            "fixture_path": str(report.get("fixture_path", "")),
+        }
+    )
+
+
+def _check_autobot_gap_loop_readiness(report: Mapping[str, Any]) -> Dict[str, Any]:
+    metrics = report.get("metrics", {})
+    metrics = metrics if isinstance(metrics, Mapping) else {}
+    checks = report.get("checks", {})
+    checks = checks if isinstance(checks, Mapping) else {}
+    errors: List[str] = []
+    if str(report.get("schema", "")) != "sara-autobot-gap-loop-readiness-v1":
+        errors.append("Autobot gap-loop readiness report has an unexpected schema.")
+    if not bool(report.get("passed", False)):
+        errors.append("Autobot gap-loop readiness did not pass.")
+    required_checks = [
+        "loop_report_present",
+        "dataset_report_present",
+        "gap_report_present",
+        "enqueue_report_present",
+        "collection_targets_present",
+        "loop_passed",
+        "accepted_materials_ready",
+        "gap_material_coverage_ready",
+        "gap_enqueue_ready",
+        "repair_curriculum_present",
+    ]
+    failed = [
+        name
+        for name in required_checks
+        if not isinstance(checks.get(name), Mapping) or not bool(checks.get(name, {}).get("passed", False))
+    ]
+    if failed:
+        errors.append("Autobot gap-loop readiness required checks failed: " + ", ".join(failed))
+    if float(metrics.get("gap_build_coverage", 0.0) or 0.0) <= 0.0:
+        errors.append("Autobot gap-loop readiness has zero gap-build coverage.")
+    if float(metrics.get("gap_enqueue_coverage", 0.0) or 0.0) <= 0.0:
+        errors.append("Autobot gap-loop readiness has zero gap-enqueue coverage.")
+    if int(metrics.get("requested_slot_count", 0) or 0) <= 0:
+        errors.append("Autobot gap-loop readiness did not record any requested gap slots.")
+    if errors:
+        return _failed_check(errors, dict(report))
+    return _passed_check(
+        {
+            "requested_slot_count": int(metrics.get("requested_slot_count", 0) or 0),
+            "gap_build_coverage": float(metrics.get("gap_build_coverage", 0.0) or 0.0),
+            "gap_enqueue_coverage": float(metrics.get("gap_enqueue_coverage", 0.0) or 0.0),
+            "gap_skip_ratio": float(metrics.get("gap_skip_ratio", 0.0) or 0.0),
+            "repair_curriculum_share": float(metrics.get("repair_curriculum_share", 0.0) or 0.0),
+            "replay_curriculum_share": float(metrics.get("replay_curriculum_share", 0.0) or 0.0),
         }
     )
 
@@ -407,6 +571,9 @@ def build_research_product_completion_report(
     ann_efficiency_roadmap_report: Mapping[str, Any],
     sparse_diffusion_block_report: Mapping[str, Any],
     energy_measurement_session_plan: Mapping[str, Any],
+    rust_core_readiness_report: Mapping[str, Any],
+    research_fixture_readiness_report: Mapping[str, Any],
+    autobot_gap_loop_readiness_report: Mapping[str, Any],
     source_texts: Mapping[str, str],
 ) -> Dict[str, Any]:
     checks = {
@@ -420,6 +587,9 @@ def build_research_product_completion_report(
         "ann_efficiency_roadmap": _check_ann_efficiency_roadmap(ann_efficiency_roadmap_report),
         "sparse_diffusion_block_readiness": _check_sparse_diffusion_block_readiness(sparse_diffusion_block_report),
         "energy_measurement_session_plan": _check_energy_measurement_session_plan(energy_measurement_session_plan),
+        "rust_core_readiness": _check_rust_core_readiness(rust_core_readiness_report),
+        "research_fixture_readiness": _check_research_fixture_readiness(research_fixture_readiness_report),
+        "autobot_gap_loop_readiness": _check_autobot_gap_loop_readiness(autobot_gap_loop_readiness_report),
         "memory_repair_operations": _check_memory_operations(source_texts),
         "neuromorphic_hal_smoke": _check_neuromorphic_hal_smoke(),
     }
@@ -434,11 +604,72 @@ def build_research_product_completion_report(
         "pass_count": pass_count,
         "failed_checks": failed_checks,
         "checks": checks,
+        "artifact_state": {
+            "roadmap_closure_audit": artifact_state(roadmap_report),
+            "phase3_accuracy_suite": artifact_state(phase3_report, pass_field=None),
+            "phase4_scale_continual_benchmark": artifact_state(phase4_report),
+            "phase5_completion_gate": artifact_state(phase5_completion_report),
+            "operational_readiness": artifact_state(operational_report),
+            "ann_efficiency_roadmap_gate": artifact_state(ann_efficiency_roadmap_report),
+            "sparse_diffusion_block_readiness": artifact_state(sparse_diffusion_block_report),
+            "energy_measurement_session_plan": artifact_state(
+                energy_measurement_session_plan, pass_field=None
+            ),
+            "rust_core_readiness": artifact_state(
+                rust_core_readiness_report, pass_field="source_readiness_passed"
+            ),
+            "research_fixture_readiness": artifact_state(research_fixture_readiness_report),
+            "autobot_gap_loop_readiness": artifact_state(autobot_gap_loop_readiness_report),
+        },
         "status": "complete" if not failed_checks else "needs_repair",
     }
 
 
 def format_research_product_completion_summary(report: Mapping[str, Any]) -> str:
+    checks = report.get("checks", {})
+    checks = checks if isinstance(checks, Mapping) else {}
+    artifact_state = report.get("artifact_state", {})
+    artifact_state = artifact_state if isinstance(artifact_state, Mapping) else {}
+    ann_check = (
+        checks.get("ann_efficiency_roadmap", {})
+        if isinstance(checks.get("ann_efficiency_roadmap"), Mapping)
+        else {}
+    )
+    ann_details = (
+        ann_check.get("details", {})
+        if isinstance(ann_check.get("details"), Mapping)
+        else {}
+    )
+    energy_check = (
+        checks.get("energy_measurement_session_plan", {})
+        if isinstance(checks.get("energy_measurement_session_plan"), Mapping)
+        else {}
+    )
+    energy_details = (
+        energy_check.get("details", {})
+        if isinstance(energy_check.get("details"), Mapping)
+        else {}
+    )
+    fixture_check = (
+        checks.get("research_fixture_readiness", {})
+        if isinstance(checks.get("research_fixture_readiness"), Mapping)
+        else {}
+    )
+    fixture_details = (
+        fixture_check.get("details", {})
+        if isinstance(fixture_check.get("details"), Mapping)
+        else {}
+    )
+    gap_loop_check = (
+        checks.get("autobot_gap_loop_readiness", {})
+        if isinstance(checks.get("autobot_gap_loop_readiness"), Mapping)
+        else {}
+    )
+    gap_loop_details = (
+        gap_loop_check.get("details", {})
+        if isinstance(gap_loop_check.get("details"), Mapping)
+        else {}
+    )
     lines = [
         "# SARA Research Product Completion Gate",
         f"- passed: {bool(report.get('passed', False))}",
@@ -446,10 +677,40 @@ def format_research_product_completion_summary(report: Mapping[str, Any]) -> str
         f"- completion_score: {float(report.get('completion_score', 0.0) or 0.0):.3f}",
         f"- pass_count: {int(report.get('pass_count', 0) or 0)}",
         f"- check_count: {int(report.get('check_count', 0) or 0)}",
+        format_artifact_state_line(
+            "- artifact_state",
+            [
+                ("phase6", artifact_state.get("energy_measurement_session_plan")),
+                ("phase8", artifact_state.get("research_fixture_readiness")),
+                ("phase7", artifact_state.get("autobot_gap_loop_readiness")),
+            ],
+        ),
+        (
+            "- phase6_energy_metrics: "
+            f"status={energy_details.get('status', '')}, "
+            f"session_id={energy_details.get('session_id', '')}, "
+            f"planned_runs={int(energy_details.get('planned_run_count', 0) or 0)}, "
+            f"task_count={int(energy_details.get('task_count', 0) or 0)}"
+        ),
+        (
+            "- phase8_baseline_metrics: "
+            f"roadmap_completion={float(ann_details.get('completion_score', 0.0) or 0.0):.3f}, "
+            f"passed_stages={int(ann_details.get('passed_stage_count', 0) or 0)}/{int(ann_details.get('stage_count', 0) or 0)}, "
+            f"fixture_cases={int(fixture_details.get('case_count', 0) or 0)}, "
+            f"fixture_task_types={int(fixture_details.get('task_type_count', 0) or 0)}"
+        ),
+        (
+            "- autobot_gap_loop_metrics: "
+            f"requested_slots={int(gap_loop_details.get('requested_slot_count', 0) or 0)}, "
+            f"build_coverage={float(gap_loop_details.get('gap_build_coverage', 0.0) or 0.0):.3f}, "
+            f"enqueue_coverage={float(gap_loop_details.get('gap_enqueue_coverage', 0.0) or 0.0):.3f}, "
+            f"skip_ratio={float(gap_loop_details.get('gap_skip_ratio', 0.0) or 0.0):.3f}, "
+            f"repair_share={float(gap_loop_details.get('repair_curriculum_share', 0.0) or 0.0):.3f}, "
+            f"replay_share={float(gap_loop_details.get('replay_curriculum_share', 0.0) or 0.0):.3f}"
+        ),
     ]
     failed_checks = report.get("failed_checks", [])
     lines.append("- failed_checks: " + (", ".join(str(item) for item in failed_checks) if failed_checks else "none"))
-    checks = report.get("checks", {})
     if isinstance(checks, Mapping):
         for name in sorted(checks):
             check = checks[name] if isinstance(checks[name], Mapping) else {}
@@ -476,6 +737,9 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--ann-efficiency-roadmap-report-path", default=DEFAULT_ANN_EFFICIENCY_ROADMAP_REPORT_PATH)
     parser.add_argument("--sparse-diffusion-block-report-path", default=DEFAULT_SPARSE_DIFFUSION_BLOCK_REPORT_PATH)
     parser.add_argument("--energy-measurement-session-plan-path", default=DEFAULT_ENERGY_MEASUREMENT_SESSION_PLAN_PATH)
+    parser.add_argument("--rust-core-readiness-report-path", default=DEFAULT_RUST_CORE_READINESS_REPORT_PATH)
+    parser.add_argument("--research-fixture-readiness-report-path", default=DEFAULT_RESEARCH_FIXTURE_READINESS_REPORT_PATH)
+    parser.add_argument("--autobot-gap-loop-readiness-report-path", default=DEFAULT_AUTOBOT_GAP_LOOP_READINESS_REPORT_PATH)
     parser.add_argument("--output-report-path", default=DEFAULT_OUTPUT_REPORT_PATH)
     parser.add_argument("--output-summary-path", default=DEFAULT_OUTPUT_SUMMARY_PATH)
     args = parser.parse_args(argv)
@@ -490,6 +754,9 @@ def main(argv: List[str] | None = None) -> int:
         args.ann_efficiency_roadmap_report_path,
         args.sparse_diffusion_block_report_path,
         args.energy_measurement_session_plan_path,
+        args.rust_core_readiness_report_path,
+        args.research_fixture_readiness_report_path,
+        args.autobot_gap_loop_readiness_report_path,
     ]
     missing_paths = [path for path in required_paths if not os.path.exists(path)]
     if missing_paths:
@@ -508,6 +775,9 @@ def main(argv: List[str] | None = None) -> int:
         ann_efficiency_roadmap_report=_load_json(args.ann_efficiency_roadmap_report_path),
         sparse_diffusion_block_report=_load_json(args.sparse_diffusion_block_report_path),
         energy_measurement_session_plan=_load_json(args.energy_measurement_session_plan_path),
+        rust_core_readiness_report=_load_json(args.rust_core_readiness_report_path),
+        research_fixture_readiness_report=_load_json(args.research_fixture_readiness_report_path),
+        autobot_gap_loop_readiness_report=_load_json(args.autobot_gap_loop_readiness_report_path),
         source_texts={
             "fix_memory": Path(os.path.join(PROJECT_ROOT, "scripts", "utils", "fix_memory.py")).read_text(encoding="utf-8"),
             "sara_cli": Path(os.path.join(PROJECT_ROOT, "scripts", "sara_cli.py")).read_text(encoding="utf-8"),

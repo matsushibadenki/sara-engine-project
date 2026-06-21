@@ -17,6 +17,7 @@ SRC_PATH = os.path.join(PROJECT_ROOT, "src")
 if SRC_PATH not in sys.path:
     sys.path.insert(0, SRC_PATH)
 
+from sara_engine.evaluation.report_artifacts import artifact_state, format_artifact_state_line  # noqa: E402
 from sara_engine.utils.project_paths import ensure_parent_directory, workspace_path  # noqa: E402
 
 
@@ -469,6 +470,15 @@ def build_ann_efficiency_roadmap_report(
         "failed_stages": failed_stages,
         "next_evidence_action_count": len(next_evidence_actions),
         "next_evidence_actions": next_evidence_actions,
+        "artifact_state": {
+            "energy_efficiency_benchmark": artifact_state(energy_report),
+            "real_data_external_validity": artifact_state(external_validity_report),
+            "real_data_external_validity_ladder": artifact_state(external_ladder_report),
+            "energy_measurement_readiness": artifact_state(
+                energy_measurement_report, pass_field=None
+            ),
+            "operational_readiness": artifact_state(operational_report),
+        },
         "stages": stages,
         "roadmap": [
             "1. Preserve policy constraints: CPU-first, no backprop runtime dependency, no dense-matrix-first runtime, no GPU dependency.",
@@ -482,6 +492,8 @@ def build_ann_efficiency_roadmap_report(
 
 
 def format_ann_efficiency_roadmap_summary(report: Mapping[str, Any]) -> str:
+    artifact_state = report.get("artifact_state", {})
+    artifact_state = artifact_state if isinstance(artifact_state, Mapping) else {}
     lines = [
         "# SARA ANN Efficiency Roadmap Gate",
         f"- passed: {bool(report.get('passed', False))}",
@@ -489,6 +501,16 @@ def format_ann_efficiency_roadmap_summary(report: Mapping[str, Any]) -> str:
         f"- completion_score: {float(report.get('completion_score', 0.0) or 0.0):.3f}",
         f"- passed_stage_count: {int(report.get('passed_stage_count', 0) or 0)}",
         f"- stage_count: {int(report.get('stage_count', 0) or 0)}",
+        format_artifact_state_line(
+            "- artifact_state",
+            [
+                ("proxy", artifact_state.get("energy_efficiency_benchmark")),
+                ("phase8_single", artifact_state.get("real_data_external_validity")),
+                ("phase8_ladder", artifact_state.get("real_data_external_validity_ladder")),
+                ("phase6", artifact_state.get("energy_measurement_readiness")),
+                ("operational", artifact_state.get("operational_readiness")),
+            ],
+        ),
     ]
     failed_stages = report.get("failed_stages", [])
     lines.append("- failed_stages: " + (", ".join(str(item) for item in failed_stages) if failed_stages else "none"))

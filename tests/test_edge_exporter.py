@@ -6,6 +6,7 @@ import types
 from sara_engine.edge.exporter import export_for_edge
 from sara_engine.edge.neuromorphic import (
     build_neuromorphic_capabilities,
+    build_neuromorphic_capability_matrix,
     build_neuromorphic_profile_report,
     build_spike_event_ir,
     normalize_neuromorphic_profiles,
@@ -429,6 +430,45 @@ def test_neuromorphic_spike_event_ir_carries_state_trace_policy():
         "freeze_state_for_inference_profile"
     )
     assert report["profiles"]["akida"]["checks"]["online_update_policy_ok"] is True
+
+
+def test_neuromorphic_capability_matrix_summarizes_backend_limits():
+    profiles = normalize_neuromorphic_profiles(["lava", "akida"])
+    spike_ir = build_spike_event_ir(
+        active_rows=[1, 2, 3],
+        context_length=8,
+        total_readout_size=32,
+        quantization_bits=3,
+        compact_quantized=True,
+        compress_events=True,
+        delta_state={"enabled": True, "state_units": 2},
+        neuromorphic_profile=profiles,
+        state_traces={
+            "predictive_error": {
+                "state_units": 2,
+                "routing_hint": "predictive_error_correction",
+                "online_update_policy": "residual_correction_trace",
+            }
+        },
+    )
+    capabilities = build_neuromorphic_capabilities(
+        spike_event_ir=spike_ir,
+        delta_state={"enabled": True},
+        quantization_bits=3,
+        neuromorphic_profile=profiles,
+    )
+    profile_report = build_neuromorphic_profile_report(spike_ir, capabilities)
+    matrix = build_neuromorphic_capability_matrix(spike_ir, capabilities, profile_report)
+
+    assert matrix["schema"] == "sara-neuromorphic-capability-matrix-v1"
+    assert matrix["all_profiles_compatible"] is True
+    assert matrix["unsupported_summary"] == {}
+    assert matrix["common_event_ir"]["event_count"] == 4
+    assert matrix["profiles"]["lava"]["event_budget_headroom"] == 4092
+    assert matrix["profiles"]["akida"]["state_trace_adapter_policy"] == (
+        "freeze_state_for_inference_profile"
+    )
+    assert matrix["profiles"]["akida"]["routing_hints"] == ["predictive_error_correction"]
 
 
 def test_export_for_edge_accepts_neuromorphic_state_trace_ir(tmp_path):

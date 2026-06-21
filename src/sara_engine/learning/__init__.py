@@ -1,8 +1,6 @@
-# {
-#     "//": "ディレクトリパス: src/sara_engine/learning/__init__.py",
-#     "//": "ファイルの日本語タイトル: learningディレクトリ初期化",
-#     "//": "ファイルの目的や内容: 学習モジュールの公開APIをエクスポートする。"
-# }
+# Directory Path: src/sara_engine/learning/__init__.py
+# English Title: Learning Module Initialization
+# Purpose/Content: Exports public learning-module APIs.
 
 from .force import ForceReadout as ForceReadout
 from .force_io import export_force_artifact as export_force_artifact
@@ -18,6 +16,9 @@ from .delta_retention_policy import DeltaRetentionPolicyConfig as DeltaRetention
 from .delta_retention_policy import evaluate_delta_erase_write_decoupling as evaluate_delta_erase_write_decoupling
 from .delta_retention_policy import evaluate_delta_retention_policy as evaluate_delta_retention_policy
 from .delta_retention_policy import evaluate_delta_retention_policy_stress as evaluate_delta_retention_policy_stress
+from .dendritic_feedback import DendriticGateResult as DendriticGateResult
+from .dendritic_feedback import SparseDendriticFeedbackGate as SparseDendriticFeedbackGate
+from .dendritic_feedback import precision_at_expected as precision_at_expected
 from .reward_modulated_stdp import DopamineSignalModel as DopamineSignalModel
 from .reward_modulated_stdp import EligibilityTraceManager as EligibilityTraceManager
 from .reward_modulated_stdp import RewardModulatedSTDPManager as RewardModulatedSTDPManager
@@ -32,3 +33,14 @@ from .sleep_consolidation import SleepConsolidationConfig as SleepConsolidationC
 from .sleep_consolidation import evaluate_sleep_consolidation as evaluate_sleep_consolidation
 from .synaptic_tag import SynapticTagConfig as SynapticTagConfig
 from .synaptic_tag import evaluate_synaptic_tags as evaluate_synaptic_tags
+from .own_latent import OwnLatentPrediction as OwnLatentPrediction
+from .own_latent import SparseOwnLatentPredictor as SparseOwnLatentPredictor
+from .own_latent import TokenOverlapBaseline as TokenOverlapBaseline
+from .own_latent import build_sparse_signature as build_sparse_signature
+from .own_latent import jaccard_overlap as jaccard_overlap
+from .own_latent import stable_event_id as stable_event_id
+from .own_latent import train_predictor_from_cases as train_predictor_from_cases
+from .resonance_credit import ResonanceCreditResult as ResonanceCreditResult
+from .resonance_credit import SparseResonanceCreditAssigner as SparseResonanceCreditAssigner
+from .resonance_evidence import ResonanceEvidenceBundle as ResonanceEvidenceBundle
+from .resonance_evidence import build_resonance_evidence as build_resonance_evidence

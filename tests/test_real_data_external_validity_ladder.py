@@ -77,6 +77,9 @@ def test_real_data_external_validity_ladder_passes_on_sparse_fixture(tmp_path):
     assert report["metrics"]["min_contrastive_control_accuracy"] == 1.0
     assert report["checks"]["contrastive_control_accuracy_all_profiles"] is True
     assert report["metrics"]["min_dense_embedding_ann_cost_advantage_proxy"] >= 2.0
+    assert report["metrics"]["real_pretrained_embedding_reference_profile_count"] == 0.0
+    assert report["metrics"]["real_pretrained_embedding_faiss_reference_profile_count"] == 0.0
+    assert report["metrics"]["real_cross_encoder_reference_profile_count"] == 0.0
     assert report["checks"]["dense_embedding_cost_advantage_all_profiles"] is True
     assert report["metrics"]["min_sparse_diffusion_real_data_denoise_accuracy"] == 1.0
     assert report["metrics"]["min_sparse_diffusion_real_data_event_cost_advantage"] >= 2.0
@@ -91,6 +94,9 @@ def test_real_data_external_validity_ladder_passes_on_sparse_fixture(tmp_path):
     assert "min_partial_evidence_cost_advantage_proxy" in summary
     assert "min_contrastive_control_cost_advantage_proxy" in summary
     assert "min_dense_embedding_ann_cost_advantage_proxy" in summary
+    assert "real_pretrained_embedding_reference_profile_count" in summary
+    assert "real_pretrained_embedding_faiss_reference_profile_count" in summary
+    assert "real_cross_encoder_reference_profile_count" in summary
     assert "min_sparse_diffusion_real_data_event_cost_advantage" in summary
     assert "tiny" in summary
     assert "pilot" in summary

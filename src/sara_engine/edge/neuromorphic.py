@@ -299,3 +299,103 @@ def build_neuromorphic_profile_report(
             for profile_report in reports.values()
         ),
     }
+
+
+def _as_string_list(value: Any) -> List[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value if str(item).strip()]
+
+
+def build_neuromorphic_capability_matrix(
+    spike_event_ir: Mapping[str, Any],
+    neuromorphic_capabilities: Mapping[str, Any],
+    neuromorphic_profile_report: Mapping[str, Any],
+) -> Dict[str, Any]:
+    profiles = _as_string_list(neuromorphic_capabilities.get("profiles", []))
+    profile_reports = neuromorphic_profile_report.get("profiles", {})
+    if not isinstance(profile_reports, Mapping):
+        profile_reports = {}
+
+    event_count = int(spike_event_ir.get("event_count", 0) or 0)
+    readout_event_count = int(spike_event_ir.get("readout_event_count", 0) or 0)
+    state_trace_event_count = int(spike_event_ir.get("state_trace_event_count", 0) or 0)
+    state_budget_units = int(spike_event_ir.get("state_budget_units", 0) or 0)
+    state_budget_limit = int(spike_event_ir.get("state_budget_limit", 0) or 0)
+    routing_hints = _as_string_list(spike_event_ir.get("state_trace_routing_hints", []))
+    update_policies = _as_string_list(spike_event_ir.get("online_update_policies", []))
+
+    matrix: Dict[str, Any] = {}
+    unsupported_summary: Dict[str, List[str]] = {}
+    for profile_name in profiles:
+        spec = NEUROMORPHIC_BACKEND_PROFILES.get(profile_name, {})
+        profile_report = profile_reports.get(profile_name, {})
+        if not isinstance(profile_report, Mapping):
+            profile_report = {}
+        checks = profile_report.get("checks", {})
+        if not isinstance(checks, Mapping):
+            checks = {}
+        unsupported_operations = [
+            str(check_name)
+            for check_name, passed in sorted(checks.items())
+            if not bool(passed)
+        ]
+        if unsupported_operations:
+            unsupported_summary[profile_name] = unsupported_operations
+
+        max_events = int(profile_report.get("max_events", spec.get("max_events", 0)) or 0)
+        event_budget_headroom = max_events - event_count if max_events > 0 else 0
+        matrix[profile_name] = {
+            "adapter": str(profile_report.get("adapter", spec.get("adapter", "")) or ""),
+            "compatible": bool(profile_report.get("compatible", False)),
+            "known_profile": bool(checks.get("known_profile", profile_name in NEUROMORPHIC_BACKEND_PROFILES)),
+            "event_count": event_count,
+            "readout_event_count": readout_event_count,
+            "state_trace_event_count": state_trace_event_count,
+            "max_events": max_events,
+            "event_budget_headroom": event_budget_headroom,
+            "event_budget_ok": event_budget_headroom >= 0,
+            "state_budget_units": state_budget_units,
+            "state_budget_limit": state_budget_limit,
+            "state_budget_ok": bool(spike_event_ir.get("budget_ok", False)),
+            "delay_supported": bool(neuromorphic_capabilities.get("delay_support", False)),
+            "requires_delay_support": bool(spec.get("requires_delay_support", False)),
+            "low_precision_weights": bool(neuromorphic_capabilities.get("low_precision_weights", False)),
+            "requires_low_precision_weights": bool(spec.get("requires_low_precision_weights", False)),
+            "online_update_support": bool(neuromorphic_capabilities.get("online_update_support", False)),
+            "supports_online_update": bool(spec.get("supports_online_update", False)),
+            "online_update_adapter_policy": str(
+                profile_report.get("online_update_adapter_policy", "") or ""
+            ),
+            "state_trace_adapter_policy": str(
+                profile_report.get("state_trace_adapter_policy", "") or ""
+            ),
+            "routing_hints": routing_hints,
+            "online_update_policies": update_policies,
+            "unsupported_operations": unsupported_operations,
+            "notes": str(profile_report.get("notes", spec.get("notes", "")) or ""),
+        }
+
+    return {
+        "enabled": bool(profiles),
+        "schema": "sara-neuromorphic-capability-matrix-v1",
+        "profile_count": len(profiles),
+        "profiles": matrix,
+        "all_profiles_compatible": bool(
+            profiles and all(bool(item.get("compatible", False)) for item in matrix.values())
+        ),
+        "unsupported_summary": unsupported_summary,
+        "common_event_ir": {
+            "schema": str(spike_event_ir.get("schema", "")),
+            "event_count": event_count,
+            "readout_event_count": readout_event_count,
+            "state_trace_event_count": state_trace_event_count,
+            "event_encoding": str(spike_event_ir.get("event_encoding", "")),
+            "weight_storage": str(spike_event_ir.get("weight_storage", "")),
+            "state_budget_units": state_budget_units,
+            "state_budget_limit": state_budget_limit,
+            "budget_ok": bool(spike_event_ir.get("budget_ok", False)),
+            "routing_hints": routing_hints,
+            "online_update_policies": update_policies,
+        },
+    }

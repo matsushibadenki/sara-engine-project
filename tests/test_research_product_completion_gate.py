@@ -145,7 +145,7 @@ def _sparse_diffusion_block_report(passed=True):
 
 def _energy_measurement_session_plan(passed=True):
     return {
-        "schema": "sara-energy-measurement-session-plan-v1",
+        "schema": "sara-energy-measurement-session-plan-v2",
         "status": "pending_measurement",
         "session_id": "ann-efficiency-real-joule",
         "measurement_path": "data/raw/energy_measurements.jsonl",
@@ -155,6 +155,11 @@ def _energy_measurement_session_plan(passed=True):
             "tasks": ["real_data_external_validity"],
             "systems": ["sara", "ann"],
             "required_rows_per_task": 2,
+            "required_paired_replicates_per_task": 3,
+        },
+        "fair_comparison_contract": {
+            "protocol_version": "sara-energy-fair-comparison-v2",
+            "aggregation": "per-task median joule_per_success with MAD",
         },
         "planned_runs": [
             {
@@ -167,12 +172,103 @@ def _energy_measurement_session_plan(passed=True):
                     "python scripts/sara_cli.py record-energy-measurement "
                     "--run-id ann-efficiency-real-joule-real_data_external_validity-sara-<replicate> "
                     "--system sara --task real_data_external_validity --success-count <count> "
-                    "--joules <J> --source real_energy_session"
+                    "--trial-count <trials> --joules <J> --source real_energy_session "
+                    "--pair-id <pair-id> --environment-fingerprint <sha256> "
+                    "--task-fixture-hash <sha256> --success-criterion-id <criterion> "
+                    "--measurement-boundary <boundary> --measurement-tool <tool> "
+                    "--run-order <1-or-2>"
                 ),
             }
         ]
         if passed
         else [],
+    }
+
+
+def _rust_core_readiness_report(passed=True):
+    return {
+        "schema": "sara-rust-core-readiness-v1",
+        "status": "needs_build_or_review",
+        "source_readiness_passed": bool(passed),
+        "built_extension_readiness_passed": False,
+        "checks": {
+            "versions_match": bool(passed),
+            "cargo_feature_split_ready": bool(passed),
+            "pymodule_exports_registered": bool(passed),
+            "rust_core_comments_english": bool(passed),
+            "batch_sdr_parallelized": bool(passed),
+            "benchmark_report_present": bool(passed),
+            "cargo_test_passed": bool(passed),
+        },
+        "export_contract": {
+            "missing_from_pymodule_registration": [] if passed else ["SpikeEngine"],
+        },
+        "benchmark_report": {
+            "present": bool(passed),
+            "path": "workspace/evaluation/rust_core_benchmark.json",
+        },
+    }
+
+
+def _research_fixture_readiness_report(passed=True):
+    return {
+        "schema": "sara-research-fixture-readiness-v1",
+        "passed": bool(passed),
+        "fixture_path": "data/processed/benchmark_fixtures/external_validity_cases.jsonl",
+        "case_count": 8 if passed else 4,
+        "task_types": [
+            "qa",
+            "negative",
+            "partial",
+            "contrastive",
+            "noisy",
+            "adversarial",
+            "delayed",
+        ]
+        if passed
+        else ["qa"],
+        "missing_task_types": [] if passed else ["delayed"],
+        "coverage": {
+            "has_repository_safe_fixture": bool(passed),
+            "has_noisy_case": bool(passed),
+            "has_adversarial_case": bool(passed),
+            "has_delayed_recall_case": bool(passed),
+            "has_abstention_cases": bool(passed),
+            "has_retrieval_cases": bool(passed),
+        },
+    }
+
+
+def _autobot_gap_loop_readiness_report(passed=True):
+    return {
+        "schema": "sara-autobot-gap-loop-readiness-v1",
+        "passed": bool(passed),
+        "metrics": {
+            "accepted_count": 8 if passed else 0,
+            "collection_target_count": 2 if passed else 0,
+            "requested_slot_count": 2 if passed else 0,
+            "gap_material_built_count": 2 if passed else 0,
+            "gap_material_skipped_count": 0 if passed else 2,
+            "gap_curriculum_enqueued_count": 2 if passed else 0,
+            "queue_pending": 2 if passed else 0,
+            "gap_build_coverage": 1.0 if passed else 0.0,
+            "gap_enqueue_coverage": 1.0 if passed else 0.0,
+            "gap_skip_ratio": 0.0 if passed else 1.0,
+            "repair_curriculum_share": 0.75 if passed else 0.0,
+            "replay_curriculum_share": 0.25 if passed else 0.0,
+        },
+        "checks": {
+            "loop_report_present": {"passed": bool(passed)},
+            "dataset_report_present": {"passed": bool(passed)},
+            "gap_report_present": {"passed": bool(passed)},
+            "enqueue_report_present": {"passed": bool(passed)},
+            "collection_targets_present": {"passed": bool(passed)},
+            "loop_passed": {"passed": bool(passed)},
+            "accepted_materials_ready": {"passed": bool(passed)},
+            "gap_material_coverage_ready": {"passed": bool(passed)},
+            "gap_enqueue_ready": {"passed": bool(passed)},
+            "repair_curriculum_present": {"passed": bool(passed)},
+        },
     }
 
 
@@ -197,6 +293,9 @@ def test_research_product_completion_gate_passes_all_green():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
         source_texts=_source_texts(),
     )
     summary = module.format_research_product_completion_summary(report)
@@ -204,9 +303,19 @@ def test_research_product_completion_gate_passes_all_green():
     assert report["passed"] is True
     assert report["completion_score"] == 1.0
     assert report["failed_checks"] == []
+    assert report["artifact_state"]["energy_measurement_session_plan"] == "present"
+    assert report["artifact_state"]["research_fixture_readiness"] == "passed"
+    assert report["artifact_state"]["autobot_gap_loop_readiness"] == "passed"
+    assert "- artifact_state: phase6=present, phase8=passed, phase7=passed" in summary
+    assert "- phase6_energy_metrics: status=pending_measurement, session_id=ann-efficiency-real-joule, planned_runs=1, task_count=1" in summary
+    assert "- phase8_baseline_metrics: roadmap_completion=1.000, passed_stages=6/6, fixture_cases=8, fixture_task_types=7" in summary
     assert "- ann_efficiency_roadmap: PASS" in summary
     assert "- energy_measurement_session_plan: PASS" in summary
     assert "- sparse_diffusion_block_readiness: PASS" in summary
+    assert "- rust_core_readiness: PASS" in summary
+    assert "- research_fixture_readiness: PASS" in summary
+    assert "- autobot_gap_loop_readiness: PASS" in summary
+    assert "- autobot_gap_loop_metrics: requested_slots=2, build_coverage=1.000, enqueue_coverage=1.000, skip_ratio=0.000, repair_share=0.750, replay_share=0.250" in summary
     assert "- memory_repair_operations: PASS" in summary
     assert "- neuromorphic_hal_smoke: PASS" in summary
 
@@ -224,6 +333,9 @@ def test_research_product_completion_gate_reports_operational_failure():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
         source_texts=_source_texts(),
     )
 
@@ -245,6 +357,9 @@ def test_research_product_completion_gate_rejects_missing_memory_surface():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
         source_texts={"fix_memory": "", "sara_cli": "", "tools": ""},
     )
 
@@ -265,6 +380,9 @@ def test_research_product_completion_gate_rejects_ann_efficiency_roadmap_failure
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(False),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
         source_texts=_source_texts(),
     )
 
@@ -286,6 +404,9 @@ def test_research_product_completion_gate_rejects_sparse_diffusion_failure():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(False),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
         source_texts=_source_texts(),
     )
 
@@ -307,9 +428,85 @@ def test_research_product_completion_gate_rejects_bad_energy_measurement_session
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(False),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
         source_texts=_source_texts(),
     )
 
     assert report["passed"] is False
     assert "energy_measurement_session_plan" in report["failed_checks"]
     assert report["checks"]["energy_measurement_session_plan"]["errors"]
+
+
+def test_research_product_completion_gate_rejects_rust_core_readiness_failure():
+    module = _load_module()
+
+    report = module.build_research_product_completion_report(
+        policy_text=_policy_text(),
+        roadmap_report=_roadmap_report(True),
+        phase3_report=_phase3_report(True),
+        phase4_report=_phase4_report(True),
+        phase5_completion_report=_phase5_completion_report(True),
+        operational_report=_operational_report(True),
+        ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
+        sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
+        energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        rust_core_readiness_report=_rust_core_readiness_report(False),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
+        source_texts=_source_texts(),
+    )
+
+    assert report["passed"] is False
+    assert "rust_core_readiness" in report["failed_checks"]
+    assert report["checks"]["rust_core_readiness"]["errors"]
+
+
+def test_research_product_completion_gate_rejects_research_fixture_failure():
+    module = _load_module()
+
+    report = module.build_research_product_completion_report(
+        policy_text=_policy_text(),
+        roadmap_report=_roadmap_report(True),
+        phase3_report=_phase3_report(True),
+        phase4_report=_phase4_report(True),
+        phase5_completion_report=_phase5_completion_report(True),
+        operational_report=_operational_report(True),
+        ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
+        sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
+        energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(False),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
+        source_texts=_source_texts(),
+    )
+
+    assert report["passed"] is False
+    assert "research_fixture_readiness" in report["failed_checks"]
+    assert report["checks"]["research_fixture_readiness"]["errors"]
+
+
+def test_research_product_completion_gate_rejects_autobot_gap_loop_readiness_failure():
+    module = _load_module()
+
+    report = module.build_research_product_completion_report(
+        policy_text=_policy_text(),
+        roadmap_report=_roadmap_report(True),
+        phase3_report=_phase3_report(True),
+        phase4_report=_phase4_report(True),
+        phase5_completion_report=_phase5_completion_report(True),
+        operational_report=_operational_report(True),
+        ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
+        sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
+        energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(False),
+        source_texts=_source_texts(),
+    )
+
+    assert report["passed"] is False
+    assert report["artifact_state"]["autobot_gap_loop_readiness"] == "failed"
+    assert "autobot_gap_loop_readiness" in report["failed_checks"]
+    assert report["checks"]["autobot_gap_loop_readiness"]["errors"]

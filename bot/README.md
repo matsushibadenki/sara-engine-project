@@ -151,6 +151,95 @@ After ingestion, files are moved to:
 - High-value replay periodically re-injects strong historical samples (`replay_interval_sec`, `replay_samples_per_cycle`, `replay_min_quality`).
 - Curriculum knobs: `curriculum_enabled`, `curriculum_easy_ratio`, `curriculum_medium_ratio`, `curriculum_hard_ratio`.
 
+## Dataset Builder
+
+Build source-aware learning materials from accepted multimodal records:
+
+```bash
+python scripts/sara_cli.py build-autobot-dataset
+```
+
+The builder reads `data/processed/autobot/multimodal_records.jsonl`. If that file is empty or absent, the report fails without creating root outputs. Once accepted records exist, it writes:
+
+- candidate materials: `data/interim/autobot/candidate_learning_materials.jsonl`
+- rejected materials: `data/interim/autobot/rejected_learning_materials.jsonl`
+- accepted materials: `data/processed/autobot/learning_materials.jsonl`
+- QA pairs: `data/processed/autobot/qa_pairs.jsonl`
+- contrastive pairs: `data/processed/autobot/contrastive_pairs.jsonl`
+- negative queries: `data/processed/autobot/negative_queries.jsonl`
+- curriculum manifest: `data/processed/autobot/curriculum_manifest.jsonl`
+- collection targets: `workspace/autobot/dataset_builder_collection_targets.json`
+- operator report: `workspace/autobot/dataset_builder_report.json`
+- operator summary: `workspace/autobot/dataset_builder_summary.txt`
+
+Materials are deterministic source-backed extracts. The gate rejects samples that are too short, duplicate, unsupported by source text, or likely to contain secrets/PII. Evaluation gaps can prioritize repair material:
+
+```bash
+python scripts/sara_cli.py build-autobot-dataset --evaluation-gap negative_control --evaluation-gap contrastive_control
+```
+
+When fixture-driven collection targets are present, the dataset builder also merges their evaluation gaps into curriculum prioritization and writes target manifests that list missing material types such as `transcript_segment`, `counterexample`, `repair_note`, or `revision_note`.
+
+Build deterministic gap materials directly from those targets:
+
+```bash
+python scripts/sara_cli.py build-autobot-gap-materials
+```
+
+This writes:
+
+- gap materials: `data/processed/autobot/gap_materials.jsonl`
+- transcript segments: `data/processed/autobot/transcript_segments.jsonl`
+- counterexamples: `data/processed/autobot/counterexamples.jsonl`
+- repair notes: `data/processed/autobot/repair_notes.jsonl`
+- revision notes: `data/processed/autobot/revision_notes.jsonl`
+- gap curriculum manifest: `data/processed/autobot/gap_curriculum_manifest.jsonl`
+- operator report: `workspace/autobot/gap_materials_builder_report.json`
+- operator summary: `workspace/autobot/gap_materials_builder_summary.txt`
+
+Enqueue the resulting gap curriculum directly into the managed autobot training queue:
+
+```bash
+python scripts/sara_cli.py enqueue-autobot-gap-curriculum
+```
+
+This writes:
+
+- queue report: `workspace/autobot/gap_curriculum_enqueue_report.json`
+- queue summary: `workspace/autobot/gap_curriculum_enqueue_summary.txt`
+- queue items into: `workspace/autobot/train_queue.json`
+
+Run the whole managed gap loop in one command when we want source-backed gap repair to flow from records through queueing without manual handoff:
+
+```bash
+python scripts/sara_cli.py run-autobot-gap-loop
+```
+
+This orchestrates:
+
+- dataset build from `data/processed/autobot/multimodal_records.jsonl`
+- target generation under `workspace/autobot/`
+- deterministic gap-material construction
+- gap curriculum enqueue into `workspace/autobot/train_queue.json`
+
+Managed outputs include:
+
+- loop report: `workspace/autobot/gap_loop_report.json`
+- loop summary: `workspace/autobot/gap_loop_summary.txt`
+
+The loop also accepts explicit `--candidate-path` and `--rejected-path` overrides so experiments can isolate interim artifacts without breaking managed output policy.
+
+Evaluate whether the latest loop really converted requested gap slots into repairable curriculum:
+
+```bash
+python scripts/sara_cli.py eval-autobot-gap-loop-readiness
+```
+
+This writes:
+
+- readiness report: `workspace/evaluation/autobot_gap_loop_readiness.json`
+- readiness summary: `workspace/evaluation/autobot_gap_loop_readiness_summary.txt`
+
 ## Promotion Governance
 
 - Promotion policy modes: `strict`, `balanced`, `exploratory` (`config.example.json`).
@@ -205,6 +294,12 @@ After ingestion, files are moved to:
   - pair manifest: `workspace/autobot/render_pairs.jsonl`
 - Chromium collector computes `raw_vs_rendered_delta` and enqueues rendered-text samples with curriculum stage reflection.
 - Delta thresholds: `render_delta_medium_threshold`, `render_delta_hard_threshold`.
+- Included official documentation collector: `bot/collectors_plugins/official_docs_collector.py`.
+  - Opt in by writing HTTPS documentation URLs to `workspace/autobot/official_docs_urls.txt`.
+  - The collector stores visible page text with `source_type=official_docs` and documentation compliance metadata.
+- Included arXiv abstract collector: `bot/collectors_plugins/arxiv_abstract_collector.py`.
+  - Opt in by writing topic queries to `workspace/autobot/arxiv_queries.txt`.
+  - The collector ingests paper metadata and abstracts only; it does not fetch or treat full papers as unrestricted training text.
 
 ## Offline Batch Mode
 

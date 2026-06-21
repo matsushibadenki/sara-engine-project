@@ -6,12 +6,13 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import re
 import sys
 import time
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List, Mapping, Sequence, Set, Tuple
+from typing import Any, DefaultDict, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -43,6 +44,9 @@ ensure_parent_directory, processed_data_path, workspace_path = _load_project_pat
 DEFAULT_REPORT_PATH = workspace_path("evaluation", "real_data_external_validity.json")
 DEFAULT_SUMMARY_PATH = workspace_path("evaluation", "real_data_external_validity_summary.txt")
 DEFAULT_HISTORY_PATH = workspace_path("evaluation", "real_data_external_validity_history.json")
+DEFAULT_RESEARCH_FIXTURE_PATH = processed_data_path("benchmark_fixtures", "external_validity_cases.jsonl")
+DEFAULT_PRETRAINED_EMBEDDING_MODEL_PATH = os.environ.get("SARA_EXTERNAL_EMBEDDING_MODEL", "").strip()
+DEFAULT_CROSS_ENCODER_MODEL_PATH = os.environ.get("SARA_EXTERNAL_CROSS_ENCODER_MODEL", "").strip()
 TREND_ABSOLUTE_METRICS = {
     "real_data_qa_accuracy",
     "real_data_summary_keyword_coverage",
@@ -75,6 +79,30 @@ DEFAULT_THRESHOLDS = {
 RETRIEVER_STRATEGY = "metabolic_sparse_rarity_early_stop_verified_fallback_v1"
 
 
+def _load_transformers_embedding_runtime() -> Tuple[Any, Any]:
+    try:
+        from transformers import AutoModel, AutoTokenizer
+    except ImportError as exc:
+        raise RuntimeError("transformers is not installed for the optional embedding baseline.") from exc
+    return AutoTokenizer, AutoModel
+
+
+def _load_transformers_cross_encoder_runtime() -> Tuple[Any, Any]:
+    try:
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    except ImportError as exc:
+        raise RuntimeError("transformers is not installed for the optional cross-encoder baseline.") from exc
+    return AutoTokenizer, AutoModelForSequenceClassification
+
+
+def _load_faiss_runtime() -> Any:
+    try:
+        import faiss
+    except ImportError as exc:
+        raise RuntimeError("faiss is not installed for the optional FAISS baseline.") from exc
+    return faiss
+
+
 def _tokenize(text: str) -> List[str]:
     tokens = re.findall(r"[A-Za-z0-9_]+|[ぁ-んァ-ン一-龥]{2,}", text.lower())
     return [token for token in tokens if len(token) >= 2]
@@ -85,6 +113,20 @@ def _load_corpus(path: str, limit: int) -> List[str]:
         lines = [re.sub(r"\s+", " ", line).strip() for line in handle]
     docs = [line for line in lines if len(line) >= 20]
     return docs[: max(int(limit), 1)]
+
+
+def _load_jsonl_objects(path: str) -> List[Dict[str, Any]]:
+    if not path or not os.path.exists(path):
+        return []
+    objects: List[Dict[str, Any]] = []
+    with open(path, "r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            payload = json.loads(line)
+            if isinstance(payload, dict):
+                objects.append(payload)
+    return objects
 
 
 def _load_sparse_diffusion_block_module():
@@ -248,7 +290,7 @@ class MetabolicSparseEventRetriever(SparseEventRetriever):
         query_tokens: Set[str],
         candidates: Set[int],
         *,
-        max_scan: int | None = None,
+        max_scan: Optional[int] = None,
     ) -> Tuple[int, int, int]:
         best_index = -1
         best_score = -1
@@ -373,6 +415,198 @@ class DenseEmbeddingAnnProxyRetriever:
         return best_index, max(event_cost, 1)
 
 
+class LocalPretrainedEmbeddingRetriever:
+    def __init__(self, docs: Sequence[str], model_path: str) -> None:
+        normalized_model_path = str(model_path or "").strip()
+        if not normalized_model_path:
+            raise ValueError("model_path is required for the local pretrained embedding retriever.")
+        AutoTokenizer, AutoModel = _load_transformers_embedding_runtime()
+        self.docs = list(docs)
+        self.model_path = normalized_model_path
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, local_files_only=True)
+        self.model = AutoModel.from_pretrained(self.model_path, local_files_only=True)
+        if hasattr(self.model, "eval"):
+            self.model.eval()
+        self.doc_vectors = [self._embed(doc) for doc in self.docs]
+
+    def _embed(self, text: str) -> List[float]:
+        try:
+            import torch
+        except ImportError as exc:
+            raise RuntimeError("torch is not installed for the optional embedding baseline.") from exc
+
+        encoded = self.tokenizer(
+            str(text),
+            return_tensors="pt",
+            truncation=True,
+            max_length=256,
+        )
+        with torch.no_grad():
+            model_output = self.model(**encoded)
+        hidden_state = getattr(model_output, "last_hidden_state", None)
+        if hidden_state is None:
+            raise RuntimeError("Optional embedding baseline model did not return last_hidden_state.")
+        attention_mask = encoded.get("attention_mask")
+        if attention_mask is None:
+            pooled = hidden_state.mean(dim=1)
+        else:
+            mask = attention_mask.unsqueeze(-1).to(hidden_state.dtype)
+            masked = hidden_state * mask
+            pooled = masked.sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)
+        vector = pooled[0].detach().cpu().tolist()
+        norm = sum(value * value for value in vector) ** 0.5
+        if norm > 0.0:
+            vector = [float(value / norm) for value in vector]
+        return [float(value) for value in vector]
+
+    def search(self, query: str) -> Tuple[int, int]:
+        query_vector = self._embed(query)
+        best_index = -1
+        best_score = -1.0
+        event_cost = 0
+        for index, doc_vector in enumerate(self.doc_vectors):
+            score = sum(query_value * doc_value for query_value, doc_value in zip(query_vector, doc_vector))
+            event_cost += len(doc_vector)
+            if score > best_score:
+                best_index = index
+                best_score = score
+        return best_index, max(event_cost, 1)
+
+
+class LocalFaissPretrainedEmbeddingRetriever(LocalPretrainedEmbeddingRetriever):
+    def __init__(
+        self,
+        docs: Sequence[str],
+        model_path: str,
+        *,
+        hnsw_m: int = 16,
+        ef_construction: int = 40,
+        ef_search: int = 16,
+    ) -> None:
+        try:
+            import numpy as np
+        except ImportError as exc:
+            raise RuntimeError("numpy is not installed for the optional FAISS baseline.") from exc
+        self._faiss = _load_faiss_runtime()
+        self._np = np
+        self._hnsw_m = max(int(hnsw_m), 4)
+        self._ef_construction = max(int(ef_construction), self._hnsw_m)
+        self._ef_search = max(int(ef_search), 4)
+        super().__init__(docs, model_path)
+        if not self.doc_vectors:
+            raise RuntimeError("No document vectors were created for the optional FAISS baseline.")
+        vector_dim = len(self.doc_vectors[0])
+        self.index = self._faiss.IndexHNSWFlat(vector_dim, self._hnsw_m, self._faiss.METRIC_INNER_PRODUCT)
+        self.index.hnsw.efConstruction = self._ef_construction
+        self.index.hnsw.efSearch = self._ef_search
+        doc_matrix = self._np.asarray(self.doc_vectors, dtype="float32")
+        self.index.add(doc_matrix)
+
+    def search(self, query: str) -> Tuple[int, int]:
+        query_vector = self._embed(query)
+        query_matrix = self._np.asarray([query_vector], dtype="float32")
+        distances, indices = self.index.search(query_matrix, 1)
+        best_index = int(indices[0][0]) if len(indices) and len(indices[0]) else -1
+        if best_index < 0:
+            return -1, max(len(query_vector) * self._ef_search, 1)
+        return best_index, max(len(query_vector) * self._ef_search, 1)
+
+
+class LocalCrossEncoderRetriever:
+    def __init__(self, docs: Sequence[str], model_path: str) -> None:
+        normalized_model_path = str(model_path or "").strip()
+        if not normalized_model_path:
+            raise ValueError("model_path is required for the local cross-encoder retriever.")
+        AutoTokenizer, AutoModelForSequenceClassification = _load_transformers_cross_encoder_runtime()
+        self.docs = list(docs)
+        self.model_path = normalized_model_path
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, local_files_only=True)
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            self.model_path,
+            local_files_only=True,
+        )
+        if hasattr(self.model, "eval"):
+            self.model.eval()
+
+    def _score_pair(self, query: str, doc: str) -> float:
+        try:
+            import torch
+        except ImportError as exc:
+            raise RuntimeError("torch is not installed for the optional cross-encoder baseline.") from exc
+        encoded = self.tokenizer(
+            str(query),
+            str(doc),
+            return_tensors="pt",
+            truncation=True,
+            max_length=256,
+        )
+        with torch.no_grad():
+            output = self.model(**encoded)
+        logits = getattr(output, "logits", None)
+        if logits is None:
+            raise RuntimeError("Optional cross-encoder baseline model did not return logits.")
+        if logits.ndim == 2 and logits.shape[1] > 1:
+            return float(logits[0][1].detach().cpu().item())
+        return float(logits.reshape(-1)[0].detach().cpu().item())
+
+    def search(self, query: str) -> Tuple[int, int]:
+        best_index = -1
+        best_score = float("-inf")
+        event_cost = 0
+        for index, doc in enumerate(self.docs):
+            score = self._score_pair(query, doc)
+            event_cost += 1
+            if score > best_score:
+                best_index = index
+                best_score = score
+        return best_index, max(event_cost, 1)
+
+
+class BM25OfflineProxyRetriever:
+    def __init__(self, docs: Sequence[str], *, k1: float = 1.2, b: float = 0.75) -> None:
+        self.docs = list(docs)
+        self.k1 = float(k1)
+        self.b = float(b)
+        self.doc_token_counts: List[Dict[str, int]] = []
+        self.doc_lengths: List[int] = []
+        document_frequency: DefaultDict[str, int] = defaultdict(int)
+        for doc in self.docs:
+            counts: Dict[str, int] = {}
+            for token in _tokenize(doc):
+                counts[token] = counts.get(token, 0) + 1
+            self.doc_token_counts.append(counts)
+            self.doc_lengths.append(sum(counts.values()))
+            for token in counts:
+                document_frequency[token] += 1
+        self.avg_doc_length = sum(self.doc_lengths) / max(len(self.doc_lengths), 1)
+        self.idf = {
+            token: math.log(1.0 + (len(self.docs) - freq + 0.5) / (freq + 0.5))
+            for token, freq in document_frequency.items()
+        }
+
+    def search(self, query: str) -> Tuple[int, int]:
+        query_tokens = _tokenize(query)
+        best_index = -1
+        best_score = -1.0
+        event_cost = 0
+        for index, counts in enumerate(self.doc_token_counts):
+            doc_length = max(float(self.doc_lengths[index]), 1.0)
+            score = 0.0
+            for token in query_tokens:
+                frequency = float(counts.get(token, 0))
+                event_cost += 1
+                if frequency <= 0.0:
+                    continue
+                denominator = frequency + self.k1 * (
+                    1.0 - self.b + self.b * doc_length / max(self.avg_doc_length, 1e-9)
+                )
+                score += self.idf.get(token, 0.0) * (frequency * (self.k1 + 1.0)) / denominator
+            if score > best_score:
+                best_score = score
+                best_index = index
+        return best_index, max(event_cost, 1)
+
+
 def _extractive_summary(doc: str, max_chars: int = 160) -> str:
     parts = re.split(r"(?<=[。.!?])\s*", doc)
     summary = parts[0].strip() if parts and parts[0].strip() else doc.strip()
@@ -450,6 +684,335 @@ def _score_retriever(
         "avg_candidate_count": float(sum(candidate_counts) / total),
         "early_stop_rate": float(early_stop_count / total),
         "case_results": case_results,
+    }
+
+
+def _score_optional_local_pretrained_embedding(
+    docs: Sequence[str],
+    tasks: Sequence[Dict[str, Any]],
+    *,
+    model_path: str,
+) -> Dict[str, Any]:
+    normalized_model_path = str(model_path or "").strip()
+    if not normalized_model_path:
+        return {
+            "available": False,
+            "model_path": "",
+            "reason": "not_configured",
+        }
+    if not os.path.isdir(normalized_model_path):
+        return {
+            "available": False,
+            "model_path": normalized_model_path,
+            "reason": "missing_directory",
+        }
+    try:
+        score = _score_retriever(
+            LocalPretrainedEmbeddingRetriever(docs, normalized_model_path),
+            tasks,
+            docs,
+        )
+    except Exception as exc:
+        return {
+            "available": False,
+            "model_path": normalized_model_path,
+            "reason": exc.__class__.__name__,
+            "error": str(exc),
+        }
+    score["available"] = True
+    score["model_path"] = normalized_model_path
+    return score
+
+
+def _score_optional_local_pretrained_embedding_faiss(
+    docs: Sequence[str],
+    tasks: Sequence[Dict[str, Any]],
+    *,
+    model_path: str,
+) -> Dict[str, Any]:
+    normalized_model_path = str(model_path or "").strip()
+    if not normalized_model_path:
+        return {
+            "available": False,
+            "model_path": "",
+            "reason": "not_configured",
+        }
+    if not os.path.isdir(normalized_model_path):
+        return {
+            "available": False,
+            "model_path": normalized_model_path,
+            "reason": "missing_directory",
+        }
+    try:
+        score = _score_retriever(
+            LocalFaissPretrainedEmbeddingRetriever(docs, normalized_model_path),
+            tasks,
+            docs,
+        )
+    except Exception as exc:
+        return {
+            "available": False,
+            "model_path": normalized_model_path,
+            "reason": exc.__class__.__name__,
+            "error": str(exc),
+        }
+    score["available"] = True
+    score["model_path"] = normalized_model_path
+    score["index_type"] = "faiss_hnsw_flat_ip"
+    return score
+
+
+def _score_optional_local_cross_encoder(
+    docs: Sequence[str],
+    tasks: Sequence[Dict[str, Any]],
+    *,
+    model_path: str,
+) -> Dict[str, Any]:
+    normalized_model_path = str(model_path or "").strip()
+    if not normalized_model_path:
+        return {
+            "available": False,
+            "model_path": "",
+            "reason": "not_configured",
+        }
+    if not os.path.isdir(normalized_model_path):
+        return {
+            "available": False,
+            "model_path": normalized_model_path,
+            "reason": "missing_directory",
+        }
+    try:
+        score = _score_retriever(
+            LocalCrossEncoderRetriever(docs, normalized_model_path),
+            tasks,
+            docs,
+        )
+    except Exception as exc:
+        return {
+            "available": False,
+            "model_path": normalized_model_path,
+            "reason": exc.__class__.__name__,
+            "error": str(exc),
+        }
+    score["available"] = True
+    score["model_path"] = normalized_model_path
+    score["model_type"] = "local_cross_encoder_sequence_classification"
+    return score
+
+
+def _case_results_by_id(score: Mapping[str, Any]) -> Dict[str, Mapping[str, Any]]:
+    results = score.get("case_results", [])
+    if not isinstance(results, list):
+        return {}
+    indexed: Dict[str, Mapping[str, Any]] = {}
+    for item in results:
+        if isinstance(item, Mapping):
+            case_id = str(item.get("case_id", "") or "")
+            if case_id:
+                indexed[case_id] = item
+    return indexed
+
+
+def _safe_int(value: Any, default: int = -1) -> int:
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _failure_type(case: Mapping[str, Any]) -> str:
+    if bool(case.get("correct", False)):
+        return "none"
+    predicted = _safe_int(case.get("predicted_doc_index"), -1)
+    if predicted < 0:
+        return "abstained"
+    if float(case.get("summary_keyword_coverage", 0.0) or 0.0) < 0.5:
+        return "weak_summary"
+    return "wrong_document"
+
+
+def build_per_task_external_validity_summary(
+    tasks: Sequence[Mapping[str, Any]],
+    sparse_score: Mapping[str, Any],
+    dense_score: Mapping[str, Any],
+    dense_embedding_score: Mapping[str, Any],
+) -> Dict[str, Any]:
+    sparse_by_id = _case_results_by_id(sparse_score)
+    dense_by_id = _case_results_by_id(dense_score)
+    dense_embedding_by_id = _case_results_by_id(dense_embedding_score)
+    cases: List[Dict[str, Any]] = []
+    failure_counts: DefaultDict[str, int] = defaultdict(int)
+    total_sparse_cost = 0.0
+    total_dense_cost = 0.0
+    total_embedding_cost = 0.0
+    abstention_count = 0
+
+    for task in tasks:
+        case_id = str(task.get("case_id", "") or "")
+        sparse_case = sparse_by_id.get(case_id, {})
+        dense_case = dense_by_id.get(case_id, {})
+        embedding_case = dense_embedding_by_id.get(case_id, {})
+        sparse_cost = float(sparse_case.get("event_cost_proxy", 0.0) or 0.0)
+        dense_cost = float(dense_case.get("event_cost_proxy", 0.0) or 0.0)
+        embedding_cost = float(embedding_case.get("event_cost_proxy", 0.0) or 0.0)
+        predicted_index = _safe_int(sparse_case.get("predicted_doc_index"), -1)
+        abstained = predicted_index < 0
+        failure_type = _failure_type(sparse_case)
+        failure_counts[failure_type] += 1
+        abstention_count += 1 if abstained else 0
+        total_sparse_cost += sparse_cost
+        total_dense_cost += dense_cost
+        total_embedding_cost += embedding_cost
+        cases.append(
+            {
+                "case_id": case_id,
+                "query": str(task.get("query", "") or ""),
+                "quality": {
+                    "sara_correct": bool(sparse_case.get("correct", False)),
+                    "ann_dense_correct": bool(dense_case.get("correct", False)),
+                    "ann_dense_embedding_correct": bool(embedding_case.get("correct", False)),
+                    "summary_keyword_coverage": float(
+                        sparse_case.get("summary_keyword_coverage", 0.0) or 0.0
+                    ),
+                },
+                "cost": {
+                    "sara_event_cost_proxy": sparse_cost,
+                    "ann_dense_event_cost_proxy": dense_cost,
+                    "ann_dense_embedding_event_cost_proxy": embedding_cost,
+                    "dense_cost_advantage_proxy": dense_cost / max(sparse_cost, 1e-9),
+                    "dense_embedding_cost_advantage_proxy": embedding_cost / max(sparse_cost, 1e-9),
+                },
+                "abstention": {
+                    "sara_abstained": bool(abstained),
+                    "expected_behavior": "retrieve",
+                },
+                "failure_type": failure_type,
+            }
+        )
+
+    total = max(len(cases), 1)
+    return {
+        "schema": "sara-per-task-external-validity-summary-v1",
+        "case_count": len(cases),
+        "cases": cases,
+        "failure_type_counts": dict(sorted(failure_counts.items())),
+        "abstention_rate": float(abstention_count / total),
+        "avg_sara_event_cost_proxy": float(total_sparse_cost / total),
+        "avg_ann_dense_event_cost_proxy": float(total_dense_cost / total),
+        "avg_ann_dense_embedding_event_cost_proxy": float(total_embedding_cost / total),
+        "avg_dense_cost_advantage_proxy": float(total_dense_cost / max(total_sparse_cost, 1e-9)),
+        "avg_dense_embedding_cost_advantage_proxy": float(
+            total_embedding_cost / max(total_sparse_cost, 1e-9)
+        ),
+    }
+
+
+def _accuracy_by_type(cases: Sequence[Mapping[str, Any]]) -> Dict[str, float]:
+    grouped: DefaultDict[str, List[float]] = defaultdict(list)
+    for case in cases:
+        task_type = str(case.get("task_type", "") or "unknown")
+        grouped[task_type].append(1.0 if bool(case.get("sara_correct", False)) else 0.0)
+    return {
+        task_type: sum(values) / max(len(values), 1)
+        for task_type, values in sorted(grouped.items())
+    }
+
+
+def _score_repository_fixture_cases(path: str = DEFAULT_RESEARCH_FIXTURE_PATH) -> Dict[str, Any]:
+    fixture_cases = _load_jsonl_objects(path)
+    if not fixture_cases:
+        return {
+            "schema": "sara-repository-fixture-retrieval-probe-v1",
+            "observed_only": True,
+            "passed": False,
+            "case_count": 0,
+            "fixture_path": os.path.abspath(path),
+            "errors": ["No repository fixture cases were loaded."],
+            "metrics": {},
+            "cases": [],
+        }
+
+    docs = [str(case.get("document", "") or "") for case in fixture_cases]
+    sparse_retriever = MetabolicSparseEventRetriever(docs)
+    dense_retriever = DenseAnnProxyRetriever(docs)
+    dense_embedding_retriever = DenseEmbeddingAnnProxyRetriever(docs)
+    case_reports: List[Dict[str, Any]] = []
+    retrieve_correct = 0
+    retrieve_total = 0
+    abstain_correct = 0
+    abstain_total = 0
+    total_sparse_cost = 0.0
+    total_dense_cost = 0.0
+    total_embedding_cost = 0.0
+
+    for expected_index, case in enumerate(fixture_cases):
+        query = str(case.get("query", "") or "")
+        expected_behavior = str(case.get("expected_behavior", "") or "retrieve")
+        task_type = str(case.get("task_type", "") or "unknown")
+        sparse_index, sparse_cost = sparse_retriever.search(query)
+        dense_index, dense_cost = dense_retriever.search(query)
+        embedding_index, embedding_cost = dense_embedding_retriever.search(query)
+        if expected_behavior == "abstain":
+            sparse_correct = sparse_index == -1
+            abstain_total += 1
+            abstain_correct += 1 if sparse_correct else 0
+        else:
+            sparse_correct = sparse_index == expected_index
+            retrieve_total += 1
+            retrieve_correct += 1 if sparse_correct else 0
+        total_sparse_cost += float(sparse_cost)
+        total_dense_cost += float(dense_cost)
+        total_embedding_cost += float(embedding_cost)
+        case_reports.append(
+            {
+                "case_id": str(case.get("case_id", f"fixture-{expected_index}") or f"fixture-{expected_index}"),
+                "task_type": task_type,
+                "expected_behavior": expected_behavior,
+                "query": query,
+                "expected_doc_index": expected_index if expected_behavior != "abstain" else -1,
+                "sara_predicted_doc_index": int(sparse_index),
+                "ann_dense_predicted_doc_index": int(dense_index),
+                "ann_dense_embedding_predicted_doc_index": int(embedding_index),
+                "sara_correct": bool(sparse_correct),
+                "sara_event_cost_proxy": int(sparse_cost),
+                "ann_dense_event_cost_proxy": int(dense_cost),
+                "ann_dense_embedding_event_cost_proxy": int(embedding_cost),
+                "dense_cost_advantage_proxy": float(dense_cost) / max(float(sparse_cost), 1e-9),
+                "dense_embedding_cost_advantage_proxy": float(embedding_cost) / max(float(sparse_cost), 1e-9),
+                "sara_retrieval_diagnostics": dict(sparse_retriever.last_diagnostics),
+            }
+        )
+
+    total = max(len(case_reports), 1)
+    retrieve_accuracy = retrieve_correct / max(retrieve_total, 1)
+    abstention_integrity = abstain_correct / max(abstain_total, 1)
+    passed = bool(case_reports) and retrieve_accuracy >= 1.0 and abstention_integrity >= 1.0
+    return {
+        "schema": "sara-repository-fixture-retrieval-probe-v1",
+        "observed_only": True,
+        "passed": passed,
+        "fixture_path": os.path.abspath(path),
+        "case_count": len(case_reports),
+        "retrieve_case_count": retrieve_total,
+        "abstain_case_count": abstain_total,
+        "metrics": {
+            "repository_fixture_retrieval_accuracy": float(retrieve_accuracy),
+            "repository_fixture_abstention_integrity": float(abstention_integrity),
+            "repository_fixture_overall_accuracy": float(
+                (retrieve_correct + abstain_correct) / total
+            ),
+            "repository_fixture_avg_sara_event_cost_proxy": float(total_sparse_cost / total),
+            "repository_fixture_avg_dense_cost_advantage_proxy": float(
+                total_dense_cost / max(total_sparse_cost, 1e-9)
+            ),
+            "repository_fixture_avg_dense_embedding_cost_advantage_proxy": float(
+                total_embedding_cost / max(total_sparse_cost, 1e-9)
+            ),
+        },
+        "accuracy_by_task_type": _accuracy_by_type(case_reports),
+        "cases": case_reports,
     }
 
 
@@ -1035,8 +1598,10 @@ def run_real_data_external_validity(
     corpus_path: str = processed_data_path("corpus.txt"),
     max_docs: int = 256,
     max_cases: int = 24,
-    history: Sequence[Dict[str, Any]] | None = None,
+    history: Optional[Sequence[Dict[str, Any]]] = None,
     regression_tolerance: float = 0.05,
+    pretrained_embedding_model_path: str = DEFAULT_PRETRAINED_EMBEDDING_MODEL_PATH,
+    cross_encoder_model_path: str = DEFAULT_CROSS_ENCODER_MODEL_PATH,
 ) -> Dict[str, Any]:
     docs = _load_corpus(corpus_path, limit=max_docs)
     tasks = build_real_data_tasks(docs, max_cases=max_cases)
@@ -1054,6 +1619,23 @@ def run_real_data_external_validity(
     sparse = _score_retriever(MetabolicSparseEventRetriever(docs), tasks, docs)
     dense = _score_retriever(DenseAnnProxyRetriever(docs), tasks, docs)
     dense_embedding = _score_retriever(DenseEmbeddingAnnProxyRetriever(docs), tasks, docs)
+    bm25_offline = _score_retriever(BM25OfflineProxyRetriever(docs), tasks, docs)
+    real_pretrained_embedding = _score_optional_local_pretrained_embedding(
+        docs,
+        tasks,
+        model_path=pretrained_embedding_model_path,
+    )
+    real_pretrained_embedding_faiss = _score_optional_local_pretrained_embedding_faiss(
+        docs,
+        tasks,
+        model_path=pretrained_embedding_model_path,
+    )
+    real_cross_encoder = _score_optional_local_cross_encoder(
+        docs,
+        tasks,
+        model_path=cross_encoder_model_path,
+    )
+    per_task_summary = build_per_task_external_validity_summary(tasks, sparse, dense, dense_embedding)
     continual = _continual_memory_score(tasks, docs)
     negative_control = _score_negative_controls(docs)
     contrastive_control = _score_contrastive_controls()
@@ -1069,6 +1651,12 @@ def run_real_data_external_validity(
         if isinstance(sparse_diffusion_real_data.get("metrics"), dict)
         else {}
     )
+    repository_fixture_probe = _score_repository_fixture_cases()
+    repository_fixture_metrics = (
+        repository_fixture_probe.get("metrics", {})
+        if isinstance(repository_fixture_probe.get("metrics"), dict)
+        else {}
+    )
     rag_query_decomposition = _score_rag_query_decomposition(tasks, docs)
     rag_query_decomposition_metrics = (
         rag_query_decomposition.get("metrics", {})
@@ -1082,6 +1670,26 @@ def run_real_data_external_validity(
         max_docs=max_docs,
         max_cases=max_cases,
     )
+    benchmark_context["pretrained_embedding_model_path"] = str(pretrained_embedding_model_path or "")
+    benchmark_context["pretrained_embedding_reference_available"] = bool(
+        real_pretrained_embedding.get("available", False)
+    )
+    benchmark_context["pretrained_embedding_reference_reason"] = str(
+        real_pretrained_embedding.get("reason", "") or ""
+    )
+    benchmark_context["pretrained_embedding_faiss_reference_available"] = bool(
+        real_pretrained_embedding_faiss.get("available", False)
+    )
+    benchmark_context["pretrained_embedding_faiss_reference_reason"] = str(
+        real_pretrained_embedding_faiss.get("reason", "") or ""
+    )
+    benchmark_context["cross_encoder_model_path"] = str(cross_encoder_model_path or "")
+    benchmark_context["cross_encoder_reference_available"] = bool(
+        real_cross_encoder.get("available", False)
+    )
+    benchmark_context["cross_encoder_reference_reason"] = str(
+        real_cross_encoder.get("reason", "") or ""
+    )
 
     sparse_accuracy = float(sparse["accuracy"])
     dense_accuracy = float(dense["accuracy"])
@@ -1093,6 +1701,48 @@ def run_real_data_external_validity(
     ann_cost_advantage = dense_cost / max(sparse_cost, 1e-9)
     dense_embedding_cost = float(dense_embedding["avg_event_cost_proxy"])
     dense_embedding_cost_advantage = dense_embedding_cost / max(sparse_cost, 1e-9)
+    bm25_cost = float(bm25_offline["avg_event_cost_proxy"])
+    bm25_cost_advantage = bm25_cost / max(sparse_cost, 1e-9)
+    real_pretrained_embedding_available = bool(real_pretrained_embedding.get("available", False))
+    real_pretrained_embedding_accuracy = float(
+        real_pretrained_embedding.get("accuracy", 0.0) if real_pretrained_embedding_available else 0.0
+    )
+    real_pretrained_embedding_cost_advantage = (
+        float(real_pretrained_embedding.get("avg_event_cost_proxy", 0.0)) / max(sparse_cost, 1e-9)
+        if real_pretrained_embedding_available
+        else 0.0
+    )
+    real_pretrained_embedding_latency_ms = float(
+        real_pretrained_embedding.get("avg_latency_ms", 0.0) if real_pretrained_embedding_available else 0.0
+    )
+    real_pretrained_embedding_faiss_available = bool(real_pretrained_embedding_faiss.get("available", False))
+    real_pretrained_embedding_faiss_accuracy = float(
+        real_pretrained_embedding_faiss.get("accuracy", 0.0)
+        if real_pretrained_embedding_faiss_available
+        else 0.0
+    )
+    real_pretrained_embedding_faiss_cost_advantage = (
+        float(real_pretrained_embedding_faiss.get("avg_event_cost_proxy", 0.0)) / max(sparse_cost, 1e-9)
+        if real_pretrained_embedding_faiss_available
+        else 0.0
+    )
+    real_pretrained_embedding_faiss_latency_ms = float(
+        real_pretrained_embedding_faiss.get("avg_latency_ms", 0.0)
+        if real_pretrained_embedding_faiss_available
+        else 0.0
+    )
+    real_cross_encoder_available = bool(real_cross_encoder.get("available", False))
+    real_cross_encoder_accuracy = float(
+        real_cross_encoder.get("accuracy", 0.0) if real_cross_encoder_available else 0.0
+    )
+    real_cross_encoder_cost_advantage = (
+        float(real_cross_encoder.get("avg_event_cost_proxy", 0.0)) / max(sparse_cost, 1e-9)
+        if real_cross_encoder_available
+        else 0.0
+    )
+    real_cross_encoder_latency_ms = float(
+        real_cross_encoder.get("avg_latency_ms", 0.0) if real_cross_encoder_available else 0.0
+    )
 
     thresholds = dict(DEFAULT_THRESHOLDS)
     check_details = _build_external_validity_check_details(
@@ -1127,6 +1777,7 @@ def run_real_data_external_validity(
             "real_data_qa_accuracy": sparse_accuracy,
             "ann_proxy_qa_accuracy": dense_accuracy,
             "dense_embedding_ann_proxy_qa_accuracy": float(dense_embedding["accuracy"]),
+            "bm25_offline_proxy_qa_accuracy": float(bm25_offline["accuracy"]),
             "real_data_summary_keyword_coverage": float(sparse["summary_keyword_coverage"]),
             "continual_memory_hit_rate": float(continual["continual_memory_hit_rate"]),
             "sara_avg_event_cost_proxy": sparse_cost,
@@ -1171,6 +1822,18 @@ def run_real_data_external_validity(
             "sparse_diffusion_real_data_single_pass_integrity": float(
                 sparse_diffusion_real_data_metrics.get("sparse_diffusion_real_data_single_pass_integrity", 0.0)
             ),
+            "repository_fixture_retrieval_accuracy": float(
+                repository_fixture_metrics.get("repository_fixture_retrieval_accuracy", 0.0)
+            ),
+            "repository_fixture_abstention_integrity": float(
+                repository_fixture_metrics.get("repository_fixture_abstention_integrity", 0.0)
+            ),
+            "repository_fixture_overall_accuracy": float(
+                repository_fixture_metrics.get("repository_fixture_overall_accuracy", 0.0)
+            ),
+            "repository_fixture_avg_dense_cost_advantage_proxy": float(
+                repository_fixture_metrics.get("repository_fixture_avg_dense_cost_advantage_proxy", 0.0)
+            ),
             "rag_query_decomposition_bounded_count_observed": float(
                 rag_query_decomposition_metrics.get("rag_query_decomposition_bounded_count_observed", 0.0)
             ),
@@ -1205,6 +1868,34 @@ def run_real_data_external_validity(
             "performance_energy_ratio_proxy": float(performance_energy_ratio),
             "ann_cost_advantage_proxy": float(ann_cost_advantage),
             "dense_embedding_ann_cost_advantage_proxy": float(dense_embedding_cost_advantage),
+            "bm25_offline_cost_advantage_proxy": float(bm25_cost_advantage),
+            "bm25_offline_avg_event_cost_proxy": bm25_cost,
+            "real_pretrained_embedding_reference_available": (
+                1.0 if real_pretrained_embedding_available else 0.0
+            ),
+            "real_pretrained_embedding_reference_qa_accuracy": float(real_pretrained_embedding_accuracy),
+            "real_pretrained_embedding_reference_cost_advantage_proxy": float(
+                real_pretrained_embedding_cost_advantage
+            ),
+            "real_pretrained_embedding_reference_avg_latency_ms": float(
+                real_pretrained_embedding_latency_ms
+            ),
+            "real_pretrained_embedding_faiss_reference_available": (
+                1.0 if real_pretrained_embedding_faiss_available else 0.0
+            ),
+            "real_pretrained_embedding_faiss_reference_qa_accuracy": float(
+                real_pretrained_embedding_faiss_accuracy
+            ),
+            "real_pretrained_embedding_faiss_reference_cost_advantage_proxy": float(
+                real_pretrained_embedding_faiss_cost_advantage
+            ),
+            "real_pretrained_embedding_faiss_reference_avg_latency_ms": float(
+                real_pretrained_embedding_faiss_latency_ms
+            ),
+            "real_cross_encoder_reference_available": 1.0 if real_cross_encoder_available else 0.0,
+            "real_cross_encoder_reference_qa_accuracy": float(real_cross_encoder_accuracy),
+            "real_cross_encoder_reference_cost_advantage_proxy": float(real_cross_encoder_cost_advantage),
+            "real_cross_encoder_reference_avg_latency_ms": float(real_cross_encoder_latency_ms),
             "negative_control_abstention_integrity": float(
                 negative_control["sara_abstention_integrity"]
             ),
@@ -1233,6 +1924,12 @@ def run_real_data_external_validity(
             "sara_avg_latency_ms": float(sparse["avg_latency_ms"]),
             "ann_proxy_avg_latency_ms": float(dense["avg_latency_ms"]),
             "dense_embedding_ann_proxy_avg_latency_ms": float(dense_embedding["avg_latency_ms"]),
+            "per_task_external_validity_summary_available": 1.0,
+            "per_task_external_validity_case_count": float(per_task_summary["case_count"]),
+            "per_task_external_validity_abstention_rate": float(per_task_summary["abstention_rate"]),
+            "per_task_external_validity_avg_dense_cost_advantage_proxy": float(
+                per_task_summary["avg_dense_cost_advantage_proxy"]
+            ),
         },
         "checks": checks,
         "check_details": check_details,
@@ -1240,11 +1937,17 @@ def run_real_data_external_validity(
         "sara_sparse_baseline": sparse_baseline,
         "ann_dense_proxy": dense,
         "ann_dense_embedding_proxy": dense_embedding,
+        "ann_pretrained_embedding_reference": real_pretrained_embedding,
+        "ann_pretrained_embedding_faiss_reference": real_pretrained_embedding_faiss,
+        "ann_cross_encoder_reference": real_cross_encoder,
+        "bm25_offline_proxy": bm25_offline,
+        "per_task_external_validity_summary": per_task_summary,
         "continual_memory": continual,
         "negative_controls": negative_control,
         "contrastive_controls": contrastive_control,
         "sparse_rag_rerank": sparse_rag_rerank,
         "sparse_diffusion_real_data": sparse_diffusion_real_data,
+        "repository_fixture_probe": repository_fixture_probe,
         "rag_query_decomposition": rag_query_decomposition,
     }
     trend = build_external_validity_trend(
@@ -1279,11 +1982,22 @@ def format_real_data_external_validity_summary(report: Dict[str, Any]) -> str:
         f"- real_data_qa_accuracy: {float(metrics.get('real_data_qa_accuracy', 0.0)):.3f}",
         f"- ann_proxy_qa_accuracy: {float(metrics.get('ann_proxy_qa_accuracy', 0.0)):.3f}",
         f"- dense_embedding_ann_proxy_qa_accuracy: {float(metrics.get('dense_embedding_ann_proxy_qa_accuracy', 0.0)):.3f}",
+        f"- bm25_offline_proxy_qa_accuracy: {float(metrics.get('bm25_offline_proxy_qa_accuracy', 0.0)):.3f}",
+        f"- real_pretrained_embedding_reference_available: {float(metrics.get('real_pretrained_embedding_reference_available', 0.0)):.3f}",
+        f"- real_pretrained_embedding_reference_qa_accuracy: {float(metrics.get('real_pretrained_embedding_reference_qa_accuracy', 0.0)):.3f}",
+        f"- real_pretrained_embedding_faiss_reference_available: {float(metrics.get('real_pretrained_embedding_faiss_reference_available', 0.0)):.3f}",
+        f"- real_pretrained_embedding_faiss_reference_qa_accuracy: {float(metrics.get('real_pretrained_embedding_faiss_reference_qa_accuracy', 0.0)):.3f}",
+        f"- real_cross_encoder_reference_available: {float(metrics.get('real_cross_encoder_reference_available', 0.0)):.3f}",
+        f"- real_cross_encoder_reference_qa_accuracy: {float(metrics.get('real_cross_encoder_reference_qa_accuracy', 0.0)):.3f}",
         f"- real_data_summary_keyword_coverage: {float(metrics.get('real_data_summary_keyword_coverage', 0.0)):.3f}",
         f"- continual_memory_hit_rate: {float(metrics.get('continual_memory_hit_rate', 0.0)):.3f}",
         f"- performance_energy_ratio_proxy: {float(metrics.get('performance_energy_ratio_proxy', 0.0)):.3f}",
         f"- ann_cost_advantage_proxy: {float(metrics.get('ann_cost_advantage_proxy', 0.0)):.3f}",
         f"- dense_embedding_ann_cost_advantage_proxy: {float(metrics.get('dense_embedding_ann_cost_advantage_proxy', 0.0)):.3f}",
+        f"- bm25_offline_cost_advantage_proxy: {float(metrics.get('bm25_offline_cost_advantage_proxy', 0.0)):.3f}",
+        f"- real_pretrained_embedding_reference_cost_advantage_proxy: {float(metrics.get('real_pretrained_embedding_reference_cost_advantage_proxy', 0.0)):.3f}",
+        f"- real_pretrained_embedding_faiss_reference_cost_advantage_proxy: {float(metrics.get('real_pretrained_embedding_faiss_reference_cost_advantage_proxy', 0.0)):.3f}",
+        f"- real_cross_encoder_reference_cost_advantage_proxy: {float(metrics.get('real_cross_encoder_reference_cost_advantage_proxy', 0.0)):.3f}",
         f"- sara_metabolic_cost_reduction_proxy: {float(metrics.get('sara_metabolic_cost_reduction_proxy', 0.0)):.3f}",
         f"- sara_metabolic_early_stop_rate: {float(metrics.get('sara_metabolic_early_stop_rate', 0.0)):.3f}",
         f"- sara_metabolic_avg_processed_query_tokens: {float(metrics.get('sara_metabolic_avg_processed_query_tokens', 0.0)):.3f}",
@@ -1302,6 +2016,9 @@ def format_real_data_external_validity_summary(report: Dict[str, Any]) -> str:
         f"- sparse_diffusion_real_data_denoise_accuracy: {float(metrics.get('sparse_diffusion_real_data_denoise_accuracy', 0.0)):.3f}",
         f"- sparse_diffusion_real_data_event_cost_advantage: {float(metrics.get('sparse_diffusion_real_data_event_cost_advantage', 0.0)):.3f}",
         f"- sparse_diffusion_real_data_single_pass_integrity: {float(metrics.get('sparse_diffusion_real_data_single_pass_integrity', 0.0)):.3f}",
+        f"- repository_fixture_retrieval_accuracy: {float(metrics.get('repository_fixture_retrieval_accuracy', 0.0)):.3f}",
+        f"- repository_fixture_abstention_integrity: {float(metrics.get('repository_fixture_abstention_integrity', 0.0)):.3f}",
+        f"- repository_fixture_avg_dense_cost_advantage_proxy: {float(metrics.get('repository_fixture_avg_dense_cost_advantage_proxy', 0.0)):.3f}",
         f"- rag_query_decomposition_coverage_observed: {float(metrics.get('rag_query_decomposition_coverage_observed', 0.0)):.3f}",
         f"- rag_query_decomposition_merged_selection_observed: {float(metrics.get('rag_query_decomposition_merged_selection_observed', 0.0)):.3f}",
         f"- rag_query_decomposition_merged_citation_grounding_observed: {float(metrics.get('rag_query_decomposition_merged_citation_grounding_observed', 0.0)):.3f}",
@@ -1309,6 +2026,12 @@ def format_real_data_external_validity_summary(report: Dict[str, Any]) -> str:
         f"- rag_query_decomposition_merged_source_diversity_observed: {float(metrics.get('rag_query_decomposition_merged_source_diversity_observed', 0.0)):.3f}",
         f"- sara_avg_latency_ms: {float(metrics.get('sara_avg_latency_ms', 0.0)):.3f}",
         f"- ann_proxy_avg_latency_ms: {float(metrics.get('ann_proxy_avg_latency_ms', 0.0)):.3f}",
+        f"- real_pretrained_embedding_reference_avg_latency_ms: {float(metrics.get('real_pretrained_embedding_reference_avg_latency_ms', 0.0)):.3f}",
+        f"- real_pretrained_embedding_faiss_reference_avg_latency_ms: {float(metrics.get('real_pretrained_embedding_faiss_reference_avg_latency_ms', 0.0)):.3f}",
+        f"- real_cross_encoder_reference_avg_latency_ms: {float(metrics.get('real_cross_encoder_reference_avg_latency_ms', 0.0)):.3f}",
+        f"- per_task_external_validity_case_count: {float(metrics.get('per_task_external_validity_case_count', 0.0)):.3f}",
+        f"- per_task_external_validity_abstention_rate: {float(metrics.get('per_task_external_validity_abstention_rate', 0.0)):.3f}",
+        f"- per_task_external_validity_avg_dense_cost_advantage_proxy: {float(metrics.get('per_task_external_validity_avg_dense_cost_advantage_proxy', 0.0)):.3f}",
         f"- trend_has_previous: {bool(trend.get('has_previous', False))}",
         f"- trend_comparison_active: {bool(trend.get('comparison_active', False))}",
         f"- trend_comparison_skipped_reason: {str(trend.get('comparison_skipped_reason', '') or '')}",
@@ -1329,6 +2052,8 @@ def main() -> int:
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--history-path", default=DEFAULT_HISTORY_PATH)
     parser.add_argument("--regression-tolerance", type=float, default=0.05)
+    parser.add_argument("--pretrained-embedding-model", default=DEFAULT_PRETRAINED_EMBEDDING_MODEL_PATH)
+    parser.add_argument("--cross-encoder-model", default=DEFAULT_CROSS_ENCODER_MODEL_PATH)
     parser.add_argument("--no-history-update", action="store_true")
     args = parser.parse_args()
 
@@ -1339,6 +2064,8 @@ def main() -> int:
         max_cases=int(args.max_cases),
         history=history,
         regression_tolerance=float(max(args.regression_tolerance, 0.0)),
+        pretrained_embedding_model_path=str(args.pretrained_embedding_model),
+        cross_encoder_model_path=str(args.cross_encoder_model),
     )
     report_path = ensure_parent_directory(str(args.report_path))
     summary_path = ensure_parent_directory(str(args.summary_path))

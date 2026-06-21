@@ -6,7 +6,7 @@ import argparse
 import importlib.util
 import json
 import os
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -43,7 +43,7 @@ def _profile_artifact_path(profile_name: str, suffix: str) -> str:
     return workspace_path("evaluation", f"real_data_external_validity_{safe_name}{suffix}")
 
 
-def parse_profile_specs(raw_specs: Sequence[str] | None = None) -> List[Dict[str, Any]]:
+def parse_profile_specs(raw_specs: Optional[Sequence[str]] = None) -> List[Dict[str, Any]]:
     if not raw_specs:
         return [dict(item) for item in DEFAULT_PROFILE_SPECS]
     profiles: List[Dict[str, Any]] = []
@@ -87,6 +87,15 @@ def _build_ladder_metrics(profile_reports: Sequence[Dict[str, Any]]) -> Dict[str
             "min_contrastive_control_accuracy": 0.0,
             "min_contrastive_control_cost_advantage_proxy": 0.0,
             "min_dense_embedding_ann_cost_advantage_proxy": 0.0,
+            "real_pretrained_embedding_reference_profile_count": 0.0,
+            "min_real_pretrained_embedding_reference_qa_accuracy": 0.0,
+            "min_real_pretrained_embedding_reference_cost_advantage_proxy": 0.0,
+            "real_pretrained_embedding_faiss_reference_profile_count": 0.0,
+            "min_real_pretrained_embedding_faiss_reference_qa_accuracy": 0.0,
+            "min_real_pretrained_embedding_faiss_reference_cost_advantage_proxy": 0.0,
+            "real_cross_encoder_reference_profile_count": 0.0,
+            "min_real_cross_encoder_reference_qa_accuracy": 0.0,
+            "min_real_cross_encoder_reference_cost_advantage_proxy": 0.0,
             "min_sparse_diffusion_real_data_denoise_accuracy": 0.0,
             "min_sparse_diffusion_real_data_event_cost_advantage": 0.0,
             "min_sparse_diffusion_real_data_partition_integrity": 0.0,
@@ -126,6 +135,48 @@ def _build_ladder_metrics(profile_reports: Sequence[Dict[str, Any]]) -> Dict[str
         _numeric_metric(report, "dense_embedding_ann_cost_advantage_proxy")
         for report in profile_reports
     ]
+    real_pretrained_embedding_available_scores = [
+        _numeric_metric(report, "real_pretrained_embedding_reference_available")
+        for report in profile_reports
+    ]
+    real_pretrained_embedding_qa_scores = [
+        _numeric_metric(report, "real_pretrained_embedding_reference_qa_accuracy")
+        for report, available in zip(profile_reports, real_pretrained_embedding_available_scores)
+        if available >= 0.5
+    ]
+    real_pretrained_embedding_cost_advantages = [
+        _numeric_metric(report, "real_pretrained_embedding_reference_cost_advantage_proxy")
+        for report, available in zip(profile_reports, real_pretrained_embedding_available_scores)
+        if available >= 0.5
+    ]
+    real_pretrained_embedding_faiss_available_scores = [
+        _numeric_metric(report, "real_pretrained_embedding_faiss_reference_available")
+        for report in profile_reports
+    ]
+    real_pretrained_embedding_faiss_qa_scores = [
+        _numeric_metric(report, "real_pretrained_embedding_faiss_reference_qa_accuracy")
+        for report, available in zip(profile_reports, real_pretrained_embedding_faiss_available_scores)
+        if available >= 0.5
+    ]
+    real_pretrained_embedding_faiss_cost_advantages = [
+        _numeric_metric(report, "real_pretrained_embedding_faiss_reference_cost_advantage_proxy")
+        for report, available in zip(profile_reports, real_pretrained_embedding_faiss_available_scores)
+        if available >= 0.5
+    ]
+    real_cross_encoder_available_scores = [
+        _numeric_metric(report, "real_cross_encoder_reference_available")
+        for report in profile_reports
+    ]
+    real_cross_encoder_qa_scores = [
+        _numeric_metric(report, "real_cross_encoder_reference_qa_accuracy")
+        for report, available in zip(profile_reports, real_cross_encoder_available_scores)
+        if available >= 0.5
+    ]
+    real_cross_encoder_cost_advantages = [
+        _numeric_metric(report, "real_cross_encoder_reference_cost_advantage_proxy")
+        for report, available in zip(profile_reports, real_cross_encoder_available_scores)
+        if available >= 0.5
+    ]
     sparse_diffusion_denoise_accuracies = [
         _numeric_metric(report, "sparse_diffusion_real_data_denoise_accuracy")
         for report in profile_reports
@@ -155,6 +206,39 @@ def _build_ladder_metrics(profile_reports: Sequence[Dict[str, Any]]) -> Dict[str
         "min_contrastive_control_accuracy": min(contrastive_accuracies),
         "min_contrastive_control_cost_advantage_proxy": min(contrastive_cost_advantages),
         "min_dense_embedding_ann_cost_advantage_proxy": min(dense_embedding_cost_advantages),
+        "real_pretrained_embedding_reference_profile_count": float(
+            sum(1 for value in real_pretrained_embedding_available_scores if value >= 0.5)
+        ),
+        "min_real_pretrained_embedding_reference_qa_accuracy": min(real_pretrained_embedding_qa_scores)
+        if real_pretrained_embedding_qa_scores
+        else 0.0,
+        "min_real_pretrained_embedding_reference_cost_advantage_proxy": min(
+            real_pretrained_embedding_cost_advantages
+        )
+        if real_pretrained_embedding_cost_advantages
+        else 0.0,
+        "real_pretrained_embedding_faiss_reference_profile_count": float(
+            sum(1 for value in real_pretrained_embedding_faiss_available_scores if value >= 0.5)
+        ),
+        "min_real_pretrained_embedding_faiss_reference_qa_accuracy": min(
+            real_pretrained_embedding_faiss_qa_scores
+        )
+        if real_pretrained_embedding_faiss_qa_scores
+        else 0.0,
+        "min_real_pretrained_embedding_faiss_reference_cost_advantage_proxy": min(
+            real_pretrained_embedding_faiss_cost_advantages
+        )
+        if real_pretrained_embedding_faiss_cost_advantages
+        else 0.0,
+        "real_cross_encoder_reference_profile_count": float(
+            sum(1 for value in real_cross_encoder_available_scores if value >= 0.5)
+        ),
+        "min_real_cross_encoder_reference_qa_accuracy": min(real_cross_encoder_qa_scores)
+        if real_cross_encoder_qa_scores
+        else 0.0,
+        "min_real_cross_encoder_reference_cost_advantage_proxy": min(real_cross_encoder_cost_advantages)
+        if real_cross_encoder_cost_advantages
+        else 0.0,
         "min_sparse_diffusion_real_data_denoise_accuracy": min(sparse_diffusion_denoise_accuracies),
         "min_sparse_diffusion_real_data_event_cost_advantage": min(sparse_diffusion_cost_advantages),
         "min_sparse_diffusion_real_data_partition_integrity": min(sparse_diffusion_partition_scores),
@@ -276,6 +360,33 @@ def _compact_profile_report(report: Dict[str, Any]) -> Dict[str, Any]:
             "dense_embedding_ann_cost_advantage_proxy": float(
                 metrics.get("dense_embedding_ann_cost_advantage_proxy", 0.0) or 0.0
             ),
+            "real_pretrained_embedding_reference_available": float(
+                metrics.get("real_pretrained_embedding_reference_available", 0.0) or 0.0
+            ),
+            "real_pretrained_embedding_reference_qa_accuracy": float(
+                metrics.get("real_pretrained_embedding_reference_qa_accuracy", 0.0) or 0.0
+            ),
+            "real_pretrained_embedding_reference_cost_advantage_proxy": float(
+                metrics.get("real_pretrained_embedding_reference_cost_advantage_proxy", 0.0) or 0.0
+            ),
+            "real_pretrained_embedding_faiss_reference_available": float(
+                metrics.get("real_pretrained_embedding_faiss_reference_available", 0.0) or 0.0
+            ),
+            "real_pretrained_embedding_faiss_reference_qa_accuracy": float(
+                metrics.get("real_pretrained_embedding_faiss_reference_qa_accuracy", 0.0) or 0.0
+            ),
+            "real_pretrained_embedding_faiss_reference_cost_advantage_proxy": float(
+                metrics.get("real_pretrained_embedding_faiss_reference_cost_advantage_proxy", 0.0) or 0.0
+            ),
+            "real_cross_encoder_reference_available": float(
+                metrics.get("real_cross_encoder_reference_available", 0.0) or 0.0
+            ),
+            "real_cross_encoder_reference_qa_accuracy": float(
+                metrics.get("real_cross_encoder_reference_qa_accuracy", 0.0) or 0.0
+            ),
+            "real_cross_encoder_reference_cost_advantage_proxy": float(
+                metrics.get("real_cross_encoder_reference_cost_advantage_proxy", 0.0) or 0.0
+            ),
             "sparse_diffusion_real_data_denoise_accuracy": float(
                 metrics.get("sparse_diffusion_real_data_denoise_accuracy", 0.0) or 0.0
             ),
@@ -301,6 +412,24 @@ def _compact_profile_report(report: Dict[str, Any]) -> Dict[str, Any]:
             "max_docs": int(benchmark_context.get("max_docs", 0) or 0),
             "max_cases": int(benchmark_context.get("max_cases", 0) or 0),
             "retriever_strategy": str(benchmark_context.get("retriever_strategy", "") or ""),
+            "pretrained_embedding_reference_available": bool(
+                benchmark_context.get("pretrained_embedding_reference_available", False)
+            ),
+            "pretrained_embedding_reference_reason": str(
+                benchmark_context.get("pretrained_embedding_reference_reason", "") or ""
+            ),
+            "pretrained_embedding_faiss_reference_available": bool(
+                benchmark_context.get("pretrained_embedding_faiss_reference_available", False)
+            ),
+            "pretrained_embedding_faiss_reference_reason": str(
+                benchmark_context.get("pretrained_embedding_faiss_reference_reason", "") or ""
+            ),
+            "cross_encoder_reference_available": bool(
+                benchmark_context.get("cross_encoder_reference_available", False)
+            ),
+            "cross_encoder_reference_reason": str(
+                benchmark_context.get("cross_encoder_reference_reason", "") or ""
+            ),
         },
     }
 
@@ -308,7 +437,7 @@ def _compact_profile_report(report: Dict[str, Any]) -> Dict[str, Any]:
 def run_real_data_external_validity_ladder(
     *,
     corpus_path: str = processed_data_path("corpus.txt"),
-    profiles: Sequence[Dict[str, Any]] | None = None,
+    profiles: Optional[Sequence[Dict[str, Any]]] = None,
     regression_tolerance: float = 0.05,
     update_history: bool = True,
 ) -> Dict[str, Any]:
@@ -373,6 +502,15 @@ def format_real_data_external_validity_ladder_summary(report: Dict[str, Any]) ->
         f"- min_contrastive_control_accuracy: {float(metrics.get('min_contrastive_control_accuracy', 0.0) or 0.0):.3f}",
         f"- min_contrastive_control_cost_advantage_proxy: {float(metrics.get('min_contrastive_control_cost_advantage_proxy', 0.0) or 0.0):.3f}",
         f"- min_dense_embedding_ann_cost_advantage_proxy: {float(metrics.get('min_dense_embedding_ann_cost_advantage_proxy', 0.0) or 0.0):.3f}",
+        f"- real_pretrained_embedding_reference_profile_count: {float(metrics.get('real_pretrained_embedding_reference_profile_count', 0.0) or 0.0):.3f}",
+        f"- min_real_pretrained_embedding_reference_qa_accuracy: {float(metrics.get('min_real_pretrained_embedding_reference_qa_accuracy', 0.0) or 0.0):.3f}",
+        f"- min_real_pretrained_embedding_reference_cost_advantage_proxy: {float(metrics.get('min_real_pretrained_embedding_reference_cost_advantage_proxy', 0.0) or 0.0):.3f}",
+        f"- real_pretrained_embedding_faiss_reference_profile_count: {float(metrics.get('real_pretrained_embedding_faiss_reference_profile_count', 0.0) or 0.0):.3f}",
+        f"- min_real_pretrained_embedding_faiss_reference_qa_accuracy: {float(metrics.get('min_real_pretrained_embedding_faiss_reference_qa_accuracy', 0.0) or 0.0):.3f}",
+        f"- min_real_pretrained_embedding_faiss_reference_cost_advantage_proxy: {float(metrics.get('min_real_pretrained_embedding_faiss_reference_cost_advantage_proxy', 0.0) or 0.0):.3f}",
+        f"- real_cross_encoder_reference_profile_count: {float(metrics.get('real_cross_encoder_reference_profile_count', 0.0) or 0.0):.3f}",
+        f"- min_real_cross_encoder_reference_qa_accuracy: {float(metrics.get('min_real_cross_encoder_reference_qa_accuracy', 0.0) or 0.0):.3f}",
+        f"- min_real_cross_encoder_reference_cost_advantage_proxy: {float(metrics.get('min_real_cross_encoder_reference_cost_advantage_proxy', 0.0) or 0.0):.3f}",
         f"- min_sparse_diffusion_real_data_denoise_accuracy: {float(metrics.get('min_sparse_diffusion_real_data_denoise_accuracy', 0.0) or 0.0):.3f}",
         f"- min_sparse_diffusion_real_data_event_cost_advantage: {float(metrics.get('min_sparse_diffusion_real_data_event_cost_advantage', 0.0) or 0.0):.3f}",
         f"- min_sparse_diffusion_real_data_partition_integrity: {float(metrics.get('min_sparse_diffusion_real_data_partition_integrity', 0.0) or 0.0):.3f}",
@@ -397,6 +535,9 @@ def format_real_data_external_validity_ladder_summary(report: Dict[str, Any]) ->
                 f"qa={float(profile_metrics.get('real_data_qa_accuracy', 0.0) or 0.0):.3f}, "
                 f"ann_cost_advantage={float(profile_metrics.get('ann_cost_advantage_proxy', 0.0) or 0.0):.3f}, "
                 f"performance_energy_ratio={float(profile_metrics.get('performance_energy_ratio_proxy', 0.0) or 0.0):.3f}, "
+                f"pretrained_reference_available={float(profile_metrics.get('real_pretrained_embedding_reference_available', 0.0) or 0.0):.3f}, "
+                f"pretrained_faiss_reference_available={float(profile_metrics.get('real_pretrained_embedding_faiss_reference_available', 0.0) or 0.0):.3f}, "
+                f"cross_encoder_reference_available={float(profile_metrics.get('real_cross_encoder_reference_available', 0.0) or 0.0):.3f}, "
                 f"sparse_diffusion_cost_advantage={float(profile_metrics.get('sparse_diffusion_real_data_event_cost_advantage', 0.0) or 0.0):.3f}"
             )
     lines.append("Checks:")

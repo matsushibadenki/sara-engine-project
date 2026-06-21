@@ -15,6 +15,32 @@ def _load_module():
     return module
 
 
+def _row(module, system, task, joules, *, pair_id="pair-1", replicate=1, success=10, trials=10, run_order=None):
+    return module.build_measurement_row(
+        run_id=f"{system}-{task}-{replicate}",
+        system=system,
+        task=task,
+        success_count=success,
+        trial_count=trials,
+        joules=joules,
+        source="real_energy_session",
+        pair_id=pair_id,
+        replicate_index=replicate,
+        environment_fingerprint="env-sha256",
+        task_fixture_hash="fixture-sha256",
+        success_criterion_id="exact-match-v1",
+        measurement_boundary="warm-index-query-only-v1",
+        measurement_tool="powermetrics-v1",
+        cpu_model="test-cpu",
+        thread_count=1,
+        process_affinity="core-0",
+        power_mode="ac-fixed",
+        warmup_count=2,
+        measured_repetitions=10,
+        run_order=run_order or (1 if system == "sara" else 2),
+    )
+
+
 def test_energy_measurement_readiness_is_protocol_ready_without_rows():
     module = _load_module()
 
@@ -29,6 +55,8 @@ def test_energy_measurement_readiness_is_protocol_ready_without_rows():
     assert report["measurement_plan"]["pending_pair_count"] == 4
     assert report["measurement_session_plan"]["status"] == "pending_measurement"
     assert report["measurement_session_plan"]["planned_run_count"] == 4
+    assert report["measurement_session_plan"]["schema"] == "sara-energy-measurement-session-plan-v2"
+    assert report["measurement_session_plan"]["pairing_matrix"]["required_paired_replicates_per_task"] == 3
     assert report["measurement_session_plan"]["planned_runs"][0]["run_id_template"].startswith(
         "ann-efficiency-real-joule-real_data_external_validity-sara-"
     )
@@ -48,10 +76,11 @@ def test_energy_measurement_readiness_accepts_real_joule_advantage():
 
     report = module.build_energy_measurement_readiness_report(
         [
-            {"run_id": "sara-1", "system": "sara", "task": "qa", "success_count": 10, "joules": 2.0},
-            {"run_id": "ann-1", "system": "ann", "task": "qa", "success_count": 10, "joules": 8.0},
+            _row(module, "sara", "qa", 2.0),
+            _row(module, "ann", "qa", 8.0),
         ],
         min_ann_to_sara_ratio=2.0,
+        min_paired_replicates_per_task=1,
     )
 
     assert report["passed"] is True
@@ -62,6 +91,8 @@ def test_energy_measurement_readiness_accepts_real_joule_advantage():
     assert report["metrics"]["ann_to_sara_joule_efficiency_ratio"] == 4.0
     assert report["metrics"]["paired_task_count"] == 1
     assert report["metrics"]["min_paired_task_ann_to_sara_ratio"] == 4.0
+    assert report["metrics"]["valid_pair_count"] == 1
+    assert report["metrics"]["task_pair_statistics"]["qa"]["median_ann_to_sara_ratio"] == 4.0
     assert report["checks"]["paired_task_measurements_present"] is True
     assert report["checks"]["paired_task_rows_balanced"] is True
     assert report["checks"]["paired_task_efficiency_ratio_passed"] is True
@@ -77,10 +108,11 @@ def test_energy_measurement_readiness_rejects_unpaired_real_measurements():
 
     report = module.build_energy_measurement_readiness_report(
         [
-            {"run_id": "sara-1", "system": "sara", "task": "qa", "success_count": 10, "joules": 2.0},
-            {"run_id": "ann-1", "system": "ann", "task": "summary", "success_count": 10, "joules": 8.0},
+            _row(module, "sara", "qa", 2.0),
+            _row(module, "ann", "summary", 8.0),
         ],
         min_ann_to_sara_ratio=2.0,
+        min_paired_replicates_per_task=1,
     )
 
     assert report["passed"] is False
@@ -100,10 +132,11 @@ def test_energy_measurement_readiness_rejects_weak_paired_task_ratio():
 
     report = module.build_energy_measurement_readiness_report(
         [
-            {"run_id": "sara-1", "system": "sara", "task": "qa", "success_count": 10, "joules": 4.0},
-            {"run_id": "ann-1", "system": "ann", "task": "qa", "success_count": 10, "joules": 5.0},
+            _row(module, "sara", "qa", 4.0),
+            _row(module, "ann", "qa", 5.0),
         ],
         min_ann_to_sara_ratio=2.0,
+        min_paired_replicates_per_task=1,
     )
 
     assert report["passed"] is False
@@ -176,6 +209,18 @@ def test_build_measurement_row_derives_joules_from_average_watts():
         source="powermetrics",
         duration_seconds=2.5,
         average_watts=0.8,
+        pair_id="pair-watt",
+        environment_fingerprint="env",
+        task_fixture_hash="fixture",
+        success_criterion_id="criterion",
+        measurement_boundary="boundary",
+        measurement_tool="powermetrics",
+        cpu_model="cpu",
+        process_affinity="core-0",
+        power_mode="ac",
+        warmup_count=1,
+        measured_repetitions=6,
+        trial_count=6,
     )
 
     assert row["joules"] == 2.0
@@ -196,6 +241,18 @@ def test_build_measurement_row_rejects_incomplete_average_watt_input():
             joules=0.0,
             source="powermetrics",
             average_watts=0.8,
+            pair_id="pair-bad",
+            environment_fingerprint="env",
+            task_fixture_hash="fixture",
+            success_criterion_id="criterion",
+            measurement_boundary="boundary",
+            measurement_tool="powermetrics",
+            cpu_model="cpu",
+            process_affinity="core-0",
+            power_mode="ac",
+            warmup_count=1,
+            measured_repetitions=6,
+            trial_count=6,
         )
     except ValueError as exc:
         assert "joules_must_be_positive" in str(exc)
@@ -219,6 +276,18 @@ def test_energy_measurement_append_round_trip(tmp_path):
         joules=1.2,
         source="manual_meter",
         duration_seconds=3.0,
+        pair_id="pair-round-trip",
+        environment_fingerprint="env",
+        task_fixture_hash="fixture",
+        success_criterion_id="criterion",
+        measurement_boundary="boundary",
+        measurement_tool="manual-meter",
+        cpu_model="cpu",
+        process_affinity="core-0",
+        power_mode="ac",
+        warmup_count=1,
+        measured_repetitions=4,
+        trial_count=4,
     )
 
     try:
@@ -233,3 +302,60 @@ def test_energy_measurement_append_round_trip(tmp_path):
     assert rows[0]["system"] == "sara"
     assert rows[0]["joules"] == 1.2
     assert rows[0]["duration_seconds"] == 3.0
+
+
+def test_energy_measurement_rejects_mismatched_environment_pair():
+    module = _load_module()
+    sara = _row(module, "sara", "qa", 2.0)
+    ann = _row(module, "ann", "qa", 8.0)
+    ann["environment_fingerprint"] = "different-env"
+
+    report = module.build_energy_measurement_readiness_report([sara, ann])
+
+    assert report["passed"] is False
+    assert report["checks"]["fair_pair_contract_passed"] is False
+    assert report["metrics"]["invalid_pair_count"] == 1
+    assert "mismatch:environment_fingerprint" in report["metrics"]["pair_errors"][0]["errors"]
+
+
+def test_energy_measurement_rejects_quality_gap_even_when_ann_uses_more_joules():
+    module = _load_module()
+    sara = _row(module, "sara", "qa", 2.0, success=8, trials=10)
+    ann = _row(module, "ann", "qa", 8.0, success=10, trials=10)
+
+    report = module.build_energy_measurement_readiness_report(
+        [sara, ann],
+        max_success_rate_delta=0.05,
+    )
+
+    assert report["passed"] is False
+    assert report["checks"]["quality_parity_passed"] is False
+    assert "success_rate_parity_failed" in report["metrics"]["pair_errors"][0]["errors"]
+
+
+def test_energy_measurement_reports_median_and_mad_across_replicates():
+    module = _load_module()
+    rows = []
+    for replicate, sara_joules, ann_joules in (
+        (1, 2.0, 8.0),
+        (2, 2.2, 7.7),
+        (3, 1.8, 8.1),
+    ):
+        rows.extend(
+            [
+                _row(module, "sara", "qa", sara_joules, pair_id=f"pair-{replicate}", replicate=replicate, run_order=1 if replicate % 2 else 2),
+                _row(module, "ann", "qa", ann_joules, pair_id=f"pair-{replicate}", replicate=replicate, run_order=2 if replicate % 2 else 1),
+            ]
+        )
+
+    report = module.build_energy_measurement_readiness_report(
+        rows,
+        min_ann_to_sara_ratio=2.0,
+        min_paired_replicates_per_task=3,
+    )
+
+    stats = report["metrics"]["task_pair_statistics"]["qa"]
+    assert report["passed"] is True
+    assert stats["valid_pair_count"] == 3
+    assert stats["sara_joule_per_success_mad"] > 0.0
+    assert report["metrics"]["run_order_balance"] == {"sara_first": 2, "ann_first": 1}

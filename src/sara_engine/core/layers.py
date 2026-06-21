@@ -1,12 +1,9 @@
-# [配置するディレクトリのパス]: ./src/sara_engine/core/layers.py
-# [ファイルの日本語タイトル]: スパイキング・ニューラル・レイヤー
-# [ファイルの目的や内容]: FFNでの過剰発火（てんかん状態）を防ぐためのゲイン調整と、推論時におけるk-WTA（勝者独占）ベースの正規化ロジックの導入。
+# Directory path: src/sara_engine/core/layers.py
+# Title: Spiking neural layers
+# Purpose: Sparse gain control and k-WTA normalization for bounded firing.
 from typing import List, Optional, Dict, Any
 import random
 from ..learning.homeostasis import AdaptiveThresholdHomeostasis
-# ディレクトリパス: src/sara_engine/core/layers.py
-# ファイルの日本語タイトル: スパイキング・ニューラル・レイヤー
-# ファイルの目的や内容: FFNでの過剰発火（てんかん状態）を防ぐためのゲイン調整と、推論時におけるk-WTA（勝者独占）ベースの正規化ロジックの導入。
 try:
     from .. import sara_rust_core
     RUST_AVAILABLE = True
@@ -19,9 +16,10 @@ except ImportError:
 
 
 class DynamicLiquidLayer:
-    """スパイキング・リキッド層 (Pure Python実装).
+    """Spiking liquid layer implemented in pure Python.
 
-    NOTE: RustLiquidLayer は lib.rs に未実装のため、常にPython実装を使用する。
+    NOTE: RustLiquidLayer is not exported from lib.rs, so this class always
+    uses the Python implementation while preserving the public API.
     """
 
     def __init__(self, input_size: int, hidden_size: int, decay: float,
@@ -39,8 +37,6 @@ class DynamicLiquidLayer:
         self.rec_scale = rec_scale
         self.feedback_scale = feedback_scale
         self.target_rate = target_rate
-        # use_rust パラメータはAPI互換性のため保持するが、
-        # RustLiquidLayer は未実装のため実質的に無効
         self.use_rust = False
 
         self.v = [0.0] * hidden_size
@@ -210,24 +206,20 @@ class SpikeNormalization:
             self.homeostasis.update(spikes, population_size=dim)
             for s in spikes:
                 offset = self.homeostasis.get_threshold(s, 0.0)
-                # 学習時は確率的にスパイクをドロップダウンさせる
                 if random.random() > offset:
                     normalized_spikes.append(s)
         else:
             self.homeostasis.update([], population_size=dim)
-            # 推論時: Target Rateに基づくk-WTA（上位K個の勝者独占）的な足切りを行う
             valid_spikes = []
             for s in spikes:
                 offset = self.homeostasis.get_threshold(s, 0.0)
                 valid_spikes.append((s, offset))
 
-            # オフセットが低い（抑制されにくい）順にソート
             valid_spikes.sort(key=lambda x: x[1])
-            # スパース性を担保する許容上限
             max_allowed = max(1, int(dim * self.target_rate * 1.5))
 
             for s, offset in valid_spikes[:max_allowed]:
-                if offset < 0.9:  # 抑制限界を超えていないものだけを通過
+                if offset < 0.9:
                     normalized_spikes.append(s)
 
         return normalized_spikes
@@ -295,13 +287,13 @@ class SpikeFeedForward:
                             weights[pre][target] = 0.5
 
     def forward(self, spikes: List[int], learning: bool = True) -> List[int]:
-        # 推論時の異常発火（12.0）を防ぐため、gainを1.2に引き下げる
+        # Keep inference gain bounded to avoid abnormal high firing.
         gain = 1.0 if learning else 1.2
 
         h = self._sparse_propagate(
             spikes, self.w1, self.hidden_dim, threshold=0.5, gain=gain)
 
-        # 中間層のスパイク数にも上限を設ける（全体の15%まで）
+        # Bound hidden-layer spikes to preserve sparse activity.
         max_h_spikes = int(self.hidden_dim * 0.15)
         if len(h) > max_h_spikes:
             h = random.sample(

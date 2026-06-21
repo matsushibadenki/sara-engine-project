@@ -1,6 +1,6 @@
-# ディレクトリパス: pyproject.toml
-# ファイルの日本語タイトル: プロジェクト設定ファイル
-# ファイルの目的や内容: CLIコマンド、依存関係の追加と、既存のmypy設定・Rust連携の統合。
+# Directory path: pyproject.toml
+# Title: Project configuration
+# Purpose: Package metadata, CLI commands, dependencies, mypy settings, and Rust integration.
 
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
@@ -46,24 +46,23 @@ sara-train = "sara_engine.cli:train"
 [tool.maturin]
 python-source = "src"
 module-name = "sara_engine.sara_rust_core"
-features = ["pyo3/extension-module"]
+features = ["extension-module"]
 
 [tool.pytest.ini_options]
-# scripts/old/ 配下の古いテストファイルを収集対象から除外
+# Exclude legacy tests under scripts/old from collection.
 addopts = "--ignore=scripts/old"
 
 [tool.mypy]
-# src を唯一のモジュール探索ルートに設定
+# Use src as the only module search root.
 mypy_path = "src"
-# チェック対象を明示的にパッケージ名で指定
+# Check the package by explicit package name.
 packages = ["sara_engine"]
 
-# 二重解決を防止するための設定変更
-# explicit_package_bases を False に戻し、namespace_packages を制限する
+# Prevent duplicate module resolution.
 explicit_package_bases = false
 namespace_packages = false
 
-# 基本設定
+# Base settings.
 warn_unused_configs = true
 check_untyped_defs = true
 ignore_missing_imports = true

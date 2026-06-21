@@ -68,6 +68,27 @@ class TrainingQueue:
         items.append(item)
         self._save(items)
 
+    def enqueue_learning_materials(self, manifest_items: list[dict[str, object]]) -> int:
+        enqueued = 0
+        for item in manifest_items:
+            material_type = str(item.get("material_type", ""))
+            stage = str(item.get("curriculum_stage", "medium"))
+            queue_item = {
+                "source": item.get("source", "autobot_dataset_builder"),
+                "material_hash": item.get("material_hash", ""),
+                "material_type": material_type,
+                "curriculum_stage": stage,
+                "priority": float(item.get("priority", 0.0) or 0.0),
+                "path": str(item.get("path", "data/processed/autobot/curriculum_manifest.jsonl") or "data/processed/autobot/curriculum_manifest.jsonl"),
+            }
+            if stage == "repair":
+                queue_item["priority"] = max(1.0, float(queue_item["priority"]))
+            if stage == "replay" and float(queue_item["priority"]) < 0.75:
+                continue
+            self.enqueue(queue_item)
+            enqueued += 1
+        return enqueued
+
     def drain(self, limit: int) -> list[dict[str, object]]:
         items = self._load()
         def _key(obj: dict[str, object]) -> tuple[float, str]:

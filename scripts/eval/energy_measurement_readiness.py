@@ -4,8 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import platform
+import statistics
 import sys
 from typing import Any, Dict, Iterable, List, Mapping, Sequence
 
@@ -30,6 +33,40 @@ REQUIRED_FIELDS = {
     "success_count",
     "joules",
 }
+FAIRNESS_FIELDS = {
+    "protocol_version",
+    "pair_id",
+    "replicate_index",
+    "environment_fingerprint",
+    "task_fixture_hash",
+    "success_criterion_id",
+    "measurement_boundary",
+    "measurement_tool",
+    "cpu_model",
+    "thread_count",
+    "process_affinity",
+    "power_mode",
+    "warmup_count",
+    "measured_repetitions",
+    "trial_count",
+    "run_order",
+}
+PAIR_MATCH_FIELDS = (
+    "protocol_version",
+    "environment_fingerprint",
+    "task_fixture_hash",
+    "success_criterion_id",
+    "measurement_boundary",
+    "measurement_tool",
+    "cpu_model",
+    "thread_count",
+    "process_affinity",
+    "power_mode",
+    "warmup_count",
+    "measured_repetitions",
+    "trial_count",
+)
+MEASUREMENT_PROTOCOL_VERSION = "sara-energy-fair-comparison-v2"
 CANONICAL_MEASUREMENT_TASKS = (
     "real_data_external_validity",
     "energy_efficiency_benchmark",
@@ -48,6 +85,25 @@ def _safe_int(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def default_environment_fingerprint(
+    *,
+    cpu_model: str,
+    thread_count: int,
+    process_affinity: str,
+    power_mode: str,
+) -> str:
+    payload = {
+        "cpu_model": str(cpu_model),
+        "machine": platform.machine(),
+        "platform": platform.platform(),
+        "process_affinity": str(process_affinity),
+        "power_mode": str(power_mode),
+        "thread_count": int(thread_count),
+    }
+    encoded = json.dumps(payload, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def load_measurements(path: str | None) -> List[Dict[str, Any]]:
@@ -85,6 +141,22 @@ def build_measurement_row(
     duration_seconds: float | None = None,
     average_watts: float | None = None,
     notes: str = "",
+    protocol_version: str = MEASUREMENT_PROTOCOL_VERSION,
+    pair_id: str = "",
+    replicate_index: int = 1,
+    environment_fingerprint: str = "",
+    task_fixture_hash: str = "",
+    success_criterion_id: str = "",
+    measurement_boundary: str = "",
+    measurement_tool: str = "",
+    cpu_model: str = "",
+    thread_count: int = 1,
+    process_affinity: str = "",
+    power_mode: str = "",
+    warmup_count: int = 0,
+    measured_repetitions: int = 1,
+    trial_count: int | None = None,
+    run_order: int = 1,
 ) -> Dict[str, Any]:
     resolved_joules = float(joules)
     if resolved_joules <= 0.0 and average_watts is not None and duration_seconds is not None:
@@ -96,7 +168,30 @@ def build_measurement_row(
         "success_count": int(success_count),
         "joules": float(resolved_joules),
         "source": str(source),
+        "protocol_version": str(protocol_version),
+        "pair_id": str(pair_id),
+        "replicate_index": int(replicate_index),
+        "environment_fingerprint": str(environment_fingerprint),
+        "task_fixture_hash": str(task_fixture_hash),
+        "success_criterion_id": str(success_criterion_id),
+        "measurement_boundary": str(measurement_boundary),
+        "measurement_tool": str(measurement_tool),
+        "cpu_model": str(cpu_model),
+        "thread_count": int(thread_count),
+        "process_affinity": str(process_affinity),
+        "power_mode": str(power_mode),
+        "warmup_count": int(warmup_count),
+        "measured_repetitions": int(measured_repetitions),
+        "trial_count": int(trial_count if trial_count is not None else success_count),
+        "run_order": int(run_order),
     }
+    if not row["environment_fingerprint"] and cpu_model and process_affinity and power_mode:
+        row["environment_fingerprint"] = default_environment_fingerprint(
+            cpu_model=cpu_model,
+            thread_count=thread_count,
+            process_affinity=process_affinity,
+            power_mode=power_mode,
+        )
     if duration_seconds is not None:
         row["duration_seconds"] = float(duration_seconds)
     if average_watts is not None:
@@ -125,10 +220,29 @@ def _validate_measurement(row: Mapping[str, Any]) -> List[str]:
     missing = sorted(field for field in REQUIRED_FIELDS if field not in row)
     if missing:
         errors.append("missing_fields:" + ",".join(missing))
+    missing_fairness = sorted(
+        field
+        for field in FAIRNESS_FIELDS
+        if field not in row or row.get(field) in {"", None}
+    )
+    if missing_fairness:
+        errors.append("missing_fairness_fields:" + ",".join(missing_fairness))
     if str(row.get("system", "")).lower() not in {"sara", "ann"}:
         errors.append("system_must_be_sara_or_ann")
     if _safe_int(row.get("success_count")) <= 0:
         errors.append("success_count_must_be_positive")
+    if _safe_int(row.get("trial_count")) < _safe_int(row.get("success_count")):
+        errors.append("trial_count_must_cover_success_count")
+    if _safe_int(row.get("replicate_index")) <= 0:
+        errors.append("replicate_index_must_be_positive")
+    if _safe_int(row.get("thread_count")) <= 0:
+        errors.append("thread_count_must_be_positive")
+    if _safe_int(row.get("measured_repetitions")) <= 0:
+        errors.append("measured_repetitions_must_be_positive")
+    if _safe_int(row.get("warmup_count")) < 0:
+        errors.append("warmup_count_must_be_nonnegative")
+    if _safe_int(row.get("run_order")) <= 0:
+        errors.append("run_order_must_be_positive")
     if _safe_float(row.get("joules")) <= 0.0:
         errors.append("joules_must_be_positive")
     if "average_watts" in row and _safe_float(row.get("average_watts")) <= 0.0:
@@ -138,7 +252,45 @@ def _validate_measurement(row: Mapping[str, Any]) -> List[str]:
     return errors
 
 
-def _aggregate_measurements(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
+def _median(values: Sequence[float]) -> float:
+    return float(statistics.median(values)) if values else 0.0
+
+
+def _mad(values: Sequence[float]) -> float:
+    if not values:
+        return 0.0
+    center = statistics.median(values)
+    return float(statistics.median(abs(value - center) for value in values))
+
+
+def _pair_key(row: Mapping[str, Any]) -> tuple[str, str, int]:
+    return (
+        str(row.get("task", "")),
+        str(row.get("pair_id", "")),
+        _safe_int(row.get("replicate_index")),
+    )
+
+
+def _pair_fairness_errors(
+    sara: Mapping[str, Any],
+    ann: Mapping[str, Any],
+) -> List[str]:
+    errors = [
+        f"mismatch:{field}"
+        for field in PAIR_MATCH_FIELDS
+        if sara.get(field) != ann.get(field)
+    ]
+    if _safe_int(sara.get("run_order")) == _safe_int(ann.get("run_order")):
+        errors.append("run_order_must_differ_within_pair")
+    return errors
+
+
+def _aggregate_measurements(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    max_success_rate_delta: float,
+) -> Dict[str, Any]:
+    rows = list(rows)
     by_system: Dict[str, Dict[str, float]] = {
         "sara": {"success_count": 0.0, "joules": 0.0, "row_count": 0.0},
         "ann": {"success_count": 0.0, "joules": 0.0, "row_count": 0.0},
@@ -176,9 +328,89 @@ def _aggregate_measurements(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Any]
         if not task_has_pair:
             unpaired_tasks.append(task)
             continue
-        task_sara_jps = task_sara["joules"] / max(task_sara["success_count"], 1e-9)
-        task_ann_jps = task_ann["joules"] / max(task_ann["success_count"], 1e-9)
-        paired_task_ratios[task] = float(task_ann_jps / max(task_sara_jps, 1e-9))
+    pair_buckets: Dict[tuple[str, str, int], Dict[str, Mapping[str, Any]]] = {}
+    for row in rows:
+        system = str(row.get("system", "")).lower()
+        if system in {"sara", "ann"}:
+            pair_buckets.setdefault(_pair_key(row), {})[system] = row
+    valid_pairs: List[Dict[str, Any]] = []
+    pair_errors: List[Dict[str, Any]] = []
+    for key, systems in sorted(pair_buckets.items()):
+        if set(systems) != {"sara", "ann"}:
+            pair_errors.append({"pair_key": list(key), "errors": ["missing_system_pair"]})
+            continue
+        sara_row = systems["sara"]
+        ann_row = systems["ann"]
+        errors = _pair_fairness_errors(sara_row, ann_row)
+        sara_rate = _safe_int(sara_row.get("success_count")) / max(
+            _safe_int(sara_row.get("trial_count")), 1
+        )
+        ann_rate = _safe_int(ann_row.get("success_count")) / max(
+            _safe_int(ann_row.get("trial_count")), 1
+        )
+        quality_delta = abs(sara_rate - ann_rate)
+        if quality_delta > max_success_rate_delta:
+            errors.append("success_rate_parity_failed")
+        if errors:
+            pair_errors.append({"pair_key": list(key), "errors": errors})
+            continue
+        sara_jps = _safe_float(sara_row.get("joules")) / max(
+            _safe_int(sara_row.get("success_count")), 1
+        )
+        ann_jps = _safe_float(ann_row.get("joules")) / max(
+            _safe_int(ann_row.get("success_count")), 1
+        )
+        valid_pairs.append(
+            {
+                "task": key[0],
+                "pair_id": key[1],
+                "replicate_index": key[2],
+                "sara_joule_per_success": sara_jps,
+                "ann_joule_per_success": ann_jps,
+                "ann_to_sara_ratio": ann_jps / max(sara_jps, 1e-9),
+                "sara_success_rate": sara_rate,
+                "ann_success_rate": ann_rate,
+                "success_rate_delta": quality_delta,
+                "run_order": {
+                    "sara": _safe_int(sara_row.get("run_order")),
+                    "ann": _safe_int(ann_row.get("run_order")),
+                },
+            }
+        )
+    task_pair_metrics: Dict[str, Dict[str, Any]] = {}
+    for task in sorted({pair["task"] for pair in valid_pairs}):
+        task_pairs = [pair for pair in valid_pairs if pair["task"] == task]
+        sara_values = [float(pair["sara_joule_per_success"]) for pair in task_pairs]
+        ann_values = [float(pair["ann_joule_per_success"]) for pair in task_pairs]
+        ratio_values = [float(pair["ann_to_sara_ratio"]) for pair in task_pairs]
+        task_pair_metrics[task] = {
+            "valid_pair_count": len(task_pairs),
+            "sara_median_joule_per_success": _median(sara_values),
+            "sara_joule_per_success_mad": _mad(sara_values),
+            "ann_median_joule_per_success": _median(ann_values),
+            "ann_joule_per_success_mad": _mad(ann_values),
+            "median_ann_to_sara_ratio": _median(ratio_values),
+            "ratio_mad": _mad(ratio_values),
+            "max_success_rate_delta": max(
+                (float(pair["success_rate_delta"]) for pair in task_pairs),
+                default=0.0,
+            ),
+        }
+        paired_task_ratios[task] = task_pair_metrics[task][
+            "median_ann_to_sara_ratio"
+        ]
+    run_order_balance = {
+        "sara_first": sum(
+            1
+            for pair in valid_pairs
+            if pair["run_order"]["sara"] < pair["run_order"]["ann"]
+        ),
+        "ann_first": sum(
+            1
+            for pair in valid_pairs
+            if pair["run_order"]["ann"] < pair["run_order"]["sara"]
+        ),
+    }
     return {
         "systems": by_system,
         "tasks": by_task,
@@ -191,6 +423,12 @@ def _aggregate_measurements(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Any]
         "unpaired_task_count": len(unpaired_tasks),
         "unpaired_tasks": unpaired_tasks,
         "paired_task_ann_to_sara_ratios": paired_task_ratios,
+        "valid_pairs": valid_pairs,
+        "valid_pair_count": len(valid_pairs),
+        "invalid_pair_count": len(pair_errors),
+        "pair_errors": pair_errors,
+        "task_pair_statistics": task_pair_metrics,
+        "run_order_balance": run_order_balance,
         "min_paired_task_ann_to_sara_ratio": min(paired_task_ratios.values())
         if paired_task_ratios
         else 0.0,
@@ -219,8 +457,14 @@ def _record_command_for_session(*, session_id: str, task: str, system: str) -> s
     return (
         "python scripts/sara_cli.py record-energy-measurement "
         f"--run-id {run_id} --system {system} --task {task} "
-        "--success-count <count> --joules <J> "
-        "--source real_energy_session"
+        "--success-count <count> --trial-count <trials> --joules <J> "
+        "--source real_energy_session --pair-id <pair-id> "
+        "--replicate-index <replicate> --environment-fingerprint <sha256> "
+        "--task-fixture-hash <sha256> --success-criterion-id <criterion-id> "
+        "--measurement-boundary <boundary-id> --measurement-tool <tool-id> "
+        "--cpu-model <cpu> --thread-count <threads> --process-affinity <affinity> "
+        "--power-mode <mode> --warmup-count <count> "
+        "--measured-repetitions <count> --run-order <1-or-2>"
     )
 
 
@@ -298,7 +542,7 @@ def _build_measurement_session_plan(
             )
 
     return {
-        "schema": "sara-energy-measurement-session-plan-v1",
+        "schema": "sara-energy-measurement-session-plan-v2",
         "session_id": str(session_id or "energy-session"),
         "status": "ready_for_real_joule_claim" if not planned_runs else "pending_measurement",
         "measurement_path": str(measurement_path),
@@ -309,6 +553,14 @@ def _build_measurement_session_plan(
             "tasks": list(CANONICAL_MEASUREMENT_TASKS),
             "systems": ["sara", "ann"],
             "required_rows_per_task": 2,
+            "required_paired_replicates_per_task": 3,
+        },
+        "fair_comparison_contract": {
+            "protocol_version": MEASUREMENT_PROTOCOL_VERSION,
+            "required_pair_match_fields": list(PAIR_MATCH_FIELDS),
+            "quality_parity_metric": "absolute_success_rate_delta",
+            "run_order_policy": "alternate_or_randomized_block",
+            "aggregation": "per-task median joule_per_success with MAD",
         },
         "operator_notes": [
             "Use the same hardware power source and sampling method for both systems in a task pair.",
@@ -374,7 +626,7 @@ def _build_measurement_plan(
     ]
     ready_for_real_claim = bool(not pending_pairs and not weak_pairs and int(aggregate.get("paired_task_count", 0) or 0) > 0)
     return {
-        "schema": "sara-energy-measurement-plan-v1",
+        "schema": "sara-energy-measurement-plan-v2",
         "ready_for_real_joule_claim": ready_for_real_claim,
         "required_task_pair_count": len(CANONICAL_MEASUREMENT_TASKS),
         "observed_paired_task_count": int(aggregate.get("paired_task_count", 0) or 0),
@@ -397,6 +649,8 @@ def build_energy_measurement_readiness_report(
     min_ann_to_sara_ratio: float = 1.0,
     measurement_path: str = "data/raw/energy_measurements.jsonl",
     session_id: str = "ann-efficiency-real-joule",
+    max_success_rate_delta: float = 0.0,
+    min_paired_replicates_per_task: int = 3,
 ) -> Dict[str, Any]:
     rows = [dict(row) for row in measurements]
     row_errors = [
@@ -408,7 +662,10 @@ def build_energy_measurement_readiness_report(
         row for index, row in enumerate(rows)
         if not any(item["index"] == index for item in row_errors)
     ]
-    aggregate = _aggregate_measurements(valid_rows)
+    aggregate = _aggregate_measurements(
+        valid_rows,
+        max_success_rate_delta=max_success_rate_delta,
+    )
     has_real_measurements = bool(
         aggregate["has_sara_measurements"] and aggregate["has_ann_measurements"]
     )
@@ -416,6 +673,24 @@ def build_energy_measurement_readiness_report(
     paired_task_count = int(aggregate.get("paired_task_count", 0) or 0)
     unpaired_task_count = int(aggregate.get("unpaired_task_count", 0) or 0)
     min_paired_task_ratio = float(aggregate.get("min_paired_task_ann_to_sara_ratio", 0.0) or 0.0)
+    valid_pair_count = int(aggregate.get("valid_pair_count", 0) or 0)
+    invalid_pair_count = int(aggregate.get("invalid_pair_count", 0) or 0)
+    task_pair_statistics = aggregate.get("task_pair_statistics", {})
+    replicate_floor_passed = bool(
+        task_pair_statistics
+        and all(
+            _safe_int(metrics.get("valid_pair_count"))
+            >= int(min_paired_replicates_per_task)
+            for metrics in task_pair_statistics.values()
+            if isinstance(metrics, Mapping)
+        )
+    )
+    order_balance = aggregate.get("run_order_balance", {})
+    sara_first = _safe_int(order_balance.get("sara_first")) if isinstance(order_balance, Mapping) else 0
+    ann_first = _safe_int(order_balance.get("ann_first")) if isinstance(order_balance, Mapping) else 0
+    run_order_balanced = bool(
+        valid_pair_count <= 1 or abs(sara_first - ann_first) <= 1
+    )
     measurement_plan = _build_measurement_plan(
         valid_rows,
         aggregate,
@@ -440,10 +715,23 @@ def build_energy_measurement_readiness_report(
             and paired_task_count > 0
             and min_paired_task_ratio >= min_ann_to_sara_ratio
         ),
+        "fair_pair_contract_passed": (not rows)
+        or (valid_pair_count > 0 and invalid_pair_count == 0),
+        "quality_parity_passed": (not rows)
+        or (
+            valid_pair_count > 0
+            and all(
+                _safe_float(pair.get("success_rate_delta"))
+                <= max_success_rate_delta
+                for pair in aggregate.get("valid_pairs", [])
+            )
+        ),
+        "paired_replicate_floor_passed": (not rows) or replicate_floor_passed,
+        "run_order_balance_passed": (not rows) or run_order_balanced,
     }
     protocol_ready = bool(checks["schema_ready"] and checks["rows_valid"])
     return {
-        "schema": "sara-energy-measurement-readiness-v1",
+        "schema": "sara-energy-measurement-readiness-v2",
         "passed": bool(protocol_ready and (not rows or all(checks.values()))),
         "status": "real_joule_evidence_passed"
         if all(checks.values())
@@ -452,13 +740,15 @@ def build_energy_measurement_readiness_report(
         "valid_measurement_count": len(valid_rows),
         "real_joule_measurements_present": has_real_measurements,
         "min_ann_to_sara_ratio": float(min_ann_to_sara_ratio),
+        "max_success_rate_delta": float(max_success_rate_delta),
+        "min_paired_replicates_per_task": int(min_paired_replicates_per_task),
         "checks": checks,
         "row_errors": row_errors,
         "metrics": aggregate,
         "measurement_plan": measurement_plan,
         "measurement_session_plan": measurement_session_plan,
         "measurement_protocol": {
-            "required_fields": sorted(REQUIRED_FIELDS),
+            "required_fields": sorted(REQUIRED_FIELDS | FAIRNESS_FIELDS),
             "systems": ["sara", "ann"],
             "units": {"average_watts": "W", "duration_seconds": "s", "joules": "J", "success_count": "count"},
             "recommended_path": str(measurement_path),
@@ -467,6 +757,9 @@ def build_energy_measurement_readiness_report(
                 "average_watts_x_duration_seconds",
             ],
             "pairing_rule": "Rows must include matching SARA and ANN measurements for each task before real joule evidence is accepted.",
+            "fair_pair_rule": "pair_id and replicate_index identify one SARA/ANN pair; all configured environment, task, criterion, boundary, and tool fields must match.",
+            "aggregation_rule": "Task claims use the median paired joule_per_success ratio and report median absolute deviation.",
+            "quality_rule": "Energy advantage is credited only when paired success-rate delta is within the configured tolerance.",
         },
     }
 
@@ -492,6 +785,8 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
         f"- paired_task_count: {_safe_int(metrics.get('paired_task_count'))}",
         f"- min_paired_task_ann_to_sara_ratio: {_safe_float(metrics.get('min_paired_task_ann_to_sara_ratio')):.3f}",
         f"- unpaired_task_count: {_safe_int(metrics.get('unpaired_task_count'))}",
+        f"- valid_pair_count: {_safe_int(metrics.get('valid_pair_count'))}",
+        f"- invalid_pair_count: {_safe_int(metrics.get('invalid_pair_count'))}",
         f"- measurement_pending_pair_count: {_safe_int(plan.get('pending_pair_count'))}",
         f"- measurement_weak_pair_count: {_safe_int(plan.get('weak_pair_count'))}",
         f"- measurement_session_planned_run_count: {_safe_int(session_plan.get('planned_run_count'))}",
@@ -571,6 +866,7 @@ def format_measurement_session_plan_summary(session_plan: Mapping[str, Any]) -> 
         f"- min_ann_to_sara_ratio: {_safe_float(session_plan.get('min_ann_to_sara_ratio')):.3f}",
         f"- planned_run_count: {_safe_int(session_plan.get('planned_run_count'))}",
         f"- required_rows_per_task: {_safe_int(pairing_matrix.get('required_rows_per_task'))}",
+        f"- required_paired_replicates_per_task: {_safe_int(pairing_matrix.get('required_paired_replicates_per_task'))}",
     ]
     systems = pairing_matrix.get("systems", []) if isinstance(pairing_matrix.get("systems"), list) else []
     tasks = pairing_matrix.get("tasks", []) if isinstance(pairing_matrix.get("tasks"), list) else []
@@ -618,6 +914,24 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--duration-seconds", type=float, default=None)
     parser.add_argument("--average-watts", type=float, default=None)
     parser.add_argument("--notes", default="")
+    parser.add_argument("--protocol-version", default=MEASUREMENT_PROTOCOL_VERSION)
+    parser.add_argument("--pair-id", default="")
+    parser.add_argument("--replicate-index", type=int, default=1)
+    parser.add_argument("--environment-fingerprint", default="")
+    parser.add_argument("--task-fixture-hash", default="")
+    parser.add_argument("--success-criterion-id", default="")
+    parser.add_argument("--measurement-boundary", default="")
+    parser.add_argument("--measurement-tool", default="")
+    parser.add_argument("--cpu-model", default="")
+    parser.add_argument("--thread-count", type=int, default=1)
+    parser.add_argument("--process-affinity", default="")
+    parser.add_argument("--power-mode", default="")
+    parser.add_argument("--warmup-count", type=int, default=0)
+    parser.add_argument("--measured-repetitions", type=int, default=1)
+    parser.add_argument("--trial-count", type=int, default=None)
+    parser.add_argument("--run-order", type=int, default=1)
+    parser.add_argument("--max-success-rate-delta", type=float, default=0.0)
+    parser.add_argument("--min-paired-replicates-per-task", type=int, default=3)
     args = parser.parse_args(argv)
 
     if args.append_measurement:
@@ -631,6 +945,22 @@ def main(argv: List[str] | None = None) -> int:
             duration_seconds=args.duration_seconds,
             average_watts=args.average_watts,
             notes=args.notes,
+            protocol_version=args.protocol_version,
+            pair_id=args.pair_id,
+            replicate_index=args.replicate_index,
+            environment_fingerprint=args.environment_fingerprint,
+            task_fixture_hash=args.task_fixture_hash,
+            success_criterion_id=args.success_criterion_id,
+            measurement_boundary=args.measurement_boundary,
+            measurement_tool=args.measurement_tool,
+            cpu_model=args.cpu_model,
+            thread_count=args.thread_count,
+            process_affinity=args.process_affinity,
+            power_mode=args.power_mode,
+            warmup_count=args.warmup_count,
+            measured_repetitions=args.measured_repetitions,
+            trial_count=args.trial_count,
+            run_order=args.run_order,
         )
         append_measurement(args.measurement_path, row)
 
@@ -640,6 +970,8 @@ def main(argv: List[str] | None = None) -> int:
         min_ann_to_sara_ratio=args.min_ann_to_sara_ratio,
         measurement_path=args.measurement_path,
         session_id=args.session_id,
+        max_success_rate_delta=args.max_success_rate_delta,
+        min_paired_replicates_per_task=args.min_paired_replicates_per_task,
     )
     report_path = ensure_parent_directory(args.report_path)
     summary_path = ensure_parent_directory(args.summary_path)

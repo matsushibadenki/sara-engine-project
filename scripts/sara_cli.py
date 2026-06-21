@@ -21,21 +21,69 @@ sys.path.insert(0, scripts_dir)
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
-from sara_engine.utils.project_paths import ensure_parent_directory, model_path, workspace_path
-from data.collect_math import generate_math_corpus, default_math_database
-from data.collect_docs import process_document
-from eval.test_math_chat import run_math_chat
-from eval.test_vision_inference import run_vision_inference
-from scripts.utils.build_replay_data import build_replay_data, default_replay_output_path
-from scripts.utils.memory_health import default_memory_health_report_path, inspect_inference_memory
-from scripts.utils.upgrade_memory import (
-    default_upgrade_report_path,
-    default_upgraded_model_path,
-    upgrade_inference_memory,
+from sara_engine.utils.project_paths import (
+    ensure_parent_directory,
+    interim_data_path,
+    model_path,
+    processed_data_path,
+    workspace_path,
 )
-from scripts.utils.fix_memory import default_fix_report_path, default_fixed_model_path, fix_inference_memory
-from scripts.utils.prune_memory import prune_model_memory
 from scripts.utils.manage_db import SaraCorpusDB
+
+
+def default_replay_output_path() -> str:
+    return workspace_path("replay", "chat_replay_tokens.jsonl")
+
+
+def default_memory_health_report_path() -> str:
+    return workspace_path("reports", "memory_health_report.json")
+
+
+def default_upgraded_model_path() -> str:
+    return model_path("upgraded", "distilled_sara_llm_upgraded.msgpack")
+
+
+def default_upgrade_report_path() -> str:
+    return workspace_path("reports", "memory_upgrade_report.json")
+
+
+def default_fixed_model_path() -> str:
+    return model_path("repaired", "memory_fixed.msgpack")
+
+
+def default_fix_report_path() -> str:
+    return workspace_path("reports", "memory_fix_report.json")
+
+
+def build_replay_data(*args, **kwargs):
+    from scripts.utils.build_replay_data import build_replay_data as implementation
+
+    return implementation(*args, **kwargs)
+
+
+def inspect_inference_memory(*args, **kwargs):
+    from scripts.utils.memory_health import inspect_inference_memory as implementation
+
+    return implementation(*args, **kwargs)
+
+
+def upgrade_inference_memory(*args, **kwargs):
+    from scripts.utils.upgrade_memory import upgrade_inference_memory as implementation
+
+    return implementation(*args, **kwargs)
+
+
+def fix_inference_memory(*args, **kwargs):
+    from scripts.utils.fix_memory import fix_inference_memory as implementation
+
+    return implementation(*args, **kwargs)
+
+
+def prune_model_memory(*args, **kwargs):
+    from scripts.utils.prune_memory import prune_model_memory as implementation
+
+    return implementation(*args, **kwargs)
+
 
 def main():
     parser = argparse.ArgumentParser(description="SARA Engine 統合管理CLI - Data & Learning Pipeline")
@@ -136,6 +184,172 @@ def main():
     parser_build_replay.add_argument("--output", default=default_replay_output_path())
     parser_build_replay.add_argument("--tokenizer", default="google/gemma-2-2b")
 
+    parser_autobot_dataset = subparsers.add_parser(
+        "build-autobot-dataset",
+        help="Build source-aware autobot learning materials and curriculum manifests.",
+    )
+    parser_autobot_dataset.add_argument(
+        "--records-path",
+        default=os.path.join("data", "processed", "autobot", "multimodal_records.jsonl"),
+    )
+    parser_autobot_dataset.add_argument(
+        "--candidate-path",
+        default=os.path.join("data", "interim", "autobot", "candidate_learning_materials.jsonl"),
+    )
+    parser_autobot_dataset.add_argument(
+        "--rejected-path",
+        default=os.path.join("data", "interim", "autobot", "rejected_learning_materials.jsonl"),
+    )
+    parser_autobot_dataset.add_argument(
+        "--accepted-path",
+        default=os.path.join("data", "processed", "autobot", "learning_materials.jsonl"),
+    )
+    parser_autobot_dataset.add_argument(
+        "--curriculum-path",
+        default=os.path.join("data", "processed", "autobot", "curriculum_manifest.jsonl"),
+    )
+    parser_autobot_dataset.add_argument(
+        "--report-path",
+        default=workspace_path("autobot", "dataset_builder_report.json"),
+    )
+    parser_autobot_dataset.add_argument(
+        "--summary-path",
+        default=workspace_path("autobot", "dataset_builder_summary.txt"),
+    )
+    parser_autobot_dataset.add_argument(
+        "--fixture-request-plan-path",
+        default=workspace_path("autobot", "fixture_material_request_plan.json"),
+    )
+    parser_autobot_dataset.add_argument(
+        "--collection-targets-path",
+        default=workspace_path("autobot", "dataset_builder_collection_targets.json"),
+    )
+    parser_autobot_dataset.add_argument("--evaluation-gap", action="append", default=None)
+
+    parser_autobot_gap_materials = subparsers.add_parser(
+        "build-autobot-gap-materials",
+        help="Build source-backed gap materials from autobot collection targets.",
+    )
+    parser_autobot_gap_materials.add_argument(
+        "--accepted-path",
+        default=os.path.join("data", "processed", "autobot", "learning_materials.jsonl"),
+    )
+    parser_autobot_gap_materials.add_argument(
+        "--targets-path",
+        default=workspace_path("autobot", "dataset_builder_collection_targets.json"),
+    )
+    parser_autobot_gap_materials.add_argument(
+        "--output-path",
+        default=os.path.join("data", "processed", "autobot", "gap_materials.jsonl"),
+    )
+    parser_autobot_gap_materials.add_argument(
+        "--report-path",
+        default=workspace_path("autobot", "gap_materials_builder_report.json"),
+    )
+    parser_autobot_gap_materials.add_argument(
+        "--summary-path",
+        default=workspace_path("autobot", "gap_materials_builder_summary.txt"),
+    )
+    parser_autobot_gap_enqueue = subparsers.add_parser(
+        "enqueue-autobot-gap-curriculum",
+        help="Enqueue gap curriculum materials into the autobot training queue.",
+    )
+    parser_autobot_gap_enqueue.add_argument(
+        "--curriculum-path",
+        default=os.path.join("data", "processed", "autobot", "gap_curriculum_manifest.jsonl"),
+    )
+    parser_autobot_gap_enqueue.add_argument(
+        "--queue-path",
+        default=workspace_path("autobot", "train_queue.json"),
+    )
+    parser_autobot_gap_enqueue.add_argument(
+        "--report-path",
+        default=workspace_path("autobot", "gap_curriculum_enqueue_report.json"),
+    )
+    parser_autobot_gap_enqueue.add_argument(
+        "--summary-path",
+        default=workspace_path("autobot", "gap_curriculum_enqueue_summary.txt"),
+    )
+    parser_autobot_gap_loop = subparsers.add_parser(
+        "run-autobot-gap-loop",
+        help="Run dataset build, gap-material generation, and gap enqueue as one managed loop.",
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--records-path",
+        default=os.path.join("data", "processed", "autobot", "multimodal_records.jsonl"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--candidate-path",
+        default=os.path.join("data", "interim", "autobot", "candidate_learning_materials.jsonl"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--rejected-path",
+        default=os.path.join("data", "interim", "autobot", "rejected_learning_materials.jsonl"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--accepted-path",
+        default=os.path.join("data", "processed", "autobot", "learning_materials.jsonl"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--curriculum-path",
+        default=os.path.join("data", "processed", "autobot", "curriculum_manifest.jsonl"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--fixture-request-plan-path",
+        default=workspace_path("autobot", "fixture_material_request_plan.json"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--collection-targets-path",
+        default=workspace_path("autobot", "dataset_builder_collection_targets.json"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--gap-output-path",
+        default=os.path.join("data", "processed", "autobot", "gap_materials.jsonl"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--gap-curriculum-path",
+        default=os.path.join("data", "processed", "autobot", "gap_curriculum_manifest.jsonl"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--queue-path",
+        default=workspace_path("autobot", "train_queue.json"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--report-path",
+        default=workspace_path("autobot", "gap_loop_report.json"),
+    )
+    parser_autobot_gap_loop.add_argument(
+        "--summary-path",
+        default=workspace_path("autobot", "gap_loop_summary.txt"),
+    )
+    parser_autobot_gap_loop.add_argument("--evaluation-gap", action="append", default=None)
+
+    parser_autobot_gap_loop_readiness = subparsers.add_parser(
+        "eval-autobot-gap-loop-readiness",
+        help="Evaluate whether the managed autobot gap loop is producing usable repair curriculum.",
+    )
+    parser_autobot_gap_loop_readiness.add_argument(
+        "--loop-report-path",
+        default=workspace_path("autobot", "gap_loop_report.json"),
+    )
+    parser_autobot_gap_loop_readiness.add_argument(
+        "--collection-targets-path",
+        default=workspace_path("autobot", "dataset_builder_collection_targets.json"),
+    )
+    parser_autobot_gap_loop_readiness.add_argument("--dataset-report-path", default="")
+    parser_autobot_gap_loop_readiness.add_argument("--gap-report-path", default="")
+    parser_autobot_gap_loop_readiness.add_argument("--enqueue-report-path", default="")
+    parser_autobot_gap_loop_readiness.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "autobot_gap_loop_readiness.json"),
+    )
+    parser_autobot_gap_loop_readiness.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "autobot_gap_loop_readiness_summary.txt"),
+    )
+    parser_autobot_gap_loop_readiness.add_argument("--min-accepted-count", type=int, default=4)
+    parser_autobot_gap_loop_readiness.add_argument("--min-gap-build-coverage", type=float, default=0.5)
+
     parser_eval_external = subparsers.add_parser(
         "eval-external-validity",
         help="実データでSARA疎イベント検索とANN風密スキャン近似を比較します。",
@@ -229,6 +443,405 @@ def main():
         default=workspace_path("evaluation", "sparse_diffusion_block_readiness_summary.txt"),
     )
 
+    parser_rust_readiness = subparsers.add_parser(
+        "eval-rust-core-readiness",
+        help="Evaluate Rust sparse-runtime source readiness and optional Cargo test evidence.",
+    )
+    parser_rust_readiness.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "rust_core_readiness.json"),
+    )
+    parser_rust_readiness.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "rust_core_readiness_summary.txt"),
+    )
+    parser_rust_readiness.add_argument("--run-cargo-test", action="store_true")
+
+    parser_rust_benchmark = subparsers.add_parser(
+        "eval-rust-core-benchmark",
+        help="Benchmark Rust sparse-runtime exports against Python reference paths.",
+    )
+    parser_rust_benchmark.add_argument("--iterations", type=int, default=50)
+    parser_rust_benchmark.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "rust_core_benchmark.json"),
+    )
+    parser_rust_benchmark.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "rust_core_benchmark_summary.txt"),
+    )
+
+    parser_research_benchmark = subparsers.add_parser(
+        "eval-research-benchmark-suite",
+        help="Run the compact reproducible research benchmark suite.",
+    )
+    parser_research_benchmark.add_argument("--dry-run", action="store_true")
+    parser_research_benchmark.add_argument("--rust-iterations", type=int, default=50)
+    parser_research_benchmark.add_argument(
+        "--manifest-path",
+        default=workspace_path("evaluation", "research_benchmark_manifest.json"),
+    )
+    parser_research_benchmark.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "research_benchmark_summary.txt"),
+    )
+
+    parser_research_fixture = subparsers.add_parser(
+        "eval-research-fixture-readiness",
+        help="Validate repository-safe research benchmark fixtures.",
+    )
+    parser_research_fixture.add_argument(
+        "--fixture-path",
+        default=os.path.join("data", "processed", "benchmark_fixtures", "external_validity_cases.jsonl"),
+    )
+    parser_research_fixture.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "research_fixture_readiness.json"),
+    )
+    parser_research_fixture.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "research_fixture_readiness_summary.txt"),
+    )
+
+    parser_neuromorphic_matrix = subparsers.add_parser(
+        "eval-neuromorphic-capability-matrix",
+        help="Generate a managed neuromorphic backend capability matrix.",
+    )
+    parser_neuromorphic_matrix.add_argument("--profile", action="append", default=None)
+    parser_neuromorphic_matrix.add_argument("--active-row-count", type=int, default=8)
+    parser_neuromorphic_matrix.add_argument("--context-length", type=int, default=16)
+    parser_neuromorphic_matrix.add_argument("--total-readout-size", type=int, default=64)
+    parser_neuromorphic_matrix.add_argument("--quantization-bits", type=int, default=3)
+    parser_neuromorphic_matrix.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "neuromorphic_capability_matrix.json"),
+    )
+    parser_neuromorphic_matrix.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "neuromorphic_capability_matrix_summary.txt"),
+    )
+
+    parser_own_latent = subparsers.add_parser(
+        "eval-own-latent-learning",
+        help="Run the observed-only sparse own-latent learning benchmark.",
+    )
+    parser_own_latent.add_argument(
+        "--fixture-path",
+        default=os.path.join("data", "processed", "benchmark_fixtures", "own_latent_rhm_cases.jsonl"),
+    )
+    parser_own_latent.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "own_latent_learning_benchmark.json"),
+    )
+    parser_own_latent.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "own_latent_learning_benchmark_summary.txt"),
+    )
+    parser_own_latent.add_argument(
+        "--history-path",
+        default=workspace_path("evaluation", "own_latent_learning_history.json"),
+    )
+    parser_own_latent.add_argument("--train-sizes", default="4,8,16,32")
+    parser_own_latent.add_argument("--no-history-update", action="store_true")
+
+    parser_own_latent_manifest = subparsers.add_parser(
+        "build-own-latent-manifest",
+        help="Build source-backed sparse own-latent manifests from autobot materials.",
+    )
+    parser_own_latent_manifest.add_argument(
+        "--materials-path",
+        default=os.path.join("data", "processed", "autobot", "learning_materials.jsonl"),
+    )
+    parser_own_latent_manifest.add_argument(
+        "--manifest-path",
+        default=os.path.join("data", "processed", "autobot", "latent_manifest.jsonl"),
+    )
+    parser_own_latent_manifest.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "own_latent_manifest_builder.json"),
+    )
+    parser_own_latent_manifest.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "own_latent_manifest_builder_summary.txt"),
+    )
+    parser_own_latent_manifest.add_argument("--width", type=int, default=4096)
+    parser_own_latent_manifest.add_argument("--max-events", type=int, default=32)
+    parser_own_latent_manifest.add_argument("--max-terms", type=int, default=10)
+
+    parser_dendritic_gate = subparsers.add_parser(
+        "eval-dendritic-feedback-gate",
+        help="Run the observed-only sparse dendritic feedback gate benchmark.",
+    )
+    parser_dendritic_gate.add_argument("--event-budget", type=int, default=64)
+    parser_dendritic_gate.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "dendritic_feedback_gate_benchmark.json"),
+    )
+    parser_dendritic_gate.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "dendritic_feedback_gate_benchmark_summary.txt"),
+    )
+
+    parser_sparse_plan_trace = subparsers.add_parser(
+        "eval-sparse-plan-trace-verifier",
+        help="Verify sparse STRIPS-like plan traces and emit repair materials.",
+    )
+    parser_sparse_plan_trace.add_argument(
+        "--fixture-path",
+        default=os.path.join("data", "processed", "benchmark_fixtures", "sparse_plan_trace_cases.jsonl"),
+    )
+    parser_sparse_plan_trace.add_argument(
+        "--repair-path",
+        default=os.path.join("data", "processed", "autobot", "plan_trace_repair_materials.jsonl"),
+    )
+    parser_sparse_plan_trace.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "sparse_plan_trace_verifier.json"),
+    )
+    parser_sparse_plan_trace.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "sparse_plan_trace_verifier_summary.txt"),
+    )
+
+    parser_synesthetic_binding = subparsers.add_parser(
+        "eval-synesthetic-multimodal-binding",
+        help="Run the observed-only sparse equal-modality binding benchmark.",
+    )
+    parser_synesthetic_binding.add_argument(
+        "--fixture-path",
+        default=os.path.join(
+            "data", "processed", "benchmark_fixtures", "synesthetic_multimodal_cases.jsonl"
+        ),
+    )
+    parser_synesthetic_binding.add_argument(
+        "--cross-link-path",
+        default=os.path.join("data", "interim", "autobot", "synesthetic_cross_links.jsonl"),
+    )
+    parser_synesthetic_binding.add_argument(
+        "--binding-manifest-path",
+        default=os.path.join("data", "processed", "autobot", "synesthetic_binding_manifest.jsonl"),
+    )
+    parser_synesthetic_binding.add_argument(
+        "--latent-manifest-path",
+        default=os.path.join("data", "processed", "autobot", "latent_manifest.jsonl"),
+    )
+    parser_synesthetic_binding.add_argument(
+        "--trace-path",
+        default=workspace_path("evaluation", "synesthetic_multimodal_binding_traces.jsonl"),
+    )
+    parser_synesthetic_binding.add_argument(
+        "--plug-swap-path",
+        default=workspace_path("evaluation", "sparse_cortical_column_plug_swap_report.json"),
+    )
+    parser_synesthetic_binding.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "synesthetic_multimodal_binding_benchmark.json"),
+    )
+    parser_synesthetic_binding.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation", "synesthetic_multimodal_binding_benchmark_summary.txt"
+        ),
+    )
+    parser_synesthetic_binding.add_argument("--window-ms", type=float, default=32.0)
+
+    parser_reasoning_prior = subparsers.add_parser(
+        "eval-sparse-reasoning-prior",
+        help="Run the observed-only sparse future-state reasoning-prior benchmark.",
+    )
+    parser_reasoning_prior.add_argument(
+        "--fixture-path",
+        default=os.path.join(
+            "data", "processed", "benchmark_fixtures", "sparse_reasoning_prior_cases.jsonl"
+        ),
+    )
+    parser_reasoning_prior.add_argument(
+        "--trace-path",
+        default=workspace_path("evaluation", "sparse_reasoning_prior_traces.jsonl"),
+    )
+    parser_reasoning_prior.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "sparse_reasoning_prior_benchmark.json"),
+    )
+    parser_reasoning_prior.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "sparse_reasoning_prior_benchmark_summary.txt"),
+    )
+
+    parser_resonance_credit = subparsers.add_parser(
+        "eval-resonance-credit",
+        help="Run the observed-only SARA sparse resonance-credit benchmark.",
+    )
+    parser_resonance_credit.add_argument(
+        "--fixture-path",
+        default=os.path.join(
+            "data", "processed", "benchmark_fixtures", "resonance_credit_cases.jsonl"
+        ),
+    )
+    parser_resonance_credit.add_argument(
+        "--trace-path",
+        default=workspace_path("evaluation", "resonance_credit_traces.jsonl"),
+    )
+    parser_resonance_credit.add_argument(
+        "--state-path",
+        default=workspace_path("evaluation", "resonance_credit_state.json"),
+    )
+    parser_resonance_credit.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "resonance_credit_benchmark.json"),
+    )
+    parser_resonance_credit.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "resonance_credit_benchmark_summary.txt"),
+    )
+
+    parser_resonance_integration = subparsers.add_parser(
+        "eval-resonance-credit-integration",
+        help="Bridge managed SARA evidence reports into observed-only resonance credit.",
+    )
+    parser_resonance_integration.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "resonance_credit_integration_benchmark.json"),
+    )
+    parser_resonance_integration.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation", "resonance_credit_integration_benchmark_summary.txt"
+        ),
+    )
+    parser_resonance_integration.add_argument(
+        "--trace-path",
+        default=workspace_path("evaluation", "resonance_credit_integration_traces.jsonl"),
+    )
+
+    parser_event_state_cache = subparsers.add_parser(
+        "eval-event-state-cache",
+        help="Run the observed-only verified hierarchical event-state cache benchmark.",
+    )
+    parser_event_state_cache.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "event_state_cache_cases.jsonl",
+        ),
+    )
+    parser_event_state_cache.add_argument(
+        "--candidate-path",
+        default=interim_data_path(
+            "event_state_cache",
+            "candidates.jsonl",
+        ),
+    )
+    parser_event_state_cache.add_argument(
+        "--manifest-path",
+        default=processed_data_path(
+            "event_state_cache",
+            "manifest.jsonl",
+        ),
+    )
+    parser_event_state_cache.add_argument(
+        "--trace-path",
+        default=workspace_path(
+            "evaluation",
+            "event_state_cache_traces.jsonl",
+        ),
+    )
+    parser_event_state_cache.add_argument(
+        "--state-path",
+        default=workspace_path(
+            "evaluation",
+            "event_state_cache_state.json",
+        ),
+    )
+    parser_event_state_cache.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation",
+            "event_state_cache_benchmark.json",
+        ),
+    )
+    parser_event_state_cache.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation",
+            "event_state_cache_benchmark_summary.txt",
+        ),
+    )
+
+    parser_event_state_cache_integration = subparsers.add_parser(
+        "eval-event-state-cache-integration",
+        help="Evaluate source-aware event-state caching with managed resonance evidence.",
+    )
+    parser_event_state_cache_integration.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "latent_manifest.jsonl"),
+    )
+    parser_event_state_cache_integration.add_argument(
+        "--trace-path",
+        default=workspace_path(
+            "evaluation",
+            "event_state_cache_integration_traces.jsonl",
+        ),
+    )
+    parser_event_state_cache_integration.add_argument(
+        "--round-trip-state-path",
+        default=workspace_path(
+            "evaluation",
+            "event_state_cache_round_trip_state.json",
+        ),
+    )
+    parser_event_state_cache_integration.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation",
+            "event_state_cache_integration_benchmark.json",
+        ),
+    )
+    parser_event_state_cache_integration.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation",
+            "event_state_cache_integration_benchmark_summary.txt",
+        ),
+    )
+
+    parser_event_memory_ingest = subparsers.add_parser(
+        "eval-event-memory-ingest-pipeline",
+        help="Run the bounded Event Memory ingest loop smoke benchmark.",
+    )
+    parser_event_memory_ingest.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation",
+            "event_memory_ingest_pipeline.json",
+        ),
+    )
+    parser_event_memory_ingest.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation",
+            "event_memory_ingest_pipeline_summary.txt",
+        ),
+    )
+
+    parser_operator_llm = subparsers.add_parser(
+        "eval-operator-llm-assistant-readiness",
+        help="Evaluate the optional local LLM operator-assistant proposal gate.",
+    )
+    parser_operator_llm.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "operator_llm_assistant_readiness.json"),
+    )
+    parser_operator_llm.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "operator_llm_assistant_readiness_summary.txt"),
+    )
+    parser_operator_llm.add_argument(
+        "--enabled",
+        action="store_true",
+        help="Model the assistant as enabled. Readiness should fail because default must stay disabled.",
+    )
+
     parser_record_energy = subparsers.add_parser(
         "record-energy-measurement",
         help="SARA/ANNの実測joule-per-success用JSONLをdata/rawへ追記します。",
@@ -245,6 +858,31 @@ def main():
     parser_record_energy.add_argument("--session-id", default="ann-efficiency-real-joule")
     parser_record_energy.add_argument("--notes", default="")
     parser_record_energy.add_argument(
+        "--protocol-version",
+        default="sara-energy-fair-comparison-v2",
+    )
+    parser_record_energy.add_argument("--pair-id", required=True)
+    parser_record_energy.add_argument("--replicate-index", type=int, required=True)
+    parser_record_energy.add_argument("--environment-fingerprint", default="")
+    parser_record_energy.add_argument("--task-fixture-hash", required=True)
+    parser_record_energy.add_argument("--success-criterion-id", required=True)
+    parser_record_energy.add_argument("--measurement-boundary", required=True)
+    parser_record_energy.add_argument("--measurement-tool", required=True)
+    parser_record_energy.add_argument("--cpu-model", required=True)
+    parser_record_energy.add_argument("--thread-count", type=int, required=True)
+    parser_record_energy.add_argument("--process-affinity", required=True)
+    parser_record_energy.add_argument("--power-mode", required=True)
+    parser_record_energy.add_argument("--warmup-count", type=int, required=True)
+    parser_record_energy.add_argument("--measured-repetitions", type=int, required=True)
+    parser_record_energy.add_argument("--trial-count", type=int, required=True)
+    parser_record_energy.add_argument("--run-order", type=int, choices=[1, 2], required=True)
+    parser_record_energy.add_argument("--max-success-rate-delta", type=float, default=0.0)
+    parser_record_energy.add_argument(
+        "--min-paired-replicates-per-task",
+        type=int,
+        default=3,
+    )
+    parser_record_energy.add_argument(
         "--report-path",
         default=workspace_path("evaluation", "energy_measurement_readiness.json"),
     )
@@ -260,6 +898,40 @@ def main():
         "--session-plan-summary-path",
         default=workspace_path("evaluation", "energy_measurement_session_plan.txt"),
     )
+
+    parser_physical_pair = subparsers.add_parser(
+        "run-physical-energy-pair",
+        help="Run or plan one fair paired SARA/ANN physical-energy workload.",
+    )
+    parser_physical_pair.add_argument("--pair-id", required=True)
+    parser_physical_pair.add_argument("--replicate-index", type=int, required=True)
+    parser_physical_pair.add_argument("--corpus-path", default="data/processed/corpus.txt")
+    parser_physical_pair.add_argument("--max-docs", type=int, default=256)
+    parser_physical_pair.add_argument("--max-cases", type=int, default=24)
+    parser_physical_pair.add_argument("--repetitions", type=int, default=10000)
+    parser_physical_pair.add_argument("--warmup-count", type=int, default=2)
+    parser_physical_pair.add_argument("--thread-count", type=int, default=1)
+    parser_physical_pair.add_argument("--process-affinity", default="unbound-single-process")
+    parser_physical_pair.add_argument("--power-mode", default="ac-power-default")
+    parser_physical_pair.add_argument(
+        "--measurement-tool",
+        default="external-meter-manual-v1",
+    )
+    parser_physical_pair.add_argument("--sara-joules", type=float, default=0.0)
+    parser_physical_pair.add_argument("--ann-joules", type=float, default=0.0)
+    parser_physical_pair.add_argument(
+        "--measurement-path",
+        default="data/raw/energy_measurements.jsonl",
+    )
+    parser_physical_pair.add_argument(
+        "--manifest-path",
+        default=workspace_path("evaluation", "physical_energy_pair_manifest.json"),
+    )
+    parser_physical_pair.add_argument(
+        "--trace-path",
+        default=workspace_path("evaluation", "physical_energy_pair_trace.jsonl"),
+    )
+    parser_physical_pair.add_argument("--dry-run", action="store_true")
 
     parser_clean = subparsers.add_parser("clean", help="中間データを削除して環境をリセットします。")
 
@@ -568,6 +1240,128 @@ def main():
         print("=== SARA Replay Data Report ===")
         print(json.dumps(report, indent=2, ensure_ascii=False))
 
+    elif args.command == "build-autobot-dataset":
+        command = [
+            sys.executable,
+            "bot/dataset_builder.py",
+            "--records-path",
+            str(args.records_path),
+            "--candidate-path",
+            str(args.candidate_path),
+            "--rejected-path",
+            str(args.rejected_path),
+            "--accepted-path",
+            str(args.accepted_path),
+            "--curriculum-path",
+            str(args.curriculum_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+            "--fixture-request-plan-path",
+            str(args.fixture_request_plan_path),
+            "--collection-targets-path",
+            str(args.collection_targets_path),
+        ]
+        for gap in args.evaluation_gap or []:
+            command.extend(["--evaluation-gap", str(gap)])
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-autobot-gap-materials":
+        command = [
+            sys.executable,
+            "bot/gap_materials_builder.py",
+            "--accepted-path",
+            str(args.accepted_path),
+            "--targets-path",
+            str(args.targets_path),
+            "--output-path",
+            str(args.output_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "enqueue-autobot-gap-curriculum":
+        command = [
+            sys.executable,
+            "bot/enqueue_curriculum.py",
+            "--curriculum-path",
+            str(args.curriculum_path),
+            "--queue-path",
+            str(args.queue_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "run-autobot-gap-loop":
+        command = [
+            sys.executable,
+            "bot/run_gap_loop.py",
+            "--records-path",
+            str(args.records_path),
+            "--candidate-path",
+            str(args.candidate_path),
+            "--rejected-path",
+            str(args.rejected_path),
+            "--accepted-path",
+            str(args.accepted_path),
+            "--curriculum-path",
+            str(args.curriculum_path),
+            "--fixture-request-plan-path",
+            str(args.fixture_request_plan_path),
+            "--collection-targets-path",
+            str(args.collection_targets_path),
+            "--gap-output-path",
+            str(args.gap_output_path),
+            "--gap-curriculum-path",
+            str(args.gap_curriculum_path),
+            "--queue-path",
+            str(args.queue_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        for gap in args.evaluation_gap or []:
+            command.extend(["--evaluation-gap", str(gap)])
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-autobot-gap-loop-readiness":
+        command = [
+            sys.executable,
+            "scripts/eval/autobot_gap_loop_readiness.py",
+            "--loop-report-path",
+            str(args.loop_report_path),
+            "--collection-targets-path",
+            str(args.collection_targets_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+            "--min-accepted-count",
+            str(args.min_accepted_count),
+            "--min-gap-build-coverage",
+            str(args.min_gap_build_coverage),
+        ]
+        if args.dataset_report_path:
+            command.extend(["--dataset-report-path", str(args.dataset_report_path)])
+        if args.gap_report_path:
+            command.extend(["--gap-report-path", str(args.gap_report_path)])
+        if args.enqueue_report_path:
+            command.extend(["--enqueue-report-path", str(args.enqueue_report_path)])
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
     elif args.command == "eval-external-validity":
         command = [
             sys.executable,
@@ -652,6 +1446,294 @@ def main():
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
+    elif args.command == "eval-rust-core-readiness":
+        command = [
+            sys.executable,
+            "scripts/eval/rust_core_readiness.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        if args.run_cargo_test:
+            command.append("--run-cargo-test")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-rust-core-benchmark":
+        command = [
+            sys.executable,
+            "scripts/eval/rust_core_benchmark.py",
+            "--iterations",
+            str(args.iterations),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-research-benchmark-suite":
+        command = [
+            sys.executable,
+            "scripts/eval/research_benchmark_suite.py",
+            "--rust-iterations",
+            str(args.rust_iterations),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        if args.dry_run:
+            command.append("--dry-run")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-research-fixture-readiness":
+        command = [
+            sys.executable,
+            "scripts/eval/research_fixture_readiness.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-neuromorphic-capability-matrix":
+        command = [
+            sys.executable,
+            "scripts/eval/neuromorphic_capability_matrix.py",
+            "--active-row-count",
+            str(args.active_row_count),
+            "--context-length",
+            str(args.context_length),
+            "--total-readout-size",
+            str(args.total_readout_size),
+            "--quantization-bits",
+            str(args.quantization_bits),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        for profile in args.profile or []:
+            command.extend(["--profile", str(profile)])
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-own-latent-learning":
+        command = [
+            sys.executable,
+            "scripts/eval/own_latent_learning_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+            "--history-path",
+            str(args.history_path),
+            "--train-sizes",
+            str(args.train_sizes),
+        ]
+        if args.no_history_update:
+            command.append("--no-history-update")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-own-latent-manifest":
+        command = [
+            sys.executable,
+            "scripts/eval/own_latent_manifest_builder.py",
+            "--materials-path",
+            str(args.materials_path),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+            "--width",
+            str(args.width),
+            "--max-events",
+            str(args.max_events),
+            "--max-terms",
+            str(args.max_terms),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-dendritic-feedback-gate":
+        command = [
+            sys.executable,
+            "scripts/eval/dendritic_feedback_gate_benchmark.py",
+            "--event-budget",
+            str(args.event_budget),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-sparse-plan-trace-verifier":
+        command = [
+            sys.executable,
+            "scripts/eval/sparse_plan_trace_verifier.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--repair-path",
+            str(args.repair_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-synesthetic-multimodal-binding":
+        command = [
+            sys.executable,
+            "scripts/eval/synesthetic_multimodal_binding_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--cross-link-path",
+            str(args.cross_link_path),
+            "--binding-manifest-path",
+            str(args.binding_manifest_path),
+            "--latent-manifest-path",
+            str(args.latent_manifest_path),
+            "--trace-path",
+            str(args.trace_path),
+            "--plug-swap-path",
+            str(args.plug_swap_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+            "--window-ms",
+            str(args.window_ms),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-sparse-reasoning-prior":
+        command = [
+            sys.executable,
+            "scripts/eval/sparse_reasoning_prior_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--trace-path",
+            str(args.trace_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-resonance-credit":
+        command = [
+            sys.executable,
+            "scripts/eval/resonance_credit_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--trace-path",
+            str(args.trace_path),
+            "--state-path",
+            str(args.state_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-resonance-credit-integration":
+        command = [
+            sys.executable,
+            "scripts/eval/resonance_credit_integration_benchmark.py",
+            "--trace-path",
+            str(args.trace_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-event-state-cache":
+        command = [
+            sys.executable,
+            "scripts/eval/event_state_cache_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--candidate-path",
+            str(args.candidate_path),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--trace-path",
+            str(args.trace_path),
+            "--state-path",
+            str(args.state_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-event-state-cache-integration":
+        command = [
+            sys.executable,
+            "scripts/eval/event_state_cache_integration_benchmark.py",
+            "--manifest-path",
+            str(args.manifest_path),
+            "--trace-path",
+            str(args.trace_path),
+            "--round-trip-state-path",
+            str(args.round_trip_state_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-event-memory-ingest-pipeline":
+        command = [
+            sys.executable,
+            "scripts/eval/event_memory_ingest_pipeline.py",
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-operator-llm-assistant-readiness":
+        command = [
+            sys.executable,
+            "scripts/eval/operator_llm_assistant_readiness.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        if args.enabled:
+            command.append("--enabled")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
     elif args.command == "record-energy-measurement":
         command = [
             sys.executable,
@@ -673,6 +1755,42 @@ def main():
             str(args.source),
             "--session-id",
             str(args.session_id),
+            "--protocol-version",
+            str(args.protocol_version),
+            "--pair-id",
+            str(args.pair_id),
+            "--replicate-index",
+            str(args.replicate_index),
+            "--environment-fingerprint",
+            str(args.environment_fingerprint),
+            "--task-fixture-hash",
+            str(args.task_fixture_hash),
+            "--success-criterion-id",
+            str(args.success_criterion_id),
+            "--measurement-boundary",
+            str(args.measurement_boundary),
+            "--measurement-tool",
+            str(args.measurement_tool),
+            "--cpu-model",
+            str(args.cpu_model),
+            "--thread-count",
+            str(args.thread_count),
+            "--process-affinity",
+            str(args.process_affinity),
+            "--power-mode",
+            str(args.power_mode),
+            "--warmup-count",
+            str(args.warmup_count),
+            "--measured-repetitions",
+            str(args.measured_repetitions),
+            "--trial-count",
+            str(args.trial_count),
+            "--run-order",
+            str(args.run_order),
+            "--max-success-rate-delta",
+            str(args.max_success_rate_delta),
+            "--min-paired-replicates-per-task",
+            str(args.min_paired_replicates_per_task),
             "--report-path",
             str(args.report_path),
             "--summary-path",
@@ -688,6 +1806,48 @@ def main():
             command.extend(["--average-watts", str(args.average_watts)])
         if args.notes:
             command.extend(["--notes", str(args.notes)])
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "run-physical-energy-pair":
+        command = [
+            sys.executable,
+            "scripts/eval/physical_energy_pair_runner.py",
+            "--pair-id",
+            str(args.pair_id),
+            "--replicate-index",
+            str(args.replicate_index),
+            "--corpus-path",
+            str(args.corpus_path),
+            "--max-docs",
+            str(args.max_docs),
+            "--max-cases",
+            str(args.max_cases),
+            "--repetitions",
+            str(args.repetitions),
+            "--warmup-count",
+            str(args.warmup_count),
+            "--thread-count",
+            str(args.thread_count),
+            "--process-affinity",
+            str(args.process_affinity),
+            "--power-mode",
+            str(args.power_mode),
+            "--measurement-tool",
+            str(args.measurement_tool),
+            "--sara-joules",
+            str(args.sara_joules),
+            "--ann-joules",
+            str(args.ann_joules),
+            "--measurement-path",
+            str(args.measurement_path),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--trace-path",
+            str(args.trace_path),
+        ]
+        if args.dry_run:
+            command.append("--dry-run")
         result = subprocess.run(command)
         sys.exit(result.returncode)
 

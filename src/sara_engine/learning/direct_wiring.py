@@ -1,10 +1,10 @@
 # src/sara_engine/learning/direct_wiring.py
-# 日本語タイトル: 直接シナプス結線型SNN学習モジュール
-# 目的: コーパスからトークンの遷移確率を直接シナプス重みとして構築し、行列演算やBPを用いずに高速な学習とテキスト生成を行う。
+# English title: Direct synaptic wiring SNN learning module
+# Purpose: Build token transition weights as sparse synapses without matrices or backpropagation.
 # {
-#     "//": "BP、行列演算、GPUを一切使用せず、Pythonの標準的な辞書を用いてスパースなシナプス結合を表現します。",
-#     "//": "英語などのアルファベット言語でのループを防ぐため、ALIF（適応的閾値）によるホメオスタシスと、PMIベースの重み正規化を導入します。",
-#     "//": "大量のコーパス学習を瞬時に完了させるため、シナプスの集計処理をRust側にオフロードします。"
+#     "//": "Sparse synapses are represented with Python dictionaries.",
+#     "//": "ALIF homeostasis and PMI-like weights reduce repetitive loops.",
+#     "//": "Large corpus aggregation can be offloaded to the Rust core when available."
 # }
 
 import os
@@ -23,7 +23,7 @@ class ALIFNeuron:
         self.decay = decay
         self.last_spike_time = -100
 
-        # ALIF (Adaptive Leaky Integrate-and-Fire) パラメータ
+        # ALIF adaptive threshold parameters.
         self.theta_plus = 2.0
         self.theta_decay = 0.8
 
@@ -74,12 +74,11 @@ class DirectWiringSNN:
         print(
             f"[INFO] Processing {total_tokens} characters for delay-line direct wiring...")
 
-        # Rust拡張のロードを試みる (プロジェクトの構成に合わせて sara_engine からインポート)
+        # Try the package-local Rust extension first.
         try:
             from .. import sara_rust_core
             print("[INFO] Utilizing Rust core for ultra-fast synaptic wiring...")
 
-            # Rust側で全シナプス結線の集計とPMI正規化を高速実行
             rust_synapses = sara_rust_core.build_direct_synapses(
                 tokens, self.context_window)
 
@@ -103,7 +102,7 @@ class DirectWiringSNN:
                 f"[WARNING] Failed to load sara_rust_core: {e}. Did you forget to run `pip install -e .`?")
             print("[INFO] Falling back to standard Python implementation...")
 
-        # フォールバック (Python単独実行時)
+        # Fallback for environments where the optional Rust extension is not built.
         co_occurrence: Dict[int, Dict[int, Dict[int, float]]] = defaultdict(
             lambda: defaultdict(lambda: defaultdict(float)))
         unigram_counts: Dict[int, int] = defaultdict(int)

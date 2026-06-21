@@ -20,8 +20,19 @@ Run commands from the repository root unless a script says otherwise.
 - `python scripts/sara_cli.py upgrade-memory`: rewrite older memory artifacts into the current managed format.
 - `python scripts/sara_cli.py fix-memory`: remove or decay one direct-memory association and write a managed repair report.
 - `python scripts/sara_cli.py build-replay-data`: generate replay token JSONL from chat JSONL.
+- `python scripts/sara_cli.py build-autobot-dataset`: transform accepted autobot records into source-aware learning materials and a curriculum manifest.
+- `python scripts/sara_cli.py build-own-latent-manifest`: convert accepted autobot learning materials into source-backed sparse own-latent manifests.
 - `python scripts/sara_cli.py eval-external-validity`: compare sparse SARA retrieval with an ANN-style dense-scan proxy on real-data tasks.
   - supports `--history-path`, `--regression-tolerance`, and `--no-history-update` for managed trend checks.
+- `python scripts/sara_cli.py eval-rust-core-readiness --run-cargo-test`: record Rust sparse-runtime source readiness and Cargo test evidence.
+- `python scripts/sara_cli.py eval-rust-core-benchmark --iterations 50`: run the managed Rust sparse-runtime benchmark report.
+- `python scripts/sara_cli.py eval-research-benchmark-suite`: run the compact reproducible research benchmark suite and write a manifest.
+- `python scripts/sara_cli.py eval-research-fixture-readiness`: validate repository-safe benchmark fixtures.
+- `python scripts/sara_cli.py eval-neuromorphic-capability-matrix`: generate a backend capability matrix for sparse-event hardware profiles.
+- `python scripts/sara_cli.py eval-own-latent-learning`: run the observed-only sparse own-latent sample-efficiency benchmark.
+- `python scripts/sara_cli.py eval-dendritic-feedback-gate`: run the observed-only sparse dendritic feedback gate robustness benchmark.
+- `python scripts/sara_cli.py eval-sparse-plan-trace-verifier`: verify sparse STRIPS-like plan traces and emit managed repair materials.
+- `python scripts/sara_cli.py eval-operator-llm-assistant-readiness`: validate the optional local LLM operator-assistant proposal gate without calling an LLM runtime.
 - `python scripts/sara_cli.py prune`: prune low-value memory weights.
 - `python scripts/sara_cli.py clean`: clean interim and processed data outputs.
 
@@ -37,7 +48,7 @@ Run commands from the repository root unless a script says otherwise.
 - `python scripts/eval/phase5_predictive_coding_benchmark.py`: run the Phase 5 Spiking H-JEPA predictive-coding entry benchmark.
 - `python scripts/eval/phase5_entry_gate.py`: validate the Phase 5 predictive-coding entry benchmark report.
 - `python scripts/eval/phase5_completion_gate.py`: validate Phase 5 completion from Phase 4 benchmark, Phase 5 benchmark, Phase 5 entry gate, and sparse diffusion block readiness artifacts; summary output includes macro/subgoal and micro-ES detail values for release review.
-- `python scripts/eval/research_product_completion_gate.py`: validate the research-product completion surface across policy, ROADMAP closure, Phase 3/4/5, strict operational readiness, ANN-efficiency roadmap, energy measurement session plan, memory repair operations, managed output policy, and neuromorphic HAL smoke behavior.
+- `python scripts/eval/research_product_completion_gate.py`: validate the research-product completion surface across policy, ROADMAP closure, Phase 3/4/5, strict operational readiness, ANN-efficiency roadmap, energy measurement session plan, Rust core readiness, Phase 7 autobot gap-loop readiness, memory repair operations, managed output policy, and neuromorphic HAL smoke behavior.
 - `python scripts/eval/release_soak.py --profile release --include-accuracy`: routine release soak with embedded accuracy summary.
 - `python scripts/eval/release_soak.py --profile extended --include-accuracy`: final shipping-profile soak.
 - `python scripts/eval/release_gate.py`: validate release soak, Phase 3 readiness, and Phase 5 completion gate readiness.
@@ -76,7 +87,7 @@ Run commands from the repository root unless a script says otherwise.
   - v1 gate now requires `workspace/evaluation/phase5_completion_gate_report.json` in addition to Phase 5 entry snapshots.
   - v1 summary includes Phase 5 completion macro/subgoal and micro-ES detail values for final promotion review.
   - v1/release gates require sparse diffusion block completion checks through the Phase 5 completion artifact.
-  - v1 gate also requires `workspace/evaluation/research_product_completion_gate_report.json`, including the energy measurement session plan check.
+  - v1 gate also requires `workspace/evaluation/research_product_completion_gate_report.json`, including the energy measurement session plan and Rust core readiness checks.
   - v1 gate also validates `workspace/evaluation/real_data_external_validity.json` so external validity and ANN-cost advantage regressions block promotion.
   - Also writes `workspace/release/v1_release_gate_actions.json` (priority-sorted recovery action manifest for failed categories).
 - `.github/workflows/release.yml`: tag release workflow now validates release/operational contract tests before `maturin publish`.
@@ -104,13 +115,16 @@ Run commands from the repository root unless a script says otherwise.
   - writes `workspace/evaluation/real_data_external_validity_history.json` by default and fails `trend.no_regressions` when external-validity quality or ANN-cost advantage regresses beyond tolerance.
   - stores corpus/task fingerprints in `benchmark_context`; trend comparison is skipped when the benchmark context changes.
   - report includes `thresholds` and `check_details` so each gate decision can be audited from the JSON artifact alone.
+  - report includes `per_task_external_validity_summary`, separating per-case quality, cost, abstention, and failure type.
   - SARA retrieval uses metabolic sparse routing: rare-token-first search, confidence-based early stop, and verified fallback for hard high-candidate cases.
   - report includes metabolic diagnostics such as `sara_metabolic_cost_reduction_proxy`, `sara_metabolic_early_stop_rate`, and processed-token counts.
   - also includes absent-query negative controls (`negative_control_abstention_integrity`, `negative_control_cost_advantage_proxy`) so sparse routing must reject no-hit prompts instead of selecting a dense-scan fallback answer.
   - partial-evidence controls (`partial_evidence_abstention_integrity`, `partial_evidence_cost_advantage_proxy`) verify that common-token overlap alone is not enough to force an answer.
   - contrastive near-miss controls (`contrastive_control_accuracy`, `contrastive_control_cost_advantage_proxy`) verify that rare discriminative tokens win over common overlap in similar documents.
   - dense embedding baseline controls (`dense_embedding_ann_proxy_qa_accuracy`, `dense_embedding_ann_cost_advantage_proxy`) compare sparse routing against an offline hashed-vector ANN-style baseline without making dense vectors part of the runtime path.
+  - BM25 offline proxy metrics (`bm25_offline_proxy_qa_accuracy`, `bm25_offline_cost_advantage_proxy`) provide a stronger lexical reference baseline outside the production runtime path.
   - real-data sparse diffusion block controls (`sparse_diffusion_real_data_denoise_accuracy`, `sparse_diffusion_real_data_event_cost_advantage`, `sparse_diffusion_real_data_partition_integrity`, `sparse_diffusion_real_data_single_pass_integrity`) verify that uncertainty-partitioned sparse denoising holds on real-corpus tasks.
+  - repository fixture probe metrics (`repository_fixture_retrieval_accuracy`, `repository_fixture_abstention_integrity`) run the compact QA, abstention, noisy, adversarial, and delayed-recall fixtures through sparse retrieval.
 - `python scripts/eval/real_data_external_validity_ladder.py`: runs the small/medium/large external-validity scale ladder and aggregates minimum QA, ANN-cost advantage, performance-energy ratio, and sparse diffusion block scores across profiles.
   - writes `workspace/evaluation/real_data_external_validity_ladder.json` and `workspace/evaluation/real_data_external_validity_ladder_summary.txt`.
   - aggregates minimum absent-query, partial-evidence, contrastive near-miss, dense embedding baseline, and real-data sparse diffusion block results across profiles.
@@ -126,7 +140,14 @@ Run commands from the repository root unless a script says otherwise.
 - `python scripts/eval/energy_measurement_readiness.py`: validates the real-energy measurement schema and optional paired SARA/ANN joule evidence.
   - writes `workspace/evaluation/energy_measurement_readiness.json` and `workspace/evaluation/energy_measurement_readiness_summary.txt`.
   - also writes the standalone lab plan artifacts `workspace/evaluation/energy_measurement_session_plan.json` and `workspace/evaluation/energy_measurement_session_plan.txt`.
-  - accepts `--measurement-path data/raw/energy_measurements.jsonl`; required fields are `run_id`, `system`, `task`, `success_count`, and `joules`.
+  - fairness schema v2 requires paired environment, fixture, criterion, measurement-boundary, tool, CPU, thread, affinity, power-mode, warm-up, repetition, trial-count, and run-order metadata.
+  - rejects quality-mismatched or condition-mismatched pairs and reports per-task median `joule_per_success`, MAD, and run-order balance.
+  - protocol: `doc/ENERGY_MEASUREMENT_PROTOCOL.md`.
+- `python scripts/eval/physical_energy_pair_runner.py`: freezes and executes one same-task SARA/BM25 retrieval pair.
+  - alternates run order by replicate and fixes corpus/task hash, exact-match success criterion, CPU identity, thread environment, warm-up count, and repetitions.
+  - writes the pair manifest and workload trace under `workspace/evaluation/`.
+  - appends validated raw measurement rows only when positive SARA and ANN joules are supplied for the executed pair.
+  - use `python scripts/sara_cli.py run-physical-energy-pair` from the unified CLI.
   - use `--append-measurement --run-id <id> --system sara|ann --task <name> --success-count <n> --joules <J>` to append a validated measurement row before regenerating the readiness report.
   - alternatively pass `--average-watts <W> --duration-seconds <s>` with `--joules 0` or omitted; the tool records `joules = average_watts * duration_seconds` and keeps the derivation in the measurement row.
   - real joule evidence is accepted only when each measured `task` has both SARA and ANN rows and the minimum per-task ANN/SARA joule-per-success ratio passes the configured threshold.
@@ -136,6 +157,87 @@ Run commands from the repository root unless a script says otherwise.
   - validates equal-mass uncertainty partitioning, independent sparse-event blocks, local denoising accuracy, event-cost advantage, block-count ablation, recurrent single-pass compression, and policy compatibility.
   - writes `workspace/evaluation/sparse_diffusion_block_readiness.json` and `workspace/evaluation/sparse_diffusion_block_readiness_summary.txt`.
   - use `python scripts/sara_cli.py eval-sparse-diffusion-block-readiness` to run the same gate from the unified CLI.
+- `python scripts/eval/rust_core_readiness.py --run-cargo-test`: records Rust sparse-runtime source readiness, Cargo test status, PyO3 export registration, and optional built-extension import smoke evidence.
+  - writes `workspace/evaluation/rust_core_readiness.json` and `workspace/evaluation/rust_core_readiness_summary.txt`.
+  - reports `needs_build_or_review` when the source checks pass but `sara_engine.sara_rust_core` has not been built into the active Python environment.
+  - use `python scripts/sara_cli.py eval-rust-core-readiness --run-cargo-test` to run the same readiness report from the unified CLI.
+- `python scripts/eval/rust_core_benchmark.py --iterations 50`: compares Rust sparse-runtime exports with Python reference paths when the extension is available.
+  - writes `workspace/evaluation/rust_core_benchmark.json` and `workspace/evaluation/rust_core_benchmark_summary.txt`.
+  - records output equivalence and speedup separately for sparse propagation, SDR overlap, direct synapse construction, and batch token-to-SDR conversion.
+  - use `python scripts/sara_cli.py eval-rust-core-benchmark --iterations 50` to run the same benchmark report from the unified CLI.
+- `python scripts/eval/research_benchmark_suite.py`: runs the compact research benchmark protocol from `doc/BENCHMARK_PROTOCOL.md`.
+  - writes `workspace/evaluation/research_benchmark_manifest.json` and `workspace/evaluation/research_benchmark_summary.txt`.
+  - includes the neuromorphic capability matrix so hardware-portability profile coverage is reproducible with the rest of the research surface.
+  - includes own-latent learning as observed-only sample-efficiency evidence.
+  - includes source-backed own-latent manifest generation from autobot learning materials.
+  - includes dendritic feedback gate behavior as observed-only robustness evidence.
+  - use `python scripts/sara_cli.py eval-research-benchmark-suite --dry-run` to inspect the command manifest without executing the suite.
+- `python scripts/eval/research_fixture_readiness.py`: validates repository-safe external-validity benchmark fixtures.
+  - reads `data/processed/benchmark_fixtures/external_validity_cases.jsonl`.
+  - writes `workspace/evaluation/research_fixture_readiness.json` and `workspace/evaluation/research_fixture_readiness_summary.txt`.
+- `python scripts/eval/neuromorphic_capability_matrix.py`: generates a backend capability matrix for Lava, SpiNNaker, and Akida-style profiles from the chip-neutral sparse event IR.
+  - writes `workspace/evaluation/neuromorphic_capability_matrix.json` and `workspace/evaluation/neuromorphic_capability_matrix_summary.txt`.
+  - records event budget headroom, state budget, routing hints, online update policy, adapter policy, and unsupported operations per backend profile.
+  - use `python scripts/sara_cli.py eval-neuromorphic-capability-matrix` to run the same report from the unified CLI.
+- `python scripts/eval/own_latent_learning_benchmark.py`: evaluates sparse own-latent prediction against a token-overlap baseline on a deterministic RHM-style fixture.
+  - writes `workspace/evaluation/own_latent_learning_benchmark.json` and `workspace/evaluation/own_latent_learning_benchmark_summary.txt`.
+  - writes optional trend history to `workspace/evaluation/own_latent_learning_history.json` unless `--no-history-update` is passed.
+  - creates `data/processed/benchmark_fixtures/own_latent_rhm_cases.jsonl` if the fixture is missing.
+  - use `python scripts/sara_cli.py eval-own-latent-learning --no-history-update` to run it from the unified CLI.
+- `python scripts/eval/own_latent_manifest_builder.py`: converts accepted autobot learning materials into source-backed sparse latent manifest rows.
+  - reads `data/processed/autobot/learning_materials.jsonl` by default.
+  - writes `data/processed/autobot/latent_manifest.jsonl`.
+  - writes `workspace/evaluation/own_latent_manifest_builder.json` and `workspace/evaluation/own_latent_manifest_builder_summary.txt`.
+  - preserves material hash, source URL/path, language, quality score, license hint, and compliance level.
+  - use `python scripts/sara_cli.py build-own-latent-manifest` to run it from the unified CLI.
+- `python scripts/eval/dendritic_feedback_gate_benchmark.py`: evaluates a bounded sparse dendritic feedback gate on noisy, adversarial, contrastive, and conflicting-material cases.
+  - writes `workspace/evaluation/dendritic_feedback_gate_benchmark.json` and `workspace/evaluation/dendritic_feedback_gate_benchmark_summary.txt`.
+  - reports robustness delta, event cost, state budget, fallback rate, convergence steps, and trace samples.
+  - remains observed-only and does not alter default production inference.
+  - use `python scripts/sara_cli.py eval-dendritic-feedback-gate` to run it from the unified CLI.
+- `python scripts/eval/sparse_plan_trace_verifier.py`: verifies sparse STRIPS-like plan traces with deterministic precondition, effect, invariant, frame-persistence, and goal checks.
+  - writes `data/processed/benchmark_fixtures/sparse_plan_trace_cases.jsonl` when the fixture is missing.
+  - writes repair materials to `data/processed/autobot/plan_trace_repair_materials.jsonl`.
+  - writes `workspace/evaluation/sparse_plan_trace_verifier.json` and `workspace/evaluation/sparse_plan_trace_verifier_summary.txt`.
+  - remains observed-only and does not depend on LLM chain-of-thought.
+  - use `python scripts/sara_cli.py eval-sparse-plan-trace-verifier` to run it from the unified CLI.
+- `python scripts/eval/sparse_reasoning_prior_benchmark.py`: evaluates source-backed sparse reasoning controls for future-state direction, magnitude, route selection, and abstention.
+  - writes a repository-safe fixture, per-case traces, a managed JSON report, and a compact summary.
+  - reports logic-to-state consistency, event relevance, source-backed integrity, external-event-missing abstention, event cost, and state budget.
+  - remains observed-only and does not alter production forecasting.
+  - use `python scripts/sara_cli.py eval-sparse-reasoning-prior` to run it from the unified CLI.
+- `python scripts/eval/resonance_credit_benchmark.py`: evaluates SARA's verified sparse resonance gate for local plasticity.
+  - coordinates local coincidence, prediction consistency, verifier confidence, cross-modal agreement, reward, novelty, source backing, and metabolic headroom.
+  - compares its harmful-update suppression with a reward-only policy on contradiction, abstention, low-budget, and weak-resonance cases.
+  - writes managed fixture, trace, state, report, and summary artifacts.
+  - use `python scripts/sara_cli.py eval-resonance-credit` to run it from the unified CLI.
+- `python scripts/eval/resonance_credit_integration_benchmark.py`: derives resonance signals from managed SARA evaluator reports.
+  - bridges sparse reasoning-prior, plan-verifier, multimodal, dendritic, own-latent, and structural-metabolic evidence.
+  - rejects missing or failed reports and tests contradiction, abstention, and metabolic-pressure isolation.
+  - use `python scripts/sara_cli.py eval-resonance-credit-integration` to run it from the unified CLI.
+- `python scripts/eval/event_state_cache_benchmark.py`: compares verified sparse event-state caching across no-cache, fixed, linear, and logarithmic retention profiles.
+  - admits only observed, source-backed, verified, sufficiently resonant states with metabolic headroom.
+  - reports delayed recall, negative-query abstention, blocked-decision integrity, event cost, eviction count, and bounded state growth.
+  - writes managed fixture, candidate, manifest, trace, state, report, and summary artifacts.
+  - remains observed-only and does not alter production memory.
+  - use `python scripts/sara_cli.py eval-event-state-cache` to run it from the unified CLI.
+- `python scripts/eval/event_state_cache_integration_benchmark.py`: connects managed Phase 17 evidence and source-aware autobot latent materials to cache promotion.
+  - preserves source reference and material hash as the cache source revision.
+  - validates read-only reactivation hints, strict persistence round trips, corrupted-state rejection, and missing-report freeze behavior.
+  - compares source-aware delayed recall under fixed and logarithmic retention.
+  - use `python scripts/sara_cli.py eval-event-state-cache-integration` to run it from the unified CLI.
+- `python scripts/eval/synesthetic_multimodal_binding_benchmark.py`: evaluates equal-modality sparse temporal binding, bounded cross-modal links, plug-swapping, thalamic routing, and missing-modality prediction.
+  - writes managed fixture, candidate-link, accepted-manifest, trace, plug-swap, report, and summary artifacts.
+  - compares 25 ms, 32 ms, and 40 ms temporal windows and reports the selected alignment/cost profile.
+  - optionally reads `data/processed/autobot/latent_manifest.jsonl` and records source-backed own-latent integration.
+  - reports adapter IR integrity, dendritic route-hint integrity, temporal alignment, cross-modal precision, abstention, non-language route usefulness, route traceability, event cost, and state budget.
+  - remains observed-only and does not alter default production inference.
+  - use `python scripts/sara_cli.py eval-synesthetic-multimodal-binding` to run it from the unified CLI.
+- `python scripts/eval/operator_llm_assistant_readiness.py`: validates the optional local LLM operator-assistant proposal gate without executing proposals or requiring an LLM runtime.
+  - writes `workspace/evaluation/operator_llm_assistant_readiness.json` and `workspace/evaluation/operator_llm_assistant_readiness_summary.txt`.
+  - rejects invalid JSON, unsupported proposal/action types, missing source references, unmanaged output paths, secret-like text, and direct file/data/model/release mutation attempts.
+  - reports disabled-by-default status, zero-runtime token/latency fields, acceptance rate, rejection counts, and fallback behavior.
+  - use `python scripts/sara_cli.py eval-operator-llm-assistant-readiness` to run it from the unified CLI.
 
 ## Real-Data Curriculum
 
@@ -155,6 +257,24 @@ Run commands from the repository root unless a script says otherwise.
 - Managed report output: `workspace/reports/real_data_curriculum_medium.json`
 - Managed report output: `workspace/reports/real_data_curriculum_large.json`
 
+## Autobot Dataset Preparation
+
+- `python scripts/sara_cli.py build-autobot-dataset`: builds deterministic learning materials from `data/processed/autobot/multimodal_records.jsonl`.
+  - Candidate materials are written to `data/interim/autobot/candidate_learning_materials.jsonl`.
+  - Rejected materials are written to `data/interim/autobot/rejected_learning_materials.jsonl`.
+  - Accepted materials are written to `data/processed/autobot/learning_materials.jsonl`.
+  - Type-specific outputs include `qa_pairs.jsonl`, `contrastive_pairs.jsonl`, `negative_queries.jsonl`, `summaries.jsonl`, `definition_cards.jsonl`, `procedural_steps.jsonl`, and `source_claims.jsonl` under `data/processed/autobot/`.
+  - Curriculum output is `data/processed/autobot/curriculum_manifest.jsonl`.
+  - Operator report output is `workspace/autobot/dataset_builder_report.json`.
+  - Operator summary output is `workspace/autobot/dataset_builder_summary.txt`.
+  - Use `--evaluation-gap negative_control`, `--evaluation-gap contrastive_control`, `--evaluation-gap summary_coverage`, or `--evaluation-gap retrieval_grounding` to prioritize repair materials.
+  - Empty input records produce a managed FAIL report instead of silently creating training data.
+- Source-aware collector plugins:
+  - `bot/collectors_plugins/official_docs_collector.py` reads opt-in HTTPS documentation URLs from `workspace/autobot/official_docs_urls.txt`.
+  - `bot/collectors_plugins/arxiv_abstract_collector.py` reads opt-in arXiv topic queries from `workspace/autobot/arxiv_queries.txt`.
+  - Both are network plugins and are skipped automatically when `offline_mode=true`.
+  - The arXiv collector ingests metadata and abstracts only, not full paper text.
+
 ## Managed Outputs
 
 - Evaluation reports: `workspace/evaluation/`
@@ -169,9 +289,55 @@ Run commands from the repository root unless a script says otherwise.
   - Real-data external validity history: `workspace/evaluation/real_data_external_validity_history.json`
   - Real-data external validity ladder report: `workspace/evaluation/real_data_external_validity_ladder.json`
   - Real-data external validity ladder summary: `workspace/evaluation/real_data_external_validity_ladder_summary.txt`
+  - Rust core readiness report: `workspace/evaluation/rust_core_readiness.json`
+  - Rust core readiness summary: `workspace/evaluation/rust_core_readiness_summary.txt`
+  - Rust core benchmark report: `workspace/evaluation/rust_core_benchmark.json`
+  - Rust core benchmark summary: `workspace/evaluation/rust_core_benchmark_summary.txt`
+  - Research benchmark manifest: `workspace/evaluation/research_benchmark_manifest.json`
+  - Research benchmark summary: `workspace/evaluation/research_benchmark_summary.txt`
+  - Research fixture readiness report: `workspace/evaluation/research_fixture_readiness.json`
+  - Research fixture readiness summary: `workspace/evaluation/research_fixture_readiness_summary.txt`
+  - Neuromorphic capability matrix report: `workspace/evaluation/neuromorphic_capability_matrix.json`
+  - Neuromorphic capability matrix summary: `workspace/evaluation/neuromorphic_capability_matrix_summary.txt`
+  - Own-latent learning benchmark report: `workspace/evaluation/own_latent_learning_benchmark.json`
+  - Own-latent learning benchmark summary: `workspace/evaluation/own_latent_learning_benchmark_summary.txt`
+  - Own-latent learning benchmark history: `workspace/evaluation/own_latent_learning_history.json`
+  - Synesthetic multimodal binding report: `workspace/evaluation/synesthetic_multimodal_binding_benchmark.json`
+  - Synesthetic multimodal binding summary: `workspace/evaluation/synesthetic_multimodal_binding_benchmark_summary.txt`
+  - Synesthetic multimodal traces: `workspace/evaluation/synesthetic_multimodal_binding_traces.jsonl`
+  - Sparse cortical plug-swap report: `workspace/evaluation/sparse_cortical_column_plug_swap_report.json`
+  - Sparse reasoning prior report: `workspace/evaluation/sparse_reasoning_prior_benchmark.json`
+  - Sparse reasoning prior summary: `workspace/evaluation/sparse_reasoning_prior_benchmark_summary.txt`
+  - Sparse reasoning prior traces: `workspace/evaluation/sparse_reasoning_prior_traces.jsonl`
+  - Resonance credit report: `workspace/evaluation/resonance_credit_benchmark.json`
+  - Resonance credit summary: `workspace/evaluation/resonance_credit_benchmark_summary.txt`
+  - Resonance credit traces: `workspace/evaluation/resonance_credit_traces.jsonl`
+  - Resonance credit observed state: `workspace/evaluation/resonance_credit_state.json`
+  - Resonance integration report: `workspace/evaluation/resonance_credit_integration_benchmark.json`
+  - Resonance integration summary: `workspace/evaluation/resonance_credit_integration_benchmark_summary.txt`
+  - Resonance integration traces: `workspace/evaluation/resonance_credit_integration_traces.jsonl`
+  - Event-state cache report: `workspace/evaluation/event_state_cache_benchmark.json`
+  - Event-state cache summary: `workspace/evaluation/event_state_cache_benchmark_summary.txt`
+  - Event-state cache traces: `workspace/evaluation/event_state_cache_traces.jsonl`
+  - Event-state cache observed state: `workspace/evaluation/event_state_cache_state.json`
+  - Event-state cache integration report: `workspace/evaluation/event_state_cache_integration_benchmark.json`
+  - Event-state cache integration summary: `workspace/evaluation/event_state_cache_integration_benchmark_summary.txt`
+  - Event-state cache integration traces: `workspace/evaluation/event_state_cache_integration_traces.jsonl`
+  - Event-state cache round-trip state: `workspace/evaluation/event_state_cache_round_trip_state.json`
 - Release and operational reports: `workspace/release/`
 - Interim preprocessing outputs: `data/interim/`
+  - Autobot candidate learning materials: `data/interim/autobot/candidate_learning_materials.jsonl`
+  - Autobot rejected learning materials: `data/interim/autobot/rejected_learning_materials.jsonl`
+  - Candidate synesthetic cross-links: `data/interim/autobot/synesthetic_cross_links.jsonl`
+  - Event-state cache candidates: `data/interim/event_state_cache/candidates.jsonl`
 - Processed training data: `data/processed/`
+  - Autobot accepted learning materials: `data/processed/autobot/learning_materials.jsonl`
+  - Autobot QA pairs: `data/processed/autobot/qa_pairs.jsonl`
+  - Autobot contrastive pairs: `data/processed/autobot/contrastive_pairs.jsonl`
+  - Autobot negative queries: `data/processed/autobot/negative_queries.jsonl`
+  - Autobot curriculum manifest: `data/processed/autobot/curriculum_manifest.jsonl`
+  - Synesthetic binding manifest: `data/processed/autobot/synesthetic_binding_manifest.jsonl`
+  - Verified event-state cache manifest: `data/processed/event_state_cache/manifest.jsonl`
 - Raw imported/exported data: `data/raw/`
 - Final model artifacts: `models/`
 
