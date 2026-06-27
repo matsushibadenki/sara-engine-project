@@ -32,6 +32,9 @@ Run commands from the repository root unless a script says otherwise.
 - `python scripts/sara_cli.py eval-own-latent-learning`: run the observed-only sparse own-latent sample-efficiency benchmark.
 - `python scripts/sara_cli.py eval-dendritic-feedback-gate`: run the observed-only sparse dendritic feedback gate robustness benchmark.
 - `python scripts/sara_cli.py eval-sparse-plan-trace-verifier`: verify sparse STRIPS-like plan traces and emit managed repair materials.
+- `python scripts/sara_cli.py eval-persistent-self-state`: run the observed-only bounded persistent self-state benchmark.
+- `python scripts/sara_cli.py eval-idle-replay`: run the observed-only bounded idle replay benchmark.
+- `python scripts/sara_cli.py eval-internal-maintenance-efficiency`: run the observed-only bounded internal maintenance-efficiency benchmark.
 - `python scripts/sara_cli.py eval-operator-llm-assistant-readiness`: validate the optional local LLM operator-assistant proposal gate without calling an LLM runtime.
 - `python scripts/sara_cli.py prune`: prune low-value memory weights.
 - `python scripts/sara_cli.py clean`: clean interim and processed data outputs.
@@ -108,6 +111,15 @@ Run commands from the repository root unless a script says otherwise.
   - executes the selected route and reports `future_state_spatial_route_state_update_integrity`, `future_state_spatial_invalid_action_rejection`, `future_state_spatial_route_rollback_observability`, and `future_state_spatial_route_execution_cost_bound`.
 - `python scripts/eval/energy_efficiency_benchmark.py`: performance-per-energy, ANN-cost advantage proxy, sparse event cost, and low-precision readout signals.
 - `python scripts/eval/continual_consolidation_benchmark.py`: replay, consolidation, and memory-health readiness.
+- `python scripts/eval/persistent_self_state_benchmark.py`: observed-only bounded spontaneous activity, Event Memory reactivation, and internal next-state prediction under idle input.
+  - writes `workspace/evaluation/persistent_self_state_benchmark.json` and `workspace/evaluation/persistent_self_state_benchmark_summary.txt`.
+  - verifies that sparse recurrent continuity and internal prediction can keep a bounded self-state alive without turning recurrent activity into the durable store.
+- `python scripts/eval/idle_replay_benchmark.py`: observed-only bounded idle replay ranking over verified Event Memory.
+  - writes `workspace/evaluation/idle_replay_benchmark.json` and `workspace/evaluation/idle_replay_benchmark_summary.txt`.
+  - verifies self-state-aligned replay selection, explicit event-budget compliance, reactivation-hint use, and astro-style replay modulation.
+- `python scripts/eval/internal_maintenance_efficiency_benchmark.py`: observed-only bounded internal maintenance-efficiency surface for persistent self-state plus idle consolidation.
+  - writes `workspace/evaluation/internal_maintenance_efficiency_benchmark.json` and `workspace/evaluation/internal_maintenance_efficiency_benchmark_summary.txt`.
+  - reports fixed-loop `maintenance_selected_count`, `maintenance_refresh_count`, `maintenance_event_cost`, and normalized `maintenance_event_cost_per_selected` so Phase 6 maintenance-side energy instrumentation has a stable pre-physical reference.
 - `python scripts/eval/nested_memory_readiness_benchmark.py`: Nested Learning-inspired multi-rate continuum memory controller readiness.
 - `python scripts/eval/cognitive_runtime_benchmark.py`: Stage E modular cognitive runtime readiness.
 - `python scripts/eval/phase5_predictive_coding_benchmark.py`: latent transition, prediction-error, correction-event, anti-collapse, and counterfactual separation readiness.
@@ -123,6 +135,8 @@ Run commands from the repository root unless a script says otherwise.
   - contrastive near-miss controls (`contrastive_control_accuracy`, `contrastive_control_cost_advantage_proxy`) verify that rare discriminative tokens win over common overlap in similar documents.
   - dense embedding baseline controls (`dense_embedding_ann_proxy_qa_accuracy`, `dense_embedding_ann_cost_advantage_proxy`) compare sparse routing against an offline hashed-vector ANN-style baseline without making dense vectors part of the runtime path.
   - BM25 offline proxy metrics (`bm25_offline_proxy_qa_accuracy`, `bm25_offline_cost_advantage_proxy`) provide a stronger lexical reference baseline outside the production runtime path.
+  - optional local reference baselines can be enabled with `--pretrained-embedding-model <dir>` and `--cross-encoder-model <dir>`.
+  - the report now includes `reference_readiness`, which distinguishes `not_configured`, `missing_directory`, and dependency/runtime failures for those optional Phase 8 references.
   - real-data sparse diffusion block controls (`sparse_diffusion_real_data_denoise_accuracy`, `sparse_diffusion_real_data_event_cost_advantage`, `sparse_diffusion_real_data_partition_integrity`, `sparse_diffusion_real_data_single_pass_integrity`) verify that uncertainty-partitioned sparse denoising holds on real-corpus tasks.
   - repository fixture probe metrics (`repository_fixture_retrieval_accuracy`, `repository_fixture_abstention_integrity`) run the compact QA, abstention, noisy, adversarial, and delayed-recall fixtures through sparse retrieval.
 - `python scripts/eval/real_data_external_validity_ladder.py`: runs the small/medium/large external-validity scale ladder and aggregates minimum QA, ANN-cost advantage, performance-energy ratio, and sparse diffusion block scores across profiles.
@@ -133,20 +147,45 @@ Run commands from the repository root unless a script says otherwise.
   - validates sparse proxy instrumentation, limited real-data advantage, scale-ladder advantage, strict operational regression blocking, and neuromorphic transfer readiness.
   - Stage 2/3 require absent-query negative controls and real-data sparse diffusion block controls to pass before ANN-efficiency evidence is accepted.
   - Stage 6 validates `energy_measurement_readiness.py`, separating proxy-only evidence from real joule-per-success evidence.
+  - Stage 6 also imports the observed-only internal maintenance-efficiency surface so `maintenance_event_cost_per_selected`, replay refresh counts, and self-state continuity remain visible before physical maintenance joules are available.
+  - `next_evidence_actions` now includes both Phase 6 physical-measurement follow-up and Phase 8 reference-readiness follow-up, so missing local embedding/cross-encoder baselines can propagate into the operational runbook.
+  - `next_evidence_actions` also carries missing or weak internal-maintenance reference follow-up, so self-state maintenance quality is repaired through the same roadmap loop instead of living only in standalone benchmark reports.
   - propagates `measurement_session_plan.planned_runs` into top-level `next_evidence_actions` and the roadmap summary when available, falling back to `measurement_plan.pending_pairs` and `measurement_plan.weak_pairs`.
   - operational readiness imports these `next_evidence_actions` into `workspace/release/operational_readiness_runbook_actions.json` as `ann_efficiency_next_evidence` actions when the roadmap artifact is present.
   - writes `workspace/evaluation/ann_efficiency_roadmap_gate.json` and `workspace/evaluation/ann_efficiency_roadmap_gate_summary.txt`.
   - use `--refresh-artifacts` to regenerate the energy, external-validity, and ladder evidence before evaluating the roadmap.
+- `python scripts/sara_cli.py eval-sara-ann-comparison`: builds a research-facing comparison surface across proxy baselines, offline lexical/dense references, and physical energy evidence.
+  - writes `workspace/evaluation/sara_ann_comparison_report.json` and `workspace/evaluation/sara_ann_comparison_report.txt`.
+  - keeps `proxy`, `offline_reference`, and `physical` evidence tiers separate so Phase 8 baseline strength and Phase 6 physical proof are not conflated.
+  - highlights the strongest currently available offline reference, the current physical joule evidence state, the physical-versus-reference maintenance alignment surface, the Event Memory compression surface, and the next missing comparison actions.
+- `python scripts/sara_cli.py eval-event-memory-ingest-pipeline`: exercises the bounded Event Memory ingest path from change detection to verified relations.
+  - writes `workspace/evaluation/event_memory_ingest_pipeline.json` and `workspace/evaluation/event_memory_ingest_pipeline_summary.txt`.
+  - reports `eventization_emission_ratio`, `candidate_event_acceptance_rate`, `episode_compression_ratio`, `relation_verification_yield`, `lineage_coverage_ratio`, and self-state continuity so compression and concept-admission changes can be compared against Phase 6/8 evidence instead of judged only qualitatively.
+  - this surface is now imported by `eval-sara-ann-comparison`, the research benchmark suite, and operational runbook action generation, so weak compression quality can trigger managed follow-up instead of staying isolated in a standalone report.
+- `python scripts/sara_cli.py eval-event-memory-maintenance-coupling`: compares Event Memory compression profiles against bounded self-state maintenance load and continuity.
+  - writes `workspace/evaluation/event_memory_maintenance_coupling_benchmark.json` and `workspace/evaluation/event_memory_maintenance_coupling_benchmark_summary.txt`.
+  - reports `compression_to_maintenance_correlation`, best-profile compression efficiency per maintenance load, and best-profile self-state continuity so concept-compression changes can be judged against internal maintenance pressure rather than in isolation.
 - `python scripts/eval/energy_measurement_readiness.py`: validates the real-energy measurement schema and optional paired SARA/ANN joule evidence.
   - writes `workspace/evaluation/energy_measurement_readiness.json` and `workspace/evaluation/energy_measurement_readiness_summary.txt`.
   - also writes the standalone lab plan artifacts `workspace/evaluation/energy_measurement_session_plan.json` and `workspace/evaluation/energy_measurement_session_plan.txt`.
+  - also writes `workspace/evaluation/physical_energy_session_progress.json` and `workspace/evaluation/physical_energy_session_progress.txt` from the current session plan plus recorded rows, so incomplete or invalid session coverage is visible without rebuilding the separate batch tool output.
+  - can optionally read the observed-only internal maintenance reference report and surface `maintenance_event_cost_per_selected` plus self-state continuity beside the physical-energy readiness summary, so pre-physical maintenance efficiency and post-physical maintenance joules can be read together.
+  - now also computes a physical-versus-reference maintenance alignment surface, exposing SARA physical `maintenance_event_cost_per_selected` against the observed-only internal benchmark so self-state drift can be judged at the aggregated Phase 6 level.
   - fairness schema v2 requires paired environment, fixture, criterion, measurement-boundary, tool, CPU, thread, affinity, power-mode, warm-up, repetition, trial-count, and run-order metadata.
   - rejects quality-mismatched or condition-mismatched pairs and reports per-task median `joule_per_success`, MAD, and run-order balance.
+- `python scripts/sara_cli.py run-physical-energy-session-batch`: expands the standalone measurement session plan into concrete pair-level frozen runs.
+  - writes `workspace/evaluation/physical_energy_session_batch.json` and `workspace/evaluation/physical_energy_session_batch.txt`.
+  - can optionally append `--execute-dry-run-pairs` to smoke-test every planned frozen command.
+- `python scripts/sara_cli.py eval-physical-energy-session-progress`: compares the batch plan against recorded measurement rows.
+  - writes `workspace/evaluation/physical_energy_session_progress.json` and `workspace/evaluation/physical_energy_session_progress.txt`.
+  - labels each planned pair as complete, partial, invalid, or missing, and also reports orphan measurement pairs that do not belong to the current session batch.
+  - can also include the observed-only internal maintenance reference summary so laboratory progress and pre-physical maintenance efficiency are visible in one session-progress artifact.
   - protocol: `doc/ENERGY_MEASUREMENT_PROTOCOL.md`.
 - `python scripts/eval/physical_energy_pair_runner.py`: freezes and executes one same-task SARA/BM25 retrieval pair.
   - alternates run order by replicate and fixes corpus/task hash, exact-match success criterion, CPU identity, thread environment, warm-up count, and repetitions.
   - writes the pair manifest and workload trace under `workspace/evaluation/`.
   - appends validated raw measurement rows only when positive SARA and ANN joules are supplied for the executed pair.
+  - can optionally read the observed-only internal maintenance benchmark and add a pair-local maintenance alignment surface, so physical SARA runs can be compared against the pre-physical self-state/event-cost reference without leaving the pair report.
   - use `python scripts/sara_cli.py run-physical-energy-pair` from the unified CLI.
   - use `--append-measurement --run-id <id> --system sara|ann --task <name> --success-count <n> --joules <J>` to append a validated measurement row before regenerating the readiness report.
   - alternatively pass `--average-watts <W> --duration-seconds <s>` with `--joules 0` or omitted; the tool records `joules = average_watts * duration_seconds` and keeps the derivation in the measurement row.
@@ -168,6 +207,10 @@ Run commands from the repository root unless a script says otherwise.
 - `python scripts/eval/research_benchmark_suite.py`: runs the compact research benchmark protocol from `doc/BENCHMARK_PROTOCOL.md`.
   - writes `workspace/evaluation/research_benchmark_manifest.json` and `workspace/evaluation/research_benchmark_summary.txt`.
   - includes the neuromorphic capability matrix so hardware-portability profile coverage is reproducible with the rest of the research surface.
+  - includes bounded persistent self-state and idle replay maintenance evidence so internal activity continuity is visible alongside retrieval, consolidation, and ANN-comparison evidence.
+  - includes bounded internal maintenance-efficiency evidence so self-state continuity and replay quality are paired with an auditable maintenance event-cost surface before physical joule measurements are available.
+  - includes the Event Memory compression-versus-maintenance coupling surface so changes in concept compression can be read beside self-state continuity and maintenance load.
+  - includes the managed SARA-versus-ANN comparison report so Phase 8 baseline strength is visible in the compact suite, not only in standalone comparison runs.
   - includes own-latent learning as observed-only sample-efficiency evidence.
   - includes source-backed own-latent manifest generation from autobot learning materials.
   - includes dendritic feedback gate behavior as observed-only robustness evidence.

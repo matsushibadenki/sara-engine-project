@@ -185,6 +185,9 @@ DEFAULT_EXTERNAL_VALIDITY_LADDER_REPORT_PATH = workspace_path(
 DEFAULT_ANN_EFFICIENCY_ROADMAP_REPORT_PATH = workspace_path(
     "evaluation", "ann_efficiency_roadmap_gate.json"
 )
+DEFAULT_SARA_ANN_COMPARISON_REPORT_PATH = workspace_path(
+    "evaluation", "sara_ann_comparison_report.json"
+)
 DEFAULT_RELEASE_SOAK_REPORT_PATH = workspace_path("release", "release_soak_report.json")
 DEFAULT_OPERATIONAL_REPORT_PATH = workspace_path("release", "operational_readiness_report.json")
 DEFAULT_OPERATIONAL_SUMMARY_PATH = workspace_path("release", "operational_readiness_summary.txt")
@@ -4309,6 +4312,11 @@ def build_operational_runbook_actions(
         if isinstance(report.get("ann_efficiency_roadmap"), dict)
         else {}
     )
+    sara_ann_comparison = (
+        report.get("sara_ann_comparison", {})
+        if isinstance(report.get("sara_ann_comparison"), dict)
+        else {}
+    )
     operational_checklist = (
         report.get("operational_checklist", {})
         if isinstance(report.get("operational_checklist"), dict)
@@ -4563,12 +4571,44 @@ def build_operational_runbook_actions(
             continue
         category = str(evidence_action.get("category", "") or "").strip()
         task = str(evidence_action.get("task", "") or "").strip()
+        affected_checks = ["ann_efficiency_roadmap"]
+        if category in {"pending_joule_pair", "weak_joule_pair", "partial_pair", "invalid_pair", "missing_pair"}:
+            affected_checks.append("energy_measurement")
+        elif "internal_maintenance" in category or task == "phase6_maintenance_efficiency":
+            affected_checks.append("internal_maintenance_efficiency")
+        elif "reference" in category or task == "phase8_reference_strength":
+            affected_checks.append("external_validity")
         _append_action(
             command=str(evidence_action.get("command", "")),
             source="ann_efficiency_next_evidence",
             priority=str(evidence_action.get("priority", "medium")),
             reason=f"category={category}; task={task}",
-            affected_checks=["ann_efficiency_roadmap", "energy_measurement"],
+            affected_checks=affected_checks,
+        )
+    comparison_next_actions = (
+        sara_ann_comparison.get("next_actions", [])
+        if isinstance(sara_ann_comparison.get("next_actions"), list)
+        else []
+    )
+    for comparison_action in comparison_next_actions:
+        if not isinstance(comparison_action, dict):
+            continue
+        category = str(comparison_action.get("category", "") or "").strip()
+        affected_checks = ["sara_ann_comparison"]
+        if "maintenance" in category:
+            affected_checks.append("internal_maintenance_efficiency")
+        if "event_memory" in category or "compression" in category:
+            affected_checks.append("event_memory_ingest_pipeline")
+        if "physical" in category:
+            affected_checks.append("energy_measurement")
+        if "reference" in category or "bm25" in category:
+            affected_checks.append("external_validity")
+        _append_action(
+            command=str(comparison_action.get("command", "")),
+            source="sara_ann_comparison_next_action",
+            priority=str(comparison_action.get("priority", "medium")),
+            reason=f"category={category}",
+            affected_checks=affected_checks,
         )
     for external in external_actions if isinstance(external_actions, list) else []:
         if not isinstance(external, dict):
@@ -6730,6 +6770,11 @@ def main() -> int:
         help="Managed path to ANN-efficiency roadmap report. Optional; next evidence actions are merged when present.",
     )
     parser.add_argument(
+        "--sara-ann-comparison-report-path",
+        default=DEFAULT_SARA_ANN_COMPARISON_REPORT_PATH,
+        help="Managed path to SARA-vs-ANN comparison report. Optional; comparison follow-up actions are merged when present.",
+    )
+    parser.add_argument(
         "--release-report-path",
         default=DEFAULT_RELEASE_SOAK_REPORT_PATH,
         help="Managed path to release soak report.",
@@ -7238,6 +7283,12 @@ def main() -> int:
             ann_efficiency_roadmap_report = _load_json_object(args.ann_efficiency_roadmap_report_path)
         except (OSError, json.JSONDecodeError, ValueError):
             ann_efficiency_roadmap_report = {}
+    sara_ann_comparison_report: Dict[str, Any] = {}
+    if os.path.exists(args.sara_ann_comparison_report_path):
+        try:
+            sara_ann_comparison_report = _load_json_object(args.sara_ann_comparison_report_path)
+        except (OSError, json.JSONDecodeError, ValueError):
+            sara_ann_comparison_report = {}
     execution_log = load_operational_repair_execution_log(args.repair_log_path)
     research_journal_entries = load_research_journal_entries(args.research_journal_path)
     research_journal_sync = attach_remeasure_results_to_research_journal_entries(
@@ -7336,10 +7387,12 @@ def main() -> int:
             "external_validity": str(args.external_validity_report_path),
             "external_validity_ladder": str(args.external_validity_ladder_report_path),
             "ann_efficiency_roadmap": str(args.ann_efficiency_roadmap_report_path),
+            "sara_ann_comparison": str(args.sara_ann_comparison_report_path),
             "release": str(args.release_report_path),
             "research_journal": str(args.research_journal_path),
         },
         "ann_efficiency_roadmap": ann_efficiency_roadmap_report,
+        "sara_ann_comparison": sara_ann_comparison_report,
         "research_journal_summary": research_journal_summary,
         "repair_auto_dispatch": {
             "requested": int(args.auto_dispatch_retry),

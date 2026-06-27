@@ -18,6 +18,8 @@ if SRC_PATH not in sys.path:
 
 
 from sara_engine.inference import SaraInference
+from sara_engine.dynamics import PersistentSelfStateController, stable_self_state_id
+from sara_engine.ingest import FrequentSequence, make_candidate_relation
 from sara_engine.learning.astro_modulator import AstroReplayModulator
 from sara_engine.learning.astro_structural_gate import AstroStructuralGateConfig, evaluate_astro_structural_gate
 from sara_engine.learning.delta_retention_policy import (
@@ -30,6 +32,9 @@ from sara_engine.learning.metabolic_budget import MetabolicBudgetConfig, evaluat
 from sara_engine.learning.memory_phase import MemoryPhaseConfig, evaluate_memory_phase_transitions
 from sara_engine.learning.sleep_consolidation import SleepConsolidationConfig, evaluate_sleep_consolidation
 from sara_engine.learning.synaptic_tag import SynapticTagConfig, evaluate_synaptic_tags
+from sara_engine.memory.concept_admission import ConceptRevalidationEntry
+from sara_engine.memory.event_state_cache import EventStateCandidate, VerifiedHierarchicalEventStateCache
+from sara_engine.memory.idle_consolidation_loop import IdleConsolidationLoop
 from sara_engine.nn.delta_associative_memory import evaluate_delta_associative_spike_memory
 from sara_engine.nn.local_manifold_memory import LocalManifoldTransitionMemory
 from sara_engine.utils.project_paths import ensure_parent_directory, model_path, workspace_path
@@ -757,6 +762,133 @@ def _run_delta_retention_policy_case() -> Dict[str, Any]:
     }
 
 
+def _run_idle_maintenance_trace_case() -> Dict[str, Any]:
+    cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic")
+    cache.admit(
+        EventStateCandidate(
+            entry_id="concept-memory",
+            signature=(21, 23, 27),
+            source_ref="concept:aligned",
+            time_segment=1,
+            own_latent_id="predicts:vision:visual_cluster_018->audio:audio_cluster_044",
+            confidence=0.9,
+            uncertainty=0.1,
+            source_reliability=0.9,
+            resonance_score=0.82,
+            sequence_support_score=0.45,
+            sequence_support_count=2,
+            metabolic_headroom=0.8,
+            observed=True,
+            source_backed=True,
+            verified=True,
+        )
+    )
+    queue = [
+        ConceptRevalidationEntry(
+            concept_key="predicts:vision:visual_cluster_018->audio:audio_cluster_044",
+            decision="quarantine_source_revision_conflict",
+            supporting_relation_ids=("predicts:vision:visual_cluster_018->audio:audio_cluster_044",),
+            source_refs=("episode-1",),
+            source_hashes=("hash-a",),
+            revision_conflict_count=1,
+            contradiction_score=0.2,
+            next_action="wait",
+            attempt_count=0,
+            blocked_at_segment=3,
+            last_review_segment=3,
+            retry_after_segment=4,
+        )
+    ]
+    relations = [
+        make_candidate_relation(
+            {
+                "record_id": "rel-1",
+                "relation": "predicts",
+                "source_event_id": "vision:visual_cluster_018",
+                "target_event_id": "audio:audio_cluster_044",
+                "delay_lower_ms": 60,
+                "delay_upper_ms": 140,
+                "confidence": 0.88,
+                "source_ref": "episode-1",
+                "source_hash": "hash-a",
+                "extractor_name": "prediction_gain",
+                "extractor_version": "v1",
+                "evidence_count": 5,
+                "counterexample_count": 0,
+                "prediction_gain": 0.18,
+            }
+        ),
+        make_candidate_relation(
+            {
+                "record_id": "rel-2",
+                "relation": "predicts",
+                "source_event_id": "vision:visual_cluster_018",
+                "target_event_id": "audio:audio_cluster_044",
+                "delay_lower_ms": 62,
+                "delay_upper_ms": 138,
+                "confidence": 0.89,
+                "source_ref": "episode-2",
+                "source_hash": "hash-b",
+                "extractor_name": "prediction_gain",
+                "extractor_version": "v1",
+                "evidence_count": 5,
+                "counterexample_count": 0,
+                "prediction_gain": 0.19,
+            }
+        ),
+    ]
+    sequences = [
+        FrequentSequence(
+            sequence_key="visual_cluster_018 -> audio_cluster_044",
+            labels=("visual_cluster_018", "audio_cluster_044"),
+            support_episode_count=2,
+            occurrence_count=2,
+            source_count=2,
+            mean_span_ms=50.0,
+            parent_episode_ids=("episode-1", "episode-2"),
+        )
+    ]
+    controller = PersistentSelfStateController(
+        core_event_ids=(
+            stable_self_state_id("vision:visual_cluster_018"),
+            stable_self_state_id("audio:audio_cluster_044"),
+        )
+    )
+    modulator = AstroReplayModulator()
+    loop_result = IdleConsolidationLoop().run(
+        cache,
+        queue,
+        relations,
+        current_segment=6,
+        frequent_sequences=sequences,
+        persistent_self_state=controller,
+        astro_modulator=modulator,
+        sleep_config=SleepConsolidationConfig(event_budget=12.0),
+        memory_phase_config=MemoryPhaseConfig(state_budget=4),
+        delta_retention_config=DeltaRetentionPolicyConfig(capacity=6),
+    ).to_dict()
+
+    selected = loop_result.get("idle_replay_report", {}).get("selected", [])
+    phase_tracks = loop_result.get("memory_phase_report", {}).get("phase_tracks", [])
+    refresh = loop_result.get("cache_refresh", [])
+    delta_metrics = loop_result.get("delta_retention_policy_report", {}).get("metrics", {})
+    success = bool(
+        selected
+        and phase_tracks
+        and refresh
+        and loop_result.get("sleep_consolidation_report", {}).get("event_budget_ok", False)
+        and float(delta_metrics.get("delta_memory_policy_state_budget_observed", 0.0)) >= 1.0
+    )
+    return {
+        "success": success,
+        "idle_consolidation_loop_report": loop_result,
+        "selected_count": len(selected),
+        "phase_count": len(phase_tracks),
+        "refresh_count": len(refresh),
+        "description": "Integrated idle maintenance should expose one auditable trace from replay selection through phase-aware retention and cache refresh.",
+    }
+
+
 def run_continual_consolidation_benchmark() -> Dict[str, Any]:
     replay_recovery = _run_replay_recovery_case()
     long_horizon = _run_long_horizon_consolidation_case()
@@ -774,6 +906,7 @@ def run_continual_consolidation_benchmark() -> Dict[str, Any]:
     sleep_consolidation = _run_sleep_consolidation_case()
     astro_structural_gate = _run_astro_structural_gate_case()
     delta_retention_policy = _run_delta_retention_policy_case()
+    idle_maintenance_trace = _run_idle_maintenance_trace_case()
     cases = [
         replay_recovery,
         long_horizon,
@@ -791,6 +924,7 @@ def run_continual_consolidation_benchmark() -> Dict[str, Any]:
         sleep_consolidation,
         astro_structural_gate,
         delta_retention_policy,
+        idle_maintenance_trace,
     ]
 
     metrics = {
@@ -1061,6 +1195,13 @@ def run_continual_consolidation_benchmark() -> Dict[str, Any]:
                 "delta_memory_write_commits_residual_observed",
                 0.0,
             )
+        ),
+        "idle_maintenance_trace_integrity_observed": 1.0 if idle_maintenance_trace["success"] else 0.0,
+        "idle_maintenance_phase_alignment_observed": float(
+            bool(idle_maintenance_trace["phase_count"] >= idle_maintenance_trace["selected_count"] >= 1)
+        ),
+        "idle_maintenance_cache_refresh_observed": float(
+            bool(idle_maintenance_trace["refresh_count"] >= 1)
         ),
     }
     thresholds = {

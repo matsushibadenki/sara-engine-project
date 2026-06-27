@@ -15,7 +15,22 @@ def _load_module():
     return module
 
 
-def _row(module, system, task, joules, *, pair_id="pair-1", replicate=1, success=10, trials=10, run_order=None):
+def _row(
+    module,
+    system,
+    task,
+    joules,
+    *,
+    pair_id="pair-1",
+    replicate=1,
+    success=10,
+    trials=10,
+    run_order=None,
+    maintenance_selected_count=None,
+    maintenance_phase_count=None,
+    maintenance_refresh_count=None,
+    maintenance_event_cost=None,
+):
     return module.build_measurement_row(
         run_id=f"{system}-{task}-{replicate}",
         system=system,
@@ -38,6 +53,10 @@ def _row(module, system, task, joules, *, pair_id="pair-1", replicate=1, success
         warmup_count=2,
         measured_repetitions=10,
         run_order=run_order or (1 if system == "sara" else 2),
+        maintenance_selected_count=maintenance_selected_count,
+        maintenance_phase_count=maintenance_phase_count,
+        maintenance_refresh_count=maintenance_refresh_count,
+        maintenance_event_cost=maintenance_event_cost,
     )
 
 
@@ -61,6 +80,11 @@ def test_energy_measurement_readiness_is_protocol_ready_without_rows():
         "ann-efficiency-real-joule-real_data_external_validity-sara-"
     )
     assert "--source real_energy_session" in report["measurement_session_plan"]["planned_runs"][0]["command_template"]
+    assert "run-physical-energy-pair" in report["measurement_session_plan"]["planned_runs"][0]["pair_command_template"]
+    assert report["measurement_session_plan"]["planned_runs"][0]["meter_template_path"].endswith(
+        "_real_data_external_validity_r<replicate>_meter_template.json"
+    )
+    assert report["measurement_session_plan"]["planned_runs"][0]["replicate_count"] == 3
     assert report["measurement_plan"]["pending_pairs"][0]["command_template"].startswith(
         "python scripts/sara_cli.py record-energy-measurement"
     )
@@ -101,6 +125,145 @@ def test_energy_measurement_readiness_accepts_real_joule_advantage():
     assert report["measurement_plan"]["weak_pair_count"] == 0
     assert report["measurement_session_plan"]["status"] == "ready_for_real_joule_claim"
     assert report["measurement_session_plan"]["planned_run_count"] == 0
+
+
+def test_energy_measurement_readiness_tracks_maintenance_trace_metrics():
+    module = _load_module()
+
+    report = module.build_energy_measurement_readiness_report(
+        [
+            _row(
+                module,
+                "sara",
+                "qa",
+                2.0,
+                maintenance_selected_count=12,
+                maintenance_phase_count=4,
+                maintenance_refresh_count=2,
+                maintenance_event_cost=0.6,
+            ),
+            _row(
+                module,
+                "ann",
+                "qa",
+                8.0,
+                maintenance_selected_count=3,
+                maintenance_phase_count=1,
+                maintenance_refresh_count=0,
+                maintenance_event_cost=0.2,
+            ),
+        ],
+        min_ann_to_sara_ratio=2.0,
+        min_paired_replicates_per_task=1,
+    )
+
+    pair = report["metrics"]["valid_pairs"][0]
+    stats = report["metrics"]["task_pair_statistics"]["qa"]
+    assert report["metrics"]["maintenance_trace_rows_present"] is True
+    assert pair["sara_maintenance_event_cost_per_success"] == 0.06
+    assert pair["ann_maintenance_event_cost_per_success"] == 0.02
+    assert pair["sara_maintenance_selected_per_success"] == 1.2
+    assert pair["ann_maintenance_selected_per_success"] == 0.3
+    assert round(pair["sara_maintenance_event_cost_per_selected"], 6) == 0.05
+    assert round(pair["ann_maintenance_event_cost_per_selected"], 6) == round(0.2 / 3.0, 6)
+    assert stats["sara_median_maintenance_event_cost_per_success"] == 0.06
+    assert stats["ann_median_maintenance_event_cost_per_success"] == 0.02
+    assert stats["sara_median_maintenance_selected_per_success"] == 1.2
+    assert stats["ann_median_maintenance_selected_per_success"] == 0.3
+    assert "maintenance_selected_count" in report["measurement_protocol"]["optional_maintenance_fields"]
+    summary = module.format_energy_measurement_summary(report)
+    assert "maintenance_trace_rows_present: True" in summary
+
+    pending_report = module.build_energy_measurement_readiness_report([])
+    assert "--maintenance-selected-count <count>" in pending_report["measurement_session_plan"]["planned_runs"][0]["command_template"]
+    assert "--meter-template-path" in pending_report["measurement_session_plan"]["planned_runs"][0]["pair_command_template"]
+
+
+def test_energy_measurement_readiness_surfaces_internal_maintenance_reference():
+    module = _load_module()
+
+    report = module.build_energy_measurement_readiness_report(
+        [],
+        internal_maintenance_report={
+            "passed": True,
+            "observed_only": True,
+            "counts": {
+                "maintenance_selected_count": 4,
+                "maintenance_refresh_count": 2,
+                "maintenance_idle_self_state_ok_count": 3,
+            },
+            "normalized_metrics": {
+                "maintenance_event_cost": 6.0,
+                "maintenance_event_cost_per_selected": 1.5,
+            },
+            "metrics": {
+                "maintenance_self_state_continuity_observed": 1.0,
+                "maintenance_event_cost_efficiency_observed": 1.0,
+            },
+        },
+    )
+
+    reference = report["internal_maintenance_reference"]
+    assert reference["available"] is True
+    assert reference["maintenance_event_cost_per_selected"] == 1.5
+    summary = module.format_energy_measurement_summary(report)
+    assert "internal_maintenance_reference_available: True" in summary
+    assert "Internal Maintenance Reference:" in summary
+
+
+def test_energy_measurement_readiness_surfaces_physical_internal_alignment():
+    module = _load_module()
+
+    report = module.build_energy_measurement_readiness_report(
+        [
+            _row(
+                module,
+                "sara",
+                "qa",
+                2.0,
+                maintenance_selected_count=12,
+                maintenance_refresh_count=2,
+                maintenance_event_cost=0.6,
+            ),
+            _row(
+                module,
+                "ann",
+                "qa",
+                8.0,
+                maintenance_selected_count=3,
+                maintenance_refresh_count=1,
+                maintenance_event_cost=0.2,
+            ),
+        ],
+        min_ann_to_sara_ratio=2.0,
+        min_paired_replicates_per_task=1,
+        internal_maintenance_report={
+            "passed": True,
+            "observed_only": True,
+            "counts": {
+                "maintenance_selected_count": 4,
+                "maintenance_refresh_count": 2,
+            },
+            "normalized_metrics": {
+                "maintenance_event_cost_per_selected": 0.04,
+                "maintenance_event_cost_per_refresh": 0.20,
+            },
+            "metrics": {
+                "maintenance_self_state_continuity_observed": 1.0,
+                "maintenance_event_cost_efficiency_observed": 1.0,
+            },
+        },
+    )
+
+    alignment = report["maintenance_alignment"]
+    assert alignment["available"] is True
+    assert round(alignment["sara_physical_maintenance_event_cost_per_selected"], 6) == 0.05
+    assert alignment["reference_maintenance_event_cost_per_selected"] == 0.04
+    assert round(alignment["maintenance_event_cost_per_selected_ratio"], 6) == 1.25
+    summary = module.format_energy_measurement_summary(report)
+    assert "maintenance_alignment_available: True" in summary
+    assert "Maintenance Alignment:" in summary
+    assert "ratio=1.250" in summary
 
 
 def test_energy_measurement_readiness_rejects_unpaired_real_measurements():
@@ -154,6 +317,47 @@ def test_energy_measurement_readiness_rejects_weak_paired_task_ratio():
     assert "ratio=1.250" in summary
 
 
+def test_energy_measurement_readiness_tracks_session_progress_for_partial_pairs():
+    module = _load_module()
+
+    report = module.build_energy_measurement_readiness_report(
+        [
+            _row(
+                module,
+                "sara",
+                "real_data_external_validity",
+                2.0,
+                pair_id="ann-efficiency-real-joule-real_data_external_validity-pair-1",
+                replicate=1,
+            ),
+        ],
+        session_id="ann-efficiency-real-joule",
+    )
+
+    progress = report["measurement_session_progress"]
+    assert progress["planned_pair_count"] >= 1
+    assert progress["partial_pair_count"] >= 1
+    assert report["checks"]["session_pair_completion_passed"] is False
+    summary = module.format_energy_measurement_summary(report)
+    assert "Measurement Session Progress:" in summary
+    assert "status=partial_pair" in summary
+
+
+def test_energy_measurement_readiness_accepts_empty_session_progress_without_rows():
+    module = _load_module()
+
+    report = module.build_energy_measurement_readiness_report([])
+
+    progress = report["measurement_session_progress"]
+    assert progress["schema"] == "sara-physical-energy-session-progress-v1"
+    assert progress["planned_pair_count"] == 6
+    assert progress["missing_pair_count"] == 6
+    assert report["checks"]["session_pair_completion_passed"] is True
+    summary = module.format_measurement_session_progress_summary(progress)
+    assert "SARA Physical Energy Session Progress" in summary
+    assert "missing_pair_count: 6" in summary
+
+
 def test_energy_measurement_session_plan_uses_custom_session_and_path():
     module = _load_module()
 
@@ -169,6 +373,9 @@ def test_energy_measurement_session_plan_uses_custom_session_and_path():
         "lab-session-real_data_external_validity-sara-"
     )
     assert report["measurement_protocol"]["recommended_path"] == "data/raw/lab_measurements.jsonl"
+    assert session_plan["planned_runs"][0]["pair_id_template"].startswith(
+        "lab-session-real_data_external_validity-pair-"
+    )
 
 
 def test_format_measurement_session_plan_summary_lists_commands():
@@ -181,6 +388,7 @@ def test_format_measurement_session_plan_summary_lists_commands():
     assert "planned_run_count: 4" in summary
     assert "real_energy_session" in summary
     assert "record-energy-measurement" in summary
+    assert "run-physical-energy-pair" in summary
 
 
 def test_energy_measurement_readiness_rejects_bad_rows():
@@ -227,6 +435,40 @@ def test_build_measurement_row_derives_joules_from_average_watts():
     assert row["average_watts"] == 0.8
     assert row["duration_seconds"] == 2.5
     assert row["joules_derivation"] == "average_watts_x_duration_seconds"
+
+
+def test_build_measurement_row_accepts_optional_maintenance_fields():
+    module = _load_module()
+
+    row = module.build_measurement_row(
+        run_id="sara-maintenance-run",
+        system="sara",
+        task="qa",
+        success_count=5,
+        joules=1.0,
+        source="manual",
+        pair_id="pair-maintenance",
+        environment_fingerprint="env",
+        task_fixture_hash="fixture",
+        success_criterion_id="criterion",
+        measurement_boundary="boundary",
+        measurement_tool="meter",
+        cpu_model="cpu",
+        process_affinity="core-0",
+        power_mode="ac",
+        warmup_count=1,
+        measured_repetitions=5,
+        trial_count=5,
+        maintenance_selected_count=7,
+        maintenance_phase_count=3,
+        maintenance_refresh_count=2,
+        maintenance_event_cost=0.4,
+    )
+
+    assert row["maintenance_selected_count"] == 7
+    assert row["maintenance_phase_count"] == 3
+    assert row["maintenance_refresh_count"] == 2
+    assert row["maintenance_event_cost"] == 0.4
 
 
 def test_build_measurement_row_rejects_incomplete_average_watt_input():

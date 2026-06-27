@@ -26,6 +26,11 @@ DEFAULT_REPORT_PATH = workspace_path("evaluation", "energy_measurement_readiness
 DEFAULT_SUMMARY_PATH = workspace_path("evaluation", "energy_measurement_readiness_summary.txt")
 DEFAULT_SESSION_PLAN_PATH = workspace_path("evaluation", "energy_measurement_session_plan.json")
 DEFAULT_SESSION_PLAN_SUMMARY_PATH = workspace_path("evaluation", "energy_measurement_session_plan.txt")
+DEFAULT_SESSION_PROGRESS_PATH = workspace_path("evaluation", "physical_energy_session_progress.json")
+DEFAULT_SESSION_PROGRESS_SUMMARY_PATH = workspace_path("evaluation", "physical_energy_session_progress.txt")
+DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH = workspace_path(
+    "evaluation", "internal_maintenance_efficiency_benchmark.json"
+)
 REQUIRED_FIELDS = {
     "run_id",
     "system",
@@ -71,6 +76,12 @@ CANONICAL_MEASUREMENT_TASKS = (
     "real_data_external_validity",
     "energy_efficiency_benchmark",
 )
+MAINTENANCE_FIELDS = (
+    "maintenance_selected_count",
+    "maintenance_phase_count",
+    "maintenance_refresh_count",
+    "maintenance_event_cost",
+)
 
 
 def _safe_float(value: Any) -> float:
@@ -85,6 +96,79 @@ def _safe_int(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def _load_optional_json(path: str) -> Dict[str, Any] | None:
+    if not path or not os.path.exists(path):
+        return None
+    with open(path, "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    return payload if isinstance(payload, dict) else None
+
+
+def _internal_maintenance_reference_summary(report: Mapping[str, Any] | None) -> Dict[str, Any]:
+    payload = report if isinstance(report, Mapping) else {}
+    counts = payload.get("counts", {}) if isinstance(payload.get("counts"), Mapping) else {}
+    normalized = (
+        payload.get("normalized_metrics", {})
+        if isinstance(payload.get("normalized_metrics"), Mapping)
+        else {}
+    )
+    metrics = payload.get("metrics", {}) if isinstance(payload.get("metrics"), Mapping) else {}
+    return {
+        "available": bool(payload),
+        "observed_only": bool(payload.get("observed_only", False)),
+        "passed": bool(payload.get("passed", False)),
+        "maintenance_selected_count": _safe_int(counts.get("maintenance_selected_count")),
+        "maintenance_refresh_count": _safe_int(counts.get("maintenance_refresh_count")),
+        "maintenance_idle_self_state_ok_count": _safe_int(
+            counts.get("maintenance_idle_self_state_ok_count")
+        ),
+        "maintenance_event_cost": _safe_float(normalized.get("maintenance_event_cost")),
+        "maintenance_event_cost_per_selected": _safe_float(
+            normalized.get("maintenance_event_cost_per_selected")
+        ),
+        "maintenance_self_state_continuity_observed": _safe_float(
+            metrics.get("maintenance_self_state_continuity_observed")
+        ),
+        "maintenance_event_cost_efficiency_observed": _safe_float(
+            metrics.get("maintenance_event_cost_efficiency_observed")
+        ),
+    }
+
+
+def _maintenance_alignment_summary(
+    aggregate: Mapping[str, Any],
+    internal_maintenance_reference: Mapping[str, Any],
+) -> Dict[str, Any]:
+    if not internal_maintenance_reference or not bool(
+        internal_maintenance_reference.get("available", False)
+    ):
+        return {"available": False}
+    actual_selected = _safe_float(aggregate.get("sara_maintenance_event_cost_per_selected"))
+    actual_refresh = _safe_float(aggregate.get("sara_maintenance_event_cost_per_refresh"))
+    reference_selected = _safe_float(
+        internal_maintenance_reference.get("maintenance_event_cost_per_selected")
+    )
+    reference_refresh = _safe_float(
+        internal_maintenance_reference.get("maintenance_event_cost_per_refresh")
+    )
+    return {
+        "available": _safe_int(aggregate.get("valid_pair_count")) > 0 and actual_selected > 0.0,
+        "valid_pair_count": _safe_int(aggregate.get("valid_pair_count")),
+        "sara_physical_maintenance_event_cost_per_selected": actual_selected,
+        "reference_maintenance_event_cost_per_selected": reference_selected,
+        "maintenance_event_cost_per_selected_delta": actual_selected - reference_selected,
+        "maintenance_event_cost_per_selected_ratio": (
+            actual_selected / reference_selected if reference_selected > 0.0 else 0.0
+        ),
+        "sara_physical_maintenance_event_cost_per_refresh": actual_refresh,
+        "reference_maintenance_event_cost_per_refresh": reference_refresh,
+        "maintenance_event_cost_per_refresh_delta": actual_refresh - reference_refresh,
+        "maintenance_event_cost_per_refresh_ratio": (
+            actual_refresh / reference_refresh if reference_refresh > 0.0 else 0.0
+        ),
+    }
 
 
 def default_environment_fingerprint(
@@ -157,6 +241,10 @@ def build_measurement_row(
     measured_repetitions: int = 1,
     trial_count: int | None = None,
     run_order: int = 1,
+    maintenance_selected_count: int | None = None,
+    maintenance_phase_count: int | None = None,
+    maintenance_refresh_count: int | None = None,
+    maintenance_event_cost: float | None = None,
 ) -> Dict[str, Any]:
     resolved_joules = float(joules)
     if resolved_joules <= 0.0 and average_watts is not None and duration_seconds is not None:
@@ -199,6 +287,14 @@ def build_measurement_row(
         row["joules_derivation"] = "average_watts_x_duration_seconds"
     if notes:
         row["notes"] = str(notes)
+    if maintenance_selected_count is not None:
+        row["maintenance_selected_count"] = int(maintenance_selected_count)
+    if maintenance_phase_count is not None:
+        row["maintenance_phase_count"] = int(maintenance_phase_count)
+    if maintenance_refresh_count is not None:
+        row["maintenance_refresh_count"] = int(maintenance_refresh_count)
+    if maintenance_event_cost is not None:
+        row["maintenance_event_cost"] = float(maintenance_event_cost)
     errors = _validate_measurement(row)
     if errors:
         raise ValueError("Invalid energy measurement row: " + ", ".join(errors))
@@ -249,6 +345,14 @@ def _validate_measurement(row: Mapping[str, Any]) -> List[str]:
         errors.append("average_watts_must_be_positive")
     if "duration_seconds" in row and _safe_float(row.get("duration_seconds")) <= 0.0:
         errors.append("duration_seconds_must_be_positive")
+    if "maintenance_selected_count" in row and _safe_int(row.get("maintenance_selected_count")) < 0:
+        errors.append("maintenance_selected_count_must_be_nonnegative")
+    if "maintenance_phase_count" in row and _safe_int(row.get("maintenance_phase_count")) < 0:
+        errors.append("maintenance_phase_count_must_be_nonnegative")
+    if "maintenance_refresh_count" in row and _safe_int(row.get("maintenance_refresh_count")) < 0:
+        errors.append("maintenance_refresh_count_must_be_nonnegative")
+    if "maintenance_event_cost" in row and _safe_float(row.get("maintenance_event_cost")) < 0.0:
+        errors.append("maintenance_event_cost_must_be_nonnegative")
     return errors
 
 
@@ -319,6 +423,64 @@ def _aggregate_measurements(
     ann = by_system["ann"]
     sara_joule_per_success = sara["joules"] / max(sara["success_count"], 1e-9)
     ann_joule_per_success = ann["joules"] / max(ann["success_count"], 1e-9)
+    sara_maintenance_event_cost_per_success = sum(
+        max(_safe_float(row.get("maintenance_event_cost")), 0.0)
+        for row in rows
+        if str(row.get("system", "")).lower() == "sara"
+    ) / max(sara["success_count"], 1e-9)
+    ann_maintenance_event_cost_per_success = sum(
+        max(_safe_float(row.get("maintenance_event_cost")), 0.0)
+        for row in rows
+        if str(row.get("system", "")).lower() == "ann"
+    ) / max(ann["success_count"], 1e-9)
+    sara_maintenance_event_cost_per_selected = sum(
+        max(_safe_float(row.get("maintenance_event_cost")), 0.0)
+        for row in rows
+        if str(row.get("system", "")).lower() == "sara"
+    ) / max(
+        sum(
+            max(_safe_int(row.get("maintenance_selected_count")), 0)
+            for row in rows
+            if str(row.get("system", "")).lower() == "sara"
+        ),
+        1e-9,
+    )
+    ann_maintenance_event_cost_per_selected = sum(
+        max(_safe_float(row.get("maintenance_event_cost")), 0.0)
+        for row in rows
+        if str(row.get("system", "")).lower() == "ann"
+    ) / max(
+        sum(
+            max(_safe_int(row.get("maintenance_selected_count")), 0)
+            for row in rows
+            if str(row.get("system", "")).lower() == "ann"
+        ),
+        1e-9,
+    )
+    sara_maintenance_event_cost_per_refresh = sum(
+        max(_safe_float(row.get("maintenance_event_cost")), 0.0)
+        for row in rows
+        if str(row.get("system", "")).lower() == "sara"
+    ) / max(
+        sum(
+            max(_safe_int(row.get("maintenance_refresh_count")), 0)
+            for row in rows
+            if str(row.get("system", "")).lower() == "sara"
+        ),
+        1e-9,
+    )
+    ann_maintenance_event_cost_per_refresh = sum(
+        max(_safe_float(row.get("maintenance_event_cost")), 0.0)
+        for row in rows
+        if str(row.get("system", "")).lower() == "ann"
+    ) / max(
+        sum(
+            max(_safe_int(row.get("maintenance_refresh_count")), 0)
+            for row in rows
+            if str(row.get("system", "")).lower() == "ann"
+        ),
+        1e-9,
+    )
     paired_task_ratios: Dict[str, float] = {}
     unpaired_tasks: List[str] = []
     for task, task_bucket in sorted(by_task.items()):
@@ -367,6 +529,38 @@ def _aggregate_measurements(
                 "replicate_index": key[2],
                 "sara_joule_per_success": sara_jps,
                 "ann_joule_per_success": ann_jps,
+                "sara_maintenance_event_cost_per_success": _safe_float(
+                    sara_row.get("maintenance_event_cost")
+                )
+                / max(_safe_int(sara_row.get("success_count")), 1),
+                "ann_maintenance_event_cost_per_success": _safe_float(
+                    ann_row.get("maintenance_event_cost")
+                )
+                / max(_safe_int(ann_row.get("success_count")), 1),
+                "sara_maintenance_selected_per_success": _safe_float(
+                    sara_row.get("maintenance_selected_count")
+                )
+                / max(_safe_int(sara_row.get("success_count")), 1),
+                "ann_maintenance_selected_per_success": _safe_float(
+                    ann_row.get("maintenance_selected_count")
+                )
+                / max(_safe_int(ann_row.get("success_count")), 1),
+                "sara_maintenance_event_cost_per_selected": _safe_float(
+                    sara_row.get("maintenance_event_cost")
+                )
+                / max(_safe_int(sara_row.get("maintenance_selected_count")), 1),
+                "ann_maintenance_event_cost_per_selected": _safe_float(
+                    ann_row.get("maintenance_event_cost")
+                )
+                / max(_safe_int(ann_row.get("maintenance_selected_count")), 1),
+                "sara_maintenance_event_cost_per_refresh": _safe_float(
+                    sara_row.get("maintenance_event_cost")
+                )
+                / max(_safe_int(sara_row.get("maintenance_refresh_count")), 1),
+                "ann_maintenance_event_cost_per_refresh": _safe_float(
+                    ann_row.get("maintenance_event_cost")
+                )
+                / max(_safe_int(ann_row.get("maintenance_refresh_count")), 1),
                 "ann_to_sara_ratio": ann_jps / max(sara_jps, 1e-9),
                 "sara_success_rate": sara_rate,
                 "ann_success_rate": ann_rate,
@@ -383,12 +577,68 @@ def _aggregate_measurements(
         sara_values = [float(pair["sara_joule_per_success"]) for pair in task_pairs]
         ann_values = [float(pair["ann_joule_per_success"]) for pair in task_pairs]
         ratio_values = [float(pair["ann_to_sara_ratio"]) for pair in task_pairs]
+        sara_maintenance_cost_values = [
+            float(pair["sara_maintenance_event_cost_per_success"])
+            for pair in task_pairs
+        ]
+        ann_maintenance_cost_values = [
+            float(pair["ann_maintenance_event_cost_per_success"])
+            for pair in task_pairs
+        ]
+        sara_maintenance_selected_values = [
+            float(pair["sara_maintenance_selected_per_success"])
+            for pair in task_pairs
+        ]
+        ann_maintenance_selected_values = [
+            float(pair["ann_maintenance_selected_per_success"])
+            for pair in task_pairs
+        ]
+        sara_maintenance_selected_cost_values = [
+            float(pair["sara_maintenance_event_cost_per_selected"])
+            for pair in task_pairs
+        ]
+        ann_maintenance_selected_cost_values = [
+            float(pair["ann_maintenance_event_cost_per_selected"])
+            for pair in task_pairs
+        ]
+        sara_maintenance_refresh_cost_values = [
+            float(pair["sara_maintenance_event_cost_per_refresh"])
+            for pair in task_pairs
+        ]
+        ann_maintenance_refresh_cost_values = [
+            float(pair["ann_maintenance_event_cost_per_refresh"])
+            for pair in task_pairs
+        ]
         task_pair_metrics[task] = {
             "valid_pair_count": len(task_pairs),
             "sara_median_joule_per_success": _median(sara_values),
             "sara_joule_per_success_mad": _mad(sara_values),
             "ann_median_joule_per_success": _median(ann_values),
             "ann_joule_per_success_mad": _mad(ann_values),
+            "sara_median_maintenance_event_cost_per_success": _median(
+                sara_maintenance_cost_values
+            ),
+            "ann_median_maintenance_event_cost_per_success": _median(
+                ann_maintenance_cost_values
+            ),
+            "sara_median_maintenance_selected_per_success": _median(
+                sara_maintenance_selected_values
+            ),
+            "ann_median_maintenance_selected_per_success": _median(
+                ann_maintenance_selected_values
+            ),
+            "sara_median_maintenance_event_cost_per_selected": _median(
+                sara_maintenance_selected_cost_values
+            ),
+            "ann_median_maintenance_event_cost_per_selected": _median(
+                ann_maintenance_selected_cost_values
+            ),
+            "sara_median_maintenance_event_cost_per_refresh": _median(
+                sara_maintenance_refresh_cost_values
+            ),
+            "ann_median_maintenance_event_cost_per_refresh": _median(
+                ann_maintenance_refresh_cost_values
+            ),
             "median_ann_to_sara_ratio": _median(ratio_values),
             "ratio_mad": _mad(ratio_values),
             "max_success_rate_delta": max(
@@ -416,6 +666,24 @@ def _aggregate_measurements(
         "tasks": by_task,
         "sara_joule_per_success": float(sara_joule_per_success),
         "ann_joule_per_success": float(ann_joule_per_success),
+        "sara_maintenance_event_cost_per_success": float(
+            sara_maintenance_event_cost_per_success
+        ),
+        "ann_maintenance_event_cost_per_success": float(
+            ann_maintenance_event_cost_per_success
+        ),
+        "sara_maintenance_event_cost_per_selected": float(
+            sara_maintenance_event_cost_per_selected
+        ),
+        "ann_maintenance_event_cost_per_selected": float(
+            ann_maintenance_event_cost_per_selected
+        ),
+        "sara_maintenance_event_cost_per_refresh": float(
+            sara_maintenance_event_cost_per_refresh
+        ),
+        "ann_maintenance_event_cost_per_refresh": float(
+            ann_maintenance_event_cost_per_refresh
+        ),
         "ann_to_sara_joule_efficiency_ratio": float(
             ann_joule_per_success / max(sara_joule_per_success, 1e-9)
         ),
@@ -434,6 +702,10 @@ def _aggregate_measurements(
         else 0.0,
         "has_sara_measurements": sara["row_count"] > 0,
         "has_ann_measurements": ann["row_count"] > 0,
+        "maintenance_trace_rows_present": any(
+            any(field in row for field in MAINTENANCE_FIELDS)
+            for row in rows
+        ),
     }
 
 
@@ -452,6 +724,38 @@ def _session_run_id_template(*, session_id: str, task: str, system: str) -> str:
     return f"{safe_session}-{safe_task}-{safe_system}-<replicate>"
 
 
+def _session_pair_id_template(*, session_id: str, task: str) -> str:
+    safe_session = str(session_id or "energy-session").strip().replace(" ", "-")
+    safe_task = str(task or "task").strip().replace(" ", "-")
+    return f"{safe_session}-{safe_task}-pair-<replicate>"
+
+
+def _session_artifact_prefix(*, session_id: str, task: str) -> str:
+    safe_session = str(session_id or "energy-session").strip().replace(" ", "-")
+    safe_task = str(task or "task").strip().replace(" ", "-")
+    return f"workspace/evaluation/{safe_session}_{safe_task}_r<replicate>"
+
+
+def _session_manifest_path(*, session_id: str, task: str) -> str:
+    return _session_artifact_prefix(session_id=session_id, task=task) + "_manifest.json"
+
+
+def _session_trace_path(*, session_id: str, task: str) -> str:
+    return _session_artifact_prefix(session_id=session_id, task=task) + "_trace.jsonl"
+
+
+def _session_report_path(*, session_id: str, task: str) -> str:
+    return _session_artifact_prefix(session_id=session_id, task=task) + "_report.json"
+
+
+def _session_summary_path(*, session_id: str, task: str) -> str:
+    return _session_artifact_prefix(session_id=session_id, task=task) + "_summary.txt"
+
+
+def _session_meter_template_path(*, session_id: str, task: str) -> str:
+    return _session_artifact_prefix(session_id=session_id, task=task) + "_meter_template.json"
+
+
 def _record_command_for_session(*, session_id: str, task: str, system: str) -> str:
     run_id = _session_run_id_template(session_id=session_id, task=task, system=system)
     return (
@@ -464,8 +768,234 @@ def _record_command_for_session(*, session_id: str, task: str, system: str) -> s
         "--measurement-boundary <boundary-id> --measurement-tool <tool-id> "
         "--cpu-model <cpu> --thread-count <threads> --process-affinity <affinity> "
         "--power-mode <mode> --warmup-count <count> "
-        "--measured-repetitions <count> --run-order <1-or-2>"
+        "--measured-repetitions <count> --run-order <1-or-2> "
+        "--maintenance-selected-count <count> --maintenance-phase-count <count> "
+        "--maintenance-refresh-count <count> --maintenance-event-cost <cost>"
     )
+
+
+def _replace_replicate_placeholder(value: str, replicate_index: int) -> str:
+    return str(value).replace("<replicate>", str(replicate_index))
+
+
+def _physical_pair_command_for_session(*, session_id: str, task: str) -> str:
+    pair_id = _session_pair_id_template(session_id=session_id, task=task)
+    meter_template_path = _session_meter_template_path(
+        session_id=session_id,
+        task=task,
+    )
+    manifest_path = _session_manifest_path(session_id=session_id, task=task)
+    trace_path = _session_trace_path(session_id=session_id, task=task)
+    report_path = _session_report_path(session_id=session_id, task=task)
+    summary_path = _session_summary_path(session_id=session_id, task=task)
+    return (
+        "python scripts/sara_cli.py run-physical-energy-pair "
+        f"--pair-id {pair_id} --replicate-index <replicate> "
+        "--measurement-tool <tool-id> --thread-count <threads> "
+        "--process-affinity <affinity> --power-mode <mode> "
+        f"--manifest-path {manifest_path} --trace-path {trace_path} "
+        f"--report-path {report_path} --summary-path {summary_path} "
+        f"--meter-template-path {meter_template_path}"
+    )
+
+
+def _build_measurement_session_progress(
+    session_plan: Mapping[str, Any],
+    rows: Sequence[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    planned_runs = (
+        session_plan.get("planned_runs", [])
+        if isinstance(session_plan.get("planned_runs"), list)
+        else []
+    )
+    grouped: Dict[tuple[str, str], Dict[str, Any]] = {}
+    for item in planned_runs:
+        if not isinstance(item, Mapping):
+            continue
+        category = str(item.get("category", "") or "").strip()
+        task = str(item.get("task", "") or "").strip()
+        pair_id_template = str(item.get("pair_id_template", "") or "").strip()
+        pair_command_template = str(item.get("pair_command_template", "") or "").strip()
+        if not category or not task or not pair_id_template:
+            continue
+        key = (category, task)
+        entry = grouped.setdefault(
+            key,
+            {
+                "category": category,
+                "task": task,
+                "priority": str(item.get("priority", "") or ""),
+                "replicate_count": 0,
+                "pair_id_template": pair_id_template,
+                "pair_command_template": pair_command_template,
+                "meter_template_path": str(item.get("meter_template_path", "") or ""),
+                "report_path_template": str(item.get("report_path_template", "") or ""),
+                "summary_path_template": str(item.get("summary_path_template", "") or ""),
+            },
+        )
+        entry["replicate_count"] = max(
+            int(entry.get("replicate_count", 0) or 0),
+            _safe_int(item.get("replicate_count")) or 1,
+        )
+
+    expected_pairs: List[Dict[str, Any]] = []
+    for _, item in sorted(grouped.items()):
+        replicate_count = max(_safe_int(item.get("replicate_count")), 1)
+        for replicate_index in range(1, replicate_count + 1):
+            expected_pairs.append(
+                {
+                    "category": str(item.get("category", "") or ""),
+                    "task": str(item.get("task", "") or ""),
+                    "priority": str(item.get("priority", "") or ""),
+                    "pair_id": _replace_replicate_placeholder(
+                        str(item.get("pair_id_template", "") or ""),
+                        replicate_index,
+                    ),
+                    "replicate_index": int(replicate_index),
+                    "pair_command": _replace_replicate_placeholder(
+                        str(item.get("pair_command_template", "") or ""),
+                        replicate_index,
+                    ),
+                    "meter_template_path": _replace_replicate_placeholder(
+                        str(item.get("meter_template_path", "") or ""),
+                        replicate_index,
+                    ),
+                    "report_path": _replace_replicate_placeholder(
+                        str(item.get("report_path_template", "") or ""),
+                        replicate_index,
+                    ),
+                    "summary_path": _replace_replicate_placeholder(
+                        str(item.get("summary_path_template", "") or ""),
+                        replicate_index,
+                    ),
+                }
+            )
+
+    pair_index: Dict[tuple[str, str, int], Dict[str, Mapping[str, Any]]] = {}
+    row_errors: List[Dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        errors = _validate_measurement(row)
+        if errors:
+            row_errors.append({"index": index, "errors": errors})
+            continue
+        system = str(row.get("system", "")).lower()
+        if system not in {"sara", "ann"}:
+            continue
+        pair_index.setdefault(_pair_key(row), {})[system] = row
+
+    expected_keys: set[tuple[str, str, int]] = set()
+    pair_statuses: List[Dict[str, Any]] = []
+    for item in expected_pairs:
+        task = str(item.get("task", "") or "")
+        pair_id = str(item.get("pair_id", "") or "")
+        replicate_index = _safe_int(item.get("replicate_index"))
+        key = (task, pair_id, replicate_index)
+        expected_keys.add(key)
+        systems = pair_index.get(key, {})
+        present_systems = sorted(systems.keys())
+        status = "missing_pair"
+        errors: List[str] = []
+        ann_to_sara_ratio = 0.0
+        if set(present_systems) == {"ann", "sara"}:
+            sara_row = systems["sara"]
+            ann_row = systems["ann"]
+            errors = _pair_fairness_errors(sara_row, ann_row)
+            if errors:
+                status = "invalid_pair"
+            else:
+                status = "complete_valid_pair"
+                sara_jps = _safe_float(sara_row.get("joules")) / max(
+                    _safe_int(sara_row.get("success_count")),
+                    1,
+                )
+                ann_jps = _safe_float(ann_row.get("joules")) / max(
+                    _safe_int(ann_row.get("success_count")),
+                    1,
+                )
+                ann_to_sara_ratio = ann_jps / max(sara_jps, 1e-9)
+        elif present_systems:
+            status = "partial_pair"
+            missing = sorted({"sara", "ann"} - set(present_systems))
+            errors = [f"missing_system:{name}" for name in missing]
+        pair_statuses.append(
+            {
+                "category": str(item.get("category", "") or ""),
+                "task": task,
+                "priority": str(item.get("priority", "") or ""),
+                "pair_id": pair_id,
+                "replicate_index": replicate_index,
+                "status": status,
+                "present_systems": present_systems,
+                "errors": errors,
+                "ann_to_sara_joule_efficiency_ratio": float(ann_to_sara_ratio),
+                "pair_command": str(item.get("pair_command", "") or ""),
+                "meter_template_path": str(item.get("meter_template_path", "") or ""),
+                "report_path": str(item.get("report_path", "") or ""),
+                "summary_path": str(item.get("summary_path", "") or ""),
+            }
+        )
+
+    orphan_pairs: List[Dict[str, Any]] = []
+    for key, systems in sorted(pair_index.items()):
+        if key in expected_keys:
+            continue
+        orphan_pairs.append(
+            {
+                "task": key[0],
+                "pair_id": key[1],
+                "replicate_index": key[2],
+                "present_systems": sorted(systems.keys()),
+            }
+        )
+
+    task_progress: Dict[str, Dict[str, int]] = {}
+    for item in pair_statuses:
+        task_bucket = task_progress.setdefault(
+            str(item["task"]),
+            {
+                "planned_pair_count": 0,
+                "complete_valid_pair_count": 0,
+                "invalid_pair_count": 0,
+                "partial_pair_count": 0,
+                "missing_pair_count": 0,
+            },
+        )
+        task_bucket["planned_pair_count"] += 1
+        task_bucket[f"{item['status']}_count"] += 1
+
+    complete_valid_pair_count = sum(
+        1 for item in pair_statuses if str(item.get("status", "")) == "complete_valid_pair"
+    )
+    invalid_pair_count = sum(
+        1 for item in pair_statuses if str(item.get("status", "")) == "invalid_pair"
+    )
+    partial_pair_count = sum(
+        1 for item in pair_statuses if str(item.get("status", "")) == "partial_pair"
+    )
+    missing_pair_count = sum(
+        1 for item in pair_statuses if str(item.get("status", "")) == "missing_pair"
+    )
+    planned_pair_count = len(pair_statuses)
+    return {
+        "schema": "sara-physical-energy-session-progress-v1",
+        "session_id": str(session_plan.get("session_id", "") or ""),
+        "status": (
+            "complete"
+            if planned_pair_count > 0 and complete_valid_pair_count == planned_pair_count
+            else ("in_progress" if complete_valid_pair_count or partial_pair_count else "pending")
+        ),
+        "planned_pair_count": planned_pair_count,
+        "complete_valid_pair_count": complete_valid_pair_count,
+        "invalid_pair_count": invalid_pair_count,
+        "partial_pair_count": partial_pair_count,
+        "missing_pair_count": missing_pair_count,
+        "orphan_pair_count": len(orphan_pairs),
+        "invalid_measurement_row_count": len(row_errors),
+        "task_progress": task_progress,
+        "pair_statuses": pair_statuses,
+        "orphan_pairs": orphan_pairs,
+        "invalid_measurement_rows": row_errors,
+    }
 
 
 def _build_measurement_session_plan(
@@ -500,10 +1030,39 @@ def _build_measurement_session_plan(
                 "priority": str(item.get("priority", "high")),
                 "task": task,
                 "system": system,
+                "replicate_count": _safe_int(item.get("replicate_count")) or 1,
+                "pair_id_template": _session_pair_id_template(
+                    session_id=session_id,
+                    task=task,
+                ),
                 "run_id_template": _session_run_id_template(
                     session_id=session_id,
                     task=task,
                     system=system,
+                ),
+                "manifest_path_template": _session_manifest_path(
+                    session_id=session_id,
+                    task=task,
+                ),
+                "trace_path_template": _session_trace_path(
+                    session_id=session_id,
+                    task=task,
+                ),
+                "report_path_template": _session_report_path(
+                    session_id=session_id,
+                    task=task,
+                ),
+                "summary_path_template": _session_summary_path(
+                    session_id=session_id,
+                    task=task,
+                ),
+                "meter_template_path": _session_meter_template_path(
+                    session_id=session_id,
+                    task=task,
+                ),
+                "pair_command_template": _physical_pair_command_for_session(
+                    session_id=session_id,
+                    task=task,
                 ),
                 "command_template": _record_command_for_session(
                     session_id=session_id,
@@ -526,12 +1085,41 @@ def _build_measurement_session_plan(
                     "priority": str(item.get("priority", "medium")),
                     "task": task,
                     "system": system,
+                    "replicate_count": _safe_int(item.get("replicate_count")) or 1,
                     "observed_ratio": _safe_float(item.get("ann_to_sara_joule_efficiency_ratio")),
                     "required_min": _safe_float(item.get("required_min")),
+                    "pair_id_template": _session_pair_id_template(
+                        session_id=session_id,
+                        task=task,
+                    ),
                     "run_id_template": _session_run_id_template(
                         session_id=session_id,
                         task=task,
                         system=system,
+                    ),
+                    "manifest_path_template": _session_manifest_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "trace_path_template": _session_trace_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "report_path_template": _session_report_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "summary_path_template": _session_summary_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "meter_template_path": _session_meter_template_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "pair_command_template": _physical_pair_command_for_session(
+                        session_id=session_id,
+                        task=task,
                     ),
                     "command_template": _record_command_for_session(
                         session_id=session_id,
@@ -566,6 +1154,7 @@ def _build_measurement_session_plan(
             "Use the same hardware power source and sampling method for both systems in a task pair.",
             "Replace <replicate>, <count>, and <J> with observed values; do not record proxy event costs as joules.",
             "If only average power is available, replace --joules with --average-watts and --duration-seconds.",
+            "If idle maintenance or spontaneous replay is active, record maintenance counts and event cost in the optional maintenance fields.",
         ],
     }
 
@@ -575,6 +1164,7 @@ def _build_measurement_plan(
     aggregate: Mapping[str, Any],
     *,
     min_ann_to_sara_ratio: float,
+    min_paired_replicates_per_task: int,
 ) -> Dict[str, Any]:
     tasks = aggregate.get("tasks", {}) if isinstance(aggregate.get("tasks"), Mapping) else {}
     pending_pairs: List[Dict[str, Any]] = []
@@ -586,6 +1176,7 @@ def _build_measurement_plan(
                         "task": task,
                         "missing_system": system,
                         "priority": "high",
+                        "replicate_count": int(min_paired_replicates_per_task),
                         "command_template": _record_command_template(task=task, system=system),
                     }
                 )
@@ -604,6 +1195,7 @@ def _build_measurement_plan(
                         "task": str(task),
                         "missing_system": system,
                         "priority": "high",
+                        "replicate_count": 1,
                         "command_template": _record_command_template(task=str(task), system=system),
                     }
                 )
@@ -619,6 +1211,7 @@ def _build_measurement_plan(
             "ann_to_sara_joule_efficiency_ratio": float(ratio),
             "required_min": float(min_ann_to_sara_ratio),
             "priority": "medium",
+            "replicate_count": 1,
             "next_action": "Repeat paired measurement or inspect the SARA sparse-event trace for this task.",
         }
         for task, ratio in sorted(paired_ratios.items())
@@ -651,6 +1244,7 @@ def build_energy_measurement_readiness_report(
     session_id: str = "ann-efficiency-real-joule",
     max_success_rate_delta: float = 0.0,
     min_paired_replicates_per_task: int = 3,
+    internal_maintenance_report: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     rows = [dict(row) for row in measurements]
     row_errors = [
@@ -695,12 +1289,29 @@ def build_energy_measurement_readiness_report(
         valid_rows,
         aggregate,
         min_ann_to_sara_ratio=min_ann_to_sara_ratio,
+        min_paired_replicates_per_task=min_paired_replicates_per_task,
     )
     measurement_session_plan = _build_measurement_session_plan(
         measurement_plan,
         measurement_path=measurement_path,
         min_ann_to_sara_ratio=min_ann_to_sara_ratio,
         session_id=session_id,
+    )
+    measurement_session_progress = _build_measurement_session_progress(
+        measurement_session_plan,
+        valid_rows,
+    )
+    session_pair_completion_passed = bool(
+        (not rows)
+        or _safe_int(measurement_session_progress.get("planned_pair_count")) == 0
+        or (
+            _safe_int(measurement_session_progress.get("complete_valid_pair_count"))
+            == _safe_int(measurement_session_progress.get("planned_pair_count"))
+            and _safe_int(measurement_session_progress.get("invalid_pair_count")) == 0
+            and _safe_int(measurement_session_progress.get("partial_pair_count")) == 0
+            and _safe_int(measurement_session_progress.get("orphan_pair_count")) == 0
+            and _safe_int(measurement_session_progress.get("invalid_measurement_row_count")) == 0
+        )
     )
     checks = {
         "schema_ready": True,
@@ -728,8 +1339,16 @@ def build_energy_measurement_readiness_report(
         ),
         "paired_replicate_floor_passed": (not rows) or replicate_floor_passed,
         "run_order_balance_passed": (not rows) or run_order_balanced,
+        "session_pair_completion_passed": session_pair_completion_passed,
     }
     protocol_ready = bool(checks["schema_ready"] and checks["rows_valid"])
+    internal_maintenance_reference = _internal_maintenance_reference_summary(
+        internal_maintenance_report
+    )
+    maintenance_alignment = _maintenance_alignment_summary(
+        aggregate,
+        internal_maintenance_reference,
+    )
     return {
         "schema": "sara-energy-measurement-readiness-v2",
         "passed": bool(protocol_ready and (not rows or all(checks.values()))),
@@ -747,6 +1366,9 @@ def build_energy_measurement_readiness_report(
         "metrics": aggregate,
         "measurement_plan": measurement_plan,
         "measurement_session_plan": measurement_session_plan,
+        "measurement_session_progress": measurement_session_progress,
+        "internal_maintenance_reference": internal_maintenance_reference,
+        "maintenance_alignment": maintenance_alignment,
         "measurement_protocol": {
             "required_fields": sorted(REQUIRED_FIELDS | FAIRNESS_FIELDS),
             "systems": ["sara", "ann"],
@@ -756,6 +1378,7 @@ def build_energy_measurement_readiness_report(
                 "direct_joules",
                 "average_watts_x_duration_seconds",
             ],
+            "optional_maintenance_fields": list(MAINTENANCE_FIELDS),
             "pairing_rule": "Rows must include matching SARA and ANN measurements for each task before real joule evidence is accepted.",
             "fair_pair_rule": "pair_id and replicate_index identify one SARA/ANN pair; all configured environment, task, criterion, boundary, and tool fields must match.",
             "aggregation_rule": "Task claims use the median paired joule_per_success ratio and report median absolute deviation.",
@@ -773,6 +1396,21 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
         if isinstance(report.get("measurement_session_plan"), Mapping)
         else {}
     )
+    session_progress = (
+        report.get("measurement_session_progress", {})
+        if isinstance(report.get("measurement_session_progress"), Mapping)
+        else {}
+    )
+    internal_maintenance_reference = (
+        report.get("internal_maintenance_reference", {})
+        if isinstance(report.get("internal_maintenance_reference"), Mapping)
+        else {}
+    )
+    maintenance_alignment = (
+        report.get("maintenance_alignment", {})
+        if isinstance(report.get("maintenance_alignment"), Mapping)
+        else {}
+    )
     lines = [
         "# SARA Energy Measurement Readiness",
         f"- passed: {bool(report.get('passed', False))}",
@@ -787,9 +1425,20 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
         f"- unpaired_task_count: {_safe_int(metrics.get('unpaired_task_count'))}",
         f"- valid_pair_count: {_safe_int(metrics.get('valid_pair_count'))}",
         f"- invalid_pair_count: {_safe_int(metrics.get('invalid_pair_count'))}",
+        f"- maintenance_trace_rows_present: {bool(metrics.get('maintenance_trace_rows_present', False))}",
         f"- measurement_pending_pair_count: {_safe_int(plan.get('pending_pair_count'))}",
         f"- measurement_weak_pair_count: {_safe_int(plan.get('weak_pair_count'))}",
         f"- measurement_session_planned_run_count: {_safe_int(session_plan.get('planned_run_count'))}",
+        f"- measurement_session_complete_valid_pair_count: {_safe_int(session_progress.get('complete_valid_pair_count'))}",
+        f"- measurement_session_partial_pair_count: {_safe_int(session_progress.get('partial_pair_count'))}",
+        f"- measurement_session_invalid_pair_count: {_safe_int(session_progress.get('invalid_pair_count'))}",
+        f"- measurement_session_orphan_pair_count: {_safe_int(session_progress.get('orphan_pair_count'))}",
+        f"- internal_maintenance_reference_available: {bool(internal_maintenance_reference.get('available', False))}",
+        f"- internal_maintenance_event_cost_per_selected: {_safe_float(internal_maintenance_reference.get('maintenance_event_cost_per_selected')):.3f}",
+        f"- internal_maintenance_self_state_continuity_observed: {_safe_float(internal_maintenance_reference.get('maintenance_self_state_continuity_observed')):.3f}",
+        f"- maintenance_alignment_available: {bool(maintenance_alignment.get('available', False))}",
+        f"- physical_internal_maintenance_event_cost_per_selected: {_safe_float(maintenance_alignment.get('sara_physical_maintenance_event_cost_per_selected')):.3f}",
+        f"- maintenance_event_cost_per_selected_alignment_ratio: {_safe_float(maintenance_alignment.get('maintenance_event_cost_per_selected_ratio')):.3f}",
         "Checks:",
     ]
     for name in sorted(checks):
@@ -823,6 +1472,25 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
             )
     else:
         lines.append("- weak_pairs: none")
+    pair_statuses = (
+        session_progress.get("pair_statuses", [])
+        if isinstance(session_progress.get("pair_statuses"), list)
+        else []
+    )
+    lines.append("Measurement Session Progress:")
+    if pair_statuses:
+        for item in pair_statuses[:8]:
+            if not isinstance(item, Mapping):
+                continue
+            lines.append(
+                "  - "
+                f"task={item.get('task', '')}, "
+                f"pair_id={item.get('pair_id', '')}, "
+                f"replicate_index={_safe_int(item.get('replicate_index'))}, "
+                f"status={item.get('status', '')}"
+            )
+    else:
+        lines.append("- pair_statuses: none")
     planned_runs = (
         session_plan.get("planned_runs", [])
         if isinstance(session_plan.get("planned_runs"), list)
@@ -841,8 +1509,33 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
                 f"run_id_template={item.get('run_id_template', '')}, "
                 f"command={item.get('command_template', '')}"
             )
+            lines.append(
+                "    "
+                f"pair_command={item.get('pair_command_template', '')}"
+            )
     else:
         lines.append("- planned_runs: none")
+    if internal_maintenance_reference:
+        lines.append("Internal Maintenance Reference:")
+        lines.append(
+            "- "
+            f"available={bool(internal_maintenance_reference.get('available', False))}, "
+            f"observed_only={bool(internal_maintenance_reference.get('observed_only', False))}, "
+            f"passed={bool(internal_maintenance_reference.get('passed', False))}, "
+            f"selected={_safe_int(internal_maintenance_reference.get('maintenance_selected_count'))}, "
+            f"refresh={_safe_int(internal_maintenance_reference.get('maintenance_refresh_count'))}, "
+            f"event_cost_per_selected={_safe_float(internal_maintenance_reference.get('maintenance_event_cost_per_selected')):.3f}"
+        )
+    if maintenance_alignment:
+        lines.append("Maintenance Alignment:")
+        lines.append(
+            "- "
+            f"available={bool(maintenance_alignment.get('available', False))}, "
+            f"physical_event_cost_per_selected={_safe_float(maintenance_alignment.get('sara_physical_maintenance_event_cost_per_selected')):.3f}, "
+            f"reference_event_cost_per_selected={_safe_float(maintenance_alignment.get('reference_maintenance_event_cost_per_selected')):.3f}, "
+            f"ratio={_safe_float(maintenance_alignment.get('maintenance_event_cost_per_selected_ratio')):.3f}, "
+            f"delta={_safe_float(maintenance_alignment.get('maintenance_event_cost_per_selected_delta')):.3f}"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -886,12 +1579,104 @@ def format_measurement_session_plan_summary(session_plan: Mapping[str, Any]) -> 
                 f"run_id_template={item.get('run_id_template', '')}"
             )
             lines.append(f"  command: {item.get('command_template', '')}")
+            lines.append(f"  pair_command: {item.get('pair_command_template', '')}")
+            lines.append(f"  meter_template_path: {item.get('meter_template_path', '')}")
     else:
         lines.append("- none")
     notes = session_plan.get("operator_notes", []) if isinstance(session_plan.get("operator_notes"), list) else []
     lines.append("Operator Notes:")
     for note in notes:
         lines.append(f"- {note}")
+    return "\n".join(lines) + "\n"
+
+
+def format_measurement_session_progress_summary(
+    session_progress: Mapping[str, Any],
+    internal_maintenance_reference: Mapping[str, Any] | None = None,
+) -> str:
+    task_progress = (
+        session_progress.get("task_progress", {})
+        if isinstance(session_progress.get("task_progress"), Mapping)
+        else {}
+    )
+    pair_statuses = (
+        session_progress.get("pair_statuses", [])
+        if isinstance(session_progress.get("pair_statuses"), list)
+        else []
+    )
+    orphan_pairs = (
+        session_progress.get("orphan_pairs", [])
+        if isinstance(session_progress.get("orphan_pairs"), list)
+        else []
+    )
+    lines = [
+        "# SARA Physical Energy Session Progress",
+        f"- schema: {session_progress.get('schema', '')}",
+        f"- session_id: {session_progress.get('session_id', '')}",
+        f"- status: {session_progress.get('status', '')}",
+        f"- planned_pair_count: {_safe_int(session_progress.get('planned_pair_count'))}",
+        f"- complete_valid_pair_count: {_safe_int(session_progress.get('complete_valid_pair_count'))}",
+        f"- invalid_pair_count: {_safe_int(session_progress.get('invalid_pair_count'))}",
+        f"- partial_pair_count: {_safe_int(session_progress.get('partial_pair_count'))}",
+        f"- missing_pair_count: {_safe_int(session_progress.get('missing_pair_count'))}",
+        f"- orphan_pair_count: {_safe_int(session_progress.get('orphan_pair_count'))}",
+        f"- invalid_measurement_row_count: {_safe_int(session_progress.get('invalid_measurement_row_count'))}",
+        "Task Progress:",
+    ]
+    if task_progress:
+        for task, metrics in sorted(task_progress.items()):
+            if not isinstance(metrics, Mapping):
+                continue
+            lines.append(
+                "- "
+                f"task={task}, "
+                f"planned={_safe_int(metrics.get('planned_pair_count'))}, "
+                f"complete={_safe_int(metrics.get('complete_valid_pair_count'))}, "
+                f"partial={_safe_int(metrics.get('partial_pair_count'))}, "
+                f"invalid={_safe_int(metrics.get('invalid_pair_count'))}, "
+                f"missing={_safe_int(metrics.get('missing_pair_count'))}"
+            )
+    else:
+        lines.append("- none")
+    lines.append("Pair Statuses:")
+    if pair_statuses:
+        for item in pair_statuses:
+            if not isinstance(item, Mapping):
+                continue
+            lines.append(
+                "- "
+                f"task={item.get('task', '')}, "
+                f"pair_id={item.get('pair_id', '')}, "
+                f"replicate_index={_safe_int(item.get('replicate_index'))}, "
+                f"status={item.get('status', '')}"
+            )
+    else:
+        lines.append("- none")
+    lines.append("Orphan Pairs:")
+    if orphan_pairs:
+        for item in orphan_pairs:
+            if not isinstance(item, Mapping):
+                continue
+            lines.append(
+                "- "
+                f"task={item.get('task', '')}, "
+                f"pair_id={item.get('pair_id', '')}, "
+                f"replicate_index={_safe_int(item.get('replicate_index'))}"
+            )
+    else:
+        lines.append("- none")
+    maintenance_reference = (
+        internal_maintenance_reference if isinstance(internal_maintenance_reference, Mapping) else {}
+    )
+    if maintenance_reference:
+        lines.append("Internal Maintenance Reference:")
+        lines.append(
+            "- "
+            f"available={bool(maintenance_reference.get('available', False))}, "
+            f"passed={bool(maintenance_reference.get('passed', False))}, "
+            f"event_cost_per_selected={_safe_float(maintenance_reference.get('maintenance_event_cost_per_selected')):.3f}, "
+            f"continuity={_safe_float(maintenance_reference.get('maintenance_self_state_continuity_observed')):.3f}"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -902,6 +1687,9 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--session-plan-path", default=DEFAULT_SESSION_PLAN_PATH)
     parser.add_argument("--session-plan-summary-path", default=DEFAULT_SESSION_PLAN_SUMMARY_PATH)
+    parser.add_argument("--session-progress-path", default=DEFAULT_SESSION_PROGRESS_PATH)
+    parser.add_argument("--session-progress-summary-path", default=DEFAULT_SESSION_PROGRESS_SUMMARY_PATH)
+    parser.add_argument("--internal-maintenance-report-path", default=DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH)
     parser.add_argument("--min-ann-to-sara-ratio", type=float, default=1.0)
     parser.add_argument("--session-id", default="ann-efficiency-real-joule")
     parser.add_argument("--append-measurement", action="store_true")
@@ -930,6 +1718,10 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--measured-repetitions", type=int, default=1)
     parser.add_argument("--trial-count", type=int, default=None)
     parser.add_argument("--run-order", type=int, default=1)
+    parser.add_argument("--maintenance-selected-count", type=int, default=None)
+    parser.add_argument("--maintenance-phase-count", type=int, default=None)
+    parser.add_argument("--maintenance-refresh-count", type=int, default=None)
+    parser.add_argument("--maintenance-event-cost", type=float, default=None)
     parser.add_argument("--max-success-rate-delta", type=float, default=0.0)
     parser.add_argument("--min-paired-replicates-per-task", type=int, default=3)
     args = parser.parse_args(argv)
@@ -961,6 +1753,10 @@ def main(argv: List[str] | None = None) -> int:
             measured_repetitions=args.measured_repetitions,
             trial_count=args.trial_count,
             run_order=args.run_order,
+            maintenance_selected_count=args.maintenance_selected_count,
+            maintenance_phase_count=args.maintenance_phase_count,
+            maintenance_refresh_count=args.maintenance_refresh_count,
+            maintenance_event_cost=args.maintenance_event_cost,
         )
         append_measurement(args.measurement_path, row)
 
@@ -972,14 +1768,23 @@ def main(argv: List[str] | None = None) -> int:
         session_id=args.session_id,
         max_success_rate_delta=args.max_success_rate_delta,
         min_paired_replicates_per_task=args.min_paired_replicates_per_task,
+        internal_maintenance_report=_load_optional_json(args.internal_maintenance_report_path),
     )
     report_path = ensure_parent_directory(args.report_path)
     summary_path = ensure_parent_directory(args.summary_path)
     session_plan_path = ensure_parent_directory(args.session_plan_path)
     session_plan_summary_path = ensure_parent_directory(args.session_plan_summary_path)
+    session_progress_path = ensure_parent_directory(args.session_progress_path)
+    session_progress_summary_path = ensure_parent_directory(args.session_progress_summary_path)
     session_plan = report.get("measurement_session_plan", {})
     if not isinstance(session_plan, Mapping):
         session_plan = {}
+    session_progress = report.get("measurement_session_progress", {})
+    if not isinstance(session_progress, Mapping):
+        session_progress = {}
+    internal_maintenance_reference = report.get("internal_maintenance_reference", {})
+    if not isinstance(internal_maintenance_reference, Mapping):
+        internal_maintenance_reference = {}
     with open(report_path, "w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2, ensure_ascii=False, sort_keys=True)
     with open(summary_path, "w", encoding="utf-8") as handle:
@@ -988,6 +1793,15 @@ def main(argv: List[str] | None = None) -> int:
         json.dump(session_plan, handle, indent=2, ensure_ascii=False, sort_keys=True)
     with open(session_plan_summary_path, "w", encoding="utf-8") as handle:
         handle.write(format_measurement_session_plan_summary(session_plan))
+    with open(session_progress_path, "w", encoding="utf-8") as handle:
+        json.dump(session_progress, handle, indent=2, ensure_ascii=False, sort_keys=True)
+    with open(session_progress_summary_path, "w", encoding="utf-8") as handle:
+        handle.write(
+            format_measurement_session_progress_summary(
+                session_progress,
+                internal_maintenance_reference=internal_maintenance_reference,
+            )
+        )
     print(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True))
     return 0 if bool(report.get("passed", False)) else 1
 

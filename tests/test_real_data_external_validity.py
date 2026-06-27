@@ -91,6 +91,14 @@ def test_real_data_external_validity_passes_and_reports_ann_cost_advantage(tmp_p
     assert report["benchmark_context"]["pretrained_embedding_faiss_reference_reason"] == "not_configured"
     assert report["benchmark_context"]["cross_encoder_reference_available"] is False
     assert report["benchmark_context"]["cross_encoder_reference_reason"] == "not_configured"
+    assert report["reference_readiness"]["status"] == "proxy_only"
+    assert report["reference_readiness"]["ready_reference_count"] == 0
+    assert report["reference_readiness"]["configured_reference_count"] == 0
+    assert report["metrics"]["reference_ready_count"] == 0.0
+    assert report["metrics"]["reference_configured_count"] == 0.0
+    summary = module.format_real_data_external_validity_summary(report)
+    assert "reference_readiness_status: proxy_only" in summary
+    assert "Reference Readiness:" in summary
     assert len(report["benchmark_context"]["corpus_sha256"]) == 64
     assert report["benchmark_context"]["retriever_strategy"]
     per_task_summary = report["per_task_external_validity_summary"]
@@ -199,6 +207,10 @@ def test_real_data_external_validity_marks_missing_pretrained_embedding_director
     assert report["metrics"]["real_pretrained_embedding_reference_available"] == 0.0
     assert report["metrics"]["real_pretrained_embedding_faiss_reference_available"] == 0.0
     assert report["metrics"]["real_cross_encoder_reference_available"] == 0.0
+    assert report["reference_readiness"]["status"] == "proxy_only"
+    assert report["reference_readiness"]["configured_reference_count"] == 2
+    assert report["reference_readiness"]["missing_directory_count"] == 2
+    assert report["reference_readiness"]["next_actions"][0]["category"] == "missing_local_reference_directory"
 
 
 def test_real_data_external_validity_marks_missing_cross_encoder_directory(tmp_path):
@@ -226,6 +238,8 @@ def test_real_data_external_validity_marks_missing_cross_encoder_directory(tmp_p
     assert report["ann_cross_encoder_reference"]["available"] is False
     assert report["ann_cross_encoder_reference"]["reason"] == "missing_directory"
     assert report["metrics"]["real_cross_encoder_reference_available"] == 0.0
+    assert report["reference_readiness"]["configured_reference_count"] == 1
+    assert report["reference_readiness"]["missing_directory_count"] == 1
 
 
 def test_metabolic_sparse_retriever_early_stops_on_discriminative_token():

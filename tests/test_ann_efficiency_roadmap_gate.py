@@ -59,6 +59,23 @@ def _external_validity_report(ratio=6.0):
         "checks": {
             "trend.no_regressions": True,
         },
+        "reference_readiness": {
+            "status": "partial",
+            "references": [
+                {
+                    "reference_id": "ann_cross_encoder_reference",
+                    "label": "Local Cross-Encoder Reference",
+                    "available": False,
+                    "reason": "not_configured",
+                },
+                {
+                    "reference_id": "ann_pretrained_embedding_reference",
+                    "label": "Local Embedding Reference",
+                    "available": False,
+                    "reason": "not_configured",
+                },
+            ],
+        },
     }
 
 
@@ -120,7 +137,21 @@ def _energy_measurement_report(real_measurements=False):
             "ann_to_sara_joule_efficiency_ratio": 4.0 if real_measurements else 0.0,
             "paired_task_count": 1.0 if real_measurements else 0.0,
             "min_paired_task_ann_to_sara_ratio": 4.0 if real_measurements else 0.0,
+            "maintenance_trace_rows_present": bool(real_measurements),
+            "sara_maintenance_event_cost_per_success": 0.06 if real_measurements else 0.0,
+            "ann_maintenance_event_cost_per_success": 0.02 if real_measurements else 0.0,
         },
+        "maintenance_alignment": (
+            {
+                "available": True,
+                "sara_physical_maintenance_event_cost_per_selected": 0.05,
+                "reference_maintenance_event_cost_per_selected": 0.04,
+                "maintenance_event_cost_per_selected_delta": 0.01,
+                "maintenance_event_cost_per_selected_ratio": 1.25,
+            }
+            if real_measurements
+            else {"available": False}
+        ),
     }
     if not real_measurements:
         report["measurement_plan"] = {
@@ -158,6 +189,28 @@ def _energy_measurement_report(real_measurements=False):
                 }
             ],
         }
+        report["measurement_session_progress"] = {
+            "planned_pair_count": 1,
+            "complete_valid_pair_count": 0,
+            "partial_pair_count": 0,
+            "invalid_pair_count": 0,
+            "missing_pair_count": 1,
+            "orphan_pair_count": 0,
+            "pair_statuses": [
+                {
+                    "status": "missing_pair",
+                    "priority": "high",
+                    "task": "real_data_external_validity",
+                    "pair_id": "ann-efficiency-real-joule-real_data_external_validity-pair-1",
+                    "replicate_index": 1,
+                    "pair_command": (
+                        "python scripts/sara_cli.py run-physical-energy-pair "
+                        "--pair-id ann-efficiency-real-joule-real_data_external_validity-pair-1 "
+                        "--replicate-index 1"
+                    ),
+                }
+            ],
+        }
     else:
         report["measurement_plan"] = {
             "pending_pair_count": 0,
@@ -166,6 +219,15 @@ def _energy_measurement_report(real_measurements=False):
             "weak_pairs": [],
         }
         report["measurement_session_plan"] = {"planned_run_count": 0, "planned_runs": []}
+        report["measurement_session_progress"] = {
+            "planned_pair_count": 0,
+            "complete_valid_pair_count": 0,
+            "partial_pair_count": 0,
+            "invalid_pair_count": 0,
+            "missing_pair_count": 0,
+            "orphan_pair_count": 0,
+            "pair_statuses": [],
+        }
     return report
 
 
@@ -177,6 +239,24 @@ def _operational_report():
         "checks": {
             "external_validity": {"passed": True},
             "external_validity_ladder": {"passed": True},
+        },
+    }
+
+
+def _internal_maintenance_report():
+    return {
+        "passed": True,
+        "observed_only": True,
+        "counts": {
+            "maintenance_selected_count": 4,
+            "maintenance_refresh_count": 2,
+        },
+        "normalized_metrics": {
+            "maintenance_event_cost_per_selected": 1.5,
+        },
+        "metrics": {
+            "maintenance_self_state_continuity_observed": 1.0,
+            "maintenance_event_cost_efficiency_observed": 1.0,
         },
     }
 
@@ -202,20 +282,49 @@ def test_ann_efficiency_roadmap_gate_passes_all_stages():
     assert report["artifact_state"]["real_data_external_validity"] == "passed"
     assert report["artifact_state"]["real_data_external_validity_ladder"] == "passed"
     assert report["artifact_state"]["energy_measurement_readiness"] == "present"
+    assert report["artifact_state"]["internal_maintenance_efficiency"] == "missing"
     assert report["artifact_state"]["operational_readiness"] == "passed"
-    assert report["next_evidence_action_count"] == 1
-    assert report["next_evidence_actions"][0]["source"] == "energy_measurement_session_plan"
-    assert report["next_evidence_actions"][0]["category"] == "collect_missing_pair"
-    assert report["next_evidence_actions"][0]["run_id_template"].startswith("ann-efficiency-real-joule")
+    assert report["next_evidence_action_count"] == 4
+    assert report["next_evidence_actions"][0]["source"] == "energy_measurement_session_progress"
+    assert report["next_evidence_actions"][0]["category"] == "missing_pair"
+    assert report["next_evidence_actions"][0]["pair_id"].startswith("ann-efficiency-real-joule")
+    assert report["next_evidence_actions"][1]["source"] == "external_reference_readiness"
+    assert report["next_evidence_actions"][1]["category"] == "configure_reference"
+    assert report["next_evidence_actions"][3]["category"] == "missing_internal_maintenance_reference"
     assert all(stage["passed"] for stage in report["stages"])
+    stage_6 = report["stages"][5]
+    assert stage_6["metrics"]["maintenance_trace_rows_present"] == 0.0
+    assert stage_6["metrics"]["internal_maintenance_event_cost_per_selected"] == 0.0
 
     summary = module.format_ann_efficiency_roadmap_summary(report)
     assert "SARA ANN Efficiency Roadmap Gate" in summary
-    assert "- artifact_state: proxy=passed, phase8_single=passed, phase8_ladder=passed, phase6=present, operational=passed" in summary
+    assert "- artifact_state: proxy=passed, phase8_single=passed, phase8_ladder=passed, phase6=present, maintenance=missing, operational=passed" in summary
     assert "stage_3_scale_ladder_advantage: PASS" in summary
-    assert "Next Evidence Actions: 1" in summary
-    assert "real_energy_session" in summary
-    assert "record-energy-measurement" in summary
+    assert "Next Evidence Actions: 4" in summary
+    assert "run-physical-energy-pair" in summary
+    assert "Configure Local Cross-Encoder Reference" in summary
+
+
+def test_ann_efficiency_roadmap_gate_surfaces_maintenance_metrics_when_present():
+    module = _load_gate_module()
+
+    report = module.build_ann_efficiency_roadmap_report(
+        energy_report=_energy_report(),
+        external_validity_report=_external_validity_report(),
+        external_ladder_report=_external_ladder_report(),
+        energy_measurement_report=_energy_measurement_report(real_measurements=True),
+        internal_maintenance_report=_internal_maintenance_report(),
+        operational_report=_operational_report(),
+    )
+
+    stage_6 = report["stages"][5]
+    assert stage_6["metrics"]["maintenance_trace_rows_present"] == 1.0
+    assert stage_6["metrics"]["sara_maintenance_event_cost_per_success"] == 0.06
+    assert stage_6["metrics"]["ann_maintenance_event_cost_per_success"] == 0.02
+    assert stage_6["metrics"]["internal_maintenance_event_cost_per_selected"] == 1.5
+    assert stage_6["metrics"]["internal_maintenance_event_cost_efficiency_observed"] == 1.0
+    assert stage_6["metrics"]["physical_internal_maintenance_alignment_available"] == 1.0
+    assert stage_6["metrics"]["physical_internal_maintenance_alignment_ratio"] == 1.25
 
 
 def test_ann_efficiency_roadmap_gate_blocks_weak_external_ratio():
@@ -267,6 +376,7 @@ def test_ann_efficiency_roadmap_accepts_real_joule_measurements():
         external_validity_report=_external_validity_report(),
         external_ladder_report=_external_ladder_report(),
         energy_measurement_report=_energy_measurement_report(real_measurements=True),
+        internal_maintenance_report=_internal_maintenance_report(),
         operational_report=_operational_report(),
     )
 
@@ -276,7 +386,34 @@ def test_ann_efficiency_roadmap_accepts_real_joule_measurements():
     assert stage_6["checks"]["real_joule_claim_guard"] is True
     assert stage_6["metrics"]["ann_to_sara_joule_efficiency_ratio"] == 4.0
     assert stage_6["metrics"]["min_paired_task_ann_to_sara_ratio"] == 4.0
-    assert report["next_evidence_action_count"] == 0
+    assert report["next_evidence_action_count"] == 2
+    assert report["next_evidence_actions"][0]["source"] == "external_reference_readiness"
+
+
+def test_ann_efficiency_roadmap_surfaces_maintenance_alignment_drift_action():
+    module = _load_gate_module()
+    measurement_report = _energy_measurement_report(real_measurements=True)
+    measurement_report["maintenance_alignment"] = {
+        "available": True,
+        "sara_physical_maintenance_event_cost_per_selected": 0.09,
+        "reference_maintenance_event_cost_per_selected": 0.04,
+        "maintenance_event_cost_per_selected_delta": 0.05,
+        "maintenance_event_cost_per_selected_ratio": 2.25,
+    }
+
+    report = module.build_ann_efficiency_roadmap_report(
+        energy_report=_energy_report(),
+        external_validity_report=_external_validity_report(),
+        external_ladder_report=_external_ladder_report(),
+        energy_measurement_report=measurement_report,
+        internal_maintenance_report=_internal_maintenance_report(),
+        operational_report=_operational_report(),
+    )
+
+    assert any(
+        action["category"] == "maintenance_alignment_drift"
+        for action in report["next_evidence_actions"]
+    )
 
 
 def test_ann_efficiency_roadmap_blocks_unpaired_real_joule_claims():
@@ -289,9 +426,28 @@ def test_ann_efficiency_roadmap_blocks_unpaired_real_joule_claims():
         external_validity_report=_external_validity_report(),
         external_ladder_report=_external_ladder_report(),
         energy_measurement_report=measurement_report,
+        internal_maintenance_report=_internal_maintenance_report(),
         operational_report=_operational_report(),
     )
 
     assert report["passed"] is False
     assert "stage_6_real_joule_measurement_readiness" in report["failed_stages"]
     assert report["stages"][5]["checks"]["real_joule_claim_guard"] is False
+
+
+def test_ann_efficiency_roadmap_gate_requests_internal_maintenance_when_missing():
+    module = _load_gate_module()
+
+    report = module.build_ann_efficiency_roadmap_report(
+        energy_report=_energy_report(),
+        external_validity_report=_external_validity_report(),
+        external_ladder_report=_external_ladder_report(),
+        energy_measurement_report=_energy_measurement_report(real_measurements=True),
+        operational_report=_operational_report(),
+    )
+
+    assert report["artifact_state"]["internal_maintenance_efficiency"] == "missing"
+    assert any(
+        action["category"] == "missing_internal_maintenance_reference"
+        for action in report["next_evidence_actions"]
+    )

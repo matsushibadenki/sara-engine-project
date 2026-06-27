@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Sequence, Tuple
 
+from sara_engine.dynamics import concept_self_state_alignment
 from sara_engine.ingest import CandidateRelation, ConceptCrystallizationGuard, FrequentSequence, summarize_sequence_relation_support
 from sara_engine.memory.concept_admission import ConceptRevalidationEntry
 
@@ -21,6 +22,7 @@ class ConceptRetryDecision:
     matched_relation_count: int
     sequence_support_count: int
     sequence_support_score: float
+    self_state_alignment_score: float
     distinct_source_refs: int
     distinct_source_hashes: int
     revision_conflict_count: int
@@ -40,6 +42,7 @@ class ConceptRetryDecision:
             "matched_relation_count": int(self.matched_relation_count),
             "sequence_support_count": int(self.sequence_support_count),
             "sequence_support_score": float(self.sequence_support_score),
+            "self_state_alignment_score": float(self.self_state_alignment_score),
             "distinct_source_refs": int(self.distinct_source_refs),
             "distinct_source_hashes": int(self.distinct_source_hashes),
             "revision_conflict_count": int(self.revision_conflict_count),
@@ -84,6 +87,7 @@ class ConceptRevalidationScheduler:
         *,
         current_segment: int,
         frequent_sequences: Sequence[FrequentSequence] = (),
+        self_state_ids: Sequence[int] = (),
     ) -> ConceptRevalidationSchedule:
         sequence_support = summarize_sequence_relation_support(relations, frequent_sequences)
         ready: List[ConceptRetryDecision] = []
@@ -94,6 +98,7 @@ class ConceptRevalidationScheduler:
                 relations,
                 current_segment=current_segment,
                 sequence_support=sequence_support.get(entry.concept_key),
+                self_state_ids=self_state_ids,
             )
             if decision.ready:
                 ready.append(decision)
@@ -134,8 +139,10 @@ class ConceptRevalidationScheduler:
         *,
         current_segment: int,
         sequence_support: Any = None,
+        self_state_ids: Sequence[int] = (),
     ) -> ConceptRetryDecision:
         stats = self._stats_for_concept(entry.concept_key, relations)
+        self_state_alignment = concept_self_state_alignment(entry.concept_key, self_state_ids)
         if entry.attempt_count >= self.max_attempts:
             return self._make_decision(
                 entry,
@@ -145,6 +152,7 @@ class ConceptRevalidationScheduler:
                 stats=stats,
                 retry_after_segment=max(entry.retry_after_segment, current_segment),
                 priority_score=0.0,
+                self_state_alignment=self_state_alignment,
             )
         if current_segment < max(entry.retry_after_segment, entry.last_review_segment + self.min_cooldown_segments):
             return self._make_decision(
@@ -155,6 +163,7 @@ class ConceptRevalidationScheduler:
                 stats=stats,
                 retry_after_segment=max(entry.retry_after_segment, entry.last_review_segment + self.min_cooldown_segments),
                 priority_score=0.0,
+                self_state_alignment=self_state_alignment,
             )
 
         ready = False
@@ -192,7 +201,8 @@ class ConceptRevalidationScheduler:
                 + 0.25 * min(1.0, stats["matched_relation_count"] / 4.0)
                 + 0.15 * (float(getattr(sequence_support, "support_score", 0.0) or 0.0))
                 + 0.10 * min(1.0, float(getattr(sequence_support, "supporting_sequence_count", 0) or 0) / 3.0)
-                + 0.10 * (1.0 - _clamp01(stats["contradiction_score"])),
+                + 0.05 * _clamp01(self_state_alignment)
+                + 0.05 * (1.0 - _clamp01(stats["contradiction_score"])),
                 6,
             )
 
@@ -205,6 +215,7 @@ class ConceptRevalidationScheduler:
             retry_after_segment=max(entry.retry_after_segment, current_segment + (0 if ready else self.min_cooldown_segments)),
             priority_score=priority,
             sequence_support=sequence_support,
+            self_state_alignment=self_state_alignment,
         )
 
     def _stats_for_concept(
@@ -254,6 +265,7 @@ class ConceptRevalidationScheduler:
         retry_after_segment: int,
         priority_score: float,
         sequence_support: Any = None,
+        self_state_alignment: float = 0.0,
     ) -> ConceptRetryDecision:
         return ConceptRetryDecision(
             concept_key=entry.concept_key,
@@ -264,6 +276,7 @@ class ConceptRevalidationScheduler:
             matched_relation_count=int(stats["matched_relation_count"]),
             sequence_support_count=int(getattr(sequence_support, "supporting_sequence_count", 0) or 0),
             sequence_support_score=float(getattr(sequence_support, "support_score", 0.0) or 0.0),
+            self_state_alignment_score=float(_clamp01(self_state_alignment)),
             distinct_source_refs=int(stats["distinct_source_refs"]),
             distinct_source_hashes=int(stats["distinct_source_hashes"]),
             revision_conflict_count=int(stats["revision_conflict_count"]),

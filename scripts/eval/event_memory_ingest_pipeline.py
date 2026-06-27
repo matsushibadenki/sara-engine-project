@@ -81,12 +81,55 @@ def build_report() -> Dict[str, Any]:
         candidate_events=fixture["candidate_events"],
     )
     payload = result.to_dict()
+    change_point_count = len(payload["change_points"])
+    observed_event_count = len(payload["observed_events"])
+    accepted_candidate_count = len(payload["accepted_candidate_events"])
+    rejected_candidate_count = len(payload["rejected_candidate_events"])
+    episode_count = len(payload["episodes"])
+    candidate_relation_count = len(payload["candidate_relations"])
+    verified_relation_count = len(payload["verified_relations"])
+    lineage_count = len(payload["lineage_ledger"])
+    total_candidate_count = accepted_candidate_count + rejected_candidate_count
+    traces = payload["traces"]
+    persistent_trace = (
+        traces.get("persistent_self_state", {})
+        if isinstance(traces.get("persistent_self_state", {}), dict)
+        else {}
+    )
+    metrics = {
+        "eventization_emission_ratio": float(observed_event_count) / float(max(change_point_count, 1)),
+        "candidate_event_acceptance_rate": float(accepted_candidate_count)
+        / float(max(total_candidate_count, 1)),
+        "episode_compression_ratio": float(observed_event_count + accepted_candidate_count)
+        / float(max(episode_count, 1)),
+        "relation_verification_yield": float(verified_relation_count)
+        / float(max(candidate_relation_count, 1)),
+        "lineage_coverage_ratio": float(lineage_count)
+        / float(
+            max(
+                observed_event_count
+                + total_candidate_count
+                + candidate_relation_count
+                + verified_relation_count,
+                1,
+            )
+        ),
+        "self_state_continuity": float(persistent_trace.get("continuity_score", 0.0) or 0.0),
+        "self_state_active_count": float(
+            len(persistent_trace.get("current_active_ids", []) or [])
+        ),
+        "self_state_external_event_ratio": float(
+            len(persistent_trace.get("current_active_ids", []) or [])
+        )
+        / float(max(int(persistent_trace.get("external_event_count", 0) or 0), 1)),
+    }
     return {
         "schema": "sara-event-memory-ingest-pipeline-report-v1",
         "passed": bool(
             payload["observed_events"]
             and payload["episodes"]
             and payload["verified_relations"]
+            and payload["traces"].get("persistent_self_state", {}).get("current_active_ids")
         ),
         "counts": {
             "change_points": len(payload["change_points"]),
@@ -98,13 +141,15 @@ def build_report() -> Dict[str, Any]:
             "verified_relations": len(payload["verified_relations"]),
             "lineage_ledger_entries": len(payload["lineage_ledger"]),
         },
-        "traces": payload["traces"],
+        "metrics": metrics,
+        "traces": traces,
         "result": payload,
     }
 
 
 def build_summary(report: Dict[str, Any]) -> str:
     counts = report.get("counts", {})
+    metrics = report.get("metrics", {})
     traces = report.get("traces", {})
     lines = [
         "SARA Event Memory ingest pipeline",
@@ -115,8 +160,15 @@ def build_summary(report: Dict[str, Any]) -> str:
         f"- frequent_sequences: {int(counts.get('frequent_sequences', 0) or 0)}",
         f"- candidate_relations: {int(counts.get('candidate_relations', 0) or 0)}",
         f"- verified_relations: {int(counts.get('verified_relations', 0) or 0)}",
+        f"- eventization_emission_ratio: {float(metrics.get('eventization_emission_ratio', 0.0) or 0.0):.3f}",
+        f"- candidate_event_acceptance_rate: {float(metrics.get('candidate_event_acceptance_rate', 0.0) or 0.0):.3f}",
+        f"- episode_compression_ratio: {float(metrics.get('episode_compression_ratio', 0.0) or 0.0):.3f}",
+        f"- relation_verification_yield: {float(metrics.get('relation_verification_yield', 0.0) or 0.0):.3f}",
+        f"- lineage_coverage_ratio: {float(metrics.get('lineage_coverage_ratio', 0.0) or 0.0):.3f}",
         f"- eventization_emitted: {int(traces.get('eventization', {}).get('emitted_count', 0) or 0)}",
         f"- sequence_patterns: {int(traces.get('frequent_sequence', {}).get('accepted_sequences', 0) or 0)}",
+        f"- self_state_active: {len(traces.get('persistent_self_state', {}).get('current_active_ids', []) or [])}",
+        f"- self_state_continuity: {float(traces.get('persistent_self_state', {}).get('continuity_score', 0.0) or 0.0):.3f}",
     ]
     return "\n".join(lines) + "\n"
 

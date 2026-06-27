@@ -325,6 +325,9 @@ def test_continual_consolidation_benchmark_returns_expected_metrics():
     assert report["metrics"]["delta_memory_erase_write_decoupling_observed"] == 1.0
     assert report["metrics"]["delta_memory_erase_preserves_stable_memory_observed"] == 1.0
     assert report["metrics"]["delta_memory_write_commits_residual_observed"] == 1.0
+    assert report["metrics"]["idle_maintenance_trace_integrity_observed"] == 1.0
+    assert report["metrics"]["idle_maintenance_phase_alignment_observed"] == 1.0
+    assert report["metrics"]["idle_maintenance_cache_refresh_observed"] == 1.0
     delta_case = next(
         case
         for case in report["details"]["test_results"]
@@ -332,31 +335,31 @@ def test_continual_consolidation_benchmark_returns_expected_metrics():
     )
     assert delta_case["delta_memory_report"]["observed_only"] is True
     assert delta_case["delta_memory_report"]["traces"]["recall"]["predicted_ids"] == [11]
-    capacity_case = report["details"]["test_results"][-8]
+    capacity_case = report["details"]["test_results"][-9]
     assert capacity_case["trajectory_count"] == 9
     assert capacity_case["manifold_report"]["trajectory_top_match_ratio"] == 1.0
-    refresh_case = report["details"]["test_results"][-7]
+    refresh_case = report["details"]["test_results"][-8]
     assert refresh_case["trajectory_ids"] == [
         "refresh-anchor-path",
         "refresh-distractor-c",
         "refresh-distractor-d",
     ]
-    synaptic_case = report["details"]["test_results"][-6]
+    synaptic_case = report["details"]["test_results"][-7]
     assert synaptic_case["synaptic_tag_report"]["observed_only"] is True
     assert synaptic_case["top_synaptic_tag"]["tag"] == "consolidate"
-    phase_case = report["details"]["test_results"][-5]
+    phase_case = report["details"]["test_results"][-6]
     assert phase_case["memory_phase_report"]["observed_only"] is True
     assert phase_case["anchor_phase_path"] == ["liquid", "glass", "crystal"]
-    budget_case = report["details"]["test_results"][-4]
+    budget_case = report["details"]["test_results"][-5]
     assert budget_case["metabolic_budget_report"]["observed_only"] is True
     assert budget_case["rejected_reason_count"] >= 1
-    sleep_case = report["details"]["test_results"][-3]
+    sleep_case = report["details"]["test_results"][-4]
     assert sleep_case["sleep_consolidation_report"]["observed_only"] is True
     assert sleep_case["sleep_consolidation_report"]["event_budget_ok"] is True
-    astro_gate_case = report["details"]["test_results"][-2]
+    astro_gate_case = report["details"]["test_results"][-3]
     assert astro_gate_case["astro_structural_gate_report"]["observed_only"] is True
     assert astro_gate_case["astro_structural_gate_report"]["final_structural_unlocked"] is False
-    delta_policy_case = report["details"]["test_results"][-1]
+    delta_policy_case = report["details"]["test_results"][-2]
     assert delta_policy_case["delta_retention_policy_report"]["observed_only"] is True
     assert delta_policy_case["delta_retention_policy_stress_report"]["observed_only"] is True
     assert delta_policy_case["delta_erase_write_decoupling_report"]["observed_only"] is True
@@ -378,6 +381,12 @@ def test_continual_consolidation_benchmark_returns_expected_metrics():
         ]
         == 1.0
     )
+    idle_maintenance_case = report["details"]["test_results"][-1]
+    assert idle_maintenance_case["idle_consolidation_loop_report"]["sleep_consolidation_report"]["observed_only"] is True
+    assert idle_maintenance_case["idle_consolidation_loop_report"]["memory_phase_report"]["observed_only"] is True
+    assert idle_maintenance_case["idle_consolidation_loop_report"]["delta_retention_policy_report"]["observed_only"] is True
+    assert idle_maintenance_case["selected_count"] >= 1
+    assert idle_maintenance_case["refresh_count"] >= 1
     assert refresh_case["anchor_refresh_count"] == 2
     assert refresh_case["manifold_report"]["trajectory_top_match_ratio"] == 1.0
 

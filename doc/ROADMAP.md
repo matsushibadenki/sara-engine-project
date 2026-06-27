@@ -77,9 +77,14 @@ Goal: move from proxy-only ANN-efficiency claims to paired physical measurements
 ### Deliverables
 
 - Collect paired SARA and ANN measurements for the tasks already listed in `workspace/evaluation/energy_measurement_session_plan.json`.
+- Use `python scripts/sara_cli.py run-physical-energy-session-batch` to convert the duplicated per-system session-plan rows into concrete pair-level frozen runs before a laboratory session.
+- Use `python scripts/sara_cli.py eval-physical-energy-session-progress` during the session to verify which planned pairs are complete, partial, invalid, or still missing before claiming that Phase 6 data collection is done.
 - Store rows in `data/raw/energy_measurements.jsonl` through `python scripts/sara_cli.py record-energy-measurement`.
 - Extend the measurement rows and session report with CPU/environment identity, run-order block, warm-up count, measured repetition count, success-criterion ID, measurement boundary, and meter/tool identity.
   - DONE: fairness schema v2 requires these fields and rejects mismatched pairs.
+  - DONE: session planning now exposes `pair_command_template`, pair-level managed meter-template paths, and a batch expander that materializes concrete replicate runs under `workspace/evaluation/physical_energy_session_batch.json`.
+  - DONE: session progress monitoring now compares planned pair runs against recorded rows and surfaces completion, partial coverage, invalid fairness matches, and orphan measurements under `workspace/evaluation/physical_energy_session_progress.json`.
+  - DONE: `energy_measurement_readiness.py` now emits that same session-progress surface directly from the managed session plan, so partial laboratory sessions appear in the main Phase 6 readiness artifact instead of hiding behind aggregate row counts.
 - Add at least one retrieval task and one continual-adaptation task where SARA's sparse/local design is expected to matter.
 - Produce per-task paired rows and an aggregate report without hiding task-level losses.
 - Regenerate:
@@ -407,6 +412,9 @@ Goal: make the ANN comparison harder and more credible without importing ANN ass
   - A lightweight pretrained sentence-embedding retriever with exact cosine search.
   - A FAISS CPU index when the optional dependency is available, with exact-search fallback and identical embeddings.
   - A tiny pretrained Transformer or cross-encoder retrieval/reranking baseline on the same candidates.
+  - DONE: `real_data_external_validity.py` now exposes `reference_readiness`, separating `not_configured`, `missing_directory`, and dependency/runtime failures for optional local embedding, FAISS, and cross-encoder references.
+- Add one comparison artifact that separates proxy baselines, offline reference baselines, and physical energy evidence in one place.
+  - DONE: `python scripts/sara_cli.py eval-sara-ann-comparison` now writes a managed report that labels `proxy`, `offline_reference`, and `physical` evidence tiers separately, highlights the strongest currently available baseline, and surfaces the next missing comparison actions.
 - Record model/index identity, parameter count, embedding dimension, quantization, thread count, index build policy, retrieval latency, peak RSS, success/quality, and measured joules when Phase 6 instrumentation is available.
 - Compare cold-start, warm-index, and repeated-query conditions separately.
 - Keep ANN model download/training and dense index construction outside SARA's production runtime, but include their cost when the compared use case requires them.
@@ -1114,6 +1122,13 @@ Design role in SARA: this phase is the primary home of **Event Memory**. Recurre
    - Return a hard-capped top-k result with an abstention path when evidence is weak or contradictory.
    - Reactivation may emit sparse routing hints or eligibility events, but must not silently mutate durable state.
    - DONE: hard-capped retrieval combines sparse overlap, own-latent, causal, temporal, source, confidence, and reliability evidence with an explicit abstention path.
+   - DONE: Event Memory ingest can now consume reactivation hints through a bounded persistent self-state controller, so retrieval may help sustain short-term internal activity without turning recurrent state into the durable store.
+   - DONE: retrieval ranking now accepts bounded self-state alignment as a separate component, allowing current internally maintained state to bias which verified memories are easiest to reactivate while preserving the primary role of sparse overlap, source integrity, and verification.
+   - DONE: idle replay planning now closes the loop from Event Memory to persistent self-state and back into bounded replay candidate selection, so spontaneous/recurrent internal activity can choose verified memories for offline replay without letting recurrent state overwrite the durable store.
+   - DONE: idle consolidation orchestration now connects replay selection, sleep-style replay evaluation, and concept review priority, so verified memories reactivated during low-input periods can feed bounded offline strengthening and concept admission without bypassing verifier-controlled memory boundaries.
+   - DONE: verified Event Memory entries can now accept bounded consolidation-refresh feedback from replay observations, letting utility and tier move cautiously based on retention/noise/health outcomes instead of raw internal activation alone.
+   - DONE: idle consolidation now derives `liquid / glass / crystal` memory-phase traces from replay outcomes and feeds those phases back into cautious cache-tier refresh, aligning phase-aware consolidation evidence with `recent / consolidated / durable` organization.
+   - DONE: idle consolidation now also projects the same phase-enriched replay outcomes into delta-retention policy events, so phase-aware retention gates, cache-tier refresh, and sleep-style replay evidence all operate over one consistent bounded maintenance trace.
 
 4. Connect verification and resonance credit.
    - Promote a candidate only when source backing, deterministic verification, resonance agreement, and metabolic headroom pass.
@@ -1186,6 +1201,15 @@ Design role in SARA: this phase is the primary home of **Event Memory**. Recurre
 - Do not try to make recurrent activity itself the durable memory store.
 - Permit only bounded transient recurrence outside this phase, with explicit decay, hard occupancy limits, deterministic replay, and auditable handoff into verified event-memory records.
 - If a behavior can be explained by a verified event-memory retrieval path, prefer that over adding larger or more persistent recurrent state.
+- DONE: `PersistentSelfStateController` now provides bounded self-sustaining activity by combining tonic spontaneous firing, sparse recurrent reuse, Event Memory reactivation hints, and local transition prediction, while keeping the durable store in Phase 18 Event Memory rather than in unbounded recurrent state.
+- DONE: self-state continuity now feeds back into relation verification and concept revalidation as a small bounded preference signal, so SARA can keep pursuing coherent hypotheses across sparse or intermittent input without letting recurrent state override source checks or verifier gates.
+- DONE: bounded idle replay selection now uses persistent self-state continuity, Event Memory utility, sequence support, and optional astro-style modulation to decide which verified memories are worth replaying during low-input periods.
+- DONE: bounded idle consolidation now returns replay-selected concept priorities into the concept review loop and derives sleep-style retention/noise/health traces from those same replay decisions, keeping internal maintenance auditable across time.
+- DONE: bounded idle consolidation can now refresh verified cache utility/tier from observed replay outcomes, creating a cautious path from offline replay evidence into `recent/consolidated/durable` memory organization.
+- DONE: `persistent_self_state_benchmark.py` now records observed-only evidence that sparse spontaneous firing, Event Memory reactivation, and internal next-state prediction can preserve a bounded self-state across idle steps.
+- DONE: `idle_replay_benchmark.py` now records observed-only evidence that verified memories can be replay-ranked under an explicit event budget using self-state alignment, reactivation hints, and astro-style modulation.
+- DONE: `internal_maintenance_efficiency_benchmark.py` now records fixed-loop `maintenance_selected_count`, `maintenance_refresh_count`, `maintenance_event_cost`, and normalized `maintenance_event_cost_per_selected`, providing a pre-physical reference surface for the same maintenance fields exported by Phase 6 energy-pair runs.
+- DONE: the compact research benchmark suite now includes both persistent self-state and idle replay maintenance surfaces, so internal continuity evidence is tracked beside Event Memory, consolidation, and ANN-comparison evidence.
 
 ## Phase 19: Sparse Liquid Time-Constant Spiking Dynamics
 
@@ -1385,15 +1409,21 @@ Design paper: [Semantic Echo Field v2: Event-Centric World Model Extension for S
 1. Freeze the Phase 6 fairness contract and extend the measurement schema with environment fingerprints, protocol IDs, paired run blocks, and quality-parity fields.
    - DONE: fairness schema v2 validates matched environments, fixtures, criteria, boundaries, tools, repetitions, trial counts, run order, quality parity, median ratios, and MAD.
 2. Run the first paired SARA/ANN physical-energy session on the same CPU and compute per-task `joule_per_success`.
-   - IN PROGRESS: `run-physical-energy-pair` now freezes and executes an alternating-order SARA/BM25 retrieval pair with identical corpus, tasks, repetitions, thread environment, and exact-match success criteria. Physical joule capture remains pending.
+   - IN PROGRESS: `run-physical-energy-pair` now freezes and executes an alternating-order SARA/BM25 retrieval pair with identical corpus, tasks, repetitions, thread environment, and exact-match success criteria. The frozen workload now also exports bounded maintenance traces from `PersistentSelfStateController + Event Memory + IdleConsolidationLoop`, and the runner records those values into optional Phase 6 maintenance fields beside the physical joule row. Pair reports now emit a resume-append command and exact per-system `record-energy-measurement` command templates. The runner can also ingest a managed meter-reading JSON with direct joules or `average_watts * duration_seconds`, reject pair/replicate mismatches, append both rows from the frozen manifest, and generate a fill-in meter template JSON beside the pair report so the first real session has less transcription friction. The pair report can now also compare the physical SARA maintenance surface against the observed-only internal maintenance benchmark, exposing event-cost and self-state drift in the same artifact instead of requiring manual cross-reading. The readiness session plan now also exposes per-run `run-physical-energy-pair` command templates and managed meter-template paths, so multiple replicates can be executed through the same frozen pair workflow instead of by manual row entry alone. Physical joule capture remains pending.
+   - IN PROGRESS: `ann_efficiency_roadmap_gate.py` now carries the observed-only internal maintenance reference surface alongside Phase 6 physical-measurement follow-up and Phase 8 external-reference follow-up, so missing `eval-internal-maintenance-efficiency` evidence becomes a first-class repair action in the same roadmap loop.
    - VERIFIED: pilot execution produced equal quality (`48/48` successful trials for both systems), and replicate 2 dry-run reversed order to `ANN -> SARA`.
    - BLOCKED EXTERNALLY: local `powermetrics` is available but requires an interactive macOS sudo password. Use an authorized powermetrics session or external meter, then provide the measured pair joules to the runner.
 3. Publish the Phase 6 measurement protocol and regenerate readiness, ANN-efficiency, research-product, and release evidence.
    - PARTIAL: the pre-session protocol and v2 session plan are generated; physical rows and post-session observations remain pending.
+   - IN PROGRESS: the readiness and session-progress summaries can now also surface the observed-only internal maintenance reference, so pre-physical maintenance efficiency and post-physical maintenance rows stay aligned in the same Phase 6 reading surface. The readiness aggregate now also compares physical SARA maintenance-event cost per selected replay against that reference, and the roadmap gate can raise a dedicated maintenance-alignment drift action when physical self-state cost moves too far from the bounded internal benchmark.
 4. Strengthen Phase 8 with one real lightweight pretrained embedding baseline, followed by optional FAISS CPU and tiny-Transformer retrieval baselines.
+   - IN PROGRESS: `eval-sara-ann-comparison` now reads the same physical-versus-reference maintenance alignment surface used by Phase 6 readiness and exposes missing-alignment or high-drift follow-up directly in the comparison report, so baseline-strength discussion stays tied to persistent-self-state efficiency rather than only task cost.
+   - IN PROGRESS: the comparison report now also reads the Event Memory ingest compression surface (`eventization_emission_ratio`, `episode_compression_ratio`, `relation_verification_yield`, self-state continuity) so changes in concept formation or compression can be judged against Phase 6/8 evidence instead of being discussed separately.
 5. Expand Phase 8 onto frozen independently sourced noisy, adversarial, negative-query, contrastive, and delayed-recall tasks.
 6. Audit Phase 7 train/evaluation isolation by source hash, revision, domain, time split, and near-duplicate signature before generating more autonomous material.
+   - IN PROGRESS: Event Memory compression quality now propagates into the research benchmark manifest and operational runbook generation via the comparison report, so weak episode compression or relation-verification yield can surface as managed repair work instead of remaining an isolated evaluator detail.
 7. Keep completed Phase 13-18 mechanisms stable; do not prioritize further architecture expansion over Phase 6, Phase 8, and Phase 7 evidence.
+   - IN PROGRESS: `event_memory_maintenance_coupling_benchmark.py` now compares bounded Event Memory compression profiles (`tight`, `balanced`, `wide`) against persistent self-state continuity and maintenance-load proxy, so concept compression changes can be screened for hidden self-state cost before they are treated as accuracy or efficiency wins.
 8. Keep Phase 19 inactive until its activation gate is satisfied; use it only to address an observed temporal-accuracy limitation without erasing SNN efficiency.
 9. Keep Phase 20 inactive until a frozen independent language benchmark and cost ceilings exist; begin with echo-only fixed-timescale controls before phase binding, phonological recoding, or adaptive time constants.
 

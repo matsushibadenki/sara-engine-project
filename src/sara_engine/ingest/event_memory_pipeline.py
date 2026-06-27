@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
+from sara_engine.dynamics import (
+    PersistentSelfStateController,
+    relation_self_state_alignment,
+    stable_self_state_id,
+)
 
 from .candidate_proposals import (
     CandidateEvent,
@@ -68,6 +73,7 @@ class EventMemoryIngestPipeline:
         synchrony_detector: SynchronyDetector | None = None,
         prediction_gain_estimator: PredictionGainEstimator | None = None,
         verifier: ProposalVerifier | None = None,
+        persistent_self_state: PersistentSelfStateController | None = None,
     ) -> None:
         self.change_detector = change_detector or ScalarChangeDetector()
         self.temporal_eventizer = temporal_eventizer or TemporalEventizer()
@@ -76,6 +82,7 @@ class EventMemoryIngestPipeline:
         self.synchrony_detector = synchrony_detector or SynchronyDetector()
         self.prediction_gain_estimator = prediction_gain_estimator or PredictionGainEstimator()
         self.verifier = verifier or ProposalVerifier()
+        self.persistent_self_state = persistent_self_state
 
     def ingest_streams(
         self,
@@ -84,6 +91,7 @@ class EventMemoryIngestPipeline:
         source_ref: str,
         source_hash: str,
         candidate_events: Sequence[CandidateEvent] = (),
+        reactivation_hints: Sequence[Mapping[str, Any]] = (),
     ) -> EventMemoryIngestResult:
         change_points: List[ChangePoint] = []
         observed_events: List[ObservedEvent] = []
@@ -136,7 +144,28 @@ class EventMemoryIngestPipeline:
             key=lambda item: (item.record_id, item.relation),
         ))
 
-        relation_verifications = tuple(self.verifier.verify_relation(item) for item in candidate_relations)
+        persistent_self_state_trace = self._persistent_self_state_trace(
+            observed_events=observed_events,
+            accepted_candidate_events=accepted_candidate_events,
+            reactivation_hints=reactivation_hints,
+            source_ref=source_ref,
+            source_hash=source_hash,
+        )
+        self_state_ids = tuple(
+            int(value)
+            for value in persistent_self_state_trace.get("self_state_ids", ())
+        )
+        relation_verifications = tuple(
+            self.verifier.verify_relation_with_self_state(
+                item,
+                self_state_alignment=relation_self_state_alignment(
+                    item.source_event_id,
+                    item.target_event_id,
+                    self_state_ids,
+                ),
+            )
+            for item in candidate_relations
+        )
         verified_relations = tuple(
             make_verified_relation(self._flatten_record(verification.promoted_record))
             for verification in relation_verifications
@@ -176,6 +205,7 @@ class EventMemoryIngestPipeline:
                 "verified_relation_count": len(verified_relations),
                 "rejected_relation_count": len(candidate_relations) - len(verified_relations),
             },
+            "persistent_self_state": persistent_self_state_trace,
         }
         return EventMemoryIngestResult(
             change_points=tuple(sorted(change_points, key=lambda item: (item.time_ms, item.stream_id))),
@@ -263,3 +293,36 @@ class EventMemoryIngestPipeline:
             payload.setdefault("proposal_model", str(lineage.get("proposal_model", "") or ""))
             payload.setdefault("proposal_config_hash", str(lineage.get("proposal_config_hash", "") or ""))
         return payload
+
+    def _persistent_self_state_trace(
+        self,
+        *,
+        observed_events: Sequence[ObservedEvent],
+        accepted_candidate_events: Sequence[CandidateEvent],
+        reactivation_hints: Sequence[Mapping[str, Any]],
+        source_ref: str,
+        source_hash: str,
+    ) -> Dict[str, Any]:
+        controller = self.persistent_self_state
+        if controller is None:
+            core_ids = (
+                stable_self_state_id(source_ref),
+                stable_self_state_id(source_hash),
+            )
+            controller = PersistentSelfStateController(core_event_ids=core_ids)
+        external_ids = [
+            stable_self_state_id(event.record_id)
+            for event in observed_events
+        ]
+        external_ids.extend(
+            stable_self_state_id(event.record_id)
+            for event in accepted_candidate_events
+        )
+        trace = controller.step(
+            external_event_ids=tuple(external_ids),
+            reactivation_hints=reactivation_hints,
+        )
+        trace["external_event_count"] = len(external_ids)
+        trace["reactivation_hint_count"] = len(tuple(reactivation_hints))
+        trace["controller_snapshot"] = controller.snapshot()
+        return trace

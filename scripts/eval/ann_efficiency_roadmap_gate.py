@@ -25,6 +25,9 @@ DEFAULT_ENERGY_REPORT_PATH = workspace_path("evaluation", "energy_efficiency_ben
 DEFAULT_EXTERNAL_VALIDITY_REPORT_PATH = workspace_path("evaluation", "real_data_external_validity.json")
 DEFAULT_EXTERNAL_LADDER_REPORT_PATH = workspace_path("evaluation", "real_data_external_validity_ladder.json")
 DEFAULT_ENERGY_MEASUREMENT_REPORT_PATH = workspace_path("evaluation", "energy_measurement_readiness.json")
+DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH = workspace_path(
+    "evaluation", "internal_maintenance_efficiency_benchmark.json"
+)
 DEFAULT_OPERATIONAL_REPORT_PATH = workspace_path("release", "operational_readiness_report.json")
 DEFAULT_OUTPUT_REPORT_PATH = workspace_path("evaluation", "ann_efficiency_roadmap_gate.json")
 DEFAULT_OUTPUT_SUMMARY_PATH = workspace_path("evaluation", "ann_efficiency_roadmap_gate_summary.txt")
@@ -65,10 +68,198 @@ def _measurement_session_plan(report: Mapping[str, Any] | None) -> Mapping[str, 
     return plan if isinstance(plan, Mapping) else {}
 
 
-def _build_next_evidence_actions(energy_measurement_report: Mapping[str, Any] | None) -> List[Dict[str, Any]]:
+def _measurement_session_progress(report: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    progress = (report or {}).get("measurement_session_progress", {}) if isinstance(report or {}, Mapping) else {}
+    return progress if isinstance(progress, Mapping) else {}
+
+
+def _reference_readiness(report: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    readiness = (report or {}).get("reference_readiness", {}) if isinstance(report or {}, Mapping) else {}
+    return readiness if isinstance(readiness, Mapping) else {}
+
+
+def _internal_maintenance_counts(report: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    counts = (report or {}).get("counts", {}) if isinstance(report or {}, Mapping) else {}
+    return counts if isinstance(counts, Mapping) else {}
+
+
+def _internal_maintenance_normalized(report: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    metrics = (report or {}).get("normalized_metrics", {}) if isinstance(report or {}, Mapping) else {}
+    return metrics if isinstance(metrics, Mapping) else {}
+
+
+def _maintenance_alignment(report: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    payload = (report or {}).get("maintenance_alignment", {}) if isinstance(report or {}, Mapping) else {}
+    return payload if isinstance(payload, Mapping) else {}
+
+
+def _phase6_internal_maintenance_actions(
+    internal_maintenance_report: Mapping[str, Any] | None,
+) -> List[Dict[str, Any]]:
+    if not internal_maintenance_report:
+        return [
+            {
+                "source": "internal_maintenance_reference",
+                "category": "missing_internal_maintenance_reference",
+                "priority": "medium",
+                "task": "phase6_maintenance_efficiency",
+                "command": "python scripts/sara_cli.py eval-internal-maintenance-efficiency",
+            }
+        ]
+    metrics = _metrics(internal_maintenance_report)
+    actions: List[Dict[str, Any]] = []
+    if _float(metrics, "maintenance_event_cost_efficiency_observed") < 1.0:
+        actions.append(
+            {
+                "source": "internal_maintenance_reference",
+                "category": "weak_internal_maintenance_efficiency",
+                "priority": "medium",
+                "task": "phase6_maintenance_efficiency",
+                "command": "python scripts/sara_cli.py eval-internal-maintenance-efficiency",
+            }
+        )
+    if _float(metrics, "maintenance_self_state_continuity_observed") < 1.0:
+        actions.append(
+            {
+                "source": "internal_maintenance_reference",
+                "category": "weak_internal_self_state_continuity",
+                "priority": "medium",
+                "task": "phase6_maintenance_efficiency",
+                "command": "python scripts/sara_cli.py eval-persistent-self-state",
+            }
+        )
+    return actions
+
+
+def _phase6_maintenance_alignment_actions(
+    energy_measurement_report: Mapping[str, Any] | None,
+) -> List[Dict[str, Any]]:
+    alignment = _maintenance_alignment(energy_measurement_report)
+    if not bool(alignment.get("available", False)):
+        return []
+    ratio = _float(alignment, "maintenance_event_cost_per_selected_ratio")
+    if ratio <= 1.5:
+        return []
+    return [
+        {
+            "source": "physical_internal_maintenance_alignment",
+            "category": "maintenance_alignment_drift",
+            "priority": "medium",
+            "task": "phase6_maintenance_alignment",
+            "ratio": ratio,
+            "command": "Inspect physical pair maintenance traces and rerun python scripts/sara_cli.py eval-internal-maintenance-efficiency before claiming stable self-state efficiency.",
+        }
+    ]
+
+
+def _phase8_reference_actions(external_validity_report: Mapping[str, Any] | None) -> List[Dict[str, Any]]:
+    readiness = _reference_readiness(external_validity_report)
+    references = readiness.get("references", []) if isinstance(readiness.get("references"), list) else []
+    unresolved = [
+        item
+        for item in references
+        if isinstance(item, Mapping) and not bool(item.get("available", False))
+    ]
+    reason_rank = {
+        "missing_directory": 3,
+        "RuntimeError": 2,
+        "ImportError": 2,
+        "ModuleNotFoundError": 2,
+        "not_configured": 1,
+        "": 0,
+    }
+    family_rank = {
+        "ann_cross_encoder_reference": 3,
+        "ann_pretrained_embedding_faiss_reference": 2,
+        "ann_pretrained_embedding_reference": 1,
+    }
+    unresolved = sorted(
+        unresolved,
+        key=lambda item: (
+            -reason_rank.get(str(item.get("reason", "") or ""), 0),
+            -family_rank.get(str(item.get("reference_id", "") or ""), 0),
+        ),
+    )
+    actions: List[Dict[str, Any]] = []
+    for item in unresolved:
+        reference_id = str(item.get("reference_id", "") or "")
+        reason = str(item.get("reason", "") or "")
+        label = str(item.get("label", "") or reference_id)
+        configured_path = str(item.get("configured_path", "") or "")
+        if reason == "missing_directory":
+            command = (
+                f"Provide a valid local directory for {label}"
+                + (f" at {configured_path}" if configured_path else "")
+                + " and rerun python scripts/sara_cli.py eval-external-validity."
+            )
+            priority = "high"
+            category = "missing_reference_directory"
+        elif reason in {"RuntimeError", "ImportError", "ModuleNotFoundError"}:
+            command = (
+                f"Install the optional CPU-only dependencies required by {label}"
+                " and rerun python scripts/sara_cli.py eval-external-validity."
+            )
+            priority = "medium"
+            category = "missing_reference_dependency"
+        else:
+            command = (
+                f"Configure {label} for eval-external-validity"
+                " with --pretrained-embedding-model or --cross-encoder-model."
+            )
+            priority = "medium"
+            category = "configure_reference"
+        actions.append(
+            {
+                "source": "external_reference_readiness",
+                "category": category,
+                "priority": priority,
+                "task": "phase8_reference_strength",
+                "baseline_id": reference_id,
+                "reason": reason,
+                "command": command,
+            }
+        )
+    return actions
+
+
+def _build_next_evidence_actions(
+    energy_measurement_report: Mapping[str, Any] | None,
+    external_validity_report: Mapping[str, Any] | None,
+    internal_maintenance_report: Mapping[str, Any] | None,
+) -> List[Dict[str, Any]]:
     plan = _measurement_plan(energy_measurement_report)
     session_plan = _measurement_session_plan(energy_measurement_report)
+    session_progress = _measurement_session_progress(energy_measurement_report)
     actions: List[Dict[str, Any]] = []
+    pair_statuses = (
+        session_progress.get("pair_statuses", [])
+        if isinstance(session_progress.get("pair_statuses"), list)
+        else []
+    )
+    actionable_statuses = {"partial_pair", "invalid_pair", "missing_pair"}
+    if pair_statuses:
+        for item in pair_statuses:
+            if not isinstance(item, Mapping):
+                continue
+            status = str(item.get("status", "") or "")
+            if status not in actionable_statuses:
+                continue
+            actions.append(
+                {
+                    "source": "energy_measurement_session_progress",
+                    "category": status,
+                    "priority": str(item.get("priority", "high") or "high"),
+                    "task": str(item.get("task", "") or ""),
+                    "pair_id": str(item.get("pair_id", "") or ""),
+                    "replicate_index": int(item.get("replicate_index", 0) or 0),
+                    "command": str(item.get("pair_command", "") or ""),
+                }
+            )
+        if actions:
+            actions.extend(_phase8_reference_actions(external_validity_report))
+            actions.extend(_phase6_internal_maintenance_actions(internal_maintenance_report))
+            actions.extend(_phase6_maintenance_alignment_actions(energy_measurement_report))
+            return actions
     planned_runs = (
         session_plan.get("planned_runs", [])
         if isinstance(session_plan.get("planned_runs"), list)
@@ -89,6 +280,9 @@ def _build_next_evidence_actions(energy_measurement_report: Mapping[str, Any] | 
                     "command": str(item.get("command_template", "") or ""),
                 }
             )
+        actions.extend(_phase8_reference_actions(external_validity_report))
+        actions.extend(_phase6_internal_maintenance_actions(internal_maintenance_report))
+        actions.extend(_phase6_maintenance_alignment_actions(energy_measurement_report))
         return actions
 
     pending_pairs = plan.get("pending_pairs", []) if isinstance(plan.get("pending_pairs"), list) else []
@@ -120,6 +314,9 @@ def _build_next_evidence_actions(energy_measurement_report: Mapping[str, Any] | 
                 "command": str(item.get("next_action", "") or ""),
             }
         )
+    actions.extend(_phase8_reference_actions(external_validity_report))
+    actions.extend(_phase6_internal_maintenance_actions(internal_maintenance_report))
+    actions.extend(_phase6_maintenance_alignment_actions(energy_measurement_report))
     return actions
 
 
@@ -149,6 +346,7 @@ def build_ann_efficiency_roadmap_report(
     external_validity_report: Mapping[str, Any],
     external_ladder_report: Mapping[str, Any],
     energy_measurement_report: Mapping[str, Any] | None = None,
+    internal_maintenance_report: Mapping[str, Any] | None = None,
     operational_report: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     energy_metrics = _metrics(energy_report)
@@ -159,7 +357,15 @@ def build_ann_efficiency_roadmap_report(
     measurement_metrics = _metrics(energy_measurement_report or {})
     measurement_checks = _checks(energy_measurement_report or {})
     measurement_plan = _measurement_plan(energy_measurement_report)
-    next_evidence_actions = _build_next_evidence_actions(energy_measurement_report)
+    maintenance_alignment = _maintenance_alignment(energy_measurement_report)
+    internal_maintenance_metrics = _metrics(internal_maintenance_report or {})
+    internal_maintenance_counts = _internal_maintenance_counts(internal_maintenance_report)
+    internal_maintenance_normalized = _internal_maintenance_normalized(internal_maintenance_report)
+    next_evidence_actions = _build_next_evidence_actions(
+        energy_measurement_report,
+        external_validity_report,
+        internal_maintenance_report,
+    )
     operational_checks = _checks(operational_report or {})
     real_joule_present = bool(
         (energy_measurement_report or {}).get("real_joule_measurements_present", False)
@@ -437,6 +643,9 @@ def build_ann_efficiency_roadmap_report(
             },
             metrics={
                 "real_joule_measurements_present": 1.0 if real_joule_present else 0.0,
+                "maintenance_trace_rows_present": 1.0
+                if bool(measurement_metrics.get("maintenance_trace_rows_present", False))
+                else 0.0,
                 "sara_joule_per_success": _float(measurement_metrics, "sara_joule_per_success"),
                 "ann_joule_per_success": _float(measurement_metrics, "ann_joule_per_success"),
                 "ann_to_sara_joule_efficiency_ratio": _float(
@@ -446,11 +655,46 @@ def build_ann_efficiency_roadmap_report(
                 "min_paired_task_ann_to_sara_ratio": _float(
                     measurement_metrics, "min_paired_task_ann_to_sara_ratio"
                 ),
+                "sara_maintenance_event_cost_per_success": _float(
+                    measurement_metrics, "sara_maintenance_event_cost_per_success"
+                ),
+                "ann_maintenance_event_cost_per_success": _float(
+                    measurement_metrics, "ann_maintenance_event_cost_per_success"
+                ),
                 "measurement_pending_pair_count": _float(measurement_plan, "pending_pair_count"),
                 "measurement_weak_pair_count": _float(measurement_plan, "weak_pair_count"),
+                "internal_maintenance_event_cost_per_selected": _float(
+                    internal_maintenance_normalized, "maintenance_event_cost_per_selected"
+                ),
+                "internal_maintenance_selected_count": _float(
+                    internal_maintenance_counts, "maintenance_selected_count"
+                ),
+                "internal_maintenance_refresh_count": _float(
+                    internal_maintenance_counts, "maintenance_refresh_count"
+                ),
+                "internal_maintenance_self_state_continuity_observed": _float(
+                    internal_maintenance_metrics, "maintenance_self_state_continuity_observed"
+                ),
+                "internal_maintenance_event_cost_efficiency_observed": _float(
+                    internal_maintenance_metrics, "maintenance_event_cost_efficiency_observed"
+                ),
+                "physical_internal_maintenance_alignment_available": 1.0
+                if bool(maintenance_alignment.get("available", False))
+                else 0.0,
+                "physical_internal_maintenance_event_cost_per_selected": _float(
+                    maintenance_alignment, "sara_physical_maintenance_event_cost_per_selected"
+                ),
+                "physical_internal_maintenance_alignment_ratio": _float(
+                    maintenance_alignment, "maintenance_event_cost_per_selected_ratio"
+                ),
+                "physical_internal_maintenance_alignment_delta": _float(
+                    maintenance_alignment, "maintenance_event_cost_per_selected_delta"
+                ),
             },
             next_actions=[
                 "Collect paired SARA/ANN joule measurements into data/raw/energy_measurements.jsonl.",
+                "Record spontaneous maintenance counts and maintenance_event_cost whenever persistent self-state or idle replay stays enabled during the run.",
+                "Keep the internal maintenance reference benchmark green so maintenance-side event cost stays interpretable before physical joule capture.",
                 "Keep public claims labeled as proxy-only until real_joule_measurements_present=true.",
             ],
         ),
@@ -476,6 +720,9 @@ def build_ann_efficiency_roadmap_report(
             "real_data_external_validity_ladder": artifact_state(external_ladder_report),
             "energy_measurement_readiness": artifact_state(
                 energy_measurement_report, pass_field=None
+            ),
+            "internal_maintenance_efficiency": artifact_state(
+                internal_maintenance_report, pass_field=None
             ),
             "operational_readiness": artifact_state(operational_report),
         },
@@ -508,6 +755,7 @@ def format_ann_efficiency_roadmap_summary(report: Mapping[str, Any]) -> str:
                 ("phase8_single", artifact_state.get("real_data_external_validity")),
                 ("phase8_ladder", artifact_state.get("real_data_external_validity_ladder")),
                 ("phase6", artifact_state.get("energy_measurement_readiness")),
+                ("maintenance", artifact_state.get("internal_maintenance_efficiency")),
                 ("operational", artifact_state.get("operational_readiness")),
             ],
         ),
@@ -557,6 +805,7 @@ def _refresh_artifacts() -> None:
         [sys.executable, "scripts/eval/real_data_external_validity.py"],
         [sys.executable, "scripts/eval/real_data_external_validity_ladder.py"],
         [sys.executable, "scripts/eval/energy_measurement_readiness.py"],
+        [sys.executable, "scripts/eval/internal_maintenance_efficiency_benchmark.py"],
     ]
     for command in commands:
         result = subprocess.run(command, cwd=PROJECT_ROOT)
@@ -570,6 +819,7 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--external-validity-report-path", default=DEFAULT_EXTERNAL_VALIDITY_REPORT_PATH)
     parser.add_argument("--external-ladder-report-path", default=DEFAULT_EXTERNAL_LADDER_REPORT_PATH)
     parser.add_argument("--energy-measurement-report-path", default=DEFAULT_ENERGY_MEASUREMENT_REPORT_PATH)
+    parser.add_argument("--internal-maintenance-report-path", default=DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH)
     parser.add_argument("--operational-report-path", default=DEFAULT_OPERATIONAL_REPORT_PATH)
     parser.add_argument("--output-report-path", default=DEFAULT_OUTPUT_REPORT_PATH)
     parser.add_argument("--output-summary-path", default=DEFAULT_OUTPUT_SUMMARY_PATH)
@@ -605,6 +855,11 @@ def main(argv: List[str] | None = None) -> int:
         external_validity_report=_load_json(args.external_validity_report_path),
         external_ladder_report=_load_json(args.external_ladder_report_path),
         energy_measurement_report=_load_json(args.energy_measurement_report_path),
+        internal_maintenance_report=(
+            _load_json(args.internal_maintenance_report_path)
+            if os.path.exists(args.internal_maintenance_report_path)
+            else None
+        ),
         operational_report=operational_report,
     )
     output_report_path = ensure_parent_directory(args.output_report_path)

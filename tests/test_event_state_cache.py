@@ -2,6 +2,7 @@ from sara_engine.memory.event_state_cache import (
     EventStateCandidate,
     VerifiedHierarchicalEventStateCache,
 )
+from sara_engine.dynamics import stable_self_state_id
 
 
 def _candidate(entry_id: str, **overrides):
@@ -193,3 +194,178 @@ def test_cache_sequence_support_improves_utility_for_equal_candidates():
 
     assert state["entry_count"] == 1
     assert state["entries"][0]["entry_id"] == "supported"
+
+
+def test_cache_retrieval_exposes_self_state_alignment_component():
+    cache = VerifiedHierarchicalEventStateCache(retrieval_threshold=0.1)
+    cache.admit(
+        _candidate(
+            "aligned",
+            own_latent_id="predicts:vision:visual_cluster_018->audio:audio_cluster_044",
+            source_ref="concept:aligned",
+        )
+    )
+
+    result = cache.retrieve(
+        (1, 3, 5),
+        self_state_ids=(
+            stable_self_state_id("vision:visual_cluster_018"),
+            stable_self_state_id("audio:audio_cluster_044"),
+        ),
+    )
+
+    assert result.abstained is False
+    assert result.matches[0]["components"]["self_state_alignment"] == 1.0
+
+
+def test_cache_self_state_alignment_breaks_tie_between_equal_entries():
+    cache = VerifiedHierarchicalEventStateCache(retrieval_threshold=0.1, top_k=1)
+    cache.admit(
+        _candidate(
+            "plain",
+            signature=(41, 43, 47),
+            own_latent_id="latent:plain",
+            source_ref="source:plain",
+            confidence=0.8,
+            source_reliability=0.8,
+            resonance_score=0.8,
+            uncertainty=0.2,
+            sequence_support_score=0.0,
+        )
+    )
+    cache.admit(
+        _candidate(
+            "aligned",
+            signature=(41, 43, 47),
+            own_latent_id="predicts:vision:visual_cluster_018->audio:audio_cluster_044",
+            source_ref="source:aligned",
+            confidence=0.8,
+            source_reliability=0.8,
+            resonance_score=0.8,
+            uncertainty=0.2,
+            sequence_support_score=0.0,
+        )
+    )
+
+    plain = cache.retrieve((41, 43, 47))
+    aligned = cache.retrieve(
+        (41, 43, 47),
+        self_state_ids=(
+            stable_self_state_id("vision:visual_cluster_018"),
+            stable_self_state_id("audio:audio_cluster_044"),
+        ),
+    )
+
+    assert plain.matches[0]["entry_id"] in {"plain", "aligned"}
+    assert aligned.matches[0]["entry_id"] == "aligned"
+
+
+def test_cache_refresh_from_consolidation_can_promote_recent_entry():
+    cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic")
+    cache.admit(
+        _candidate(
+            "recent-memory",
+            resonance_score=0.68,
+            confidence=0.72,
+            source_reliability=0.74,
+            uncertainty=0.22,
+            sequence_support_score=0.4,
+        )
+    )
+    entry = cache.entries["recent-memory"]
+    assert entry.tier == "recent"
+
+    results = cache.refresh_from_consolidation(
+        (
+            {
+                "memory_id": "recent-memory",
+                "baseline_retention": 0.58,
+                "post_retention": 0.76,
+                "baseline_noise": 0.34,
+                "post_noise": 0.22,
+                "health_before": 0.61,
+                "health_after": 0.78,
+                "phase": "glass",
+                "latent_branch_count": 2,
+                "selected_branch": "recent:self_state",
+            },
+        )
+    )
+
+    assert results[0].updated is True
+    assert results[0].new_tier == "consolidated"
+    assert cache.entries["recent-memory"].utility > entry.utility
+
+
+def test_cache_refresh_from_consolidation_can_defer_weak_entry_to_recent():
+    cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic")
+    cache.admit(
+        _candidate(
+            "durable-memory",
+            resonance_score=0.95,
+            confidence=0.92,
+            source_reliability=0.92,
+            uncertainty=0.08,
+            sequence_support_score=0.5,
+        )
+    )
+    entry = cache.entries["durable-memory"]
+    assert entry.tier == "durable"
+
+    results = cache.refresh_from_consolidation(
+        (
+            {
+                "memory_id": "durable-memory",
+                "baseline_retention": 0.72,
+                "post_retention": 0.48,
+                "baseline_noise": 0.26,
+                "post_noise": 0.39,
+                "health_before": 0.73,
+                "health_after": 0.49,
+                "phase": "liquid",
+                "latent_branch_count": 1,
+                "selected_branch": "durable:memory",
+            },
+        )
+    )
+
+    assert results[0].updated is True
+    assert results[0].new_tier == "recent"
+    assert cache.entries["durable-memory"].tier == "recent"
+
+
+def test_cache_refresh_from_consolidation_can_promote_crystal_memory_to_durable():
+    cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic")
+    cache.admit(
+        _candidate(
+            "candidate",
+            resonance_score=0.76,
+            confidence=0.8,
+            source_reliability=0.82,
+            uncertainty=0.14,
+            sequence_support_score=0.6,
+            sequence_support_count=3,
+        )
+    )
+    entry = cache.entries["candidate"]
+    assert entry.tier == "consolidated"
+
+    results = cache.refresh_from_consolidation(
+        (
+            {
+                "memory_id": "candidate",
+                "phase": "crystal",
+                "baseline_retention": 0.74,
+                "post_retention": 0.80,
+                "baseline_noise": 0.18,
+                "post_noise": 0.16,
+                "health_before": 0.72,
+                "health_after": 0.79,
+                "latent_branch_count": 3,
+                "selected_branch": "consolidated:self_state",
+            },
+        )
+    )
+
+    assert results[0].updated is True
+    assert results[0].new_tier == "durable"

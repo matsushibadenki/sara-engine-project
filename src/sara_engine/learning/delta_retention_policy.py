@@ -53,6 +53,43 @@ def _write_gate_for_event(event: Dict[str, Any]) -> float:
     return _clamp01(residual_magnitude * (0.50 + 0.50 * novelty))
 
 
+def build_delta_retention_events(
+    replay_events: Iterable[Dict[str, Any]],
+    *,
+    astro_stability: float = 1.0,
+) -> List[Dict[str, Any]]:
+    """Convert replay observations into phase-aware delta-retention inputs."""
+
+    clamped_astro = _clamp01(astro_stability)
+    events: List[Dict[str, Any]] = []
+    for replay_event in replay_events:
+        memory_id = str(replay_event.get("memory_id", replay_event.get("id", "")) or "")
+        if not memory_id:
+            continue
+        phase = str(replay_event.get("phase", "liquid") or "liquid")
+        post_retention = _clamp01(float(replay_event.get("post_retention", 0.0) or 0.0))
+        post_noise = _clamp01(float(replay_event.get("post_noise", 1.0) or 0.0))
+        novelty = _clamp01(1.0 - post_retention + 0.5 * post_noise)
+        event_key = abs(hash(memory_id)) % 1_000_000
+        context_event = 100_000 + event_key
+        observed_event = 200_000 + event_key
+        predicted_events = [observed_event] if post_retention >= 0.60 else []
+        events.append(
+            {
+                "memory_id": memory_id,
+                "phase": phase,
+                "astro_stability": clamped_astro,
+                "context_events": [context_event],
+                "predicted_events": predicted_events,
+                "observed_events": [observed_event],
+                "residual_magnitude": post_noise,
+                "novelty": novelty,
+                "write_gate": _clamp01(0.35 + 0.65 * novelty),
+            }
+        )
+    return events
+
+
 def evaluate_delta_retention_policy(
     memory_events: Iterable[Dict[str, Any]],
     config: DeltaRetentionPolicyConfig | None = None,

@@ -1,5 +1,6 @@
 from sara_engine.learning.delta_retention_policy import (
     DeltaRetentionPolicyConfig,
+    build_delta_retention_events,
     evaluate_delta_erase_write_decoupling,
     evaluate_delta_retention_policy,
     evaluate_delta_retention_policy_stress,
@@ -167,3 +168,30 @@ def test_delta_erase_write_decoupling_preserves_stable_memory_and_commits_residu
     assert report["metrics"]["delta_memory_erase_preserves_stable_memory_observed"] == 1.0
     assert report["metrics"]["delta_memory_write_commits_residual_observed"] == 1.0
     assert report["traces"][1]["erase_gate"] < report["traces"][2]["write_gate"]
+
+
+def test_delta_retention_policy_can_project_phase_enriched_replay_events():
+    events = build_delta_retention_events(
+        [
+            {
+                "memory_id": "anchor",
+                "phase": "crystal",
+                "post_retention": 0.88,
+                "post_noise": 0.10,
+            },
+            {
+                "memory_id": "fresh",
+                "phase": "liquid",
+                "post_retention": 0.26,
+                "post_noise": 0.54,
+            },
+        ],
+        astro_stability=0.9,
+    )
+
+    assert events[0]["phase"] == "crystal"
+    assert events[1]["phase"] == "liquid"
+    assert events[0]["astro_stability"] == 0.9
+    assert events[0]["predicted_events"]
+    assert events[1]["predicted_events"] == []
+    assert events[0]["write_gate"] < events[1]["write_gate"]

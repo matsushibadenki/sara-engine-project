@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from sara_engine.dynamics import memory_self_state_alignment
 
 
 def _clamp01(value: float) -> float:
@@ -135,6 +136,28 @@ class CacheRetrievalResult:
             "reactivation_hints": [
                 dict(hint) for hint in self.reactivation_hints
             ],
+        }
+
+
+@dataclass(frozen=True)
+class CacheRefreshResult:
+    updated: bool
+    entry_id: str
+    previous_tier: str | None
+    new_tier: str | None
+    previous_utility: float
+    new_utility: float
+    trace: Dict[str, Any]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "updated": bool(self.updated),
+            "entry_id": self.entry_id,
+            "previous_tier": self.previous_tier,
+            "new_tier": self.new_tier,
+            "previous_utility": float(self.previous_utility),
+            "new_utility": float(self.new_utility),
+            "trace": dict(self.trace),
         }
 
 
@@ -293,6 +316,7 @@ class VerifiedHierarchicalEventStateCache:
         own_latent_id: str = "",
         causal_context: Iterable[str] = (),
         source_ref: str = "",
+        self_state_ids: Iterable[int] = (),
         now_segment: Optional[int] = None,
         top_k: Optional[int] = None,
     ) -> CacheRetrievalResult:
@@ -300,6 +324,7 @@ class VerifiedHierarchicalEventStateCache:
         if now_segment is not None:
             self.expire(now_segment)
         causal_set = {str(value) for value in causal_context}
+        self_state_tuple = tuple(int(value) for value in self_state_ids)
         scored: List[Tuple[float, EventStateEntry, Dict[str, float]]] = []
         event_cost = len(query)
         for entry in self.entries.values():
@@ -312,6 +337,13 @@ class VerifiedHierarchicalEventStateCache:
             )
             source_agreement = float(bool(source_ref) and source_ref == entry.source_ref)
             sequence_support = _clamp01(entry.sequence_support_score)
+            self_state_alignment = _clamp01(
+                memory_self_state_alignment(
+                    own_latent_id=entry.own_latent_id,
+                    source_ref=entry.source_ref,
+                    self_state_ids=self_state_tuple,
+                )
+            )
             temporal_relevance = (
                 0.0
                 if now_segment is None
@@ -327,6 +359,7 @@ class VerifiedHierarchicalEventStateCache:
                 + 0.03 * entry.confidence
                 + 0.03 * temporal_relevance
                 + 0.05 * sequence_support
+                + 0.05 * self_state_alignment
             )
             event_cost += len(entry.signature)
             scored.append(
@@ -339,6 +372,7 @@ class VerifiedHierarchicalEventStateCache:
                         "causal_agreement": causal_agreement,
                         "source_agreement": source_agreement,
                         "sequence_support": round(sequence_support, 6),
+                        "self_state_alignment": round(self_state_alignment, 6),
                         "temporal_relevance": round(temporal_relevance, 6),
                     },
                 )
@@ -389,6 +423,45 @@ class VerifiedHierarchicalEventStateCache:
         )
         self.lifecycle_trace.append({"operation": "retrieval", **result.to_dict()})
         return result
+
+    def refresh_from_consolidation(
+        self,
+        replay_events: Iterable[Mapping[str, Any]],
+    ) -> Tuple[CacheRefreshResult, ...]:
+        results: List[CacheRefreshResult] = []
+        for replay_event in replay_events:
+            entry_id = str(replay_event.get("memory_id", replay_event.get("entry_id", "")) or "")
+            if not entry_id:
+                continue
+            entry = self.entries.get(entry_id)
+            if entry is None:
+                results.append(
+                    CacheRefreshResult(
+                        updated=False,
+                        entry_id=entry_id,
+                        previous_tier=None,
+                        new_tier=None,
+                        previous_utility=0.0,
+                        new_utility=0.0,
+                        trace={"decision": "skip_missing_entry"},
+                    )
+                )
+                continue
+            updated_entry, trace = self._refreshed_entry(entry, replay_event)
+            self.entries[entry_id] = updated_entry
+            result = CacheRefreshResult(
+                updated=updated_entry != entry,
+                entry_id=entry_id,
+                previous_tier=entry.tier,
+                new_tier=updated_entry.tier,
+                previous_utility=float(entry.utility),
+                new_utility=float(updated_entry.utility),
+                trace=trace,
+            )
+            self.lifecycle_trace.append({"operation": "consolidation_refresh", **result.to_dict()})
+            results.append(result)
+        self._enforce_budget(preferred_entry_id="")
+        return tuple(results)
 
     def expire(self, now_segment: int) -> List[str]:
         expired = sorted(
@@ -639,6 +712,95 @@ class VerifiedHierarchicalEventStateCache:
         if not candidates:
             return None
         return max(candidates, key=lambda entry: (entry.utility, entry.entry_id))
+
+    def _refreshed_entry(
+        self,
+        entry: EventStateEntry,
+        replay_event: Mapping[str, Any],
+    ) -> Tuple[EventStateEntry, Dict[str, Any]]:
+        baseline_retention = _clamp01(replay_event.get("baseline_retention", 0.0))
+        post_retention = _clamp01(replay_event.get("post_retention", baseline_retention))
+        baseline_noise = _clamp01(replay_event.get("baseline_noise", 1.0))
+        post_noise = _clamp01(replay_event.get("post_noise", baseline_noise))
+        health_before = _clamp01(replay_event.get("health_before", entry.utility))
+        health_after = _clamp01(replay_event.get("health_after", health_before))
+        phase = str(replay_event.get("phase", "") or "")
+        selected_branch = str(replay_event.get("selected_branch", "") or "")
+        branch_count = max(1, int(replay_event.get("latent_branch_count", 1) or 1))
+
+        consolidation_score = _clamp01(
+            0.40 * post_retention
+            + 0.25 * health_after
+            + 0.20 * (1.0 - post_noise)
+            + 0.10 * _clamp01(entry.sequence_support_score)
+            + 0.05 * min(1.0, float(branch_count) / 3.0)
+        )
+        updated_utility = round(
+            _clamp01(0.70 * entry.utility + 0.30 * consolidation_score),
+            6,
+        )
+        if phase == "crystal" and (
+            post_retention >= 0.76
+            and health_after >= 0.74
+            and post_noise <= 0.24
+            and updated_utility >= 0.78
+        ):
+            new_tier = "durable"
+            decision = "promote_durable_phase"
+        elif phase == "glass" and (
+            post_retention >= 0.66
+            and health_after >= 0.66
+            and post_noise <= 0.34
+            and updated_utility >= 0.64
+        ):
+            new_tier = "consolidated" if entry.tier == "recent" else entry.tier
+            decision = "promote_consolidated_phase" if entry.tier == "recent" else "retain_tier"
+        elif phase == "liquid":
+            new_tier = "recent"
+            decision = "retain_liquid_recent" if entry.tier == "recent" else "defer_recent_phase"
+        elif (
+            post_retention >= 0.82
+            and health_after >= 0.80
+            and post_noise <= 0.20
+            and updated_utility >= 0.82
+        ):
+            new_tier = "durable"
+            decision = "promote_durable"
+        elif (
+            post_retention >= 0.70
+            and health_after >= 0.70
+            and post_noise <= 0.30
+            and updated_utility >= 0.68
+        ):
+            new_tier = "consolidated" if entry.tier == "recent" else entry.tier
+            decision = "promote_consolidated" if entry.tier == "recent" else "retain_tier"
+        elif post_retention < 0.55 or health_after < 0.55:
+            new_tier = "recent"
+            decision = "defer_recent"
+        else:
+            new_tier = entry.tier
+            decision = "retain_tier"
+
+        refreshed = replace(
+            entry,
+            tier=new_tier,
+            utility=updated_utility,
+            access_count=entry.access_count + 1,
+        )
+        trace = {
+            "decision": decision,
+            "phase": phase or "unknown",
+            "baseline_retention": baseline_retention,
+            "post_retention": post_retention,
+            "baseline_noise": baseline_noise,
+            "post_noise": post_noise,
+            "health_before": health_before,
+            "health_after": health_after,
+            "consolidation_score": consolidation_score,
+            "selected_branch": selected_branch,
+            "latent_branch_count": branch_count,
+        }
+        return refreshed, trace
 
     def _enforce_budget(self, *, preferred_entry_id: str) -> List[str]:
         capacities = self._tier_capacities()

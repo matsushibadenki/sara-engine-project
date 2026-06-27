@@ -317,6 +317,84 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             ],
         ),
         BenchmarkCommand(
+            command_id="persistent_self_state",
+            purpose="Record observed-only bounded spontaneous activity, internal prediction, and Event Memory reactivation evidence.",
+            command=[
+                sys.executable,
+                "scripts/eval/persistent_self_state_benchmark.py",
+            ],
+            managed_outputs=[
+                workspace_path("evaluation", "persistent_self_state_benchmark.json"),
+                workspace_path("evaluation", "persistent_self_state_benchmark_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="idle_replay",
+            purpose="Record observed-only bounded idle replay selection, self-state continuity, and astro-style replay modulation evidence.",
+            command=[
+                sys.executable,
+                "scripts/eval/idle_replay_benchmark.py",
+            ],
+            managed_outputs=[
+                workspace_path("evaluation", "idle_replay_benchmark.json"),
+                workspace_path("evaluation", "idle_replay_benchmark_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="internal_maintenance_efficiency",
+            purpose="Record observed-only bounded maintenance cost, self-state continuity, and replay-refresh efficiency on one fixed internal loop.",
+            command=[
+                sys.executable,
+                "scripts/eval/internal_maintenance_efficiency_benchmark.py",
+            ],
+            managed_outputs=[
+                workspace_path("evaluation", "internal_maintenance_efficiency_benchmark.json"),
+                workspace_path("evaluation", "internal_maintenance_efficiency_benchmark_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="event_memory_ingest_pipeline",
+            purpose="Record Event Memory compression, relation-verification yield, lineage coverage, and self-state continuity on the bounded ingest path.",
+            command=[
+                sys.executable,
+                "scripts/eval/event_memory_ingest_pipeline.py",
+            ],
+            managed_outputs=[
+                workspace_path("evaluation", "event_memory_ingest_pipeline.json"),
+                workspace_path("evaluation", "event_memory_ingest_pipeline_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="event_memory_maintenance_coupling",
+            purpose="Record how Event Memory compression profiles trade off against bounded self-state maintenance load and continuity.",
+            command=[
+                sys.executable,
+                "scripts/eval/event_memory_maintenance_coupling_benchmark.py",
+            ],
+            managed_outputs=[
+                workspace_path(
+                    "evaluation",
+                    "event_memory_maintenance_coupling_benchmark.json",
+                ),
+                workspace_path(
+                    "evaluation",
+                    "event_memory_maintenance_coupling_benchmark_summary.txt",
+                ),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="sara_ann_comparison",
+            purpose="Summarize proxy, offline-reference, and physical SARA-versus-ANN evidence in one managed comparison surface.",
+            command=[
+                sys.executable,
+                "scripts/eval/sara_ann_comparison_report.py",
+            ],
+            managed_outputs=[
+                workspace_path("evaluation", "sara_ann_comparison_report.json"),
+                workspace_path("evaluation", "sara_ann_comparison_report.txt"),
+            ],
+        ),
+        BenchmarkCommand(
             command_id="research_product_completion",
             purpose="Validate policy, ROADMAP closure, release evidence, managed outputs, and Rust readiness.",
             command=[
@@ -435,6 +513,24 @@ def build_manifest(
             "concept_revalidation_fixture_builder.json",
         )
     )
+    persistent_self_state_report = _load_json_if_present(
+        workspace_path("evaluation", "persistent_self_state_benchmark.json")
+    )
+    idle_replay_report = _load_json_if_present(
+        workspace_path("evaluation", "idle_replay_benchmark.json")
+    )
+    internal_maintenance_report = _load_json_if_present(
+        workspace_path("evaluation", "internal_maintenance_efficiency_benchmark.json")
+    )
+    event_memory_ingest_report = _load_json_if_present(
+        workspace_path("evaluation", "event_memory_ingest_pipeline.json")
+    )
+    event_memory_maintenance_coupling_report = _load_json_if_present(
+        workspace_path("evaluation", "event_memory_maintenance_coupling_benchmark.json")
+    )
+    sara_ann_comparison_report = _load_json_if_present(
+        workspace_path("evaluation", "sara_ann_comparison_report.json")
+    )
 
     what_is_proven = [
         "The managed v1.1 release gate can be reproduced from repository commands.",
@@ -452,6 +548,7 @@ def build_manifest(
         "Verified hierarchical event-state caching records bounded delayed-recall, abstention, and state-growth evidence.",
         "Source-aware cache promotion, read-only reactivation, persistence validation, and corruption rejection are recorded.",
         "Benchmark and gate outputs stay inside managed workspace or release paths.",
+        "The current SARA-versus-ANN evidence surface separates proxy, offline-reference, and physical claims.",
     ]
     what_is_not_proven = [
         "Physical joule-per-success measurements remain optional unless real meter rows are supplied.",
@@ -459,6 +556,48 @@ def build_manifest(
         "External generalization beyond the included real-data fixtures requires additional source-aware datasets.",
         "Event-state cache gains remain observed-only until larger source-aware delayed-recall evaluations pass.",
     ]
+    if persistent_self_state_report is not None and bool(persistent_self_state_report.get("passed")):
+        what_is_proven.append(
+            "Bounded persistent self-state can maintain sparse spontaneous activity, Event Memory reactivation, and internal prediction without external input."
+        )
+    else:
+        what_is_not_proven.append(
+            "Bounded persistent self-state maintenance is not yet recorded in the current managed benchmark surface."
+        )
+    if idle_replay_report is not None and bool(idle_replay_report.get("passed")):
+        what_is_proven.append(
+            "Bounded idle replay can prioritize self-state-aligned verified memories under an explicit event budget and modulation signal."
+        )
+    else:
+        what_is_not_proven.append(
+            "Idle replay maintenance quality is not yet recorded in the current managed benchmark surface."
+        )
+    if internal_maintenance_report is not None and bool(internal_maintenance_report.get("passed")):
+        what_is_proven.append(
+            "One fixed internal maintenance loop can preserve self-state continuity and cache refresh with bounded maintenance event cost."
+        )
+    else:
+        what_is_not_proven.append(
+            "Internal maintenance event-cost efficiency is not yet recorded in the current managed benchmark surface."
+        )
+    if event_memory_ingest_report is not None and bool(event_memory_ingest_report.get("passed")):
+        what_is_proven.append(
+            "Event Memory ingest compression now records bounded eventization, episode compression, verified-relation yield, lineage coverage, and self-state continuity in one managed surface."
+        )
+    else:
+        what_is_not_proven.append(
+            "Event Memory compression quality is not yet recorded in the current managed benchmark surface."
+        )
+    if event_memory_maintenance_coupling_report is not None and bool(
+        event_memory_maintenance_coupling_report.get("passed")
+    ):
+        what_is_proven.append(
+            "Event Memory compression profiles can now be compared against bounded self-state maintenance load, continuity, and compression efficiency in one managed coupling surface."
+        )
+    else:
+        what_is_not_proven.append(
+            "Compression-to-maintenance coupling is not yet recorded in the current managed benchmark surface."
+        )
     if gap_materials_closed_loop_report is not None and bool(gap_materials_closed_loop_report.get("passed")):
         what_is_proven.insert(
             5,
@@ -514,6 +653,14 @@ def build_manifest(
             "concept_revalidation_fixture_builder": artifact_state(
                 concept_revalidation_fixture_report
             ),
+            "persistent_self_state": artifact_state(persistent_self_state_report),
+            "idle_replay": artifact_state(idle_replay_report),
+            "internal_maintenance_efficiency": artifact_state(internal_maintenance_report),
+            "event_memory_ingest_pipeline": artifact_state(event_memory_ingest_report),
+            "event_memory_maintenance_coupling": artifact_state(
+                event_memory_maintenance_coupling_report
+            ),
+            "sara_ann_comparison": artifact_state(sara_ann_comparison_report),
         },
         "evidence": {
             "v1_release_passed": None if v1_report is None else bool(v1_report.get("passed")),
@@ -720,6 +867,148 @@ def build_manifest(
             "concept_revalidation_fixture_expansion_plan": []
             if concept_revalidation_fixture_report is None
             else concept_revalidation_fixture_report.get("expansion_plan", []),
+            "persistent_self_state_passed": None
+            if persistent_self_state_report is None
+            else bool(persistent_self_state_report.get("passed")),
+            "persistent_self_state_observed_only": None
+            if persistent_self_state_report is None
+            else bool(persistent_self_state_report.get("observed_only")),
+            "persistent_self_state_idle_activity": None
+            if persistent_self_state_report is None
+            else persistent_self_state_report.get("metrics", {}).get(
+                "persistent_self_state_idle_activity"
+            ),
+            "persistent_self_state_continuity": None
+            if persistent_self_state_report is None
+            else persistent_self_state_report.get("metrics", {}).get(
+                "persistent_self_state_continuity"
+            ),
+            "persistent_self_state_memory_reactivation": None
+            if persistent_self_state_report is None
+            else persistent_self_state_report.get("metrics", {}).get(
+                "persistent_self_state_memory_reactivation"
+            ),
+            "persistent_self_state_internal_prediction": None
+            if persistent_self_state_report is None
+            else persistent_self_state_report.get("metrics", {}).get(
+                "persistent_self_state_internal_prediction"
+            ),
+            "idle_replay_passed": None
+            if idle_replay_report is None
+            else bool(idle_replay_report.get("passed")),
+            "idle_replay_observed_only": None
+            if idle_replay_report is None
+            else bool(idle_replay_report.get("observed_only")),
+            "idle_replay_candidate_selection": None
+            if idle_replay_report is None
+            else idle_replay_report.get("metrics", {}).get(
+                "idle_replay_candidate_selection_observed"
+            ),
+            "idle_replay_budget": None
+            if idle_replay_report is None
+            else idle_replay_report.get("metrics", {}).get(
+                "idle_replay_budget_observed"
+            ),
+            "idle_replay_self_state_alignment": None
+            if idle_replay_report is None
+            else idle_replay_report.get("metrics", {}).get(
+                "idle_replay_self_state_alignment_observed"
+            ),
+            "idle_replay_memory_reactivation": None
+            if idle_replay_report is None
+            else idle_replay_report.get("metrics", {}).get(
+                "idle_replay_memory_reactivation_observed"
+            ),
+            "idle_replay_state_continuity": None
+            if idle_replay_report is None
+            else idle_replay_report.get("metrics", {}).get(
+                "idle_replay_state_continuity_observed"
+            ),
+            "internal_maintenance_efficiency_passed": None
+            if internal_maintenance_report is None
+            else bool(internal_maintenance_report.get("passed")),
+            "internal_maintenance_observed_only": None
+            if internal_maintenance_report is None
+            else bool(internal_maintenance_report.get("observed_only")),
+            "internal_maintenance_selected_count": None
+            if internal_maintenance_report is None
+            else internal_maintenance_report.get("counts", {}).get(
+                "maintenance_selected_count"
+            ),
+            "internal_maintenance_refresh_count": None
+            if internal_maintenance_report is None
+            else internal_maintenance_report.get("counts", {}).get(
+                "maintenance_refresh_count"
+            ),
+            "internal_maintenance_event_cost": None
+            if internal_maintenance_report is None
+            else internal_maintenance_report.get("normalized_metrics", {}).get(
+                "maintenance_event_cost"
+            ),
+            "internal_maintenance_event_cost_per_selected": None
+            if internal_maintenance_report is None
+            else internal_maintenance_report.get("normalized_metrics", {}).get(
+                "maintenance_event_cost_per_selected"
+            ),
+            "event_memory_ingest_pipeline_passed": None
+            if event_memory_ingest_report is None
+            else bool(event_memory_ingest_report.get("passed")),
+            "event_memory_episode_compression_ratio": None
+            if event_memory_ingest_report is None
+            else event_memory_ingest_report.get("metrics", {}).get(
+                "episode_compression_ratio"
+            ),
+            "event_memory_relation_verification_yield": None
+            if event_memory_ingest_report is None
+            else event_memory_ingest_report.get("metrics", {}).get(
+                "relation_verification_yield"
+            ),
+            "event_memory_self_state_continuity": None
+            if event_memory_ingest_report is None
+            else event_memory_ingest_report.get("metrics", {}).get(
+                "self_state_continuity"
+            ),
+            "event_memory_maintenance_coupling_passed": None
+            if event_memory_maintenance_coupling_report is None
+            else bool(event_memory_maintenance_coupling_report.get("passed")),
+            "event_memory_maintenance_best_profile": None
+            if event_memory_maintenance_coupling_report is None
+            else event_memory_maintenance_coupling_report.get("best_profile", {}).get(
+                "profile_id"
+            ),
+            "event_memory_maintenance_correlation": None
+            if event_memory_maintenance_coupling_report is None
+            else event_memory_maintenance_coupling_report.get("metrics", {}).get(
+                "compression_to_maintenance_correlation"
+            ),
+            "event_memory_maintenance_best_efficiency": None
+            if event_memory_maintenance_coupling_report is None
+            else event_memory_maintenance_coupling_report.get("metrics", {}).get(
+                "best_profile_compression_efficiency_per_maintenance"
+            ),
+            "event_memory_maintenance_best_continuity": None
+            if event_memory_maintenance_coupling_report is None
+            else event_memory_maintenance_coupling_report.get("metrics", {}).get(
+                "best_profile_self_state_continuity"
+            ),
+            "sara_ann_comparison_passed": None
+            if sara_ann_comparison_report is None
+            else bool(sara_ann_comparison_report.get("passed")),
+            "sara_ann_comparison_status": None
+            if sara_ann_comparison_report is None
+            else sara_ann_comparison_report.get("status"),
+            "sara_ann_comparison_completion_score": None
+            if sara_ann_comparison_report is None
+            else sara_ann_comparison_report.get("completion_score"),
+            "sara_ann_best_offline_reference": None
+            if sara_ann_comparison_report is None
+            else sara_ann_comparison_report.get("best_available_offline_reference", {}).get("label"),
+            "sara_ann_physical_ratio": None
+            if sara_ann_comparison_report is None
+            else sara_ann_comparison_report.get("metrics", {}).get("ann_to_sara_joule_efficiency_ratio"),
+            "sara_ann_next_action_count": None
+            if sara_ann_comparison_report is None
+            else sara_ann_comparison_report.get("next_action_count"),
         },
         "what_is_proven": what_is_proven,
         "what_is_not_proven": what_is_not_proven,
@@ -760,7 +1049,9 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             "Phase 8 baseline metrics: "
             f"fixture_cases={display_artifact_value(evidence.get('research_fixture_case_count'))}, "
             f"profile_count={display_artifact_value(evidence.get('neuromorphic_profile_count'))}, "
-            f"own_latent_observed_only={display_artifact_value(evidence.get('own_latent_observed_only'))}"
+            f"own_latent_observed_only={display_artifact_value(evidence.get('own_latent_observed_only'))}, "
+            f"comparison_state={display_artifact_value(evidence.get('sara_ann_comparison_status'))}, "
+            f"best_offline_reference={display_artifact_value(evidence.get('sara_ann_best_offline_reference'))}"
         ),
         (
             "Phase 7 loop metrics: "
@@ -768,6 +1059,26 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             f"build_coverage={display_artifact_value(evidence.get('autobot_gap_loop_build_coverage'))}, "
             f"enqueue_coverage={display_artifact_value(evidence.get('autobot_gap_loop_enqueue_coverage'))}, "
             f"skip_ratio={display_artifact_value(evidence.get('autobot_gap_loop_skip_ratio'))}"
+        ),
+        (
+            "Self-state maintenance: "
+            f"persistent_state={display_artifact_value(artifact_state.get('persistent_self_state'))}, "
+            f"idle_activity={display_artifact_value(evidence.get('persistent_self_state_idle_activity'))}, "
+            f"continuity={display_artifact_value(evidence.get('persistent_self_state_continuity'))}, "
+            f"idle_replay={display_artifact_value(artifact_state.get('idle_replay'))}, "
+            f"replay_alignment={display_artifact_value(evidence.get('idle_replay_self_state_alignment'))}, "
+            f"maintenance_efficiency={display_artifact_value(artifact_state.get('internal_maintenance_efficiency'))}, "
+            f"event_cost_per_selected={display_artifact_value(evidence.get('internal_maintenance_event_cost_per_selected'))}"
+        ),
+        (
+            "Event Memory coupling: "
+            f"compression_state={display_artifact_value(artifact_state.get('event_memory_ingest_pipeline'))}, "
+            f"maintenance_coupling={display_artifact_value(artifact_state.get('event_memory_maintenance_coupling'))}, "
+            f"compression_ratio={display_artifact_value(evidence.get('event_memory_episode_compression_ratio'))}, "
+            f"relation_yield={display_artifact_value(evidence.get('event_memory_relation_verification_yield'))}, "
+            f"coupling_best_profile={display_artifact_value(evidence.get('event_memory_maintenance_best_profile'))}, "
+            f"coupling_efficiency={display_artifact_value(evidence.get('event_memory_maintenance_best_efficiency'))}, "
+            f"coupling_continuity={display_artifact_value(evidence.get('event_memory_maintenance_best_continuity'))}"
         ),
         (
             "Own-latent fixture alignment: "

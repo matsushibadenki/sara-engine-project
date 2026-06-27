@@ -80,7 +80,15 @@ class ProposalVerifier:
         )
 
     def verify_relation(self, candidate: CandidateRelation) -> ProposalVerificationResult:
-        decision = self._relation_decision(candidate)
+        return self.verify_relation_with_self_state(candidate, self_state_alignment=0.0)
+
+    def verify_relation_with_self_state(
+        self,
+        candidate: CandidateRelation,
+        *,
+        self_state_alignment: float = 0.0,
+    ) -> ProposalVerificationResult:
+        decision = self._relation_decision(candidate, self_state_alignment=self_state_alignment)
         accepted = decision == "promote_verified_relation"
         if accepted:
             self.accept_count += 1
@@ -114,6 +122,7 @@ class ProposalVerifier:
                 counterexample_count=candidate.counterexample_count,
                 prediction_gain=candidate.prediction_gain,
                 has_source_hash=bool(candidate.lineage.source_hash),
+                self_state_alignment=self_state_alignment,
             ),
         )
 
@@ -138,14 +147,15 @@ class ProposalVerifier:
             return "reject_counterexample_pressure"
         return "accept_candidate_event"
 
-    def _relation_decision(self, candidate: CandidateRelation) -> str:
+    def _relation_decision(self, candidate: CandidateRelation, *, self_state_alignment: float = 0.0) -> str:
         if self.require_source_hash and not candidate.lineage.source_hash:
             return "reject_missing_source_hash"
         if candidate.confidence < self.min_confidence:
             return "reject_low_confidence"
         if candidate.evidence_count < self.min_evidence_count:
             return "reject_insufficient_evidence"
-        if candidate.prediction_gain < self.min_prediction_gain:
+        effective_prediction_gain = float(candidate.prediction_gain) + (0.05 * _clamp01(self_state_alignment))
+        if effective_prediction_gain < self.min_prediction_gain:
             return "reject_low_prediction_gain"
         if self._counterexample_rate(candidate.evidence_count, candidate.counterexample_count) > self.max_counterexample_rate:
             return "reject_counterexample_pressure"
@@ -163,12 +173,16 @@ class ProposalVerifier:
         counterexample_count: int,
         prediction_gain: float,
         has_source_hash: bool,
+        self_state_alignment: float = 0.0,
     ) -> Dict[str, Any]:
+        effective_prediction_gain = float(prediction_gain) + (0.05 * _clamp01(self_state_alignment))
         return {
             "confidence": _clamp01(confidence),
             "evidence_count": int(evidence_count),
             "counterexample_count": int(counterexample_count),
             "prediction_gain": float(prediction_gain),
+            "effective_prediction_gain": float(effective_prediction_gain),
+            "self_state_alignment": _clamp01(self_state_alignment),
             "counterexample_rate": self._counterexample_rate(evidence_count, counterexample_count),
             "has_source_hash": bool(has_source_hash),
             "thresholds": {
@@ -180,4 +194,3 @@ class ProposalVerifier:
             "accepted_count": self.accept_count,
             "rejected_count": self.reject_count,
         }
-

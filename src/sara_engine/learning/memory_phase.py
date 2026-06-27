@@ -32,6 +32,40 @@ def _phase_rank(phase: str) -> int:
     return {"liquid": 0, "glass": 1, "crystal": 2}.get(phase, 0)
 
 
+def build_memory_phase_observations(
+    replay_events: Iterable[Dict[str, Any]],
+    *,
+    step: int = 1,
+) -> List[Dict[str, Any]]:
+    """Project replay observations into phase-tracking inputs.
+
+    The mapping stays intentionally sparse and local:
+    - stability favors retention and post-replay health
+    - replay_success follows post-replay retention
+    - interference follows residual post-replay noise
+    """
+
+    observations: List[Dict[str, Any]] = []
+    for index, replay_event in enumerate(replay_events):
+        memory_id = str(replay_event.get("memory_id", replay_event.get("id", "")) or "")
+        if not memory_id:
+            continue
+        post_retention = _clamp01(float(replay_event.get("post_retention", 0.0) or 0.0))
+        post_noise = _clamp01(float(replay_event.get("post_noise", 1.0) or 0.0))
+        health_after = _clamp01(float(replay_event.get("health_after", post_retention) or 0.0))
+        stability = _clamp01(0.55 * post_retention + 0.45 * health_after)
+        observations.append(
+            {
+                "step": int(replay_event.get("step", step + index) or (step + index)),
+                "memory_id": memory_id,
+                "stability": stability,
+                "replay_success": post_retention,
+                "interference": post_noise,
+            }
+        )
+    return observations
+
+
 def evaluate_memory_phase_transitions(
     observations: Iterable[Dict[str, Any]],
     config: MemoryPhaseConfig | None = None,

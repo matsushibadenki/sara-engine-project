@@ -800,6 +800,93 @@ def _score_optional_local_cross_encoder(
     return score
 
 
+def build_reference_readiness(
+    *,
+    pretrained_embedding_model_path: str,
+    cross_encoder_model_path: str,
+    pretrained_embedding_score: Mapping[str, Any],
+    pretrained_embedding_faiss_score: Mapping[str, Any],
+    cross_encoder_score: Mapping[str, Any],
+) -> Dict[str, Any]:
+    references = [
+        {
+            "reference_id": "ann_pretrained_embedding_reference",
+            "label": "Local Pretrained Embedding Reference",
+            "configured_path": str(pretrained_embedding_model_path or ""),
+            "available": bool(pretrained_embedding_score.get("available", False)),
+            "reason": str(pretrained_embedding_score.get("reason", "") or ""),
+            "expected_runtime": "transformers+torch",
+        },
+        {
+            "reference_id": "ann_pretrained_embedding_faiss_reference",
+            "label": "Local Pretrained Embedding FAISS Reference",
+            "configured_path": str(pretrained_embedding_model_path or ""),
+            "available": bool(pretrained_embedding_faiss_score.get("available", False)),
+            "reason": str(pretrained_embedding_faiss_score.get("reason", "") or ""),
+            "expected_runtime": "transformers+torch+faiss+numpy",
+        },
+        {
+            "reference_id": "ann_cross_encoder_reference",
+            "label": "Local Cross-Encoder Reference",
+            "configured_path": str(cross_encoder_model_path or ""),
+            "available": bool(cross_encoder_score.get("available", False)),
+            "reason": str(cross_encoder_score.get("reason", "") or ""),
+            "expected_runtime": "transformers+torch",
+        },
+    ]
+    ready_count = sum(1 for item in references if bool(item["available"]))
+    configured_count = sum(1 for item in references if str(item["configured_path"]).strip())
+    missing_directory_count = sum(1 for item in references if item["reason"] == "missing_directory")
+    not_configured_count = sum(1 for item in references if item["reason"] == "not_configured")
+    dependency_error_count = sum(
+        1
+        for item in references
+        if item["reason"] in {"RuntimeError", "ImportError", "ModuleNotFoundError"}
+    )
+    next_actions: List[Dict[str, Any]] = []
+    if not configured_count:
+        next_actions.append(
+            {
+                "priority": "high",
+                "category": "configure_local_reference_path",
+                "action": "Provide --pretrained-embedding-model and/or --cross-encoder-model with local model directories.",
+            }
+        )
+    if missing_directory_count:
+        next_actions.append(
+            {
+                "priority": "high",
+                "category": "missing_local_reference_directory",
+                "action": "Create or point to the configured local model directory before rerunning eval-external-validity.",
+            }
+        )
+    if dependency_error_count:
+        next_actions.append(
+            {
+                "priority": "medium",
+                "category": "missing_local_reference_dependency",
+                "action": "Install the missing optional CPU-only dependencies required by the configured reference models.",
+            }
+        )
+    if ready_count == 0:
+        status = "proxy_only"
+    elif ready_count < len(references):
+        status = "partial_reference_ready"
+    else:
+        status = "all_reference_paths_ready"
+    return {
+        "schema": "sara-external-reference-readiness-v1",
+        "status": status,
+        "configured_reference_count": int(configured_count),
+        "ready_reference_count": int(ready_count),
+        "missing_directory_count": int(missing_directory_count),
+        "not_configured_count": int(not_configured_count),
+        "dependency_error_count": int(dependency_error_count),
+        "references": references,
+        "next_actions": next_actions,
+    }
+
+
 def _case_results_by_id(score: Mapping[str, Any]) -> Dict[str, Mapping[str, Any]]:
     results = score.get("case_results", [])
     if not isinstance(results, list):
@@ -1635,6 +1722,13 @@ def run_real_data_external_validity(
         tasks,
         model_path=cross_encoder_model_path,
     )
+    reference_readiness = build_reference_readiness(
+        pretrained_embedding_model_path=pretrained_embedding_model_path,
+        cross_encoder_model_path=cross_encoder_model_path,
+        pretrained_embedding_score=real_pretrained_embedding,
+        pretrained_embedding_faiss_score=real_pretrained_embedding_faiss,
+        cross_encoder_score=real_cross_encoder,
+    )
     per_task_summary = build_per_task_external_validity_summary(tasks, sparse, dense, dense_embedding)
     continual = _continual_memory_score(tasks, docs)
     negative_control = _score_negative_controls(docs)
@@ -1896,6 +1990,9 @@ def run_real_data_external_validity(
             "real_cross_encoder_reference_qa_accuracy": float(real_cross_encoder_accuracy),
             "real_cross_encoder_reference_cost_advantage_proxy": float(real_cross_encoder_cost_advantage),
             "real_cross_encoder_reference_avg_latency_ms": float(real_cross_encoder_latency_ms),
+            "reference_ready_count": float(reference_readiness["ready_reference_count"]),
+            "reference_configured_count": float(reference_readiness["configured_reference_count"]),
+            "reference_dependency_error_count": float(reference_readiness["dependency_error_count"]),
             "negative_control_abstention_integrity": float(
                 negative_control["sara_abstention_integrity"]
             ),
@@ -1940,6 +2037,7 @@ def run_real_data_external_validity(
         "ann_pretrained_embedding_reference": real_pretrained_embedding,
         "ann_pretrained_embedding_faiss_reference": real_pretrained_embedding_faiss,
         "ann_cross_encoder_reference": real_cross_encoder,
+        "reference_readiness": reference_readiness,
         "bm25_offline_proxy": bm25_offline,
         "per_task_external_validity_summary": per_task_summary,
         "continual_memory": continual,
@@ -2029,6 +2127,9 @@ def format_real_data_external_validity_summary(report: Dict[str, Any]) -> str:
         f"- real_pretrained_embedding_reference_avg_latency_ms: {float(metrics.get('real_pretrained_embedding_reference_avg_latency_ms', 0.0)):.3f}",
         f"- real_pretrained_embedding_faiss_reference_avg_latency_ms: {float(metrics.get('real_pretrained_embedding_faiss_reference_avg_latency_ms', 0.0)):.3f}",
         f"- real_cross_encoder_reference_avg_latency_ms: {float(metrics.get('real_cross_encoder_reference_avg_latency_ms', 0.0)):.3f}",
+        f"- reference_ready_count: {float(metrics.get('reference_ready_count', 0.0)):.3f}",
+        f"- reference_configured_count: {float(metrics.get('reference_configured_count', 0.0)):.3f}",
+        f"- reference_dependency_error_count: {float(metrics.get('reference_dependency_error_count', 0.0)):.3f}",
         f"- per_task_external_validity_case_count: {float(metrics.get('per_task_external_validity_case_count', 0.0)):.3f}",
         f"- per_task_external_validity_abstention_rate: {float(metrics.get('per_task_external_validity_abstention_rate', 0.0)):.3f}",
         f"- per_task_external_validity_avg_dense_cost_advantage_proxy: {float(metrics.get('per_task_external_validity_avg_dense_cost_advantage_proxy', 0.0)):.3f}",
@@ -2036,10 +2137,49 @@ def format_real_data_external_validity_summary(report: Dict[str, Any]) -> str:
         f"- trend_comparison_active: {bool(trend.get('comparison_active', False))}",
         f"- trend_comparison_skipped_reason: {str(trend.get('comparison_skipped_reason', '') or '')}",
         f"- trend_regression_count: {int(trend.get('regression_count', 0) or 0)}",
+        f"- reference_readiness_status: {str(report.get('reference_readiness', {}).get('status', '') or '')}",
         "Checks:",
     ]
     for name in sorted(checks):
         lines.append(f"- {name}: {'PASS' if checks[name] else 'FAIL'}")
+    reference_readiness = (
+        report.get("reference_readiness", {})
+        if isinstance(report.get("reference_readiness"), dict)
+        else {}
+    )
+    references = (
+        reference_readiness.get("references", [])
+        if isinstance(reference_readiness.get("references"), list)
+        else []
+    )
+    lines.append("Reference Readiness:")
+    if references:
+        for item in references:
+            if not isinstance(item, dict):
+                continue
+            lines.append(
+                "- "
+                f"id={item.get('reference_id', '')}, "
+                f"available={bool(item.get('available', False))}, "
+                f"reason={item.get('reason', '')}, "
+                f"path={item.get('configured_path', '')}"
+            )
+    next_actions = (
+        reference_readiness.get("next_actions", [])
+        if isinstance(reference_readiness.get("next_actions"), list)
+        else []
+    )
+    if next_actions:
+        lines.append("Reference Next Actions:")
+        for item in next_actions:
+            if not isinstance(item, dict):
+                continue
+            lines.append(
+                "- "
+                f"priority={item.get('priority', '')}, "
+                f"category={item.get('category', '')}, "
+                f"action={item.get('action', '')}"
+            )
     return "\n".join(lines) + "\n"
 
 

@@ -61,6 +61,12 @@ def test_research_benchmark_suite_dry_run_writes_manifest(tmp_path):
         "event_state_cache",
         "event_state_cache_integration",
         "concept_revalidation_fixture_builder",
+        "persistent_self_state",
+        "idle_replay",
+        "internal_maintenance_efficiency",
+        "event_memory_ingest_pipeline",
+        "event_memory_maintenance_coupling",
+        "sara_ann_comparison",
         "research_product_completion",
         "v1_release_gate",
     ]
@@ -70,6 +76,7 @@ def test_research_benchmark_suite_dry_run_writes_manifest(tmp_path):
     assert "Phase 6 energy metrics:" in summary
     assert "Phase 8 baseline metrics:" in summary
     assert "Phase 7 loop metrics:" in summary
+    assert "Self-state maintenance:" in summary
     assert "requested_slots=missing_artifact" in summary
     assert "Gap loop readiness: state=missing" in summary
     assert "What is proven:" in summary
@@ -204,6 +211,77 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                     "replay_curriculum_share": 0.25,
                 },
             }
+        if str(path).endswith("sara_ann_comparison_report.json"):
+            return {
+                "passed": False,
+                "status": "proxy_only_or_partial_reference_surface",
+                "completion_score": 0.7,
+                "next_action_count": 2,
+                "best_available_offline_reference": {
+                    "label": "BM25 Offline Baseline",
+                },
+                "metrics": {
+                    "ann_to_sara_joule_efficiency_ratio": 0.0,
+                },
+            }
+        if str(path).endswith("persistent_self_state_benchmark.json"):
+            return {
+                "passed": True,
+                "observed_only": True,
+                "metrics": {
+                    "persistent_self_state_idle_activity": 1.0,
+                    "persistent_self_state_continuity": 1.0,
+                    "persistent_self_state_memory_reactivation": 1.0,
+                    "persistent_self_state_internal_prediction": 1.0,
+                },
+            }
+        if str(path).endswith("idle_replay_benchmark.json"):
+            return {
+                "passed": True,
+                "observed_only": True,
+                "metrics": {
+                    "idle_replay_candidate_selection_observed": 1.0,
+                    "idle_replay_budget_observed": 1.0,
+                    "idle_replay_self_state_alignment_observed": 1.0,
+                    "idle_replay_memory_reactivation_observed": 1.0,
+                    "idle_replay_state_continuity_observed": 1.0,
+                },
+            }
+        if str(path).endswith("internal_maintenance_efficiency_benchmark.json"):
+            return {
+                "passed": True,
+                "observed_only": True,
+                "counts": {
+                    "maintenance_selected_count": 4,
+                    "maintenance_refresh_count": 2,
+                },
+                "normalized_metrics": {
+                    "maintenance_event_cost": 6.0,
+                    "maintenance_event_cost_per_selected": 1.5,
+                },
+            }
+        if str(path).endswith("event_memory_ingest_pipeline.json"):
+            return {
+                "passed": True,
+                "metrics": {
+                    "episode_compression_ratio": 5.0,
+                    "relation_verification_yield": 1.0,
+                    "self_state_continuity": 0.285714,
+                },
+            }
+        if str(path).endswith("event_memory_maintenance_coupling_benchmark.json"):
+            return {
+                "passed": True,
+                "best_profile": {
+                    "profile_id": "balanced",
+                },
+                "metrics": {
+                    "compression_to_maintenance_correlation": -0.25,
+                    "best_profile_compression_efficiency_per_maintenance": 1.75,
+                    "best_profile_self_state_continuity": 0.9,
+                    "best_profile_episode_compression_ratio": 4.0,
+                },
+            }
         return original_loader(path)
 
     monkeypatch.setattr(suite, "_load_json_if_present", _stub_loader)
@@ -246,3 +324,24 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
     assert evidence["autobot_gap_loop_replay_curriculum_share"] == 0.25
     assert manifest["artifact_state"]["gap_materials_closed_loop"] == "passed"
     assert manifest["artifact_state"]["autobot_gap_loop_readiness"] == "passed"
+    assert manifest["artifact_state"]["persistent_self_state"] == "passed"
+    assert manifest["artifact_state"]["idle_replay"] == "passed"
+    assert manifest["artifact_state"]["internal_maintenance_efficiency"] == "passed"
+    assert manifest["artifact_state"]["event_memory_ingest_pipeline"] == "passed"
+    assert manifest["artifact_state"]["event_memory_maintenance_coupling"] == "passed"
+    assert manifest["artifact_state"]["sara_ann_comparison"] == "failed"
+    assert evidence["persistent_self_state_passed"] is True
+    assert evidence["persistent_self_state_idle_activity"] == 1.0
+    assert evidence["idle_replay_passed"] is True
+    assert evidence["idle_replay_self_state_alignment"] == 1.0
+    assert evidence["internal_maintenance_efficiency_passed"] is True
+    assert evidence["internal_maintenance_event_cost_per_selected"] == 1.5
+    assert evidence["event_memory_ingest_pipeline_passed"] is True
+    assert evidence["event_memory_episode_compression_ratio"] == 5.0
+    assert evidence["event_memory_relation_verification_yield"] == 1.0
+    assert evidence["event_memory_maintenance_coupling_passed"] is True
+    assert evidence["event_memory_maintenance_best_profile"] == "balanced"
+    assert evidence["event_memory_maintenance_best_efficiency"] == 1.75
+    assert evidence["event_memory_maintenance_best_continuity"] == 0.9
+    assert evidence["sara_ann_comparison_status"] == "proxy_only_or_partial_reference_surface"
+    assert evidence["sara_ann_best_offline_reference"] == "BM25 Offline Baseline"

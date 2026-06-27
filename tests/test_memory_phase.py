@@ -1,4 +1,8 @@
-from sara_engine.learning.memory_phase import MemoryPhaseConfig, evaluate_memory_phase_transitions
+from sara_engine.learning.memory_phase import (
+    MemoryPhaseConfig,
+    build_memory_phase_observations,
+    evaluate_memory_phase_transitions,
+)
 
 
 def test_memory_phase_tracks_liquid_glass_crystal_without_overfixing_noise():
@@ -33,3 +37,28 @@ def test_memory_phase_reports_state_budget_pressure():
 
     assert len(report["phase_tracks"]) == 3
     assert report["metrics"]["memory_phase_state_budget_observed"] == 0.0
+
+
+def test_memory_phase_can_project_replay_events_into_phase_observations():
+    observations = build_memory_phase_observations(
+        [
+            {
+                "memory_id": "anchor",
+                "post_retention": 0.88,
+                "post_noise": 0.08,
+                "health_after": 0.86,
+            },
+            {
+                "memory_id": "fresh",
+                "post_retention": 0.28,
+                "post_noise": 0.52,
+                "health_after": 0.32,
+            },
+        ],
+        step=10,
+    )
+
+    assert observations[0]["memory_id"] == "anchor"
+    assert observations[0]["step"] == 10
+    assert observations[0]["stability"] > observations[1]["stability"]
+    assert observations[0]["interference"] < observations[1]["interference"]

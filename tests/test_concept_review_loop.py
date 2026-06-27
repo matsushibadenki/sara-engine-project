@@ -1,3 +1,4 @@
+from sara_engine.dynamics import PersistentSelfStateController, stable_self_state_id
 from sara_engine.ingest import FrequentSequence, make_candidate_relation
 from sara_engine.memory.concept_admission import ConceptRevalidationEntry
 from sara_engine.memory.concept_review_loop import ConceptReviewLoop
@@ -132,3 +133,27 @@ def test_review_loop_can_rebuild_ready_concept_with_sequence_backing():
 
     assert len(result.admission_plan.admitted_candidates) == 1
     assert result.schedule.ready_queue[0].sequence_support_score > 0.3
+
+
+def test_review_loop_can_use_persistent_self_state_for_ready_priority():
+    queue = [_entry("quarantine_source_revision_conflict")]
+    relations = [
+        _relation(record_id="rel-1", source_ref="episode-1", source_hash="hash-a"),
+        _relation(record_id="rel-2", source_ref="episode-2", source_hash="hash-b"),
+    ]
+    controller = PersistentSelfStateController(
+        core_event_ids=(
+            stable_self_state_id("vision:visual_cluster_018"),
+            stable_self_state_id("audio:audio_cluster_044"),
+        )
+    )
+
+    result = ConceptReviewLoop().run(
+        queue,
+        relations,
+        current_segment=6,
+        persistent_self_state=controller,
+    )
+
+    assert len(result.admission_plan.admitted_candidates) == 1
+    assert result.schedule.ready_queue[0].self_state_alignment_score == 1.0

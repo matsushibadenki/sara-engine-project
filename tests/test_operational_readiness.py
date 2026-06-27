@@ -3802,6 +3802,91 @@ def test_build_operational_runbook_actions_adds_ann_efficiency_next_evidence():
     assert "energy_measurement" in action["affected_checks"]
 
 
+def test_build_operational_runbook_actions_adds_phase8_reference_evidence():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "source": "external_reference_readiness",
+                    "category": "missing_reference_directory",
+                    "priority": "high",
+                    "task": "phase8_reference_strength",
+                    "command": (
+                        "Provide a valid local directory for Local Cross-Encoder Reference "
+                        "and rerun python scripts/sara_cli.py eval-external-validity."
+                    ),
+                }
+            ]
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(item for item in actions if item["source"] == "ann_efficiency_next_evidence")
+    assert action["priority"] == "high"
+    assert "eval-external-validity" in action["command"]
+    assert "ann_efficiency_roadmap" in action["affected_checks"]
+    assert "external_validity" in action["affected_checks"]
+
+
+def test_build_operational_runbook_actions_adds_internal_maintenance_evidence():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "source": "internal_maintenance_reference",
+                    "category": "missing_internal_maintenance_reference",
+                    "priority": "medium",
+                    "task": "phase6_maintenance_efficiency",
+                    "command": "python scripts/sara_cli.py eval-internal-maintenance-efficiency",
+                }
+            ]
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(item for item in actions if item["source"] == "ann_efficiency_next_evidence")
+    assert action["priority"] == "medium"
+    assert "eval-internal-maintenance-efficiency" in action["command"]
+    assert "ann_efficiency_roadmap" in action["affected_checks"]
+    assert "internal_maintenance_efficiency" in action["affected_checks"]
+
+
+def test_build_operational_runbook_actions_adds_sara_ann_comparison_evidence():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "sara_ann_comparison": {
+            "next_actions": [
+                {
+                    "category": "missing_event_memory_compression_surface",
+                    "priority": "medium",
+                    "command": "python scripts/sara_cli.py eval-event-memory-ingest-pipeline",
+                }
+            ]
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(item for item in actions if item["source"] == "sara_ann_comparison_next_action")
+    assert action["priority"] == "medium"
+    assert "eval-event-memory-ingest-pipeline" in action["command"]
+    assert "sara_ann_comparison" in action["affected_checks"]
+    assert "event_memory_ingest_pipeline" in action["affected_checks"]
+
+
 def test_build_operational_runbook_actions_merges_v1_actions_without_duplicates():
     module = _load_script("operational_readiness.py")
     report = {

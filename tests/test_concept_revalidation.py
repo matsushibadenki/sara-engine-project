@@ -1,4 +1,5 @@
 from sara_engine.ingest import FrequentSequence, make_candidate_relation
+from sara_engine.dynamics import stable_self_state_id
 from sara_engine.memory.concept_admission import ConceptRevalidationEntry
 from sara_engine.memory.concept_revalidation import ConceptRevalidationScheduler
 
@@ -163,3 +164,30 @@ def test_revalidation_scheduler_uses_sequence_support_in_ready_priority():
     assert backed.ready_queue[0].sequence_support_count == 1
     assert backed.ready_queue[0].sequence_support_score > 0.3
     assert backed.ready_queue[0].priority_score > plain.ready_queue[0].priority_score
+
+
+def test_revalidation_scheduler_uses_self_state_alignment_in_ready_priority():
+    entry = _entry("quarantine_source_revision_conflict")
+    relations = [
+        _relation(record_id="rel-1", source_ref="episode-1", source_hash="hash-a"),
+        _relation(record_id="rel-2", source_ref="episode-2", source_hash="hash-b"),
+    ]
+    self_state_ids = (
+        stable_self_state_id("vision:visual_cluster_018"),
+        stable_self_state_id("audio:audio_cluster_044"),
+    )
+
+    plain = ConceptRevalidationScheduler().build_schedule(
+        [entry],
+        relations,
+        current_segment=5,
+    )
+    aligned = ConceptRevalidationScheduler().build_schedule(
+        [entry],
+        relations,
+        current_segment=5,
+        self_state_ids=self_state_ids,
+    )
+
+    assert aligned.ready_queue[0].self_state_alignment_score == 1.0
+    assert aligned.ready_queue[0].priority_score > plain.ready_queue[0].priority_score

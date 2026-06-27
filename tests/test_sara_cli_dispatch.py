@@ -441,6 +441,10 @@ def test_eval_external_validity_dispatches_to_benchmark_script(monkeypatch):
             "workspace/evaluation/test_external_validity_history.json",
             "--regression-tolerance",
             "0.1",
+            "--pretrained-embedding-model",
+            "workspace/models/test-embedding-model",
+            "--cross-encoder-model",
+            "workspace/models/test-cross-encoder-model",
             "--no-history-update",
         ],
     )
@@ -459,6 +463,10 @@ def test_eval_external_validity_dispatches_to_benchmark_script(monkeypatch):
     assert "workspace/evaluation/test_external_validity_history.json" in args
     assert "--regression-tolerance" in args
     assert "0.1" in args
+    assert "--pretrained-embedding-model" in args
+    assert "workspace/models/test-embedding-model" in args
+    assert "--cross-encoder-model" in args
+    assert "workspace/models/test-cross-encoder-model" in args
     assert "--no-history-update" in args
 
 
@@ -681,6 +689,14 @@ def test_physical_energy_pair_dispatches_to_runner(monkeypatch):
             "1",
             "--repetitions",
             "2",
+            "--report-path",
+            "workspace/evaluation/test_physical_pair_report.json",
+            "--summary-path",
+            "workspace/evaluation/test_physical_pair_summary.txt",
+            "--meter-reading-path",
+            "workspace/evaluation/test_meter_readings.json",
+            "--meter-template-path",
+            "workspace/evaluation/test_meter_template.json",
             "--dry-run",
         ],
     )
@@ -696,7 +712,126 @@ def test_physical_energy_pair_dispatches_to_runner(monkeypatch):
     ]
     assert "--pair-id" in args
     assert "pilot-1" in args
+    assert "--report-path" in args
+    assert "workspace/evaluation/test_physical_pair_report.json" in args
+    assert "--summary-path" in args
+    assert "workspace/evaluation/test_physical_pair_summary.txt" in args
+    assert "--meter-reading-path" in args
+    assert "workspace/evaluation/test_meter_readings.json" in args
+    assert "--meter-template-path" in args
+    assert "workspace/evaluation/test_meter_template.json" in args
     assert "--dry-run" in args
+
+
+def test_physical_energy_session_batch_dispatches_to_runner(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "run-physical-energy-session-batch",
+            "--session-plan-path",
+            "workspace/evaluation/test_energy_measurement_session_plan.json",
+            "--report-path",
+            "workspace/evaluation/test_physical_energy_batch.json",
+            "--summary-path",
+            "workspace/evaluation/test_physical_energy_batch.txt",
+            "--execute-dry-run-pairs",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/physical_energy_session_batch.py",
+    ]
+    assert "--session-plan-path" in args
+    assert "workspace/evaluation/test_energy_measurement_session_plan.json" in args
+    assert "--execute-dry-run-pairs" in args
+
+
+def test_physical_energy_session_progress_dispatches_to_runner(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-physical-energy-session-progress",
+            "--batch-report-path",
+            "workspace/evaluation/test_physical_energy_batch.json",
+            "--measurement-path",
+            "data/raw/test_energy_measurements.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_physical_energy_progress.json",
+            "--summary-path",
+            "workspace/evaluation/test_physical_energy_progress.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/physical_energy_session_progress.py",
+    ]
+    assert "--batch-report-path" in args
+    assert "workspace/evaluation/test_physical_energy_batch.json" in args
+    assert "--measurement-path" in args
+    assert "data/raw/test_energy_measurements.jsonl" in args
+
+
+def test_sara_ann_comparison_dispatches_to_runner(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-sara-ann-comparison",
+            "--external-validity-report-path",
+            "workspace/evaluation/test_real_data_external_validity.json",
+            "--external-ladder-report-path",
+            "workspace/evaluation/test_real_data_external_validity_ladder.json",
+            "--energy-measurement-report-path",
+            "workspace/evaluation/test_energy_measurement_readiness.json",
+            "--report-path",
+            "workspace/evaluation/test_sara_ann_comparison_report.json",
+            "--summary-path",
+            "workspace/evaluation/test_sara_ann_comparison_report.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/sara_ann_comparison_report.py",
+    ]
+    assert "--external-validity-report-path" in args
+    assert "workspace/evaluation/test_real_data_external_validity.json" in args
+    assert "--energy-measurement-report-path" in args
+    assert "workspace/evaluation/test_energy_measurement_readiness.json" in args
 
 
 def test_sparse_diffusion_block_readiness_dispatches_to_eval_script(monkeypatch):
@@ -1981,10 +2116,166 @@ def test_eval_event_memory_ingest_pipeline_dispatches_to_eval_script(monkeypatch
     mock_run = Mock()
     mock_run.return_value.returncode = 0
     monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
-    monkeypatch.setattr(sys, "argv", ["sara_cli.py", "eval-event-memory-ingest-pipeline"])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-event-memory-ingest-pipeline",
+            "--report-path",
+            "workspace/evaluation/test_event_memory_ingest_pipeline.json",
+            "--summary-path",
+            "workspace/evaluation/test_event_memory_ingest_pipeline.txt",
+        ],
+    )
 
     with pytest.raises(SystemExit) as exc_info:
         sara_cli.main()
 
     assert exc_info.value.code == 0
-    mock_run.assert_called_once_with([sys.executable, "scripts/eval/event_memory_ingest_pipeline.py"])
+    mock_run.assert_called_once_with(
+        [
+            sys.executable,
+            "scripts/eval/event_memory_ingest_pipeline.py",
+            "--report-path",
+            "workspace/evaluation/test_event_memory_ingest_pipeline.json",
+            "--summary-path",
+            "workspace/evaluation/test_event_memory_ingest_pipeline.txt",
+        ]
+    )
+
+
+def test_eval_event_memory_maintenance_coupling_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-event-memory-maintenance-coupling",
+            "--report-path",
+            "workspace/evaluation/test_event_memory_maintenance_coupling.json",
+            "--summary-path",
+            "workspace/evaluation/test_event_memory_maintenance_coupling.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once_with(
+        [
+            sys.executable,
+            "scripts/eval/event_memory_maintenance_coupling_benchmark.py",
+            "--report-path",
+            "workspace/evaluation/test_event_memory_maintenance_coupling.json",
+            "--summary-path",
+            "workspace/evaluation/test_event_memory_maintenance_coupling.txt",
+        ]
+    )
+
+
+def test_eval_persistent_self_state_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-persistent-self-state",
+            "--report-path",
+            "workspace/evaluation/test_persistent_self_state.json",
+            "--summary-path",
+            "workspace/evaluation/test_persistent_self_state.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once_with(
+        [
+            sys.executable,
+            "scripts/eval/persistent_self_state_benchmark.py",
+            "--report-path",
+            "workspace/evaluation/test_persistent_self_state.json",
+            "--summary-path",
+            "workspace/evaluation/test_persistent_self_state.txt",
+        ]
+    )
+
+
+def test_eval_idle_replay_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-idle-replay",
+            "--report-path",
+            "workspace/evaluation/test_idle_replay.json",
+            "--summary-path",
+            "workspace/evaluation/test_idle_replay.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once_with(
+        [
+            sys.executable,
+            "scripts/eval/idle_replay_benchmark.py",
+            "--report-path",
+            "workspace/evaluation/test_idle_replay.json",
+            "--summary-path",
+            "workspace/evaluation/test_idle_replay.txt",
+        ]
+    )
+
+
+def test_eval_internal_maintenance_efficiency_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-internal-maintenance-efficiency",
+            "--report-path",
+            "workspace/evaluation/test_internal_maintenance.json",
+            "--summary-path",
+            "workspace/evaluation/test_internal_maintenance.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once_with(
+        [
+            sys.executable,
+            "scripts/eval/internal_maintenance_efficiency_benchmark.py",
+            "--report-path",
+            "workspace/evaluation/test_internal_maintenance.json",
+            "--summary-path",
+            "workspace/evaluation/test_internal_maintenance.txt",
+        ]
+    )

@@ -370,6 +370,8 @@ def main():
         default=workspace_path("evaluation", "real_data_external_validity_history.json"),
     )
     parser_eval_external.add_argument("--regression-tolerance", type=float, default=0.05)
+    parser_eval_external.add_argument("--pretrained-embedding-model", default="")
+    parser_eval_external.add_argument("--cross-encoder-model", default="")
     parser_eval_external.add_argument("--no-history-update", action="store_true")
 
     parser_eval_external_ladder = subparsers.add_parser(
@@ -428,6 +430,31 @@ def main():
     )
     parser_ann_efficiency.add_argument("--refresh-artifacts", action="store_true")
     parser_ann_efficiency.add_argument("--allow-missing-operational", action="store_true")
+
+    parser_sara_ann_comparison = subparsers.add_parser(
+        "eval-sara-ann-comparison",
+        help="SARA対ANNの比較サーフェスを研究用レポートとして生成します。",
+    )
+    parser_sara_ann_comparison.add_argument(
+        "--external-validity-report-path",
+        default=workspace_path("evaluation", "real_data_external_validity.json"),
+    )
+    parser_sara_ann_comparison.add_argument(
+        "--external-ladder-report-path",
+        default=workspace_path("evaluation", "real_data_external_validity_ladder.json"),
+    )
+    parser_sara_ann_comparison.add_argument(
+        "--energy-measurement-report-path",
+        default=workspace_path("evaluation", "energy_measurement_readiness.json"),
+    )
+    parser_sara_ann_comparison.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "sara_ann_comparison_report.json"),
+    )
+    parser_sara_ann_comparison.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "sara_ann_comparison_report.txt"),
+    )
 
     parser_sparse_diffusion = subparsers.add_parser(
         "eval-sparse-diffusion-block-readiness",
@@ -823,6 +850,79 @@ def main():
             "event_memory_ingest_pipeline_summary.txt",
         ),
     )
+    parser_event_memory_maintenance_coupling = subparsers.add_parser(
+        "eval-event-memory-maintenance-coupling",
+        help="Run the Event Memory compression versus self-state maintenance coupling benchmark.",
+    )
+    parser_event_memory_maintenance_coupling.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation",
+            "event_memory_maintenance_coupling_benchmark.json",
+        ),
+    )
+    parser_event_memory_maintenance_coupling.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation",
+            "event_memory_maintenance_coupling_benchmark_summary.txt",
+        ),
+    )
+
+    parser_persistent_self_state = subparsers.add_parser(
+        "eval-persistent-self-state",
+        help="Run the bounded persistent self-state benchmark.",
+    )
+    parser_persistent_self_state.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation",
+            "persistent_self_state_benchmark.json",
+        ),
+    )
+    parser_persistent_self_state.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation",
+            "persistent_self_state_benchmark_summary.txt",
+        ),
+    )
+    parser_idle_replay = subparsers.add_parser(
+        "eval-idle-replay",
+        help="Run the bounded idle replay benchmark.",
+    )
+    parser_idle_replay.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation",
+            "idle_replay_benchmark.json",
+        ),
+    )
+    parser_idle_replay.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation",
+            "idle_replay_benchmark_summary.txt",
+        ),
+    )
+    parser_internal_maintenance = subparsers.add_parser(
+        "eval-internal-maintenance-efficiency",
+        help="Run the bounded internal maintenance efficiency benchmark.",
+    )
+    parser_internal_maintenance.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation",
+            "internal_maintenance_efficiency_benchmark.json",
+        ),
+    )
+    parser_internal_maintenance.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation",
+            "internal_maintenance_efficiency_benchmark_summary.txt",
+        ),
+    )
 
     parser_operator_llm = subparsers.add_parser(
         "eval-operator-llm-assistant-readiness",
@@ -876,6 +976,10 @@ def main():
     parser_record_energy.add_argument("--measured-repetitions", type=int, required=True)
     parser_record_energy.add_argument("--trial-count", type=int, required=True)
     parser_record_energy.add_argument("--run-order", type=int, choices=[1, 2], required=True)
+    parser_record_energy.add_argument("--maintenance-selected-count", type=int, default=None)
+    parser_record_energy.add_argument("--maintenance-phase-count", type=int, default=None)
+    parser_record_energy.add_argument("--maintenance-refresh-count", type=int, default=None)
+    parser_record_energy.add_argument("--maintenance-event-cost", type=float, default=None)
     parser_record_energy.add_argument("--max-success-rate-delta", type=float, default=0.0)
     parser_record_energy.add_argument(
         "--min-paired-replicates-per-task",
@@ -924,6 +1028,11 @@ def main():
         default="data/raw/energy_measurements.jsonl",
     )
     parser_physical_pair.add_argument(
+        "--meter-reading-path",
+        default="",
+        help="JSON file with measured SARA/ANN joules or average watts and duration.",
+    )
+    parser_physical_pair.add_argument(
         "--manifest-path",
         default=workspace_path("evaluation", "physical_energy_pair_manifest.json"),
     )
@@ -931,7 +1040,58 @@ def main():
         "--trace-path",
         default=workspace_path("evaluation", "physical_energy_pair_trace.jsonl"),
     )
+    parser_physical_pair.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "physical_energy_pair_report.json"),
+    )
+    parser_physical_pair.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "physical_energy_pair_summary.txt"),
+    )
+    parser_physical_pair.add_argument(
+        "--meter-template-path",
+        default=workspace_path("evaluation", "physical_energy_pair_meter_template.json"),
+    )
     parser_physical_pair.add_argument("--dry-run", action="store_true")
+
+    parser_physical_session_batch = subparsers.add_parser(
+        "run-physical-energy-session-batch",
+        help="Build or execute a thin batch plan for physical-energy pair sessions.",
+    )
+    parser_physical_session_batch.add_argument(
+        "--session-plan-path",
+        default=workspace_path("evaluation", "energy_measurement_session_plan.json"),
+    )
+    parser_physical_session_batch.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "physical_energy_session_batch.json"),
+    )
+    parser_physical_session_batch.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "physical_energy_session_batch.txt"),
+    )
+    parser_physical_session_batch.add_argument("--execute-dry-run-pairs", action="store_true")
+
+    parser_physical_session_progress = subparsers.add_parser(
+        "eval-physical-energy-session-progress",
+        help="Summarize progress for a physical-energy measurement session.",
+    )
+    parser_physical_session_progress.add_argument(
+        "--batch-report-path",
+        default=workspace_path("evaluation", "physical_energy_session_batch.json"),
+    )
+    parser_physical_session_progress.add_argument(
+        "--measurement-path",
+        default="data/raw/energy_measurements.jsonl",
+    )
+    parser_physical_session_progress.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "physical_energy_session_progress.json"),
+    )
+    parser_physical_session_progress.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "physical_energy_session_progress.txt"),
+    )
 
     parser_clean = subparsers.add_parser("clean", help="中間データを削除して環境をリセットします。")
 
@@ -1380,6 +1540,10 @@ def main():
             str(args.history_path),
             "--regression-tolerance",
             str(args.regression_tolerance),
+            "--pretrained-embedding-model",
+            str(args.pretrained_embedding_model),
+            "--cross-encoder-model",
+            str(args.cross_encoder_model),
         ]
         if args.no_history_update:
             command.append("--no-history-update")
@@ -1429,6 +1593,24 @@ def main():
             command.append("--refresh-artifacts")
         if args.allow_missing_operational:
             command.append("--allow-missing-operational")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-sara-ann-comparison":
+        command = [
+            sys.executable,
+            "scripts/eval/sara_ann_comparison_report.py",
+            "--external-validity-report-path",
+            str(args.external_validity_report_path),
+            "--external-ladder-report-path",
+            str(args.external_ladder_report_path),
+            "--energy-measurement-report-path",
+            str(args.energy_measurement_report_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
@@ -1716,6 +1898,58 @@ def main():
         command = [
             sys.executable,
             "scripts/eval/event_memory_ingest_pipeline.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-event-memory-maintenance-coupling":
+        command = [
+            sys.executable,
+            "scripts/eval/event_memory_maintenance_coupling_benchmark.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-persistent-self-state":
+        command = [
+            sys.executable,
+            "scripts/eval/persistent_self_state_benchmark.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-idle-replay":
+        command = [
+            sys.executable,
+            "scripts/eval/idle_replay_benchmark.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-internal-maintenance-efficiency":
+        command = [
+            sys.executable,
+            "scripts/eval/internal_maintenance_efficiency_benchmark.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
@@ -1806,6 +2040,14 @@ def main():
             command.extend(["--average-watts", str(args.average_watts)])
         if args.notes:
             command.extend(["--notes", str(args.notes)])
+        if args.maintenance_selected_count is not None:
+            command.extend(["--maintenance-selected-count", str(args.maintenance_selected_count)])
+        if args.maintenance_phase_count is not None:
+            command.extend(["--maintenance-phase-count", str(args.maintenance_phase_count)])
+        if args.maintenance_refresh_count is not None:
+            command.extend(["--maintenance-refresh-count", str(args.maintenance_refresh_count)])
+        if args.maintenance_event_cost is not None:
+            command.extend(["--maintenance-event-cost", str(args.maintenance_event_cost)])
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
@@ -1841,13 +2083,53 @@ def main():
             str(args.ann_joules),
             "--measurement-path",
             str(args.measurement_path),
+            "--meter-reading-path",
+            str(args.meter_reading_path),
             "--manifest-path",
             str(args.manifest_path),
             "--trace-path",
             str(args.trace_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+            "--meter-template-path",
+            str(args.meter_template_path),
         ]
         if args.dry_run:
             command.append("--dry-run")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "run-physical-energy-session-batch":
+        command = [
+            sys.executable,
+            "scripts/eval/physical_energy_session_batch.py",
+            "--session-plan-path",
+            str(args.session_plan_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        if args.execute_dry_run_pairs:
+            command.append("--execute-dry-run-pairs")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-physical-energy-session-progress":
+        command = [
+            sys.executable,
+            "scripts/eval/physical_energy_session_progress.py",
+            "--batch-report-path",
+            str(args.batch_report_path),
+            "--measurement-path",
+            str(args.measurement_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
 

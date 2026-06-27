@@ -115,6 +115,35 @@ def test_relation_verifier_rejects_low_gain_candidate_even_with_confidence():
     assert result.promoted_record is None
 
 
+def test_relation_verifier_can_use_self_state_alignment_as_small_bonus():
+    candidate = make_candidate_relation(
+        {
+            "record_id": "rel-bonus",
+            "relation": "predicts",
+            "source_event_id": "a",
+            "target_event_id": "b",
+            "delay_lower_ms": 0,
+            "delay_upper_ms": 50,
+            "confidence": 0.95,
+            "source_ref": "session-3",
+            "source_hash": "hash-3",
+            "extractor_name": "prediction_gain",
+            "extractor_version": "v1",
+            "evidence_count": 12,
+            "counterexample_count": 1,
+            "prediction_gain": 0.01,
+        }
+    )
+
+    verifier = ProposalVerifier(min_prediction_gain=0.05)
+    blocked = verifier.verify_relation(candidate)
+    recovered = verifier.verify_relation_with_self_state(candidate, self_state_alignment=1.0)
+
+    assert blocked.accepted is False
+    assert recovered.accepted is True
+    assert recovered.trace["effective_prediction_gain"] >= 0.05
+
+
 def test_lineage_ledger_entry_keeps_ann_proposal_metadata_separate():
     entry = build_lineage_ledger_entry(
         {
