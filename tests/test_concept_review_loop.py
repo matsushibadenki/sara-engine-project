@@ -106,6 +106,18 @@ def test_review_loop_carries_forward_attempt_budget_block():
     assert result.next_revalidation_queue[0].next_action == "manual_review"
 
 
+def test_review_loop_prioritizes_manual_review_candidates_in_next_queue():
+    queue = [
+        _entry("reject_missing_support", concept_key="predicts:vision:a->audio:b", attempt_count=3, next_action="rebuild_supporting_relations"),
+        _entry("reject_insufficient_source_diversity", concept_key="predicts:vision:c->audio:d", retry_after_segment=9, last_review_segment=8),
+    ]
+
+    result = ConceptReviewLoop().run(queue, [], current_segment=10)
+
+    assert len(result.next_revalidation_queue) == 2
+    assert result.next_revalidation_queue[0].next_action == "manual_review"
+
+
 def test_review_loop_can_rebuild_ready_concept_with_sequence_backing():
     queue = [_entry("quarantine_source_revision_conflict")]
     relations = [

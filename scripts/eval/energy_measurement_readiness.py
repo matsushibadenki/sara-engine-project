@@ -31,6 +31,9 @@ DEFAULT_SESSION_PROGRESS_SUMMARY_PATH = workspace_path("evaluation", "physical_e
 DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH = workspace_path(
     "evaluation", "internal_maintenance_efficiency_benchmark.json"
 )
+DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH = workspace_path(
+    "evaluation", "event_memory_maintenance_coupling_benchmark.json"
+)
 REQUIRED_FIELDS = {
     "run_id",
     "system",
@@ -167,6 +170,37 @@ def _maintenance_alignment_summary(
         "maintenance_event_cost_per_refresh_delta": actual_refresh - reference_refresh,
         "maintenance_event_cost_per_refresh_ratio": (
             actual_refresh / reference_refresh if reference_refresh > 0.0 else 0.0
+        ),
+    }
+
+
+def _event_memory_maintenance_coupling_reference_summary(
+    report: Mapping[str, Any] | None,
+) -> Dict[str, Any]:
+    payload = report if isinstance(report, Mapping) else {}
+    metrics = payload.get("metrics", {}) if isinstance(payload.get("metrics"), Mapping) else {}
+    best_profile = (
+        payload.get("best_profile", {})
+        if isinstance(payload.get("best_profile"), Mapping)
+        else {}
+    )
+    return {
+        "available": bool(payload),
+        "passed": bool(payload.get("passed", False)),
+        "observed_only": bool(payload.get("observed_only", False)),
+        "profile_count": _safe_int(payload.get("profile_count")),
+        "best_profile_id": str(best_profile.get("profile_id", "") or ""),
+        "compression_to_maintenance_correlation": _safe_float(
+            metrics.get("compression_to_maintenance_correlation")
+        ),
+        "best_profile_compression_efficiency_per_maintenance": _safe_float(
+            metrics.get("best_profile_compression_efficiency_per_maintenance")
+        ),
+        "best_profile_self_state_continuity": _safe_float(
+            metrics.get("best_profile_self_state_continuity")
+        ),
+        "best_profile_episode_compression_ratio": _safe_float(
+            metrics.get("best_profile_episode_compression_ratio")
         ),
     }
 
@@ -387,6 +421,49 @@ def _pair_fairness_errors(
     if _safe_int(sara.get("run_order")) == _safe_int(ann.get("run_order")):
         errors.append("run_order_must_differ_within_pair")
     return errors
+
+
+def _classify_pair_fairness_errors(errors: Sequence[str]) -> Dict[str, Any]:
+    mismatch_fields: List[str] = []
+    run_order_conflict = False
+    other_errors: List[str] = []
+    for item in errors:
+        token = str(item).strip()
+        if token.startswith("mismatch:"):
+            mismatch_fields.append(token.split(":", 1)[1].strip())
+        elif token == "run_order_must_differ_within_pair":
+            run_order_conflict = True
+        elif token:
+            other_errors.append(token)
+    mismatch_fields = sorted({field for field in mismatch_fields if field})
+    if mismatch_fields and run_order_conflict:
+        category = "fairness_and_run_order_conflict"
+        priority = "high"
+        remediation = "Repair fairness-field mismatches and rerun the pair with alternating run order."
+    elif mismatch_fields:
+        category = "fairness_field_mismatch"
+        priority = "high"
+        remediation = "Repair fairness-field mismatches before repeating this physical pair."
+    elif run_order_conflict:
+        category = "run_order_conflict"
+        priority = "medium"
+        remediation = "Rerun this physical pair with alternating or explicitly differentiated run order."
+    elif other_errors:
+        category = "unclassified_fairness_error"
+        priority = "medium"
+        remediation = "Inspect pair fairness errors and rerun the physical pair after correcting the mismatch."
+    else:
+        category = "none"
+        priority = "low"
+        remediation = ""
+    return {
+        "category": category,
+        "priority": priority,
+        "mismatch_fields": mismatch_fields,
+        "run_order_conflict": run_order_conflict,
+        "other_errors": other_errors,
+        "remediation": remediation,
+    }
 
 
 def _aggregate_measurements(
@@ -793,6 +870,8 @@ def _physical_pair_command_for_session(*, session_id: str, task: str) -> str:
         f"--pair-id {pair_id} --replicate-index <replicate> "
         "--measurement-tool <tool-id> --thread-count <threads> "
         "--process-affinity <affinity> --power-mode <mode> "
+        "--event-memory-maintenance-coupling-report-path "
+        "workspace/evaluation/event_memory_maintenance_coupling_benchmark.json "
         f"--manifest-path {manifest_path} --trace-path {trace_path} "
         f"--report-path {report_path} --summary-path {summary_path} "
         f"--meter-template-path {meter_template_path}"
@@ -826,6 +905,7 @@ def _build_measurement_session_progress(
                 "task": task,
                 "priority": str(item.get("priority", "") or ""),
                 "replicate_count": 0,
+                "fixed_replicate_index": 0,
                 "pair_id_template": pair_id_template,
                 "pair_command_template": pair_command_template,
                 "meter_template_path": str(item.get("meter_template_path", "") or ""),
@@ -837,11 +917,19 @@ def _build_measurement_session_progress(
             int(entry.get("replicate_count", 0) or 0),
             _safe_int(item.get("replicate_count")) or 1,
         )
+        fixed_replicate_index = _safe_int(item.get("fixed_replicate_index"))
+        if fixed_replicate_index > 0:
+            entry["fixed_replicate_index"] = fixed_replicate_index
 
     expected_pairs: List[Dict[str, Any]] = []
     for _, item in sorted(grouped.items()):
-        replicate_count = max(_safe_int(item.get("replicate_count")), 1)
-        for replicate_index in range(1, replicate_count + 1):
+        fixed_replicate_index = _safe_int(item.get("fixed_replicate_index"))
+        replicate_indexes = (
+            [fixed_replicate_index]
+            if fixed_replicate_index > 0
+            else list(range(1, max(_safe_int(item.get("replicate_count")), 1) + 1))
+        )
+        for replicate_index in replicate_indexes:
             expected_pairs.append(
                 {
                     "category": str(item.get("category", "") or ""),
@@ -895,11 +983,13 @@ def _build_measurement_session_progress(
         present_systems = sorted(systems.keys())
         status = "missing_pair"
         errors: List[str] = []
+        fairness_classification: Dict[str, Any] = {}
         ann_to_sara_ratio = 0.0
         if set(present_systems) == {"ann", "sara"}:
             sara_row = systems["sara"]
             ann_row = systems["ann"]
             errors = _pair_fairness_errors(sara_row, ann_row)
+            fairness_classification = _classify_pair_fairness_errors(errors)
             if errors:
                 status = "invalid_pair"
             else:
@@ -927,6 +1017,18 @@ def _build_measurement_session_progress(
                 "status": status,
                 "present_systems": present_systems,
                 "errors": errors,
+                "invalid_reason_category": str(
+                    fairness_classification.get("category", "") if errors else ""
+                ),
+                "invalid_reason_priority": str(
+                    fairness_classification.get("priority", "") if errors else ""
+                ),
+                "invalid_reason_fields": list(
+                    fairness_classification.get("mismatch_fields", []) if errors else []
+                ),
+                "invalid_reason_remediation": str(
+                    fairness_classification.get("remediation", "") if errors else ""
+                ),
                 "ann_to_sara_joule_efficiency_ratio": float(ann_to_sara_ratio),
                 "pair_command": str(item.get("pair_command", "") or ""),
                 "meter_template_path": str(item.get("meter_template_path", "") or ""),
@@ -1013,6 +1115,11 @@ def _build_measurement_session_plan(
     weak_pairs = (
         measurement_plan.get("weak_pairs", [])
         if isinstance(measurement_plan.get("weak_pairs"), list)
+        else []
+    )
+    invalid_pairs = (
+        measurement_plan.get("invalid_pairs", [])
+        if isinstance(measurement_plan.get("invalid_pairs"), list)
         else []
     )
     planned_runs: List[Dict[str, Any]] = []
@@ -1129,6 +1236,65 @@ def _build_measurement_session_plan(
                 }
             )
 
+    for item in invalid_pairs:
+        if not isinstance(item, Mapping):
+            continue
+        task = str(item.get("task", "") or "").strip()
+        pair_id = str(item.get("pair_id", "") or "").strip()
+        replicate_index = _safe_int(item.get("replicate_index")) or 1
+        if not task or not pair_id:
+            continue
+        for system in ("sara", "ann"):
+            planned_runs.append(
+                {
+                    "category": "repair_invalid_pair",
+                    "priority": str(item.get("priority", "high")),
+                    "task": task,
+                    "system": system,
+                    "replicate_count": 1,
+                    "fixed_replicate_index": int(replicate_index),
+                    "pair_id_template": pair_id,
+                    "run_id_template": _session_run_id_template(
+                        session_id=session_id,
+                        task=task,
+                        system=system,
+                    ),
+                    "manifest_path_template": _session_manifest_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "trace_path_template": _session_trace_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "report_path_template": _session_report_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "summary_path_template": _session_summary_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "meter_template_path": _session_meter_template_path(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "pair_command_template": _physical_pair_command_for_session(
+                        session_id=session_id,
+                        task=task,
+                    ),
+                    "command_template": _record_command_for_session(
+                        session_id=session_id,
+                        task=task,
+                        system=system,
+                    ),
+                    "invalid_reason_category": str(item.get("reason_category", "") or ""),
+                    "invalid_reason_fields": list(item.get("reason_fields", []))
+                    if isinstance(item.get("reason_fields", []), list)
+                    else [],
+                }
+            )
+
     return {
         "schema": "sara-energy-measurement-session-plan-v2",
         "session_id": str(session_id or "energy-session"),
@@ -1167,6 +1333,11 @@ def _build_measurement_plan(
     min_paired_replicates_per_task: int,
 ) -> Dict[str, Any]:
     tasks = aggregate.get("tasks", {}) if isinstance(aggregate.get("tasks"), Mapping) else {}
+    pair_errors = (
+        aggregate.get("pair_errors", [])
+        if isinstance(aggregate.get("pair_errors"), list)
+        else []
+    )
     pending_pairs: List[Dict[str, Any]] = []
     if not rows:
         for task in CANONICAL_MEASUREMENT_TASKS:
@@ -1205,19 +1376,94 @@ def _build_measurement_plan(
         if isinstance(aggregate.get("paired_task_ann_to_sara_ratios"), Mapping)
         else {}
     )
-    weak_pairs = [
-        {
-            "task": str(task),
-            "ann_to_sara_joule_efficiency_ratio": float(ratio),
-            "required_min": float(min_ann_to_sara_ratio),
-            "priority": "medium",
-            "replicate_count": 1,
-            "next_action": "Repeat paired measurement or inspect the SARA sparse-event trace for this task.",
-        }
-        for task, ratio in sorted(paired_ratios.items())
-        if _safe_float(ratio) < float(min_ann_to_sara_ratio)
-    ]
-    ready_for_real_claim = bool(not pending_pairs and not weak_pairs and int(aggregate.get("paired_task_count", 0) or 0) > 0)
+    weak_pairs: List[Dict[str, Any]] = []
+    for task, ratio in sorted(paired_ratios.items()):
+        observed_ratio = _safe_float(ratio)
+        required_min = float(min_ann_to_sara_ratio)
+        if observed_ratio >= required_min:
+            continue
+        relative_ratio = observed_ratio / required_min if required_min > 0.0 else 0.0
+        ratio_gap = required_min - observed_ratio
+        severity = "moderate"
+        priority = "medium"
+        next_action = "Repeat paired measurement or inspect the SARA sparse-event trace for this task."
+        if relative_ratio < 0.5:
+            severity = "critical"
+            priority = "high"
+            next_action = (
+                "Repeat this paired measurement with more replicates and inspect both fairness fields "
+                "and the SARA sparse-event trace before treating the energy result as credible."
+            )
+        elif relative_ratio < 0.8:
+            severity = "high"
+            priority = "high"
+            next_action = (
+                "Repeat this paired measurement and inspect the SARA sparse-event trace before "
+                "promoting the current ratio into roadmap evidence."
+            )
+        weak_pairs.append(
+            {
+                "task": str(task),
+                "ann_to_sara_joule_efficiency_ratio": float(observed_ratio),
+                "required_min": required_min,
+                "relative_ratio": float(relative_ratio),
+                "ratio_gap": float(ratio_gap),
+                "severity": severity,
+                "priority": priority,
+                "replicate_count": 1,
+                "next_action": next_action,
+            }
+        )
+    invalid_pairs: List[Dict[str, Any]] = []
+    for item in pair_errors:
+        if not isinstance(item, Mapping):
+            continue
+        pair_key = item.get("pair_key", [])
+        if not isinstance(pair_key, list) or len(pair_key) != 3:
+            continue
+        errors = [str(value).strip() for value in item.get("errors", []) if str(value).strip()]
+        if "missing_system_pair" in errors:
+            continue
+        task = str(pair_key[0] or "")
+        pair_id = str(pair_key[1] or "")
+        replicate_index = _safe_int(pair_key[2])
+        fairness_classification = _classify_pair_fairness_errors(errors)
+        quality_parity_failed = "success_rate_parity_failed" in errors
+        reason_category = str(fairness_classification.get("category", "") or "")
+        priority = str(fairness_classification.get("priority", "medium") or "medium")
+        next_action = str(
+            fairness_classification.get(
+                "remediation",
+                "Inspect invalid pair conditions and rerun the physical pair.",
+            )
+            or "Inspect invalid pair conditions and rerun the physical pair."
+        )
+        if quality_parity_failed and reason_category in {"none", "unclassified_fairness_error"}:
+            reason_category = "success_rate_parity_failure"
+            priority = "high"
+            next_action = (
+                "Rerun this physical pair with a verified shared success criterion before treating "
+                "the result as comparable."
+            )
+        invalid_pairs.append(
+            {
+                "task": task,
+                "pair_id": pair_id,
+                "replicate_index": replicate_index,
+                "errors": errors,
+                "reason_category": reason_category,
+                "reason_fields": list(fairness_classification.get("mismatch_fields", [])),
+                "priority": priority,
+                "replicate_count": 1,
+                "next_action": next_action,
+            }
+        )
+    ready_for_real_claim = bool(
+        not pending_pairs
+        and not weak_pairs
+        and not invalid_pairs
+        and int(aggregate.get("paired_task_count", 0) or 0) > 0
+    )
     return {
         "schema": "sara-energy-measurement-plan-v2",
         "ready_for_real_joule_claim": ready_for_real_claim,
@@ -1225,8 +1471,10 @@ def _build_measurement_plan(
         "observed_paired_task_count": int(aggregate.get("paired_task_count", 0) or 0),
         "pending_pair_count": len(pending_pairs),
         "weak_pair_count": len(weak_pairs),
+        "invalid_pair_repair_count": len(invalid_pairs),
         "pending_pairs": pending_pairs,
         "weak_pairs": weak_pairs,
+        "invalid_pairs": invalid_pairs,
         "recommended_tasks": list(CANONICAL_MEASUREMENT_TASKS),
         "operator_notes": [
             "Use the same task label for SARA and ANN rows.",
@@ -1245,6 +1493,7 @@ def build_energy_measurement_readiness_report(
     max_success_rate_delta: float = 0.0,
     min_paired_replicates_per_task: int = 3,
     internal_maintenance_report: Mapping[str, Any] | None = None,
+    event_memory_maintenance_coupling_report: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     rows = [dict(row) for row in measurements]
     row_errors = [
@@ -1345,6 +1594,16 @@ def build_energy_measurement_readiness_report(
     internal_maintenance_reference = _internal_maintenance_reference_summary(
         internal_maintenance_report
     )
+    event_memory_maintenance_coupling_reference = (
+        _event_memory_maintenance_coupling_reference_summary(
+            event_memory_maintenance_coupling_report
+        )
+    )
+    measurement_session_progress = dict(measurement_session_progress)
+    measurement_session_progress["internal_maintenance_reference"] = internal_maintenance_reference
+    measurement_session_progress["event_memory_maintenance_coupling_reference"] = (
+        event_memory_maintenance_coupling_reference
+    )
     maintenance_alignment = _maintenance_alignment_summary(
         aggregate,
         internal_maintenance_reference,
@@ -1368,6 +1627,7 @@ def build_energy_measurement_readiness_report(
         "measurement_session_plan": measurement_session_plan,
         "measurement_session_progress": measurement_session_progress,
         "internal_maintenance_reference": internal_maintenance_reference,
+        "event_memory_maintenance_coupling_reference": event_memory_maintenance_coupling_reference,
         "maintenance_alignment": maintenance_alignment,
         "measurement_protocol": {
             "required_fields": sorted(REQUIRED_FIELDS | FAIRNESS_FIELDS),
@@ -1411,6 +1671,11 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
         if isinstance(report.get("maintenance_alignment"), Mapping)
         else {}
     )
+    event_memory_maintenance_coupling_reference = (
+        report.get("event_memory_maintenance_coupling_reference", {})
+        if isinstance(report.get("event_memory_maintenance_coupling_reference"), Mapping)
+        else {}
+    )
     lines = [
         "# SARA Energy Measurement Readiness",
         f"- passed: {bool(report.get('passed', False))}",
@@ -1436,6 +1701,9 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
         f"- internal_maintenance_reference_available: {bool(internal_maintenance_reference.get('available', False))}",
         f"- internal_maintenance_event_cost_per_selected: {_safe_float(internal_maintenance_reference.get('maintenance_event_cost_per_selected')):.3f}",
         f"- internal_maintenance_self_state_continuity_observed: {_safe_float(internal_maintenance_reference.get('maintenance_self_state_continuity_observed')):.3f}",
+        f"- event_memory_maintenance_coupling_reference_available: {bool(event_memory_maintenance_coupling_reference.get('available', False))}",
+        f"- event_memory_maintenance_best_profile: {event_memory_maintenance_coupling_reference.get('best_profile_id', '')}",
+        f"- event_memory_maintenance_best_efficiency: {_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_compression_efficiency_per_maintenance')):.3f}",
         f"- maintenance_alignment_available: {bool(maintenance_alignment.get('available', False))}",
         f"- physical_internal_maintenance_event_cost_per_selected: {_safe_float(maintenance_alignment.get('sara_physical_maintenance_event_cost_per_selected')):.3f}",
         f"- maintenance_event_cost_per_selected_alignment_ratio: {_safe_float(maintenance_alignment.get('maintenance_event_cost_per_selected_ratio')):.3f}",
@@ -1526,6 +1794,16 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
             f"refresh={_safe_int(internal_maintenance_reference.get('maintenance_refresh_count'))}, "
             f"event_cost_per_selected={_safe_float(internal_maintenance_reference.get('maintenance_event_cost_per_selected')):.3f}"
         )
+    if event_memory_maintenance_coupling_reference:
+        lines.append("Event Memory Maintenance Coupling Reference:")
+        lines.append(
+            "- "
+            f"available={bool(event_memory_maintenance_coupling_reference.get('available', False))}, "
+            f"passed={bool(event_memory_maintenance_coupling_reference.get('passed', False))}, "
+            f"best_profile={event_memory_maintenance_coupling_reference.get('best_profile_id', '')}, "
+            f"best_efficiency={_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_compression_efficiency_per_maintenance')):.3f}, "
+            f"best_continuity={_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_self_state_continuity')):.3f}"
+        )
     if maintenance_alignment:
         lines.append("Maintenance Alignment:")
         lines.append(
@@ -1593,6 +1871,7 @@ def format_measurement_session_plan_summary(session_plan: Mapping[str, Any]) -> 
 def format_measurement_session_progress_summary(
     session_progress: Mapping[str, Any],
     internal_maintenance_reference: Mapping[str, Any] | None = None,
+    event_memory_maintenance_coupling_reference: Mapping[str, Any] | None = None,
 ) -> str:
     task_progress = (
         session_progress.get("task_progress", {})
@@ -1666,7 +1945,24 @@ def format_measurement_session_progress_summary(
     else:
         lines.append("- none")
     maintenance_reference = (
-        internal_maintenance_reference if isinstance(internal_maintenance_reference, Mapping) else {}
+        internal_maintenance_reference
+        if isinstance(internal_maintenance_reference, Mapping)
+        else (
+            session_progress.get("internal_maintenance_reference", {})
+            if isinstance(session_progress.get("internal_maintenance_reference"), Mapping)
+            else {}
+        )
+    )
+    coupling_reference = (
+        event_memory_maintenance_coupling_reference
+        if isinstance(event_memory_maintenance_coupling_reference, Mapping)
+        else (
+            session_progress.get("event_memory_maintenance_coupling_reference", {})
+            if isinstance(
+                session_progress.get("event_memory_maintenance_coupling_reference"), Mapping
+            )
+            else {}
+        )
     )
     if maintenance_reference:
         lines.append("Internal Maintenance Reference:")
@@ -1676,6 +1972,16 @@ def format_measurement_session_progress_summary(
             f"passed={bool(maintenance_reference.get('passed', False))}, "
             f"event_cost_per_selected={_safe_float(maintenance_reference.get('maintenance_event_cost_per_selected')):.3f}, "
             f"continuity={_safe_float(maintenance_reference.get('maintenance_self_state_continuity_observed')):.3f}"
+        )
+    if coupling_reference:
+        lines.append("Event Memory Maintenance Coupling Reference:")
+        lines.append(
+            "- "
+            f"available={bool(coupling_reference.get('available', False))}, "
+            f"passed={bool(coupling_reference.get('passed', False))}, "
+            f"best_profile={coupling_reference.get('best_profile_id', '')}, "
+            f"best_efficiency={_safe_float(coupling_reference.get('best_profile_compression_efficiency_per_maintenance')):.3f}, "
+            f"best_continuity={_safe_float(coupling_reference.get('best_profile_self_state_continuity')):.3f}"
         )
     return "\n".join(lines) + "\n"
 
@@ -1690,6 +1996,10 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--session-progress-path", default=DEFAULT_SESSION_PROGRESS_PATH)
     parser.add_argument("--session-progress-summary-path", default=DEFAULT_SESSION_PROGRESS_SUMMARY_PATH)
     parser.add_argument("--internal-maintenance-report-path", default=DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH)
+    parser.add_argument(
+        "--event-memory-maintenance-coupling-report-path",
+        default=DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH,
+    )
     parser.add_argument("--min-ann-to-sara-ratio", type=float, default=1.0)
     parser.add_argument("--session-id", default="ann-efficiency-real-joule")
     parser.add_argument("--append-measurement", action="store_true")
@@ -1769,6 +2079,9 @@ def main(argv: List[str] | None = None) -> int:
         max_success_rate_delta=args.max_success_rate_delta,
         min_paired_replicates_per_task=args.min_paired_replicates_per_task,
         internal_maintenance_report=_load_optional_json(args.internal_maintenance_report_path),
+        event_memory_maintenance_coupling_report=_load_optional_json(
+            args.event_memory_maintenance_coupling_report_path
+        ),
     )
     report_path = ensure_parent_directory(args.report_path)
     summary_path = ensure_parent_directory(args.summary_path)
@@ -1785,6 +2098,11 @@ def main(argv: List[str] | None = None) -> int:
     internal_maintenance_reference = report.get("internal_maintenance_reference", {})
     if not isinstance(internal_maintenance_reference, Mapping):
         internal_maintenance_reference = {}
+    event_memory_maintenance_coupling_reference = report.get(
+        "event_memory_maintenance_coupling_reference", {}
+    )
+    if not isinstance(event_memory_maintenance_coupling_reference, Mapping):
+        event_memory_maintenance_coupling_reference = {}
     with open(report_path, "w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2, ensure_ascii=False, sort_keys=True)
     with open(summary_path, "w", encoding="utf-8") as handle:
@@ -1800,6 +2118,9 @@ def main(argv: List[str] | None = None) -> int:
             format_measurement_session_progress_summary(
                 session_progress,
                 internal_maintenance_reference=internal_maintenance_reference,
+                event_memory_maintenance_coupling_reference=(
+                    event_memory_maintenance_coupling_reference
+                ),
             )
         )
     print(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True))

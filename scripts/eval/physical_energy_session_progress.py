@@ -19,6 +19,8 @@ for path in (SCRIPT_DIR, SRC_PATH):
 
 from sara_engine.utils.project_paths import ensure_parent_directory, raw_data_path, workspace_path  # noqa: E402
 from energy_measurement_readiness import (  # noqa: E402
+    _classify_pair_fairness_errors,
+    _event_memory_maintenance_coupling_reference_summary,
     _internal_maintenance_reference_summary,
     _load_optional_json,
     _pair_fairness_errors,
@@ -36,6 +38,9 @@ DEFAULT_REPORT_PATH = workspace_path("evaluation", "physical_energy_session_prog
 DEFAULT_SUMMARY_PATH = workspace_path("evaluation", "physical_energy_session_progress.txt")
 DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH = workspace_path(
     "evaluation", "internal_maintenance_efficiency_benchmark.json"
+)
+DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH = workspace_path(
+    "evaluation", "event_memory_maintenance_coupling_benchmark.json"
 )
 
 
@@ -69,6 +74,7 @@ def build_physical_energy_session_progress(
     measurements: Sequence[Mapping[str, Any]],
     *,
     internal_maintenance_report: Mapping[str, Any] | None = None,
+    event_memory_maintenance_coupling_report: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     runs = batch_report.get("batch_runs", []) if isinstance(batch_report.get("batch_runs"), list) else []
     pair_index, row_errors = _index_rows(measurements)
@@ -89,11 +95,13 @@ def build_physical_energy_session_progress(
         present_systems = sorted(systems.keys())
         status = "missing_pair"
         errors: List[str] = []
+        fairness_classification: Dict[str, Any] = {}
         ann_to_sara_ratio = 0.0
         if set(present_systems) == {"ann", "sara"}:
             sara_row = systems["sara"]
             ann_row = systems["ann"]
             errors = _pair_fairness_errors(sara_row, ann_row)
+            fairness_classification = _classify_pair_fairness_errors(errors)
             if errors:
                 status = "invalid_pair"
             else:
@@ -121,6 +129,18 @@ def build_physical_energy_session_progress(
                 "status": status,
                 "present_systems": present_systems,
                 "errors": errors,
+                "invalid_reason_category": str(
+                    fairness_classification.get("category", "") if errors else ""
+                ),
+                "invalid_reason_priority": str(
+                    fairness_classification.get("priority", "") if errors else ""
+                ),
+                "invalid_reason_fields": list(
+                    fairness_classification.get("mismatch_fields", []) if errors else []
+                ),
+                "invalid_reason_remediation": str(
+                    fairness_classification.get("remediation", "") if errors else ""
+                ),
                 "ann_to_sara_joule_efficiency_ratio": float(ann_to_sara_ratio),
                 "meter_template_path": str(item.get("meter_template_path", "") or ""),
                 "report_path": str(item.get("report_path", "") or ""),
@@ -191,6 +211,11 @@ def build_physical_energy_session_progress(
         "internal_maintenance_reference": _internal_maintenance_reference_summary(
             internal_maintenance_report
         ),
+        "event_memory_maintenance_coupling_reference": (
+            _event_memory_maintenance_coupling_reference_summary(
+                event_memory_maintenance_coupling_report
+            )
+        ),
     }
 
 
@@ -201,6 +226,11 @@ def format_summary(report: Mapping[str, Any]) -> str:
     internal_maintenance_reference = (
         report.get("internal_maintenance_reference", {})
         if isinstance(report.get("internal_maintenance_reference"), Mapping)
+        else {}
+    )
+    event_memory_maintenance_coupling_reference = (
+        report.get("event_memory_maintenance_coupling_reference", {})
+        if isinstance(report.get("event_memory_maintenance_coupling_reference"), Mapping)
         else {}
     )
     lines = [
@@ -271,6 +301,16 @@ def format_summary(report: Mapping[str, Any]) -> str:
             f"event_cost_per_selected={_safe_float(internal_maintenance_reference.get('maintenance_event_cost_per_selected')):.3f}, "
             f"continuity={_safe_float(internal_maintenance_reference.get('maintenance_self_state_continuity_observed')):.3f}"
         )
+    if event_memory_maintenance_coupling_reference:
+        lines.append("Event Memory Maintenance Coupling Reference:")
+        lines.append(
+            "- "
+            f"available={bool(event_memory_maintenance_coupling_reference.get('available', False))}, "
+            f"passed={bool(event_memory_maintenance_coupling_reference.get('passed', False))}, "
+            f"best_profile={event_memory_maintenance_coupling_reference.get('best_profile_id', '')}, "
+            f"best_efficiency={_safe_float(event_memory_maintenance_coupling_reference.get('best_efficiency')):.3f}, "
+            f"best_continuity={_safe_float(event_memory_maintenance_coupling_reference.get('best_continuity')):.3f}"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -281,6 +321,10 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--report-path", default=DEFAULT_REPORT_PATH)
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--internal-maintenance-report-path", default=DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH)
+    parser.add_argument(
+        "--event-memory-maintenance-coupling-report-path",
+        default=DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH,
+    )
     return parser.parse_args(argv)
 
 
@@ -292,6 +336,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         batch_report,
         measurements,
         internal_maintenance_report=_load_optional_json(args.internal_maintenance_report_path),
+        event_memory_maintenance_coupling_report=_load_optional_json(
+            args.event_memory_maintenance_coupling_report_path
+        ),
     )
     report_path = ensure_parent_directory(args.report_path)
     summary_path = ensure_parent_directory(args.summary_path)

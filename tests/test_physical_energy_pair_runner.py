@@ -269,11 +269,26 @@ def test_build_pair_report_surfaces_maintenance_summary():
                 "maintenance_event_cost_per_refresh": 0.6,
             },
         },
+        event_memory_maintenance_coupling_report={
+            "passed": True,
+            "observed_only": True,
+            "profile_count": 3,
+            "best_profile": {
+                "profile_id": "wide",
+            },
+            "metrics": {
+                "compression_to_maintenance_correlation": 0.51,
+                "best_profile_compression_efficiency_per_maintenance": 0.19,
+                "best_profile_self_state_continuity": 0.83,
+                "best_profile_episode_compression_ratio": 3.67,
+            },
+        },
     )
 
     assert report["maintenance_by_system"]["sara"]["maintenance_event_cost"] == 0.7
     assert report["measurement_pending"] is True
     assert report["internal_maintenance_reference"]["maintenance_event_cost_per_selected"] == 0.2
+    assert report["event_memory_maintenance_coupling_reference"]["best_profile_id"] == "wide"
     assert round(report["maintenance_alignment"]["sara"]["actual_event_cost_per_selected"], 6) == 0.14
     assert round(report["maintenance_alignment"]["sara"]["event_cost_per_selected_delta"], 6) == -0.06
     assert "--sara-joules <J> --ann-joules <J>" in report["resume_append_command_template"]
@@ -286,6 +301,8 @@ def test_build_pair_report_surfaces_maintenance_summary():
     assert "event_cost_per_selected=0.200" in summary
     assert "Maintenance Alignment:" in summary
     assert "event_cost_per_selected_delta=-0.060" in summary
+    assert "Event Memory Maintenance Coupling Reference:" in summary
+    assert "best_profile=wide" in summary
     assert "record-energy-measurement" in summary
 
 
@@ -306,6 +323,26 @@ def test_parse_args_accepts_internal_maintenance_report_path():
     assert (
         args.internal_maintenance_report_path
         == "workspace/evaluation/custom_internal_maintenance.json"
+    )
+
+
+def test_parse_args_accepts_event_memory_maintenance_coupling_report_path():
+    module = _load_module()
+
+    args = module.parse_args(
+        [
+            "--pair-id",
+            "pilot-4",
+            "--replicate-index",
+            "1",
+            "--event-memory-maintenance-coupling-report-path",
+            "workspace/evaluation/custom_event_memory_maintenance_coupling.json",
+        ]
+    )
+
+    assert (
+        args.event_memory_maintenance_coupling_report_path
+        == "workspace/evaluation/custom_event_memory_maintenance_coupling.json"
     )
 
 

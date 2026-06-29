@@ -104,4 +104,23 @@ def test_run_persisted_concept_review_cycle_updates_queue_and_report():
     assert report["ready_count"] == 1
     assert report["admitted_candidate_count"] == 1
     assert report["revalidation_queue_count"] == 0
+    assert report["ready_mean_credit_score"] > 0.0
+    assert report["blocked_mean_credit_score"] == 0.0
 
+
+def test_review_report_surfaces_manual_review_candidates():
+    queue_path = workspace_path("memory", f"test_revalidation_manual_{os.getpid()}.json")
+    report_path = workspace_path("memory", f"test_revalidation_manual_report_{os.getpid()}.json")
+    save_revalidation_queue((_entry(attempt_count=3),), queue_path)
+
+    result = run_persisted_concept_review_cycle(
+        [],
+        current_segment=10,
+        queue_path=queue_path,
+        report_path=report_path,
+    )
+
+    assert len(result.schedule.blocked_queue) == 1
+    with open(report_path, "r", encoding="utf-8") as handle:
+        report = json.load(handle)
+    assert report["manual_review_candidates"][0]["next_action"] == "manual_review"

@@ -63,6 +63,8 @@ def test_concept_admission_planner_promotes_audited_candidate_into_event_state()
     assert candidate.own_latent_id == "predicts:vision:visual_cluster_018->audio:audio_cluster_044"
     assert candidate.source_revision.startswith("concept-rev:")
     assert candidate.sequence_support_score == 0.0
+    assert candidate.credit_score > 0.0
+    assert candidate.credit_confidence > 0.0
     assert len(plan.revalidation_queue) == 0
 
 

@@ -69,6 +69,7 @@ def test_revalidation_scheduler_releases_revision_conflict_after_resolution():
     assert len(schedule.ready_queue) == 1
     assert schedule.ready_queue[0].decision == "ready_revision_conflict_resolved"
     assert schedule.ready_queue[0].priority_score > 0.0
+    assert schedule.ready_queue[0].credit_score > 0.0
 
 
 def test_revalidation_scheduler_blocks_until_cooldown_passes():
@@ -164,6 +165,7 @@ def test_revalidation_scheduler_uses_sequence_support_in_ready_priority():
     assert backed.ready_queue[0].sequence_support_count == 1
     assert backed.ready_queue[0].sequence_support_score > 0.3
     assert backed.ready_queue[0].priority_score > plain.ready_queue[0].priority_score
+    assert backed.ready_queue[0].credit_score > 0.0
 
 
 def test_revalidation_scheduler_uses_self_state_alignment_in_ready_priority():

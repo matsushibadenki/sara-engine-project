@@ -85,6 +85,10 @@ Goal: move from proxy-only ANN-efficiency claims to paired physical measurements
   - DONE: session planning now exposes `pair_command_template`, pair-level managed meter-template paths, and a batch expander that materializes concrete replicate runs under `workspace/evaluation/physical_energy_session_batch.json`.
   - DONE: session progress monitoring now compares planned pair runs against recorded rows and surfaces completion, partial coverage, invalid fairness matches, and orphan measurements under `workspace/evaluation/physical_energy_session_progress.json`.
   - DONE: `energy_measurement_readiness.py` now emits that same session-progress surface directly from the managed session plan, so partial laboratory sessions appear in the main Phase 6 readiness artifact instead of hiding behind aggregate row counts.
+  - DONE: session-progress artifacts now also surface the Event Memory compression-versus-maintenance coupling reference, so physical-pair collection can be reviewed against the currently best self-state/compression profile without opening a separate benchmark report.
+  - DONE: ANN-efficiency next-action generation now lifts orphan measurement pairs and invalid measurement rows into explicit Phase 6 repair commands, so data-hygiene issues reach the operational runbook instead of remaining passive diagnostics.
+  - DONE: weak paired joule results now carry severity, relative shortfall, and ratio-gap metadata, so Phase 6 remeasurement priority is driven by how far the result is from the claim threshold instead of treating all weak pairs equally.
+  - DONE: invalid pairs are now classified into fairness-field mismatch versus run-order conflict and fed back into managed `invalid_pairs` repair planning, so nested session-progress artifacts can distinguish "fix the contract" from "rerun the pair."
 - Add at least one retrieval task and one continual-adaptation task where SARA's sparse/local design is expected to matter.
 - Produce per-task paired rows and an aggregate report without hiding task-level losses.
 - Regenerate:
@@ -1060,6 +1064,75 @@ SARA should update a sparse local eligibility trace only when several independen
 7. Add the bridge benchmark to the compact research suite after its source reports.
    - DONE.
 
+### Third Implementation Slice: Adaptive Credit Field
+
+Goal: extend Phase 17 from "verified update permission" into a stronger local credit-assignment system that estimates **which sparse pathways were responsible** for later prediction improvement or failure, without making dense backpropagation the normal runtime learning rule.
+
+This slice is the most promising way to absorb the recent Adaptive Credit Field idea into SARA. The key design move is to treat learning as **credit estimation**, not gradient reconstruction. World-model prediction error, verifier outcome, novelty, reward, contradiction, and metabolic headroom should broadcast coarse signed credit to sparse local traces. Each local route then decides whether to strengthen, weaken, freeze, crystallize, or forget.
+
+#### Adoption Boundary
+
+- Keep the main runtime SNN-first, sparse, CPU-first, bounded-state, and event-driven.
+- Extend local learning state with bounded `eligibility`, `responsibility`, `confidence`, and `longevity` rather than introducing dense hidden credit tensors.
+- Prefer stateful local credit accumulation over explicit whole-network credit recomputation. Credit should behave like a bounded synaptic state variable, not a hidden backpropagation graph.
+- Prefer coarse credit broadcast from the world model or verifier over exact gradient flow.
+- Treat "error field" as **relation-local credit diffusion** across sparse event, memory, and route neighborhoods, not as dense spatial backpropagation.
+- Update credit only for recently active sparse routes, eligible traces, or event-local neighborhoods; inactive structure should remain untouched.
+- Gate credit updates behind sparse learning events such as large prediction error, contradiction, novelty, reward, or strong verifier disagreement rather than running uniform per-step global maintenance.
+- Prefer quantized or low-resolution credit states when benchmark quality is preserved. Start from a small bounded state such as low/medium/high or a few discrete buckets before introducing continuous precision.
+- Use `prediction_error * novelty * reward` as the default episode-promotion pressure unless contradiction or abstention blocks it.
+- Permit confidence-aware routing or confidence events, but do not require biologically literal "confidence spikes" in the first implementation.
+- Allow a narrowly scoped offline or audit-only dense calibration lane only if it is clearly separated from runtime learning, disabled by default, and justified by benchmark evidence. It must remain a research exception, not a hidden runtime dependency.
+- Do not promote this slice if it merely imitates backpropagation at high cost while erasing SARA's sparse-event or energy-efficiency identity.
+
+#### First Experimental Slice
+
+1. Add an `AdaptiveCreditField` primitive under `src/sara_engine/learning/`.
+   - Maintain bounded per-link or per-route `eligibility`, `responsibility`, `confidence`, and `longevity`.
+   - Keep state sparse and serializable under explicit hard caps.
+   - Support an event-driven update mode where dormant links do not pay maintenance cost until triggered by a learning-relevant event.
+   - Include a discrete-credit variant as a first-class benchmark condition rather than assuming floating-point precision is necessary.
+2. Add multi-timescale temporal credit traces.
+   - Start with a fixed ladder such as `fast / short / medium / long` windows rather than continuous unbounded traces.
+   - Support delayed credit from future-state failure, verifier contradiction, or later reward without dense replay through the whole network.
+3. Add world-model-guided coarse credit broadcast.
+   - Use prediction error, verifier state, abstention, and replay outcome to emit signed bounded credit hints toward recently active sparse paths.
+   - Distinguish "prediction wrong", "prediction unsupported", and "prediction contradicted" so all negative cases do not collapse into one update.
+   - Allow region-level or modality-level credit gating before route-level updates so only the most implicated subnetwork pays learning cost.
+4. Add event-memory compression pressure from ACF.
+   - Promote or refresh only events whose combined `prediction_error * novelty * reward` survives contradiction, source, and budget checks.
+   - Let low-responsibility or low-longevity structures decay earlier than verified, repeatedly useful structures.
+5. Add confidence-gated route selection.
+   - Start with bounded local confidence state and confidence-weighted route arbitration before introducing any explicit confidence-event protocol.
+   - Require abstention when confidence conflict remains unresolved.
+6. Add a focused observed-only benchmark.
+   - Proposed script: `scripts/eval/adaptive_credit_field_benchmark.py`.
+   - Compare STDP-only, resonance-credit-only, and ACF-enhanced local learning on delayed credit, noisy reward, contradiction, and long-gap causal-support fixtures.
+   - Include event-driven versus always-on maintenance, discrete-credit versus continuous-credit, and route-local versus region-gated update variants.
+7. Add a second integration benchmark over Event Memory.
+   - Proposed script: `scripts/eval/adaptive_credit_event_memory_benchmark.py`.
+   - Measure concept admission precision, harmful-update suppression, episode compression yield, self-state continuity impact, and maintenance cost.
+
+#### Managed Outputs
+
+- Fixture: `data/processed/benchmark_fixtures/adaptive_credit_field_cases.jsonl`
+- Benchmark report: `workspace/evaluation/adaptive_credit_field_benchmark.json`
+- Benchmark summary: `workspace/evaluation/adaptive_credit_field_benchmark_summary.txt`
+- Trace: `workspace/evaluation/adaptive_credit_field_traces.jsonl`
+- Integration report: `workspace/evaluation/adaptive_credit_event_memory_benchmark.json`
+- Integration summary: `workspace/evaluation/adaptive_credit_event_memory_benchmark_summary.txt`
+
+#### Acceptance Criteria
+
+- ACF improves delayed credit assignment or harmful-update suppression over STDP-only and current Phase 17 resonance-credit controls.
+- Responsibility, confidence, and longevity remain bounded, sparse, and inspectable in managed traces.
+- Event-driven credit updates touch only a small active subset of routes per learning event and stay well below any dense whole-network maintenance baseline.
+- A low-resolution or quantized-credit variant remains a preferred option whenever it preserves benchmark quality with lower compute or memory cost.
+- Event Memory promotion quality improves without hiding cost in uncontrolled maintenance, replay, or dense diagnostics.
+- Runtime remains sparse, CPU-first, and usable with the dense calibration lane fully disabled.
+- Any optional dense calibration path remains offline, explicitly labeled, and non-required for normal runtime correctness.
+- If these criteria fail, keep Phase 17 as verified resonance credit plus existing eligibility/homeostasis mechanisms and record ACF as a negative or partial result.
+
 ### Managed Outputs
 
 - Fixture: `data/processed/benchmark_fixtures/resonance_credit_cases.jsonl`
@@ -1424,6 +1497,10 @@ Design paper: [Semantic Echo Field v2: Event-Centric World Model Extension for S
    - IN PROGRESS: Event Memory compression quality now propagates into the research benchmark manifest and operational runbook generation via the comparison report, so weak episode compression or relation-verification yield can surface as managed repair work instead of remaining an isolated evaluator detail.
 7. Keep completed Phase 13-18 mechanisms stable; do not prioritize further architecture expansion over Phase 6, Phase 8, and Phase 7 evidence.
    - IN PROGRESS: `event_memory_maintenance_coupling_benchmark.py` now compares bounded Event Memory compression profiles (`tight`, `balanced`, `wide`) against persistent self-state continuity and maintenance-load proxy, so concept compression changes can be screened for hidden self-state cost before they are treated as accuracy or efficiency wins.
+   - IN PROGRESS: `eval-sara-ann-comparison` and the operational runbook now consume that coupling surface, so weak compression-versus-maintenance tradeoffs can trigger managed follow-up alongside Phase 6 physical measurement gaps and Phase 8 baseline gaps.
+   - IN PROGRESS: `energy_measurement_readiness.py` and `ann_efficiency_roadmap_gate.py` now also consume the coupling reference, so Phase 6 laboratory readiness and roadmap next-action generation can flag missing or weak compression-versus-maintenance evidence before a physical energy claim is promoted.
+   - IN PROGRESS: `run-physical-energy-pair` and the session batch plan now pin that same coupling reference into pair-level commands and summaries, so laboratory pair artifacts keep their internal compression-maintenance assumption explicit instead of depending on out-of-band context.
+   - NEXT WHEN PHASE 6/8 PRESSURE EASES: activate the Phase 17 Adaptive Credit Field slice, because stronger multi-timescale local credit assignment is currently the most plausible route to better concept formation, compression, and long-gap learning without surrendering SARA's sparse-runtime identity.
 8. Keep Phase 19 inactive until its activation gate is satisfied; use it only to address an observed temporal-accuracy limitation without erasing SNN efficiency.
 9. Keep Phase 20 inactive until a frozen independent language benchmark and cost ceilings exist; begin with echo-only fixed-timescale controls before phase binding, phonological recoding, or adaptive time constants.
 

@@ -31,6 +31,10 @@ DEFAULT_OPERATIONAL_REPORT_PATH = workspace_path("release", "operational_readine
 DEFAULT_ANN_EFFICIENCY_ROADMAP_REPORT_PATH = workspace_path("evaluation", "ann_efficiency_roadmap_gate.json")
 DEFAULT_SPARSE_DIFFUSION_BLOCK_REPORT_PATH = workspace_path("evaluation", "sparse_diffusion_block_readiness.json")
 DEFAULT_ENERGY_MEASUREMENT_SESSION_PLAN_PATH = workspace_path("evaluation", "energy_measurement_session_plan.json")
+DEFAULT_ADAPTIVE_CREDIT_FIELD_REPORT_PATH = workspace_path("evaluation", "adaptive_credit_field_benchmark.json")
+DEFAULT_ADAPTIVE_CREDIT_EVENT_MEMORY_REPORT_PATH = workspace_path(
+    "evaluation", "adaptive_credit_event_memory_benchmark.json"
+)
 DEFAULT_RUST_CORE_READINESS_REPORT_PATH = workspace_path("evaluation", "rust_core_readiness.json")
 DEFAULT_RESEARCH_FIXTURE_READINESS_REPORT_PATH = workspace_path("evaluation", "research_fixture_readiness.json")
 DEFAULT_AUTOBOT_GAP_LOOP_READINESS_REPORT_PATH = workspace_path("evaluation", "autobot_gap_loop_readiness.json")
@@ -499,6 +503,63 @@ def _check_autobot_gap_loop_readiness(report: Mapping[str, Any]) -> Dict[str, An
     )
 
 
+def _check_adaptive_credit_field(report: Mapping[str, Any]) -> Dict[str, Any]:
+    metrics = report.get("metrics", {})
+    metrics = metrics if isinstance(metrics, Mapping) else {}
+    errors: List[str] = []
+    if str(report.get("schema", "")) != "sara-adaptive-credit-field-benchmark-v1":
+        errors.append("Adaptive credit field report has an unexpected schema.")
+    if not bool(report.get("passed", False)):
+        errors.append("Adaptive credit field benchmark did not pass.")
+    if not bool(report.get("observed_only", False)):
+        errors.append("Adaptive credit field benchmark must remain observed-only.")
+    if float(metrics.get("decision_integrity", 0.0) or 0.0) < 1.0:
+        errors.append("Adaptive credit field decision_integrity is below 1.0.")
+    if float(metrics.get("harmful_update_suppression", 0.0) or 0.0) < 1.0:
+        errors.append("Adaptive credit field harmful_update_suppression is below 1.0.")
+    if float(metrics.get("quantized_behavior_match", 0.0) or 0.0) < 1.0:
+        errors.append("Adaptive credit field quantized_behavior_match is below 1.0.")
+    if errors:
+        return _failed_check(errors, dict(report))
+    return _passed_check(
+        {
+            "decision_integrity": float(metrics.get("decision_integrity", 0.0) or 0.0),
+            "harmful_update_suppression": float(metrics.get("harmful_update_suppression", 0.0) or 0.0),
+            "quantized_behavior_match": float(metrics.get("quantized_behavior_match", 0.0) or 0.0),
+            "sparse_active_fraction_vs_naive": float(metrics.get("sparse_active_fraction_vs_naive", 0.0) or 0.0),
+            "max_updated_routes": int(metrics.get("max_updated_routes", 0) or 0),
+        }
+    )
+
+
+def _check_adaptive_credit_event_memory(report: Mapping[str, Any]) -> Dict[str, Any]:
+    metrics = report.get("metrics", {})
+    metrics = metrics if isinstance(metrics, Mapping) else {}
+    errors: List[str] = []
+    if str(report.get("schema", "")) != "sara-adaptive-credit-event-memory-benchmark-v1":
+        errors.append("Adaptive credit/Event Memory report has an unexpected schema.")
+    if not bool(report.get("passed", False)):
+        errors.append("Adaptive credit/Event Memory benchmark did not pass.")
+    if not bool(report.get("observed_only", False)):
+        errors.append("Adaptive credit/Event Memory benchmark must remain observed-only.")
+    if not bool(metrics.get("credit_strong_entry_present", False)):
+        errors.append("Adaptive credit/Event Memory failed to preserve the strong supported entry.")
+    if not bool(metrics.get("credit_weak_entry_evicted", False)):
+        errors.append("Adaptive credit/Event Memory failed to evict the weak entry.")
+    if int(metrics.get("harmful_block_preserved_count", 0) or 0) < 1:
+        errors.append("Adaptive credit/Event Memory did not preserve any harmful contradiction block.")
+    if errors:
+        return _failed_check(errors, dict(report))
+    return _passed_check(
+        {
+            "harmful_block_preserved_count": int(metrics.get("harmful_block_preserved_count", 0) or 0),
+            "credit_strong_entry_present": bool(metrics.get("credit_strong_entry_present", False)),
+            "credit_weak_entry_evicted": bool(metrics.get("credit_weak_entry_evicted", False)),
+            "credit_entry_count": int(metrics.get("credit_entry_count", 0) or 0),
+        }
+    )
+
+
 def _check_memory_operations(source_texts: Mapping[str, str]) -> Dict[str, Any]:
     fix_memory_text = source_texts.get("fix_memory", "")
     sara_cli_text = source_texts.get("sara_cli", "")
@@ -571,6 +632,8 @@ def build_research_product_completion_report(
     ann_efficiency_roadmap_report: Mapping[str, Any],
     sparse_diffusion_block_report: Mapping[str, Any],
     energy_measurement_session_plan: Mapping[str, Any],
+    adaptive_credit_field_report: Mapping[str, Any],
+    adaptive_credit_event_memory_report: Mapping[str, Any],
     rust_core_readiness_report: Mapping[str, Any],
     research_fixture_readiness_report: Mapping[str, Any],
     autobot_gap_loop_readiness_report: Mapping[str, Any],
@@ -587,6 +650,8 @@ def build_research_product_completion_report(
         "ann_efficiency_roadmap": _check_ann_efficiency_roadmap(ann_efficiency_roadmap_report),
         "sparse_diffusion_block_readiness": _check_sparse_diffusion_block_readiness(sparse_diffusion_block_report),
         "energy_measurement_session_plan": _check_energy_measurement_session_plan(energy_measurement_session_plan),
+        "adaptive_credit_field": _check_adaptive_credit_field(adaptive_credit_field_report),
+        "adaptive_credit_event_memory": _check_adaptive_credit_event_memory(adaptive_credit_event_memory_report),
         "rust_core_readiness": _check_rust_core_readiness(rust_core_readiness_report),
         "research_fixture_readiness": _check_research_fixture_readiness(research_fixture_readiness_report),
         "autobot_gap_loop_readiness": _check_autobot_gap_loop_readiness(autobot_gap_loop_readiness_report),
@@ -615,6 +680,8 @@ def build_research_product_completion_report(
             "energy_measurement_session_plan": artifact_state(
                 energy_measurement_session_plan, pass_field=None
             ),
+            "adaptive_credit_field": artifact_state(adaptive_credit_field_report),
+            "adaptive_credit_event_memory": artifact_state(adaptive_credit_event_memory_report),
             "rust_core_readiness": artifact_state(
                 rust_core_readiness_report, pass_field="source_readiness_passed"
             ),
@@ -665,6 +732,26 @@ def format_research_product_completion_summary(report: Mapping[str, Any]) -> str
         if isinstance(checks.get("autobot_gap_loop_readiness"), Mapping)
         else {}
     )
+    adaptive_credit_field_check = (
+        checks.get("adaptive_credit_field", {})
+        if isinstance(checks.get("adaptive_credit_field"), Mapping)
+        else {}
+    )
+    adaptive_credit_field_details = (
+        adaptive_credit_field_check.get("details", {})
+        if isinstance(adaptive_credit_field_check.get("details"), Mapping)
+        else {}
+    )
+    adaptive_credit_event_memory_check = (
+        checks.get("adaptive_credit_event_memory", {})
+        if isinstance(checks.get("adaptive_credit_event_memory"), Mapping)
+        else {}
+    )
+    adaptive_credit_event_memory_details = (
+        adaptive_credit_event_memory_check.get("details", {})
+        if isinstance(adaptive_credit_event_memory_check.get("details"), Mapping)
+        else {}
+    )
     gap_loop_details = (
         gap_loop_check.get("details", {})
         if isinstance(gap_loop_check.get("details"), Mapping)
@@ -708,6 +795,20 @@ def format_research_product_completion_summary(report: Mapping[str, Any]) -> str
             f"repair_share={float(gap_loop_details.get('repair_curriculum_share', 0.0) or 0.0):.3f}, "
             f"replay_share={float(gap_loop_details.get('replay_curriculum_share', 0.0) or 0.0):.3f}"
         ),
+        (
+            "- adaptive_credit_metrics: "
+            f"decision_integrity={float(adaptive_credit_field_details.get('decision_integrity', 0.0) or 0.0):.3f}, "
+            f"harmful_update_suppression={float(adaptive_credit_field_details.get('harmful_update_suppression', 0.0) or 0.0):.3f}, "
+            f"quantized_behavior_match={float(adaptive_credit_field_details.get('quantized_behavior_match', 0.0) or 0.0):.3f}, "
+            f"sparse_active_fraction_vs_naive={float(adaptive_credit_field_details.get('sparse_active_fraction_vs_naive', 0.0) or 0.0):.3f}"
+        ),
+        (
+            "- adaptive_credit_event_memory_metrics: "
+            f"harmful_block_preserved_count={int(adaptive_credit_event_memory_details.get('harmful_block_preserved_count', 0) or 0)}, "
+            f"credit_strong_entry_present={bool(adaptive_credit_event_memory_details.get('credit_strong_entry_present', False))}, "
+            f"credit_weak_entry_evicted={bool(adaptive_credit_event_memory_details.get('credit_weak_entry_evicted', False))}, "
+            f"credit_entry_count={int(adaptive_credit_event_memory_details.get('credit_entry_count', 0) or 0)}"
+        ),
     ]
     failed_checks = report.get("failed_checks", [])
     lines.append("- failed_checks: " + (", ".join(str(item) for item in failed_checks) if failed_checks else "none"))
@@ -737,6 +838,11 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--ann-efficiency-roadmap-report-path", default=DEFAULT_ANN_EFFICIENCY_ROADMAP_REPORT_PATH)
     parser.add_argument("--sparse-diffusion-block-report-path", default=DEFAULT_SPARSE_DIFFUSION_BLOCK_REPORT_PATH)
     parser.add_argument("--energy-measurement-session-plan-path", default=DEFAULT_ENERGY_MEASUREMENT_SESSION_PLAN_PATH)
+    parser.add_argument("--adaptive-credit-field-report-path", default=DEFAULT_ADAPTIVE_CREDIT_FIELD_REPORT_PATH)
+    parser.add_argument(
+        "--adaptive-credit-event-memory-report-path",
+        default=DEFAULT_ADAPTIVE_CREDIT_EVENT_MEMORY_REPORT_PATH,
+    )
     parser.add_argument("--rust-core-readiness-report-path", default=DEFAULT_RUST_CORE_READINESS_REPORT_PATH)
     parser.add_argument("--research-fixture-readiness-report-path", default=DEFAULT_RESEARCH_FIXTURE_READINESS_REPORT_PATH)
     parser.add_argument("--autobot-gap-loop-readiness-report-path", default=DEFAULT_AUTOBOT_GAP_LOOP_READINESS_REPORT_PATH)
@@ -754,6 +860,8 @@ def main(argv: List[str] | None = None) -> int:
         args.ann_efficiency_roadmap_report_path,
         args.sparse_diffusion_block_report_path,
         args.energy_measurement_session_plan_path,
+        args.adaptive_credit_field_report_path,
+        args.adaptive_credit_event_memory_report_path,
         args.rust_core_readiness_report_path,
         args.research_fixture_readiness_report_path,
         args.autobot_gap_loop_readiness_report_path,
@@ -775,6 +883,8 @@ def main(argv: List[str] | None = None) -> int:
         ann_efficiency_roadmap_report=_load_json(args.ann_efficiency_roadmap_report_path),
         sparse_diffusion_block_report=_load_json(args.sparse_diffusion_block_report_path),
         energy_measurement_session_plan=_load_json(args.energy_measurement_session_plan_path),
+        adaptive_credit_field_report=_load_json(args.adaptive_credit_field_report_path),
+        adaptive_credit_event_memory_report=_load_json(args.adaptive_credit_event_memory_report_path),
         rust_core_readiness_report=_load_json(args.rust_core_readiness_report_path),
         research_fixture_readiness_report=_load_json(args.research_fixture_readiness_report_path),
         autobot_gap_loop_readiness_report=_load_json(args.autobot_gap_loop_readiness_report_path),

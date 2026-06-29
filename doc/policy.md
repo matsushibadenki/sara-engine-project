@@ -2,6 +2,8 @@
 
 SARA Engine is developed as a CPU-first, SNN-based AI project. New work should preserve the engineering constraints below unless the roadmap explicitly promotes an exception.
 
+These constraints are research-shaping defaults, not untouchable dogma. If a clearly better design, benchmark-backed implementation path, or decisive research opportunity requires a policy exception, the project may intentionally revise or override the policy. Such exceptions should be documented explicitly in the roadmap or a closely related design note, together with the reason, scope, and expected tradeoff.
+
 ## Core Design Rules
 
 - Do not make runtime learning depend on backpropagation.
@@ -40,4 +42,4 @@ Research ideas may be stored under `doc/idea/`. Promote them into active impleme
 - A bounded runtime feature.
 - A managed artifact or release-gate signal.
 
-Ideas that require GPU-first kernels, dense matrix training as the core mechanism, or backpropagation-dependent runtime learning should remain research notes unless the project policy changes.
+Ideas that require GPU-first kernels, dense matrix training as the core mechanism, or backpropagation-dependent runtime learning should remain research notes unless the project policy changes or the roadmap explicitly approves a bounded research exception because it materially improves the project's long-term objective.

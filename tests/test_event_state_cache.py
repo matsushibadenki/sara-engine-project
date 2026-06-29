@@ -160,6 +160,47 @@ def test_cache_retrieval_exposes_sequence_support_component():
     assert result.matches[0]["components"]["sequence_support"] == 0.7
 
 
+def test_cache_credit_support_improves_utility_for_equal_candidates():
+    cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic", max_entries=1)
+    cache.admit(
+        _candidate(
+            "plain-credit",
+            signature=(81, 83, 89),
+            own_latent_id="latent:plain-credit",
+            source_ref="source:plain-credit",
+            resonance_score=0.82,
+            confidence=0.82,
+            source_reliability=0.82,
+            uncertainty=0.18,
+            sequence_support_score=0.0,
+            credit_score=0.0,
+        )
+    )
+    cache.admit(
+        _candidate(
+            "supported-credit",
+            signature=(91, 97, 101),
+            own_latent_id="latent:supported-credit",
+            source_ref="source:supported-credit",
+            resonance_score=0.82,
+            confidence=0.82,
+            source_reliability=0.82,
+            uncertainty=0.18,
+            sequence_support_score=0.0,
+            credit_score=0.9,
+            credit_responsibility=0.92,
+            credit_confidence=0.88,
+            credit_longevity=0.84,
+        )
+    )
+
+    state = cache.state_dict()
+
+    assert state["entry_count"] == 1
+    assert state["entries"][0]["entry_id"] == "supported-credit"
+    assert state["entries"][0]["credit_score"] == 0.9
+
+
 def test_cache_sequence_support_improves_utility_for_equal_candidates():
     cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic", max_entries=1)
     cache.admit(

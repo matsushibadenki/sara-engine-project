@@ -37,6 +37,10 @@ class EventStateCandidate:
     resonance_score: float = 0.0
     sequence_support_score: float = 0.0
     sequence_support_count: int = 0
+    credit_score: float = 0.0
+    credit_responsibility: float = 0.0
+    credit_confidence: float = 0.0
+    credit_longevity: float = 0.0
     metabolic_headroom: float = 1.0
     observed: bool = True
     source_backed: bool = True
@@ -62,6 +66,10 @@ class EventStateEntry:
     resonance_score: float
     sequence_support_score: float
     sequence_support_count: int
+    credit_score: float
+    credit_responsibility: float
+    credit_confidence: float
+    credit_longevity: float
     observed: bool
     verified: bool
     event_cost: int
@@ -85,6 +93,10 @@ class EventStateEntry:
             "resonance_score": self.resonance_score,
             "sequence_support_score": self.sequence_support_score,
             "sequence_support_count": self.sequence_support_count,
+            "credit_score": self.credit_score,
+            "credit_responsibility": self.credit_responsibility,
+            "credit_confidence": self.credit_confidence,
+            "credit_longevity": self.credit_longevity,
             "observed": self.observed,
             "verified": self.verified,
             "event_cost": self.event_cost,
@@ -253,6 +265,19 @@ class VerifiedHierarchicalEventStateCache:
                     int(duplicate.sequence_support_count),
                     max(0, int(candidate.sequence_support_count)),
                 ),
+                credit_score=max(duplicate.credit_score, _clamp01(candidate.credit_score)),
+                credit_responsibility=max(
+                    duplicate.credit_responsibility,
+                    _clamp01(candidate.credit_responsibility),
+                ),
+                credit_confidence=max(
+                    duplicate.credit_confidence,
+                    _clamp01(candidate.credit_confidence),
+                ),
+                credit_longevity=max(
+                    duplicate.credit_longevity,
+                    _clamp01(candidate.credit_longevity),
+                ),
                 utility=max(duplicate.utility, utility),
                 access_count=duplicate.access_count + 1,
             )
@@ -286,6 +311,10 @@ class VerifiedHierarchicalEventStateCache:
             resonance_score=_clamp01(candidate.resonance_score),
             sequence_support_score=_clamp01(candidate.sequence_support_score),
             sequence_support_count=max(0, int(candidate.sequence_support_count)),
+            credit_score=_clamp01(candidate.credit_score),
+            credit_responsibility=_clamp01(candidate.credit_responsibility),
+            credit_confidence=_clamp01(candidate.credit_confidence),
+            credit_longevity=_clamp01(candidate.credit_longevity),
             observed=True,
             verified=True,
             event_cost=max(0, int(candidate.event_cost)),
@@ -337,6 +366,7 @@ class VerifiedHierarchicalEventStateCache:
             )
             source_agreement = float(bool(source_ref) and source_ref == entry.source_ref)
             sequence_support = _clamp01(entry.sequence_support_score)
+            credit_support = _clamp01(entry.credit_score)
             self_state_alignment = _clamp01(
                 memory_self_state_alignment(
                     own_latent_id=entry.own_latent_id,
@@ -359,6 +389,7 @@ class VerifiedHierarchicalEventStateCache:
                 + 0.03 * entry.confidence
                 + 0.03 * temporal_relevance
                 + 0.05 * sequence_support
+                + 0.04 * credit_support
                 + 0.05 * self_state_alignment
             )
             event_cost += len(entry.signature)
@@ -372,6 +403,7 @@ class VerifiedHierarchicalEventStateCache:
                         "causal_agreement": causal_agreement,
                         "source_agreement": source_agreement,
                         "sequence_support": round(sequence_support, 6),
+                        "credit_support": round(credit_support, 6),
                         "self_state_alignment": round(self_state_alignment, 6),
                         "temporal_relevance": round(temporal_relevance, 6),
                     },
@@ -584,6 +616,10 @@ class VerifiedHierarchicalEventStateCache:
                 resonance_score=_clamp01(raw.get("resonance_score", 0.0)),
                 sequence_support_score=_clamp01(raw.get("sequence_support_score", 0.0)),
                 sequence_support_count=max(0, int(raw.get("sequence_support_count", 0) or 0)),
+                credit_score=_clamp01(raw.get("credit_score", 0.0)),
+                credit_responsibility=_clamp01(raw.get("credit_responsibility", 0.0)),
+                credit_confidence=_clamp01(raw.get("credit_confidence", 0.0)),
+                credit_longevity=_clamp01(raw.get("credit_longevity", 0.0)),
                 observed=bool(raw.get("observed", False)),
                 verified=bool(raw.get("verified", False)),
                 event_cost=max(0, int(raw.get("event_cost", 0))),
@@ -644,6 +680,10 @@ class VerifiedHierarchicalEventStateCache:
             "resonance_score": _clamp01(candidate.resonance_score),
             "sequence_support_score": _clamp01(candidate.sequence_support_score),
             "sequence_support_count": max(0, int(candidate.sequence_support_count)),
+            "credit_score": _clamp01(candidate.credit_score),
+            "credit_responsibility": _clamp01(candidate.credit_responsibility),
+            "credit_confidence": _clamp01(candidate.credit_confidence),
+            "credit_longevity": _clamp01(candidate.credit_longevity),
             "metabolic_headroom": _clamp01(candidate.metabolic_headroom),
             "retention_profile": self.retention_profile,
         }
@@ -654,7 +694,8 @@ class VerifiedHierarchicalEventStateCache:
             + 0.25 * _clamp01(candidate.confidence)
             + 0.20 * _clamp01(candidate.source_reliability)
             + 0.10 * (1.0 - _clamp01(candidate.uncertainty))
-            + 0.05 * _clamp01(candidate.sequence_support_score),
+            + 0.04 * _clamp01(candidate.sequence_support_score)
+            + 0.01 * _clamp01(candidate.credit_score),
             6,
         )
 

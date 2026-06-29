@@ -65,6 +65,10 @@ def _material():
         "latent_cluster_id": "latent_1",
         "sparse_signature": [3, 5, 7],
         "event_cost": 3,
+        "route_states": [
+            {"responsibility": 0.82, "confidence": 0.78, "longevity": 0.7},
+            {"responsibility": 0.75, "confidence": 0.74, "longevity": 0.68},
+        ],
     }
 
 
@@ -75,6 +79,8 @@ def test_event_state_evidence_promotes_healthy_managed_bundle():
     assert result.promotion_decision == "promote_verified_event_state"
     assert result.candidate.source_revision == "hash-1"
     assert result.candidate.verified is True
+    assert result.candidate.credit_score > 0.7
+    assert result.trace["credit_summary"]["credit_route_count"] == 2.0
 
 
 def test_event_state_evidence_freezes_missing_report_and_predicted_material():

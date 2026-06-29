@@ -135,6 +135,10 @@ class ConceptReviewLoop:
             )
 
         next_queue.extend(admission_plan.revalidation_queue)
+        next_queue = self._rank_next_queue(
+            next_queue,
+            blocked_decisions=schedule.blocked_queue,
+        )
 
         return ConceptReviewLoopResult(
             schedule=schedule,
@@ -169,3 +173,41 @@ class ConceptReviewLoop:
 
     def _relation_key(self, relation: CandidateRelation) -> str:
         return f"{relation.relation}:{relation.source_event_id}->{relation.target_event_id}"
+
+    def _rank_next_queue(
+        self,
+        entries: Sequence[ConceptRevalidationEntry],
+        *,
+        blocked_decisions: Sequence[Any],
+    ) -> List[ConceptRevalidationEntry]:
+        decision_by_key = {
+            str(item.concept_key): item
+            for item in blocked_decisions
+        }
+        return sorted(
+            entries,
+            key=lambda entry: self._queue_sort_key(
+                entry,
+                decision=decision_by_key.get(entry.concept_key),
+            ),
+        )
+
+    def _queue_sort_key(
+        self,
+        entry: ConceptRevalidationEntry,
+        *,
+        decision: Any | None,
+    ) -> tuple[float, float, int, str]:
+        manual_review = float(
+            bool(decision is not None and str(getattr(decision, "next_action", "")) == "manual_review")
+            or str(entry.next_action) == "manual_review"
+        )
+        priority = float(getattr(decision, "priority_score", 0.0) or 0.0)
+        contradiction = float(getattr(decision, "contradiction_score", entry.contradiction_score) or 0.0)
+        retry_after = int(getattr(decision, "retry_after_segment", entry.retry_after_segment) or 0)
+        return (
+            -manual_review,
+            -priority,
+            retry_after,
+            f"{contradiction:.6f}:{entry.concept_key}",
+        )

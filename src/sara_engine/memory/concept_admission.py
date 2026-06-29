@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import hashlib
 from typing import Any, Dict, List, Sequence, Tuple
 
+from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
 from sara_engine.ingest import (
     CandidateRelation,
     ConceptAuditResult,
@@ -141,6 +142,7 @@ class ConceptAdmissionPlanner:
         source_ref = source_refs[0] if len(source_refs) == 1 else f"concept::{candidate.concept_key}"
         source_revision = self._aggregate_revision(source_hashes)
         source_reliability = min(1.0, 0.5 * candidate.confidence + 0.5 * (audit.distinct_source_hashes / max(1, audit.distinct_source_refs)))
+        credit_summary = self._credit_summary_for_supporting_relations(supporting_relations)
         return EventStateCandidate(
             entry_id=candidate.record_id,
             signature=signature,
@@ -155,6 +157,10 @@ class ConceptAdmissionPlanner:
             resonance_score=_clamp01(candidate.confidence),
             sequence_support_score=_clamp01(audit.sequence_support_score),
             sequence_support_count=max(0, int(audit.sequence_support_count)),
+            credit_score=float(credit_summary.get("credit_score", 0.0) or 0.0),
+            credit_responsibility=float(credit_summary.get("credit_responsibility", 0.0) or 0.0),
+            credit_confidence=float(credit_summary.get("credit_confidence", 0.0) or 0.0),
+            credit_longevity=float(credit_summary.get("credit_longevity", 0.0) or 0.0),
             metabolic_headroom=self.default_metabolic_headroom,
             observed=True,
             source_backed=bool(audit.distinct_source_hashes > 0),
@@ -230,3 +236,20 @@ class ConceptAdmissionPlanner:
             return ""
         digest = hashlib.sha256("|".join(sorted(source_hashes)).encode("utf-8")).hexdigest()
         return f"concept-rev:{digest[:16]}"
+
+    def _credit_summary_for_supporting_relations(
+        self,
+        supporting_relations: Sequence[CandidateRelation],
+    ) -> Dict[str, float]:
+        route_states: List[Dict[str, float]] = []
+        for relation in supporting_relations:
+            evidence = max(1.0, float(max(0, int(relation.evidence_count))))
+            counterexamples = float(max(0, int(relation.counterexample_count)))
+            route_states.append(
+                {
+                    "responsibility": _clamp01(float(relation.prediction_gain) * min(1.0, evidence / 4.0)),
+                    "confidence": _clamp01(float(relation.confidence)),
+                    "longevity": _clamp01(evidence / (evidence + counterexamples + 1.0)),
+                }
+            )
+        return summarize_event_memory_credit(route_states)

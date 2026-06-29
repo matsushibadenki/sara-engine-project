@@ -37,6 +37,10 @@ DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH = workspace_path(
     "evaluation",
     "internal_maintenance_efficiency_benchmark.json",
 )
+DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH = workspace_path(
+    "evaluation",
+    "event_memory_maintenance_coupling_benchmark.json",
+)
 
 
 def _positive_float(value: Any, *, field_name: str) -> float:
@@ -508,11 +512,13 @@ def build_pair_report(
     report_path: str,
     summary_path: str,
     internal_maintenance_report: Optional[Mapping[str, Any]] = None,
+    event_memory_maintenance_coupling_report: Optional[Mapping[str, Any]] = None,
 ) -> Dict[str, Any]:
     workload_results: Dict[str, Mapping[str, Any]] = {}
     maintenance_by_system: Dict[str, Dict[str, float]] = {}
     maintenance_alignment: Dict[str, Dict[str, float]] = {}
     internal_reference: Dict[str, float] = {}
+    event_memory_maintenance_coupling_reference: Dict[str, float | int | str | bool] = {}
     for trace in traces:
         if not isinstance(trace, Mapping):
             continue
@@ -616,6 +622,41 @@ def build_pair_report(
             )
             - float(internal_reference.get("maintenance_predicted_event_count", 0.0) or 0.0),
         }
+    if isinstance(event_memory_maintenance_coupling_report, Mapping):
+        metrics = (
+            event_memory_maintenance_coupling_report.get("metrics", {})
+            if isinstance(event_memory_maintenance_coupling_report.get("metrics", {}), Mapping)
+            else {}
+        )
+        best_profile = (
+            event_memory_maintenance_coupling_report.get("best_profile", {})
+            if isinstance(event_memory_maintenance_coupling_report.get("best_profile", {}), Mapping)
+            else {}
+        )
+        event_memory_maintenance_coupling_reference = {
+            "available": True,
+            "passed": bool(event_memory_maintenance_coupling_report.get("passed", False)),
+            "observed_only": bool(
+                event_memory_maintenance_coupling_report.get("observed_only", False)
+            ),
+            "profile_count": int(
+                event_memory_maintenance_coupling_report.get("profile_count", 0) or 0
+            ),
+            "best_profile_id": str(best_profile.get("profile_id", "") or ""),
+            "compression_to_maintenance_correlation": float(
+                metrics.get("compression_to_maintenance_correlation", 0.0) or 0.0
+            ),
+            "best_profile_compression_efficiency_per_maintenance": float(
+                metrics.get("best_profile_compression_efficiency_per_maintenance", 0.0)
+                or 0.0
+            ),
+            "best_profile_self_state_continuity": float(
+                metrics.get("best_profile_self_state_continuity", 0.0) or 0.0
+            ),
+            "best_profile_episode_compression_ratio": float(
+                metrics.get("best_profile_episode_compression_ratio", 0.0) or 0.0
+            ),
+        }
     pending_measurement = bool(dry_run or len(recorded_rows) == 0)
     resume_command = _resume_append_command(
         manifest,
@@ -648,6 +689,7 @@ def build_pair_report(
         "measurement_tool": str(manifest.get("measurement_tool", "") or ""),
         "maintenance_by_system": maintenance_by_system,
         "internal_maintenance_reference": internal_reference,
+        "event_memory_maintenance_coupling_reference": event_memory_maintenance_coupling_reference,
         "maintenance_alignment": maintenance_alignment,
         "workload_results": {key: dict(value) for key, value in workload_results.items()},
         "resume_append_command_template": resume_command,
@@ -707,6 +749,11 @@ def format_pair_summary(report: Mapping[str, Any]) -> str:
         if isinstance(report.get("internal_maintenance_reference", {}), Mapping)
         else {}
     )
+    event_memory_maintenance_coupling_reference = (
+        report.get("event_memory_maintenance_coupling_reference", {})
+        if isinstance(report.get("event_memory_maintenance_coupling_reference", {}), Mapping)
+        else {}
+    )
     lines.append("Internal Maintenance Reference:")
     if internal_reference:
         lines.append(
@@ -719,6 +766,19 @@ def format_pair_summary(report: Mapping[str, Any]) -> str:
             f"event_cost={float(internal_reference.get('maintenance_event_cost', 0.0) or 0.0):.3f}, "
             f"event_cost_per_selected={float(internal_reference.get('maintenance_event_cost_per_selected', 0.0) or 0.0):.3f}, "
             f"event_cost_per_refresh={float(internal_reference.get('maintenance_event_cost_per_refresh', 0.0) or 0.0):.3f}"
+        )
+    else:
+        lines.append("- none")
+    lines.append("Event Memory Maintenance Coupling Reference:")
+    if event_memory_maintenance_coupling_reference:
+        lines.append(
+            "- "
+            f"available={bool(event_memory_maintenance_coupling_reference.get('available', False))}, "
+            f"passed={bool(event_memory_maintenance_coupling_reference.get('passed', False))}, "
+            f"best_profile={event_memory_maintenance_coupling_reference.get('best_profile_id', '')}, "
+            f"best_efficiency={float(event_memory_maintenance_coupling_reference.get('best_profile_compression_efficiency_per_maintenance', 0.0) or 0.0):.3f}, "
+            f"best_continuity={float(event_memory_maintenance_coupling_reference.get('best_profile_self_state_continuity', 0.0) or 0.0):.3f}, "
+            f"correlation={float(event_memory_maintenance_coupling_reference.get('compression_to_maintenance_correlation', 0.0) or 0.0):.3f}"
         )
     else:
         lines.append("- none")
@@ -798,6 +858,11 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH,
         help="Optional internal maintenance efficiency benchmark report for pair-alignment summaries.",
     )
+    parser.add_argument(
+        "--event-memory-maintenance-coupling-report-path",
+        default=DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH,
+        help="Optional Event Memory compression-versus-maintenance coupling report for pair summaries.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -855,6 +920,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         report_path=args.report_path,
         summary_path=args.summary_path,
         internal_maintenance_report=_load_optional_json(args.internal_maintenance_report_path),
+        event_memory_maintenance_coupling_report=_load_optional_json(
+            args.event_memory_maintenance_coupling_report_path
+        ),
     )
     report_path = ensure_parent_directory(args.report_path)
     summary_path = ensure_parent_directory(args.summary_path)

@@ -238,6 +238,53 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             ],
         ),
         BenchmarkCommand(
+            command_id="adaptive_credit_field",
+            purpose="Record observed-only event-driven local credit assignment, sparse route updates, and quantized-credit behavior.",
+            command=[
+                sys.executable,
+                "scripts/eval/adaptive_credit_field_benchmark.py",
+            ],
+            managed_outputs=[
+                workspace_path("evaluation", "adaptive_credit_field_benchmark.json"),
+                workspace_path(
+                    "evaluation",
+                    "adaptive_credit_field_benchmark_summary.txt",
+                ),
+                workspace_path("evaluation", "adaptive_credit_field_traces.jsonl"),
+                workspace_path("evaluation", "adaptive_credit_field_state.json"),
+                processed_data_path(
+                    "benchmark_fixtures",
+                    "adaptive_credit_field_cases.jsonl",
+                ),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="adaptive_credit_event_memory",
+            purpose="Record observed-only Adaptive Credit Field support for Event Memory admission, weak-entry eviction, and contradiction-preserving memory guards.",
+            command=[
+                sys.executable,
+                "scripts/eval/adaptive_credit_event_memory_benchmark.py",
+            ],
+            managed_outputs=[
+                workspace_path(
+                    "evaluation",
+                    "adaptive_credit_event_memory_benchmark.json",
+                ),
+                workspace_path(
+                    "evaluation",
+                    "adaptive_credit_event_memory_benchmark_summary.txt",
+                ),
+                workspace_path(
+                    "evaluation",
+                    "adaptive_credit_event_memory_traces.jsonl",
+                ),
+                processed_data_path(
+                    "benchmark_fixtures",
+                    "adaptive_credit_event_memory_cases.jsonl",
+                ),
+            ],
+        ),
+        BenchmarkCommand(
             command_id="event_state_cache",
             purpose="Compare bounded verified event-state retention across fixed, linear, and logarithmic cache profiles.",
             command=[
@@ -495,6 +542,12 @@ def build_manifest(
     resonance_integration_report = _load_json_if_present(
         workspace_path("evaluation", "resonance_credit_integration_benchmark.json")
     )
+    adaptive_credit_field_report = _load_json_if_present(
+        workspace_path("evaluation", "adaptive_credit_field_benchmark.json")
+    )
+    adaptive_credit_event_memory_report = _load_json_if_present(
+        workspace_path("evaluation", "adaptive_credit_event_memory_benchmark.json")
+    )
     synesthetic_report = _load_json_if_present(
         workspace_path("evaluation", "synesthetic_multimodal_binding_benchmark.json")
     )
@@ -544,6 +597,8 @@ def build_manifest(
         "Sparse future-state reasoning priors record deterministic logic consistency and external-context abstention.",
         "SARA resonance credit permits local plasticity only when verified sparse evidence channels agree.",
         "Managed SARA evaluator reports are bridged into resonance credit with explicit failure isolation.",
+        "Adaptive Credit Field records event-driven sparse credit assignment without turning dense backpropagation into the runtime learning rule.",
+        "Adaptive Credit Field pressure can be traced into Event Memory admission without bypassing contradiction or source verification guards.",
         "Equal-modality sparse binding and non-language sensory-substitution routes are recorded as observed-only evidence.",
         "Verified hierarchical event-state caching records bounded delayed-recall, abstention, and state-growth evidence.",
         "Source-aware cache promotion, read-only reactivation, persistence validation, and corruption rejection are recorded.",
@@ -644,6 +699,10 @@ def build_manifest(
             "resonance_credit": artifact_state(resonance_credit_report),
             "resonance_credit_integration": artifact_state(
                 resonance_integration_report
+            ),
+            "adaptive_credit_field": artifact_state(adaptive_credit_field_report),
+            "adaptive_credit_event_memory": artifact_state(
+                adaptive_credit_event_memory_report
             ),
             "synesthetic_multimodal_binding": artifact_state(synesthetic_report),
             "event_state_cache": artifact_state(event_state_cache_report),
@@ -775,6 +834,37 @@ def build_manifest(
             if resonance_integration_report is None
             else resonance_integration_report.get("metrics", {}).get(
                 "decision_integrity"
+            ),
+            "adaptive_credit_field_passed": None
+            if adaptive_credit_field_report is None
+            else bool(adaptive_credit_field_report.get("passed")),
+            "adaptive_credit_field_sparse_active_fraction": None
+            if adaptive_credit_field_report is None
+            else adaptive_credit_field_report.get("metrics", {}).get(
+                "sparse_active_fraction_vs_naive"
+            ),
+            "adaptive_credit_field_quantized_match": None
+            if adaptive_credit_field_report is None
+            else adaptive_credit_field_report.get("metrics", {}).get(
+                "quantized_behavior_match"
+            ),
+            "adaptive_credit_event_memory_passed": None
+            if adaptive_credit_event_memory_report is None
+            else bool(adaptive_credit_event_memory_report.get("passed")),
+            "adaptive_credit_event_memory_strong_entry_present": None
+            if adaptive_credit_event_memory_report is None
+            else adaptive_credit_event_memory_report.get("metrics", {}).get(
+                "credit_strong_entry_present"
+            ),
+            "adaptive_credit_event_memory_weak_entry_evicted": None
+            if adaptive_credit_event_memory_report is None
+            else adaptive_credit_event_memory_report.get("metrics", {}).get(
+                "credit_weak_entry_evicted"
+            ),
+            "adaptive_credit_event_memory_harmful_block_preserved_count": None
+            if adaptive_credit_event_memory_report is None
+            else adaptive_credit_event_memory_report.get("metrics", {}).get(
+                "harmful_block_preserved_count"
             ),
             "synesthetic_multimodal_binding_passed": None
             if synesthetic_report is None
@@ -1102,6 +1192,17 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             f"build_coverage={display_artifact_value(evidence.get('autobot_gap_loop_build_coverage'))}, "
             f"enqueue_coverage={display_artifact_value(evidence.get('autobot_gap_loop_enqueue_coverage'))}, "
             f"skip_ratio={display_artifact_value(evidence.get('autobot_gap_loop_skip_ratio'))}"
+        ),
+        (
+            "Adaptive credit: "
+            f"field_state={display_artifact_value(artifact_state.get('adaptive_credit_field'))}, "
+            f"field_passed={display_artifact_value(evidence.get('adaptive_credit_field_passed'))}, "
+            f"sparse_fraction={display_artifact_value(evidence.get('adaptive_credit_field_sparse_active_fraction'))}, "
+            f"quantized_match={display_artifact_value(evidence.get('adaptive_credit_field_quantized_match'))}, "
+            f"memory_state={display_artifact_value(artifact_state.get('adaptive_credit_event_memory'))}, "
+            f"memory_passed={display_artifact_value(evidence.get('adaptive_credit_event_memory_passed'))}, "
+            f"strong_entry={display_artifact_value(evidence.get('adaptive_credit_event_memory_strong_entry_present'))}, "
+            f"weak_evicted={display_artifact_value(evidence.get('adaptive_credit_event_memory_weak_entry_evicted'))}"
         ),
         (
             "Concept revalidation: "

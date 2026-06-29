@@ -27,6 +27,9 @@ DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH = workspace_path(
 DEFAULT_EVENT_MEMORY_REPORT_PATH = workspace_path(
     "evaluation", "event_memory_ingest_pipeline.json"
 )
+DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH = workspace_path(
+    "evaluation", "event_memory_maintenance_coupling_benchmark.json"
+)
 DEFAULT_REPORT_PATH = workspace_path("evaluation", "sara_ann_comparison_report.json")
 DEFAULT_SUMMARY_PATH = workspace_path("evaluation", "sara_ann_comparison_report.txt")
 
@@ -436,6 +439,37 @@ def _compression_surface(
     }
 
 
+def _compression_maintenance_coupling_surface(
+    *,
+    event_memory_maintenance_coupling_report: Mapping[str, Any] | None,
+) -> Dict[str, Any]:
+    payload = event_memory_maintenance_coupling_report or {}
+    metrics = payload.get("metrics", {}) if isinstance(payload.get("metrics", {}), Mapping) else {}
+    best_profile = (
+        payload.get("best_profile", {})
+        if isinstance(payload.get("best_profile", {}), Mapping)
+        else {}
+    )
+    return {
+        "available": bool(event_memory_maintenance_coupling_report),
+        "passed": bool(payload.get("passed", False)),
+        "profile_count": _safe_int(payload.get("profile_count")),
+        "best_profile_id": str(best_profile.get("profile_id", "") or ""),
+        "compression_to_maintenance_correlation": _safe_float(
+            metrics.get("compression_to_maintenance_correlation")
+        ),
+        "best_profile_compression_efficiency_per_maintenance": _safe_float(
+            metrics.get("best_profile_compression_efficiency_per_maintenance")
+        ),
+        "best_profile_self_state_continuity": _safe_float(
+            metrics.get("best_profile_self_state_continuity")
+        ),
+        "best_profile_episode_compression_ratio": _safe_float(
+            metrics.get("best_profile_episode_compression_ratio")
+        ),
+    }
+
+
 def build_sara_ann_comparison_report(
     *,
     external_validity_report: Mapping[str, Any],
@@ -443,6 +477,7 @@ def build_sara_ann_comparison_report(
     energy_measurement_report: Mapping[str, Any],
     internal_maintenance_report: Mapping[str, Any] | None = None,
     event_memory_report: Mapping[str, Any] | None = None,
+    event_memory_maintenance_coupling_report: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     external_metrics = _metrics(external_validity_report)
     external_checks = _checks(external_validity_report)
@@ -460,6 +495,9 @@ def build_sara_ann_comparison_report(
     )
     compression_surface = _compression_surface(
         event_memory_report=event_memory_report,
+    )
+    compression_maintenance_coupling_surface = _compression_maintenance_coupling_surface(
+        event_memory_maintenance_coupling_report=event_memory_maintenance_coupling_report,
     )
     stronger_real_reference_present = any(
         str(card.get("baseline_id", "")) in {
@@ -509,6 +547,9 @@ def build_sara_ann_comparison_report(
             or bool(maintenance_surface.get("physical_alignment_available", False))
         ),
         "event_memory_compression_visible": bool(compression_surface.get("available", False)),
+        "event_memory_maintenance_coupling_visible": bool(
+            compression_maintenance_coupling_surface.get("available", False)
+        ),
     }
     completion_score = sum(1 for passed in checks.values() if bool(passed)) / max(len(checks), 1)
     if physical_present and stronger_real_reference_present and bm25_present:
@@ -593,6 +634,35 @@ def build_sara_ann_comparison_report(
                 "command": "Review Event Memory compression, proposal verification, and episode segmentation before promoting the current comparison surface.",
             }
         )
+    if not bool(compression_maintenance_coupling_surface.get("available", False)):
+        next_actions.append(
+            {
+                "priority": "medium",
+                "category": "missing_event_memory_maintenance_coupling_surface",
+                "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+            }
+        )
+    elif (
+        _safe_float(
+            compression_maintenance_coupling_surface.get(
+                "best_profile_compression_efficiency_per_maintenance"
+            )
+        )
+        <= 0.0
+        or _safe_float(
+            compression_maintenance_coupling_surface.get(
+                "best_profile_self_state_continuity"
+            )
+        )
+        < 0.5
+    ):
+        next_actions.append(
+            {
+                "priority": "medium",
+                "category": "weak_event_memory_maintenance_coupling_surface",
+                "command": "Review Event Memory profile width, episode segmentation, and self-state carry-over before promoting the current comparison surface.",
+            }
+        )
     report = {
         "schema": "sara-ann-comparison-report-v1",
         "passed": bool(all(checks.values())),
@@ -636,12 +706,31 @@ def build_sara_ann_comparison_report(
             "event_memory_self_state_continuity": _safe_float(
                 compression_surface.get("self_state_continuity")
             ),
+            "event_memory_maintenance_best_profile": str(
+                compression_maintenance_coupling_surface.get("best_profile_id", "") or ""
+            ),
+            "event_memory_maintenance_correlation": _safe_float(
+                compression_maintenance_coupling_surface.get(
+                    "compression_to_maintenance_correlation"
+                )
+            ),
+            "event_memory_maintenance_best_efficiency": _safe_float(
+                compression_maintenance_coupling_surface.get(
+                    "best_profile_compression_efficiency_per_maintenance"
+                )
+            ),
+            "event_memory_maintenance_best_continuity": _safe_float(
+                compression_maintenance_coupling_surface.get(
+                    "best_profile_self_state_continuity"
+                )
+            ),
         },
         "best_available_offline_reference": best_reference,
         "baseline_cards": baseline_cards,
         "reference_readiness": dict(external_reference_readiness),
         "maintenance_surface": maintenance_surface,
         "compression_surface": compression_surface,
+        "compression_maintenance_coupling_surface": compression_maintenance_coupling_surface,
         "artifact_state": {
             "external_validity_passed": bool(external_validity_report.get("passed", False)),
             "ladder_passed": bool(external_ladder_report.get("passed", False)),
@@ -651,6 +740,9 @@ def build_sara_ann_comparison_report(
                 maintenance_surface.get("physical_alignment_available", False)
             ),
             "event_memory_compression_present": bool(compression_surface.get("available", False)),
+            "event_memory_maintenance_coupling_present": bool(
+                compression_maintenance_coupling_surface.get("available", False)
+            ),
             "trend_no_regressions": bool(external_checks.get("trend.no_regressions", False)),
             "ladder_all_profiles_passed": bool(ladder_checks.get("all_profiles_passed", False)),
         },
@@ -680,6 +772,11 @@ def format_sara_ann_comparison_summary(report: Mapping[str, Any]) -> str:
         if isinstance(report.get("compression_surface"), Mapping)
         else {}
     )
+    compression_maintenance_coupling_surface = (
+        report.get("compression_maintenance_coupling_surface", {})
+        if isinstance(report.get("compression_maintenance_coupling_surface"), Mapping)
+        else {}
+    )
     lines = [
         "# SARA ANN Comparison Report",
         f"- passed: {bool(report.get('passed', False))}",
@@ -699,6 +796,10 @@ def format_sara_ann_comparison_summary(report: Mapping[str, Any]) -> str:
         f"- event_memory_episode_compression_ratio: {_safe_float(metrics.get('event_memory_episode_compression_ratio')):.3f}",
         f"- event_memory_relation_verification_yield: {_safe_float(metrics.get('event_memory_relation_verification_yield')):.3f}",
         f"- event_memory_self_state_continuity: {_safe_float(metrics.get('event_memory_self_state_continuity')):.3f}",
+        f"- event_memory_maintenance_best_profile: {metrics.get('event_memory_maintenance_best_profile', '')}",
+        f"- event_memory_maintenance_correlation: {_safe_float(metrics.get('event_memory_maintenance_correlation')):.3f}",
+        f"- event_memory_maintenance_best_efficiency: {_safe_float(metrics.get('event_memory_maintenance_best_efficiency')):.3f}",
+        f"- event_memory_maintenance_best_continuity: {_safe_float(metrics.get('event_memory_maintenance_best_continuity')):.3f}",
         "Checks:",
     ]
     for name in sorted(checks):
@@ -761,6 +862,17 @@ def format_sara_ann_comparison_summary(report: Mapping[str, Any]) -> str:
             f"relation_verification_yield={_safe_float(compression_surface.get('relation_verification_yield')):.3f}, "
             f"self_state_continuity={_safe_float(compression_surface.get('self_state_continuity')):.3f}"
         )
+    if compression_maintenance_coupling_surface:
+        lines.append("Compression Maintenance Coupling Surface:")
+        lines.append(
+            "- "
+            f"available={bool(compression_maintenance_coupling_surface.get('available', False))}, "
+            f"passed={bool(compression_maintenance_coupling_surface.get('passed', False))}, "
+            f"best_profile={compression_maintenance_coupling_surface.get('best_profile_id', '')}, "
+            f"correlation={_safe_float(compression_maintenance_coupling_surface.get('compression_to_maintenance_correlation')):.3f}, "
+            f"best_efficiency={_safe_float(compression_maintenance_coupling_surface.get('best_profile_compression_efficiency_per_maintenance')):.3f}, "
+            f"best_continuity={_safe_float(compression_maintenance_coupling_surface.get('best_profile_self_state_continuity')):.3f}"
+        )
     lines.append(f"Next Actions: {len(next_actions)}")
     for action in next_actions:
         if not isinstance(action, Mapping):
@@ -781,6 +893,10 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--energy-measurement-report-path", default=DEFAULT_ENERGY_MEASUREMENT_REPORT_PATH)
     parser.add_argument("--internal-maintenance-report-path", default=DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH)
     parser.add_argument("--event-memory-report-path", default=DEFAULT_EVENT_MEMORY_REPORT_PATH)
+    parser.add_argument(
+        "--event-memory-maintenance-coupling-report-path",
+        default=DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH,
+    )
     parser.add_argument("--report-path", default=DEFAULT_REPORT_PATH)
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
     return parser.parse_args(argv)
@@ -801,12 +917,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if os.path.exists(args.event_memory_report_path)
         else None
     )
+    event_memory_maintenance_coupling_report = (
+        _load_json(args.event_memory_maintenance_coupling_report_path)
+        if os.path.exists(args.event_memory_maintenance_coupling_report_path)
+        else None
+    )
     report = build_sara_ann_comparison_report(
         external_validity_report=external_validity_report,
         external_ladder_report=external_ladder_report,
         energy_measurement_report=energy_measurement_report,
         internal_maintenance_report=internal_maintenance_report,
         event_memory_report=event_memory_report,
+        event_memory_maintenance_coupling_report=event_memory_maintenance_coupling_report,
     )
     report_path = ensure_parent_directory(args.report_path)
     summary_path = ensure_parent_directory(args.summary_path)

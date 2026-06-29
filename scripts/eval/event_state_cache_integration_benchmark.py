@@ -718,6 +718,21 @@ def build_report(
         len(item["review"].admission_plan.admitted_candidates)
         for item in concept_evaluations
     )
+    concept_ready_credit_scores = [
+        float(queued.credit_score)
+        for item in concept_evaluations
+        for queued in item["review"].schedule.ready_queue
+    ]
+    concept_ready_credit_confidences = [
+        float(queued.credit_confidence)
+        for item in concept_evaluations
+        for queued in item["review"].schedule.ready_queue
+    ]
+    concept_blocked_credit_scores = [
+        float(queued.credit_score)
+        for item in concept_evaluations
+        for queued in item["review"].schedule.blocked_queue
+    ]
     concept_recovered_count = sum(
         1
         for item in concept_evaluations
@@ -776,6 +791,14 @@ def build_report(
                     "case_type": item["case_type"],
                     "expected_outcome": item["expected_outcome"],
                     "remaining_queue_count": item["remaining_queue_count"],
+                    "ready_credit_scores": [
+                        float(queued.credit_score)
+                        for queued in item["review"].schedule.ready_queue
+                    ],
+                    "blocked_credit_scores": [
+                        float(queued.credit_score)
+                        for queued in item["review"].schedule.blocked_queue
+                    ],
                     "result": item["review"].to_dict(),
                 }
                 for item in concept_evaluations
@@ -845,6 +868,18 @@ def build_report(
             "concept_revalidation_blocked_integrity": concept_blocked_integrity,
             "concept_revalidation_queue_drained": concept_queue_drained,
             "concept_revalidation_recovered_integrity": concept_review_recovered,
+            "concept_revalidation_ready_mean_credit_score": round(
+                sum(concept_ready_credit_scores) / float(max(1, len(concept_ready_credit_scores))),
+                6,
+            ),
+            "concept_revalidation_ready_mean_credit_confidence": round(
+                sum(concept_ready_credit_confidences) / float(max(1, len(concept_ready_credit_confidences))),
+                6,
+            ),
+            "concept_revalidation_blocked_mean_credit_score": round(
+                sum(concept_blocked_credit_scores) / float(max(1, len(concept_blocked_credit_scores))),
+                6,
+            ),
             "logarithmic_entry_count": logarithmic["state"]["entry_count"],
             "fixed_entry_count": fixed["state"]["entry_count"],
             "max_retrieval_event_cost": logarithmic[

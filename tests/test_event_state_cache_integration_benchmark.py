@@ -162,6 +162,8 @@ def test_event_state_cache_integration_uses_managed_sources():
     assert report["metrics"]["concept_revalidation_recovery_rate"] == 1.0
     assert report["metrics"]["concept_revalidation_recovered_integrity"] == 1.0
     assert report["metrics"]["concept_revalidation_queue_drained"] == 1.0
+    assert report["metrics"]["concept_revalidation_ready_mean_credit_score"] > 0.0
+    assert report["metrics"]["concept_revalidation_ready_mean_credit_confidence"] > 0.0
     assert report["next_actions"][0]["action"] == "scale_revalidation_case_coverage"
     assert report["concept_fixture_mode"] == "external_fixture"
 

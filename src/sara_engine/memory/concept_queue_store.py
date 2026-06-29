@@ -86,6 +86,20 @@ def save_review_report(
     current_segment: int,
 ) -> str:
     resolved = ensure_parent_directory(report_path)
+    ready_credit_scores = [float(item.credit_score) for item in result.schedule.ready_queue]
+    blocked_credit_scores = [float(item.credit_score) for item in result.schedule.blocked_queue]
+    manual_review_candidates = [
+        {
+            "concept_key": item.concept_key,
+            "priority_score": float(item.priority_score),
+            "credit_score": float(item.credit_score),
+            "credit_confidence": float(item.credit_confidence),
+            "decision": item.decision,
+            "next_action": item.next_action,
+        }
+        for item in result.schedule.blocked_queue
+        if item.next_action == "manual_review"
+    ]
     payload: Dict[str, Any] = {
         "schema": REVIEW_REPORT_SCHEMA,
         "current_segment": int(current_segment),
@@ -94,6 +108,15 @@ def save_review_report(
         "blocked_count": len(result.schedule.blocked_queue),
         "admitted_candidate_count": len(result.admission_plan.admitted_candidates),
         "revalidation_queue_count": len(result.next_revalidation_queue),
+        "ready_mean_credit_score": round(
+            sum(ready_credit_scores) / float(max(1, len(ready_credit_scores))),
+            6,
+        ),
+        "blocked_mean_credit_score": round(
+            sum(blocked_credit_scores) / float(max(1, len(blocked_credit_scores))),
+            6,
+        ),
+        "manual_review_candidates": manual_review_candidates,
         "result": result.to_dict(),
     }
     with open(resolved, "w", encoding="utf-8") as handle:
@@ -122,4 +145,3 @@ def _entry_from_dict(payload: Mapping[str, Any]) -> ConceptRevalidationEntry:
         last_review_segment=int(payload.get("last_review_segment", 0) or 0),
         retry_after_segment=int(payload.get("retry_after_segment", 0) or 0),
     )
-

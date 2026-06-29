@@ -7,6 +7,7 @@ from sara_engine.dynamics import (
     relation_self_state_alignment,
     stable_self_state_id,
 )
+from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
 
 from .candidate_proposals import (
     CandidateEvent,
@@ -205,6 +206,22 @@ class EventMemoryIngestPipeline:
                 "verified_relation_count": len(verified_relations),
                 "rejected_relation_count": len(candidate_relations) - len(verified_relations),
             },
+            "adaptive_credit": {
+                "accepted_candidate_event_summaries": [
+                    {
+                        "record_id": event.record_id,
+                        **self._candidate_event_credit_summary(event),
+                    }
+                    for event in accepted_candidate_events
+                ],
+                "verified_relation_summaries": [
+                    {
+                        "record_id": relation.record_id,
+                        **self._relation_credit_summary(relation),
+                    }
+                    for relation in verified_relations
+                ],
+            },
             "persistent_self_state": persistent_self_state_trace,
         }
         return EventMemoryIngestResult(
@@ -326,3 +343,35 @@ class EventMemoryIngestPipeline:
         trace["reactivation_hint_count"] = len(tuple(reactivation_hints))
         trace["controller_snapshot"] = controller.snapshot()
         return trace
+
+    def _candidate_event_credit_summary(
+        self,
+        event: CandidateEvent,
+    ) -> Dict[str, float]:
+        evidence = max(1.0, float(max(0, int(event.evidence_count))))
+        counterexamples = float(max(0, int(event.counterexample_count)))
+        return summarize_event_memory_credit(
+            (
+                {
+                    "responsibility": max(0.0, float(event.prediction_gain)) * min(1.0, evidence / 3.0),
+                    "confidence": float(event.confidence),
+                    "longevity": evidence / (evidence + counterexamples + 1.0),
+                },
+            )
+        )
+
+    def _relation_credit_summary(
+        self,
+        relation: VerifiedRelation,
+    ) -> Dict[str, float]:
+        evidence = max(1.0, float(max(0, int(relation.evidence_count))))
+        counterexamples = float(max(0, int(relation.counterexample_count)))
+        return summarize_event_memory_credit(
+            (
+                {
+                    "responsibility": max(0.0, float(relation.prediction_gain)) * min(1.0, evidence / 4.0),
+                    "confidence": float(relation.confidence),
+                    "longevity": evidence / (evidence + counterexamples + 1.0),
+                },
+            )
+        )

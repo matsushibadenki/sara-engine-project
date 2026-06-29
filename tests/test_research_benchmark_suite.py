@@ -58,6 +58,8 @@ def test_research_benchmark_suite_dry_run_writes_manifest(tmp_path):
         "resonance_credit",
         "synesthetic_multimodal_binding",
         "resonance_credit_integration",
+        "adaptive_credit_field",
+        "adaptive_credit_event_memory",
         "event_state_cache",
         "event_state_cache_integration",
         "concept_revalidation_fixture_builder",
@@ -77,6 +79,7 @@ def test_research_benchmark_suite_dry_run_writes_manifest(tmp_path):
     assert "Phase 8 baseline metrics:" in summary
     assert "Phase 7 loop metrics:" in summary
     assert "Self-state maintenance:" in summary
+    assert "Adaptive credit:" in summary
     assert "requested_slots=missing_artifact" in summary
     assert "Gap loop readiness: state=missing" in summary
     assert "What is proven:" in summary
@@ -282,6 +285,23 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                     "best_profile_episode_compression_ratio": 4.0,
                 },
             }
+        if str(path).endswith("adaptive_credit_field_benchmark.json"):
+            return {
+                "passed": True,
+                "metrics": {
+                    "sparse_active_fraction_vs_naive": 0.333333,
+                    "quantized_behavior_match": 1.0,
+                },
+            }
+        if str(path).endswith("adaptive_credit_event_memory_benchmark.json"):
+            return {
+                "passed": True,
+                "metrics": {
+                    "credit_strong_entry_present": True,
+                    "credit_weak_entry_evicted": True,
+                    "harmful_block_preserved_count": 1,
+                },
+            }
         return original_loader(path)
 
     monkeypatch.setattr(suite, "_load_json_if_present", _stub_loader)
@@ -329,6 +349,8 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
     assert manifest["artifact_state"]["internal_maintenance_efficiency"] == "passed"
     assert manifest["artifact_state"]["event_memory_ingest_pipeline"] == "passed"
     assert manifest["artifact_state"]["event_memory_maintenance_coupling"] == "passed"
+    assert manifest["artifact_state"]["adaptive_credit_field"] == "passed"
+    assert manifest["artifact_state"]["adaptive_credit_event_memory"] == "passed"
     assert manifest["artifact_state"]["sara_ann_comparison"] == "failed"
     assert evidence["persistent_self_state_passed"] is True
     assert evidence["persistent_self_state_idle_activity"] == 1.0
@@ -343,5 +365,12 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
     assert evidence["event_memory_maintenance_best_profile"] == "balanced"
     assert evidence["event_memory_maintenance_best_efficiency"] == 1.75
     assert evidence["event_memory_maintenance_best_continuity"] == 0.9
+    assert evidence["adaptive_credit_field_passed"] is True
+    assert evidence["adaptive_credit_field_sparse_active_fraction"] == 0.333333
+    assert evidence["adaptive_credit_field_quantized_match"] == 1.0
+    assert evidence["adaptive_credit_event_memory_passed"] is True
+    assert evidence["adaptive_credit_event_memory_strong_entry_present"] is True
+    assert evidence["adaptive_credit_event_memory_weak_entry_evicted"] is True
+    assert evidence["adaptive_credit_event_memory_harmful_block_preserved_count"] == 1
     assert evidence["sara_ann_comparison_status"] == "proxy_only_or_partial_reference_surface"
     assert evidence["sara_ann_best_offline_reference"] == "BM25 Offline Baseline"

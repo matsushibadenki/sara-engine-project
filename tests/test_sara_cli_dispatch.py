@@ -777,6 +777,10 @@ def test_physical_energy_session_progress_dispatches_to_runner(monkeypatch):
             "workspace/evaluation/test_physical_energy_progress.json",
             "--summary-path",
             "workspace/evaluation/test_physical_energy_progress.txt",
+            "--internal-maintenance-report-path",
+            "workspace/evaluation/test_internal_maintenance_efficiency.json",
+            "--event-memory-maintenance-coupling-report-path",
+            "workspace/evaluation/test_event_memory_maintenance_coupling.json",
         ],
     )
 
@@ -793,6 +797,10 @@ def test_physical_energy_session_progress_dispatches_to_runner(monkeypatch):
     assert "workspace/evaluation/test_physical_energy_batch.json" in args
     assert "--measurement-path" in args
     assert "data/raw/test_energy_measurements.jsonl" in args
+    assert "--internal-maintenance-report-path" in args
+    assert "workspace/evaluation/test_internal_maintenance_efficiency.json" in args
+    assert "--event-memory-maintenance-coupling-report-path" in args
+    assert "workspace/evaluation/test_event_memory_maintenance_coupling.json" in args
 
 
 def test_sara_ann_comparison_dispatches_to_runner(monkeypatch):
@@ -812,6 +820,12 @@ def test_sara_ann_comparison_dispatches_to_runner(monkeypatch):
             "workspace/evaluation/test_real_data_external_validity_ladder.json",
             "--energy-measurement-report-path",
             "workspace/evaluation/test_energy_measurement_readiness.json",
+            "--internal-maintenance-report-path",
+            "workspace/evaluation/test_internal_maintenance_efficiency.json",
+            "--event-memory-report-path",
+            "workspace/evaluation/test_event_memory_ingest_pipeline.json",
+            "--event-memory-maintenance-coupling-report-path",
+            "workspace/evaluation/test_event_memory_maintenance_coupling.json",
             "--report-path",
             "workspace/evaluation/test_sara_ann_comparison_report.json",
             "--summary-path",
@@ -832,6 +846,12 @@ def test_sara_ann_comparison_dispatches_to_runner(monkeypatch):
     assert "workspace/evaluation/test_real_data_external_validity.json" in args
     assert "--energy-measurement-report-path" in args
     assert "workspace/evaluation/test_energy_measurement_readiness.json" in args
+    assert "--internal-maintenance-report-path" in args
+    assert "workspace/evaluation/test_internal_maintenance_efficiency.json" in args
+    assert "--event-memory-report-path" in args
+    assert "workspace/evaluation/test_event_memory_ingest_pipeline.json" in args
+    assert "--event-memory-maintenance-coupling-report-path" in args
+    assert "workspace/evaluation/test_event_memory_maintenance_coupling.json" in args
 
 
 def test_sparse_diffusion_block_readiness_dispatches_to_eval_script(monkeypatch):
@@ -1362,6 +1382,65 @@ def test_resonance_credit_dispatches_to_eval_script(monkeypatch):
     assert "data/processed/benchmark_fixtures/test_resonance.jsonl" in args
     assert "workspace/evaluation/test_resonance_state.json" in args
     assert "workspace/evaluation/test_resonance.json" in args
+
+
+def test_adaptive_credit_field_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-adaptive-credit-field",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/test_adaptive_credit.jsonl",
+            "--state-path",
+            "workspace/evaluation/test_adaptive_credit_state.json",
+            "--report-path",
+            "workspace/evaluation/test_adaptive_credit.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/adaptive_credit_field_benchmark.py"]
+    assert "data/processed/benchmark_fixtures/test_adaptive_credit.jsonl" in args
+    assert "workspace/evaluation/test_adaptive_credit_state.json" in args
+    assert "workspace/evaluation/test_adaptive_credit.json" in args
+
+
+def test_adaptive_credit_event_memory_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-adaptive-credit-event-memory",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/test_adaptive_credit_event_memory.jsonl",
+            "--report-path",
+            "workspace/evaluation/test_adaptive_credit_event_memory.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/adaptive_credit_event_memory_benchmark.py"]
+    assert "data/processed/benchmark_fixtures/test_adaptive_credit_event_memory.jsonl" in args
+    assert "workspace/evaluation/test_adaptive_credit_event_memory.json" in args
 
 
 def test_resonance_credit_integration_dispatches_to_eval_script(monkeypatch):

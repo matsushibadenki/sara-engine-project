@@ -48,3 +48,7 @@ from .resonance_credit import ResonanceCreditResult as ResonanceCreditResult
 from .resonance_credit import SparseResonanceCreditAssigner as SparseResonanceCreditAssigner
 from .resonance_evidence import ResonanceEvidenceBundle as ResonanceEvidenceBundle
 from .resonance_evidence import build_resonance_evidence as build_resonance_evidence
+from .adaptive_credit import AdaptiveCreditField as AdaptiveCreditField
+from .adaptive_credit import AdaptiveCreditResult as AdaptiveCreditResult
+from .adaptive_credit import AdaptiveCreditRouteState as AdaptiveCreditRouteState
+from .adaptive_credit import summarize_event_memory_credit as summarize_event_memory_credit

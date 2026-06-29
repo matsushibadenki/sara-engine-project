@@ -210,6 +210,37 @@ def _rust_core_readiness_report(passed=True):
     }
 
 
+def _adaptive_credit_field_report(passed=True):
+    value = 1.0 if passed else 0.5
+    return {
+        "schema": "sara-adaptive-credit-field-benchmark-v1",
+        "passed": bool(passed),
+        "observed_only": True,
+        "metrics": {
+            "decision_integrity": 1.0 if passed else 0.5,
+            "harmful_update_suppression": 1.0 if passed else 0.5,
+            "sparse_advantage_case_ratio": 1.0 if passed else 0.5,
+            "sparse_active_fraction_vs_naive": 0.5 if passed else 1.1,
+            "quantized_behavior_match": 1.0 if passed else 0.5,
+            "max_updated_routes": 2 if passed else 4,
+        },
+    }
+
+
+def _adaptive_credit_event_memory_report(passed=True):
+    return {
+        "schema": "sara-adaptive-credit-event-memory-benchmark-v1",
+        "passed": bool(passed),
+        "observed_only": True,
+        "metrics": {
+            "harmful_block_preserved_count": 1 if passed else 0,
+            "credit_entry_count": 1 if passed else 0,
+            "credit_strong_entry_present": bool(passed),
+            "credit_weak_entry_evicted": bool(passed),
+        },
+    }
+
+
 def _research_fixture_readiness_report(passed=True):
     return {
         "schema": "sara-research-fixture-readiness-v1",
@@ -293,6 +324,8 @@ def test_research_product_completion_gate_passes_all_green():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(True),
         research_fixture_readiness_report=_research_fixture_readiness_report(True),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
@@ -312,10 +345,14 @@ def test_research_product_completion_gate_passes_all_green():
     assert "- ann_efficiency_roadmap: PASS" in summary
     assert "- energy_measurement_session_plan: PASS" in summary
     assert "- sparse_diffusion_block_readiness: PASS" in summary
+    assert "- adaptive_credit_field: PASS" in summary
+    assert "- adaptive_credit_event_memory: PASS" in summary
     assert "- rust_core_readiness: PASS" in summary
     assert "- research_fixture_readiness: PASS" in summary
     assert "- autobot_gap_loop_readiness: PASS" in summary
     assert "- autobot_gap_loop_metrics: requested_slots=2, build_coverage=1.000, enqueue_coverage=1.000, skip_ratio=0.000, repair_share=0.750, replay_share=0.250" in summary
+    assert "- adaptive_credit_metrics: decision_integrity=1.000, harmful_update_suppression=1.000, quantized_behavior_match=1.000, sparse_active_fraction_vs_naive=0.500" in summary
+    assert "- adaptive_credit_event_memory_metrics: harmful_block_preserved_count=1, credit_strong_entry_present=True, credit_weak_entry_evicted=True, credit_entry_count=1" in summary
     assert "- memory_repair_operations: PASS" in summary
     assert "- neuromorphic_hal_smoke: PASS" in summary
 
@@ -333,6 +370,8 @@ def test_research_product_completion_gate_reports_operational_failure():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(True),
         research_fixture_readiness_report=_research_fixture_readiness_report(True),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
@@ -357,6 +396,8 @@ def test_research_product_completion_gate_rejects_missing_memory_surface():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(True),
         research_fixture_readiness_report=_research_fixture_readiness_report(True),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
@@ -380,6 +421,8 @@ def test_research_product_completion_gate_rejects_ann_efficiency_roadmap_failure
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(False),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(True),
         research_fixture_readiness_report=_research_fixture_readiness_report(True),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
@@ -404,6 +447,8 @@ def test_research_product_completion_gate_rejects_sparse_diffusion_failure():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(False),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(True),
         research_fixture_readiness_report=_research_fixture_readiness_report(True),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
@@ -428,6 +473,8 @@ def test_research_product_completion_gate_rejects_bad_energy_measurement_session
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(False),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(True),
         research_fixture_readiness_report=_research_fixture_readiness_report(True),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
@@ -452,6 +499,8 @@ def test_research_product_completion_gate_rejects_rust_core_readiness_failure():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(False),
         research_fixture_readiness_report=_research_fixture_readiness_report(True),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
@@ -476,6 +525,8 @@ def test_research_product_completion_gate_rejects_research_fixture_failure():
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(True),
         research_fixture_readiness_report=_research_fixture_readiness_report(False),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
@@ -500,6 +551,8 @@ def test_research_product_completion_gate_rejects_autobot_gap_loop_readiness_fai
         ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
         sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
         energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
         rust_core_readiness_report=_rust_core_readiness_report(True),
         research_fixture_readiness_report=_research_fixture_readiness_report(True),
         autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(False),
@@ -510,3 +563,55 @@ def test_research_product_completion_gate_rejects_autobot_gap_loop_readiness_fai
     assert report["artifact_state"]["autobot_gap_loop_readiness"] == "failed"
     assert "autobot_gap_loop_readiness" in report["failed_checks"]
     assert report["checks"]["autobot_gap_loop_readiness"]["errors"]
+
+
+def test_research_product_completion_gate_rejects_adaptive_credit_field_failure():
+    module = _load_module()
+
+    report = module.build_research_product_completion_report(
+        policy_text=_policy_text(),
+        roadmap_report=_roadmap_report(True),
+        phase3_report=_phase3_report(True),
+        phase4_report=_phase4_report(True),
+        phase5_completion_report=_phase5_completion_report(True),
+        operational_report=_operational_report(True),
+        ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
+        sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
+        energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(False),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
+        source_texts=_source_texts(),
+    )
+
+    assert report["passed"] is False
+    assert "adaptive_credit_field" in report["failed_checks"]
+    assert report["checks"]["adaptive_credit_field"]["errors"]
+
+
+def test_research_product_completion_gate_rejects_adaptive_credit_event_memory_failure():
+    module = _load_module()
+
+    report = module.build_research_product_completion_report(
+        policy_text=_policy_text(),
+        roadmap_report=_roadmap_report(True),
+        phase3_report=_phase3_report(True),
+        phase4_report=_phase4_report(True),
+        phase5_completion_report=_phase5_completion_report(True),
+        operational_report=_operational_report(True),
+        ann_efficiency_roadmap_report=_ann_efficiency_roadmap_report(True),
+        sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
+        energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(False),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
+        source_texts=_source_texts(),
+    )
+
+    assert report["passed"] is False
+    assert "adaptive_credit_event_memory" in report["failed_checks"]
+    assert report["checks"]["adaptive_credit_event_memory"]["errors"]

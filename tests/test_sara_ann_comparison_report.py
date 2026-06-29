@@ -180,6 +180,22 @@ def _event_memory_report():
     }
 
 
+def _event_memory_maintenance_coupling_report():
+    return {
+        "passed": True,
+        "profile_count": 3,
+        "best_profile": {
+            "profile_id": "wide",
+        },
+        "metrics": {
+            "compression_to_maintenance_correlation": 0.5121754721,
+            "best_profile_compression_efficiency_per_maintenance": 0.1896551724,
+            "best_profile_self_state_continuity": 0.8333333333,
+            "best_profile_episode_compression_ratio": 3.6666666667,
+        },
+    }
+
+
 def test_sara_ann_comparison_report_marks_proxy_only_surface_when_real_reference_missing():
     module = _load_module()
 
@@ -199,6 +215,7 @@ def test_sara_ann_comparison_report_marks_proxy_only_surface_when_real_reference
     assert report["artifact_state"]["internal_maintenance_reference_present"] is False
     assert report["maintenance_surface"]["available"] is False
     assert report["compression_surface"]["available"] is False
+    assert report["compression_maintenance_coupling_surface"]["available"] is False
     assert report["next_action_count"] >= 3
     assert report["next_actions"][0]["baseline_id"] == "ann_cross_encoder_reference"
     assert any(
@@ -207,6 +224,10 @@ def test_sara_ann_comparison_report_marks_proxy_only_surface_when_real_reference
     )
     assert any(
         action.get("category") == "missing_event_memory_compression_surface"
+        for action in report["next_actions"]
+    )
+    assert any(
+        action.get("category") == "missing_event_memory_maintenance_coupling_surface"
         for action in report["next_actions"]
     )
     summary = module.format_sara_ann_comparison_summary(report)
@@ -225,6 +246,7 @@ def test_sara_ann_comparison_report_accepts_phase6_and_phase8_surface_when_refer
         energy_measurement_report=_energy_measurement_report(real=True),
         internal_maintenance_report=_internal_maintenance_report(),
         event_memory_report=_event_memory_report(),
+        event_memory_maintenance_coupling_report=_event_memory_maintenance_coupling_report(),
     )
 
     assert report["passed"] is True
@@ -237,7 +259,10 @@ def test_sara_ann_comparison_report_accepts_phase6_and_phase8_surface_when_refer
     assert report["maintenance_surface"]["physical_alignment_available"] is True
     assert report["compression_surface"]["available"] is True
     assert report["compression_surface"]["episode_compression_ratio"] == 5.0
+    assert report["compression_maintenance_coupling_surface"]["available"] is True
+    assert report["compression_maintenance_coupling_surface"]["best_profile_id"] == "wide"
     assert report["metrics"]["event_memory_episode_compression_ratio"] == 5.0
+    assert report["metrics"]["event_memory_maintenance_best_profile"] == "wide"
     assert report["metrics"]["physical_maintenance_event_cost_per_selected"] == 0.05
     assert report["metrics"]["sara_maintenance_event_cost_per_success"] == 0.06
     physical = [card for card in report["baseline_cards"] if card["baseline_id"] == "physical_ann_measurement"][0]
@@ -248,6 +273,8 @@ def test_sara_ann_comparison_report_accepts_phase6_and_phase8_surface_when_refer
     assert "alignment_ratio=0.033" in summary
     assert "Compression Surface:" in summary
     assert "episode_compression_ratio=5.000" in summary
+    assert "Compression Maintenance Coupling Surface:" in summary
+    assert "best_profile=wide" in summary
 
 
 def test_sara_ann_comparison_report_prioritizes_missing_directory_over_not_configured():
@@ -283,6 +310,7 @@ def test_sara_ann_comparison_report_prioritizes_missing_directory_over_not_confi
         energy_measurement_report=_energy_measurement_report(real=False),
         internal_maintenance_report=_internal_maintenance_report(),
         event_memory_report=_event_memory_report(),
+        event_memory_maintenance_coupling_report=_event_memory_maintenance_coupling_report(),
     )
 
     assert report["next_actions"][0]["category"] == "missing_reference_directory"
@@ -310,6 +338,11 @@ def test_sara_ann_comparison_report_main_writes_report():
     event_memory_path = workspace_path("evaluation", "test_sara_ann_event_memory.json")
     with open(event_memory_path, "w", encoding="utf-8") as handle:
         json.dump(_event_memory_report(), handle)
+    coupling_path = workspace_path(
+        "evaluation", "test_sara_ann_event_memory_maintenance_coupling.json"
+    )
+    with open(coupling_path, "w", encoding="utf-8") as handle:
+        json.dump(_event_memory_maintenance_coupling_report(), handle)
 
     try:
         exit_code = module.main(
@@ -324,6 +357,8 @@ def test_sara_ann_comparison_report_main_writes_report():
                 maintenance_path,
                 "--event-memory-report-path",
                 event_memory_path,
+                "--event-memory-maintenance-coupling-report-path",
+                coupling_path,
                 "--report-path",
                 report_path,
                 "--summary-path",
@@ -336,11 +371,21 @@ def test_sara_ann_comparison_report_main_writes_report():
         assert report["status"] == "proxy_only_or_partial_reference_surface"
         assert report["maintenance_surface"]["available"] is True
         assert report["compression_surface"]["available"] is True
+        assert report["compression_maintenance_coupling_surface"]["available"] is True
         with open(summary_path, "r", encoding="utf-8") as handle:
             summary = handle.read()
         assert "Next Actions:" in summary
     finally:
-        for path in (external_path, ladder_path, energy_path, maintenance_path, event_memory_path, report_path, summary_path):
+        for path in (
+            external_path,
+            ladder_path,
+            energy_path,
+            maintenance_path,
+            event_memory_path,
+            coupling_path,
+            report_path,
+            summary_path,
+        ):
             if os.path.exists(path):
                 os.remove(path)
 
@@ -356,6 +401,7 @@ def test_sara_ann_comparison_report_requests_alignment_when_physical_exists_with
         energy_measurement_report=energy,
         internal_maintenance_report=_internal_maintenance_report(),
         event_memory_report=_event_memory_report(),
+        event_memory_maintenance_coupling_report=_event_memory_maintenance_coupling_report(),
     )
 
     assert any(
@@ -381,6 +427,7 @@ def test_sara_ann_comparison_report_requests_drift_followup_when_alignment_is_hi
         energy_measurement_report=energy,
         internal_maintenance_report=_internal_maintenance_report(),
         event_memory_report=_event_memory_report(),
+        event_memory_maintenance_coupling_report=_event_memory_maintenance_coupling_report(),
     )
 
     assert any(
@@ -405,6 +452,23 @@ def test_sara_ann_comparison_report_requests_event_memory_surface_when_missing()
     )
 
 
+def test_sara_ann_comparison_report_requests_event_memory_coupling_surface_when_missing():
+    module = _load_module()
+
+    report = module.build_sara_ann_comparison_report(
+        external_validity_report=_external_validity_report(with_real_reference=True),
+        external_ladder_report=_ladder_report(),
+        energy_measurement_report=_energy_measurement_report(real=True),
+        internal_maintenance_report=_internal_maintenance_report(),
+        event_memory_report=_event_memory_report(),
+    )
+
+    assert any(
+        action.get("category") == "missing_event_memory_maintenance_coupling_surface"
+        for action in report["next_actions"]
+    )
+
+
 def test_sara_ann_comparison_report_requests_event_memory_followup_when_surface_is_weak():
     module = _load_module()
     weak_event_memory = _event_memory_report()
@@ -417,9 +481,31 @@ def test_sara_ann_comparison_report_requests_event_memory_followup_when_surface_
         energy_measurement_report=_energy_measurement_report(real=True),
         internal_maintenance_report=_internal_maintenance_report(),
         event_memory_report=weak_event_memory,
+        event_memory_maintenance_coupling_report=_event_memory_maintenance_coupling_report(),
     )
 
     assert any(
         action.get("category") == "weak_event_memory_compression_surface"
+        for action in report["next_actions"]
+    )
+
+
+def test_sara_ann_comparison_report_requests_event_memory_coupling_followup_when_surface_is_weak():
+    module = _load_module()
+    weak_coupling = _event_memory_maintenance_coupling_report()
+    weak_coupling["metrics"]["best_profile_compression_efficiency_per_maintenance"] = 0.0
+    weak_coupling["metrics"]["best_profile_self_state_continuity"] = 0.3
+
+    report = module.build_sara_ann_comparison_report(
+        external_validity_report=_external_validity_report(with_real_reference=True),
+        external_ladder_report=_ladder_report(),
+        energy_measurement_report=_energy_measurement_report(real=True),
+        internal_maintenance_report=_internal_maintenance_report(),
+        event_memory_report=_event_memory_report(),
+        event_memory_maintenance_coupling_report=weak_coupling,
+    )
+
+    assert any(
+        action.get("category") == "weak_event_memory_maintenance_coupling_surface"
         for action in report["next_actions"]
     )

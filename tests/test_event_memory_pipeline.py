@@ -87,6 +87,9 @@ def test_event_memory_pipeline_runs_end_to_end_with_shared_event_surface():
     assert "candidate_relation" in ledger_types
     assert "verified_relation" in ledger_types
     assert result.to_dict()["traces"]["verification"]["accepted_candidate_event_count"] == 1
+    adaptive_credit = result.to_dict()["traces"]["adaptive_credit"]
+    assert adaptive_credit["accepted_candidate_event_summaries"][0]["credit_score"] > 0.0
+    assert adaptive_credit["verified_relation_summaries"][0]["credit_score"] > 0.0
 
 
 def test_event_memory_pipeline_excludes_rejected_candidates_from_episode_surface():

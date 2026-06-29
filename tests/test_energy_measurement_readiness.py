@@ -81,6 +81,10 @@ def test_energy_measurement_readiness_is_protocol_ready_without_rows():
     )
     assert "--source real_energy_session" in report["measurement_session_plan"]["planned_runs"][0]["command_template"]
     assert "run-physical-energy-pair" in report["measurement_session_plan"]["planned_runs"][0]["pair_command_template"]
+    assert (
+        "--event-memory-maintenance-coupling-report-path "
+        "workspace/evaluation/event_memory_maintenance_coupling_benchmark.json"
+    ) in report["measurement_session_plan"]["planned_runs"][0]["pair_command_template"]
     assert report["measurement_session_plan"]["planned_runs"][0]["meter_template_path"].endswith(
         "_real_data_external_validity_r<replicate>_meter_template.json"
     )
@@ -177,6 +181,7 @@ def test_energy_measurement_readiness_tracks_maintenance_trace_metrics():
     pending_report = module.build_energy_measurement_readiness_report([])
     assert "--maintenance-selected-count <count>" in pending_report["measurement_session_plan"]["planned_runs"][0]["command_template"]
     assert "--meter-template-path" in pending_report["measurement_session_plan"]["planned_runs"][0]["pair_command_template"]
+    assert "--event-memory-maintenance-coupling-report-path" in pending_report["measurement_session_plan"]["planned_runs"][0]["pair_command_template"]
 
 
 def test_energy_measurement_readiness_surfaces_internal_maintenance_reference():
@@ -209,6 +214,40 @@ def test_energy_measurement_readiness_surfaces_internal_maintenance_reference():
     summary = module.format_energy_measurement_summary(report)
     assert "internal_maintenance_reference_available: True" in summary
     assert "Internal Maintenance Reference:" in summary
+
+
+def test_energy_measurement_readiness_surfaces_event_memory_maintenance_coupling_reference():
+    module = _load_module()
+
+    report = module.build_energy_measurement_readiness_report(
+        [],
+        event_memory_maintenance_coupling_report={
+            "passed": True,
+            "observed_only": True,
+            "profile_count": 3,
+            "best_profile": {
+                "profile_id": "wide",
+            },
+            "metrics": {
+                "compression_to_maintenance_correlation": 0.51,
+                "best_profile_compression_efficiency_per_maintenance": 0.19,
+                "best_profile_self_state_continuity": 0.83,
+                "best_profile_episode_compression_ratio": 3.67,
+            },
+        },
+    )
+
+    reference = report["event_memory_maintenance_coupling_reference"]
+    assert reference["available"] is True
+    assert reference["best_profile_id"] == "wide"
+    assert reference["best_profile_compression_efficiency_per_maintenance"] == 0.19
+    summary = module.format_energy_measurement_summary(report)
+    assert "event_memory_maintenance_coupling_reference_available: True" in summary
+    assert "Event Memory Maintenance Coupling Reference:" in summary
+    progress = report["measurement_session_progress"]
+    assert progress["event_memory_maintenance_coupling_reference"]["best_profile_id"] == "wide"
+    progress_summary = module.format_measurement_session_progress_summary(progress)
+    assert "Event Memory Maintenance Coupling Reference:" in progress_summary
 
 
 def test_energy_measurement_readiness_surfaces_physical_internal_alignment():
@@ -307,6 +346,10 @@ def test_energy_measurement_readiness_rejects_weak_paired_task_ratio():
     assert report["checks"]["paired_task_efficiency_ratio_passed"] is False
     assert report["measurement_plan"]["weak_pair_count"] == 1
     assert report["measurement_plan"]["weak_pairs"][0]["task"] == "qa"
+    assert report["measurement_plan"]["weak_pairs"][0]["priority"] == "high"
+    assert report["measurement_plan"]["weak_pairs"][0]["severity"] == "high"
+    assert report["measurement_plan"]["weak_pairs"][0]["relative_ratio"] == 0.625
+    assert report["measurement_plan"]["weak_pairs"][0]["ratio_gap"] == 0.75
     assert report["measurement_session_plan"]["planned_run_count"] == 2
     planned = {(item["category"], item["system"]) for item in report["measurement_session_plan"]["planned_runs"]}
     assert ("repeat_weak_pair", "sara") in planned
@@ -341,6 +384,25 @@ def test_energy_measurement_readiness_tracks_session_progress_for_partial_pairs(
     summary = module.format_energy_measurement_summary(report)
     assert "Measurement Session Progress:" in summary
     assert "status=partial_pair" in summary
+
+
+def test_energy_measurement_readiness_classifies_invalid_session_pair_reason():
+    module = _load_module()
+    pair_id = "ann-efficiency-real-joule-real_data_external_validity-pair-1"
+    sara = _row(module, "sara", "real_data_external_validity", 2.0, pair_id=pair_id, replicate=1)
+    ann = _row(module, "ann", "real_data_external_validity", 4.0, pair_id=pair_id, replicate=1)
+    ann["environment_fingerprint"] = "different-env"
+    ann["run_order"] = 1
+
+    report = module.build_energy_measurement_readiness_report(
+        [sara, ann],
+        session_id="ann-efficiency-real-joule",
+    )
+
+    pair = report["measurement_session_progress"]["pair_statuses"][0]
+    assert pair["status"] == "invalid_pair"
+    assert pair["invalid_reason_category"] == "fairness_and_run_order_conflict"
+    assert "environment_fingerprint" in pair["invalid_reason_fields"]
 
 
 def test_energy_measurement_readiness_accepts_empty_session_progress_without_rows():

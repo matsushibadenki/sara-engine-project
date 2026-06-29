@@ -11,7 +11,7 @@ import os
 import subprocess
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -187,6 +187,12 @@ DEFAULT_ANN_EFFICIENCY_ROADMAP_REPORT_PATH = workspace_path(
 )
 DEFAULT_SARA_ANN_COMPARISON_REPORT_PATH = workspace_path(
     "evaluation", "sara_ann_comparison_report.json"
+)
+DEFAULT_ADAPTIVE_CREDIT_FIELD_REPORT_PATH = workspace_path(
+    "evaluation", "adaptive_credit_field_benchmark.json"
+)
+DEFAULT_ADAPTIVE_CREDIT_EVENT_MEMORY_REPORT_PATH = workspace_path(
+    "evaluation", "adaptive_credit_event_memory_benchmark.json"
 )
 DEFAULT_RELEASE_SOAK_REPORT_PATH = workspace_path("release", "release_soak_report.json")
 DEFAULT_OPERATIONAL_REPORT_PATH = workspace_path("release", "operational_readiness_report.json")
@@ -561,6 +567,42 @@ def _validate_external_validity_ladder_report(report: Dict[str, Any]) -> List[st
     return errors
 
 
+def _validate_adaptive_credit_field_report(report: Dict[str, Any]) -> List[str]:
+    metrics = report.get("metrics", {}) if isinstance(report.get("metrics"), dict) else {}
+    errors: List[str] = []
+    if str(report.get("schema", "")) != "sara-adaptive-credit-field-benchmark-v1":
+        errors.append("Adaptive credit field report has an unexpected schema.")
+    if not bool(report.get("passed", False)):
+        errors.append("Adaptive credit field benchmark did not pass.")
+    if not bool(report.get("observed_only", False)):
+        errors.append("Adaptive credit field benchmark must remain observed-only.")
+    if float(metrics.get("decision_integrity", 0.0) or 0.0) < 1.0:
+        errors.append("Adaptive credit field decision_integrity is below 1.0.")
+    if float(metrics.get("harmful_update_suppression", 0.0) or 0.0) < 1.0:
+        errors.append("Adaptive credit field harmful_update_suppression is below 1.0.")
+    if float(metrics.get("quantized_behavior_match", 0.0) or 0.0) < 1.0:
+        errors.append("Adaptive credit field quantized_behavior_match is below 1.0.")
+    return errors
+
+
+def _validate_adaptive_credit_event_memory_report(report: Dict[str, Any]) -> List[str]:
+    metrics = report.get("metrics", {}) if isinstance(report.get("metrics"), dict) else {}
+    errors: List[str] = []
+    if str(report.get("schema", "")) != "sara-adaptive-credit-event-memory-benchmark-v1":
+        errors.append("Adaptive credit/Event Memory report has an unexpected schema.")
+    if not bool(report.get("passed", False)):
+        errors.append("Adaptive credit/Event Memory benchmark did not pass.")
+    if not bool(report.get("observed_only", False)):
+        errors.append("Adaptive credit/Event Memory benchmark must remain observed-only.")
+    if not bool(metrics.get("credit_strong_entry_present", False)):
+        errors.append("Adaptive credit/Event Memory failed to preserve the strong supported entry.")
+    if not bool(metrics.get("credit_weak_entry_evicted", False)):
+        errors.append("Adaptive credit/Event Memory failed to evict the weak entry.")
+    if int(metrics.get("harmful_block_preserved_count", 0) or 0) < 1:
+        errors.append("Adaptive credit/Event Memory did not preserve a contradiction block.")
+    return errors
+
+
 def load_operational_repair_execution_log(path: str) -> List[Dict[str, Any]]:
     if not path or not os.path.exists(path):
         return []
@@ -748,6 +790,7 @@ def append_operational_repair_execution_entry(
     status: str,
     covered_checks: Optional[List[str]] = None,
     source: str = "manual",
+    metadata: Optional[Mapping[str, Any]] = None,
 ) -> bool:
     cmd = str(command).strip()
     state = str(status).strip().lower()
@@ -764,15 +807,20 @@ def append_operational_repair_execution_entry(
         )
         if finalized > 0:
             return True
-    entries.append(
-        {
-            "command": cmd,
-            "status": state,
-            "covered_checks": checks,
-            "source": str(source).strip() or "manual",
-            "timestamp": time.time(),
-        }
-    )
+    entry = {
+        "command": cmd,
+        "status": state,
+        "covered_checks": checks,
+        "source": str(source).strip() or "manual",
+        "timestamp": time.time(),
+    }
+    if isinstance(metadata, Mapping):
+        for key, value in metadata.items():
+            normalized_key = str(key).strip()
+            if not normalized_key:
+                continue
+            entry[normalized_key] = value
+    entries.append(entry)
     return True
 
 
@@ -982,6 +1030,12 @@ def append_operational_runbook_actions_to_repair_log(
         and str(item.get("command", "")).strip()
     }
     appended = 0
+    def _extract_severity(reason_text: str) -> str:
+        for token in str(reason_text).split(";"):
+            normalized = str(token).strip()
+            if normalized.startswith("severity="):
+                return normalized.split("=", 1)[1].strip().lower()
+        return ""
     for action in runbook_actions:
         if budget > 0 and appended >= budget:
             break
@@ -999,12 +1053,19 @@ def append_operational_runbook_actions_to_repair_log(
             else []
         )
         source = str(action.get("source", "")).strip() or "runbook_action"
+        reason = str(action.get("reason", "")).strip()
+        severity = _extract_severity(reason)
         append_operational_repair_execution_entry(
             entries,
             command=command,
             status="pending",
             covered_checks=covered_checks,
             source=f"runbook_action:{source}",
+            metadata={
+                "priority_hint": priority,
+                "reason_hint": reason,
+                "severity": severity,
+            },
         )
         existing_pending.add(command)
         appended += 1
@@ -1173,6 +1234,10 @@ def build_operational_retry_queue_from_repair_log(
                 "command": command,
                 "reason": latest_status,
                 "covered_checks": sorted(set(covered_checks)),
+                "source": str(latest.get("source", "")).strip(),
+                "priority_hint": str(latest.get("priority_hint", "")).strip().lower(),
+                "severity": str(latest.get("severity", "")).strip().lower(),
+                "reason_hint": str(latest.get("reason_hint", "")).strip(),
                 "attempts_used": int(attempts),
                 "max_attempts": int(max_attempts),
                 "next_attempt": int(attempts + 1),
@@ -1258,11 +1323,20 @@ def prioritize_operational_retry_queue(
         reason = str(payload.get("reason", "")).strip().lower()
         checks = payload.get("covered_checks", [])
         checks_set = {str(v) for v in checks if str(v).strip()} if isinstance(checks, list) else set()
+        source = str(payload.get("source", "")).strip().lower()
+        severity = str(payload.get("severity", "")).strip().lower()
         overlap = len(checks_set.intersection(remaining_checks))
         attempts_used = int(payload.get("attempts_used", 0) or 0)
         max_attempts = max(int(payload.get("max_attempts", 1) or 1), 1)
         pressure = float(attempts_used) / float(max_attempts)
-        score = reason_base.get(reason, 1.0) + float(overlap) * 2.0 + pressure
+        urgency_bonus = 0.0
+        if "ann_efficiency_next_evidence" in source and "energy_measurement" in checks_set:
+            urgency_bonus += 0.75
+        if severity == "critical":
+            urgency_bonus += 2.0
+        elif severity == "high":
+            urgency_bonus += 1.0
+        score = reason_base.get(reason, 1.0) + float(overlap) * 2.0 + pressure + urgency_bonus
         if score >= 5.0:
             tier = "high"
         elif score >= 3.5:
@@ -1272,6 +1346,7 @@ def prioritize_operational_retry_queue(
         payload["priority_score"] = round(float(score), 3)
         payload["priority_tier"] = tier
         payload["priority_overlap_checks"] = int(overlap)
+        payload["priority_urgency_bonus"] = round(float(urgency_bonus), 3)
         scored.append(payload)
     scored.sort(
         key=lambda value: (
@@ -1471,6 +1546,8 @@ def _evaluate_operational_readiness(
     phase5_completion_gate_report: Optional[Dict[str, Any]] = None,
     external_validity_report: Optional[Dict[str, Any]] = None,
     external_validity_ladder_report: Optional[Dict[str, Any]] = None,
+    adaptive_credit_field_report: Optional[Dict[str, Any]] = None,
+    adaptive_credit_event_memory_report: Optional[Dict[str, Any]] = None,
     execution_log: Optional[List[Dict[str, Any]]] = None,
     strict_production: bool = False,
     retry_max_attempts: int = 2,
@@ -1528,6 +1605,30 @@ def _evaluate_operational_readiness(
             "metrics": (
                 external_validity_ladder_report.get("metrics", {})
                 if isinstance(external_validity_ladder_report.get("metrics"), dict)
+                else {}
+            ),
+        }
+    if adaptive_credit_field_report is not None:
+        adaptive_credit_field_errors = _validate_adaptive_credit_field_report(adaptive_credit_field_report)
+        checks["adaptive_credit_field"] = {
+            "passed": len(adaptive_credit_field_errors) == 0,
+            "errors": adaptive_credit_field_errors,
+            "metrics": (
+                adaptive_credit_field_report.get("metrics", {})
+                if isinstance(adaptive_credit_field_report.get("metrics"), dict)
+                else {}
+            ),
+        }
+    if adaptive_credit_event_memory_report is not None:
+        adaptive_credit_event_memory_errors = _validate_adaptive_credit_event_memory_report(
+            adaptive_credit_event_memory_report
+        )
+        checks["adaptive_credit_event_memory"] = {
+            "passed": len(adaptive_credit_event_memory_errors) == 0,
+            "errors": adaptive_credit_event_memory_errors,
+            "metrics": (
+                adaptive_credit_event_memory_report.get("metrics", {})
+                if isinstance(adaptive_credit_event_memory_report.get("metrics"), dict)
                 else {}
             ),
         }
@@ -3018,6 +3119,26 @@ def format_operational_summary(report: Dict[str, Any]) -> str:
         if isinstance(external_ladder.get("metrics"), dict)
         else {}
     )
+    adaptive_credit_field = (
+        checks.get("adaptive_credit_field", {})
+        if isinstance(checks.get("adaptive_credit_field"), dict)
+        else {}
+    )
+    adaptive_credit_field_metrics = (
+        adaptive_credit_field.get("metrics", {})
+        if isinstance(adaptive_credit_field.get("metrics"), dict)
+        else {}
+    )
+    adaptive_credit_event_memory = (
+        checks.get("adaptive_credit_event_memory", {})
+        if isinstance(checks.get("adaptive_credit_event_memory"), dict)
+        else {}
+    )
+    adaptive_credit_event_memory_metrics = (
+        adaptive_credit_event_memory.get("metrics", {})
+        if isinstance(adaptive_credit_event_memory.get("metrics"), dict)
+        else {}
+    )
 
     def _status(name: str) -> str:
         section = checks.get(name, {}) if isinstance(checks.get(name), dict) else {}
@@ -3070,6 +3191,14 @@ def format_operational_summary(report: Dict[str, Any]) -> str:
         f"- external_validity_ladder_profile_count: {int(external_ladder_metrics.get('profile_count', 0) or 0)}",
         f"- external_validity_ladder_min_ann_cost_advantage_proxy: {float(external_ladder_metrics.get('min_ann_cost_advantage_proxy', 0.0) or 0.0):.3f}",
         f"- external_validity_ladder_min_performance_energy_ratio_proxy: {float(external_ladder_metrics.get('min_performance_energy_ratio_proxy', 0.0) or 0.0):.3f}",
+        f"- adaptive_credit_field: {'PASS' if bool(adaptive_credit_field.get('passed', False)) else ('FAIL' if 'adaptive_credit_field' in checks else 'SKIP')}",
+        f"- adaptive_credit_field_decision_integrity: {float(adaptive_credit_field_metrics.get('decision_integrity', 0.0) or 0.0):.3f}",
+        f"- adaptive_credit_field_harmful_update_suppression: {float(adaptive_credit_field_metrics.get('harmful_update_suppression', 0.0) or 0.0):.3f}",
+        f"- adaptive_credit_field_quantized_behavior_match: {float(adaptive_credit_field_metrics.get('quantized_behavior_match', 0.0) or 0.0):.3f}",
+        f"- adaptive_credit_event_memory: {'PASS' if bool(adaptive_credit_event_memory.get('passed', False)) else ('FAIL' if 'adaptive_credit_event_memory' in checks else 'SKIP')}",
+        f"- adaptive_credit_event_memory_harmful_block_preserved_count: {int(adaptive_credit_event_memory_metrics.get('harmful_block_preserved_count', 0) or 0)}",
+        f"- adaptive_credit_event_memory_credit_strong_entry_present: {bool(adaptive_credit_event_memory_metrics.get('credit_strong_entry_present', False))}",
+        f"- adaptive_credit_event_memory_credit_weak_entry_evicted: {bool(adaptive_credit_event_memory_metrics.get('credit_weak_entry_evicted', False))}",
         f"- release_gate: {_status('release_gate')}",
         f"- production_profile: {_status('production_profile')}",
         f"- research_review_passed: {bool(research_review_compact.get('passed', False))}",
@@ -4571,18 +4700,41 @@ def build_operational_runbook_actions(
             continue
         category = str(evidence_action.get("category", "") or "").strip()
         task = str(evidence_action.get("task", "") or "").strip()
+        severity = str(evidence_action.get("severity", "") or "").strip().lower()
         affected_checks = ["ann_efficiency_roadmap"]
-        if category in {"pending_joule_pair", "weak_joule_pair", "partial_pair", "invalid_pair", "missing_pair"}:
+        if category in {
+            "pending_joule_pair",
+            "weak_joule_pair",
+            "partial_pair",
+            "invalid_pair",
+            "invalid_pair_run_order_conflict",
+            "invalid_pair_fairness_mismatch",
+            "missing_pair",
+            "orphan_pair",
+            "invalid_measurement_rows",
+        }:
             affected_checks.append("energy_measurement")
         elif "internal_maintenance" in category or task == "phase6_maintenance_efficiency":
             affected_checks.append("internal_maintenance_efficiency")
         elif "reference" in category or task == "phase8_reference_strength":
             affected_checks.append("external_validity")
+        priority = str(evidence_action.get("priority", "medium")).strip().lower() or "medium"
+        if severity in {"critical", "high"} and priority != "high":
+            priority = "high"
+        reason_parts = [f"category={category}", f"task={task}"]
+        if severity:
+            reason_parts.append(f"severity={severity}")
+        if "ratio_gap" in evidence_action:
+            reason_parts.append(f"ratio_gap={float(evidence_action.get('ratio_gap', 0.0) or 0.0):.3f}")
+        if "relative_ratio" in evidence_action:
+            reason_parts.append(
+                f"relative_ratio={float(evidence_action.get('relative_ratio', 0.0) or 0.0):.3f}"
+            )
         _append_action(
             command=str(evidence_action.get("command", "")),
             source="ann_efficiency_next_evidence",
-            priority=str(evidence_action.get("priority", "medium")),
-            reason=f"category={category}; task={task}",
+            priority=priority,
+            reason="; ".join(reason_parts),
             affected_checks=affected_checks,
         )
     comparison_next_actions = (
@@ -4599,6 +4751,8 @@ def build_operational_runbook_actions(
             affected_checks.append("internal_maintenance_efficiency")
         if "event_memory" in category or "compression" in category:
             affected_checks.append("event_memory_ingest_pipeline")
+        if "coupling" in category:
+            affected_checks.append("event_memory_maintenance_coupling")
         if "physical" in category:
             affected_checks.append("energy_measurement")
         if "reference" in category or "bm25" in category:
@@ -6775,6 +6929,16 @@ def main() -> int:
         help="Managed path to SARA-vs-ANN comparison report. Optional; comparison follow-up actions are merged when present.",
     )
     parser.add_argument(
+        "--adaptive-credit-field-report-path",
+        default=DEFAULT_ADAPTIVE_CREDIT_FIELD_REPORT_PATH,
+        help="Managed path to adaptive credit field benchmark report. Optional; readiness will surface it when present.",
+    )
+    parser.add_argument(
+        "--adaptive-credit-event-memory-report-path",
+        default=DEFAULT_ADAPTIVE_CREDIT_EVENT_MEMORY_REPORT_PATH,
+        help="Managed path to adaptive credit/Event Memory benchmark report. Optional; readiness will surface it when present.",
+    )
+    parser.add_argument(
         "--release-report-path",
         default=DEFAULT_RELEASE_SOAK_REPORT_PATH,
         help="Managed path to release soak report.",
@@ -7289,6 +7453,18 @@ def main() -> int:
             sara_ann_comparison_report = _load_json_object(args.sara_ann_comparison_report_path)
         except (OSError, json.JSONDecodeError, ValueError):
             sara_ann_comparison_report = {}
+    adaptive_credit_field_report: Dict[str, Any] = {}
+    if os.path.exists(args.adaptive_credit_field_report_path):
+        try:
+            adaptive_credit_field_report = _load_json_object(args.adaptive_credit_field_report_path)
+        except (OSError, json.JSONDecodeError, ValueError):
+            adaptive_credit_field_report = {}
+    adaptive_credit_event_memory_report: Dict[str, Any] = {}
+    if os.path.exists(args.adaptive_credit_event_memory_report_path):
+        try:
+            adaptive_credit_event_memory_report = _load_json_object(args.adaptive_credit_event_memory_report_path)
+        except (OSError, json.JSONDecodeError, ValueError):
+            adaptive_credit_event_memory_report = {}
     execution_log = load_operational_repair_execution_log(args.repair_log_path)
     research_journal_entries = load_research_journal_entries(args.research_journal_path)
     research_journal_sync = attach_remeasure_results_to_research_journal_entries(
@@ -7364,6 +7540,8 @@ def main() -> int:
         phase5_completion_gate_report=phase5_completion_gate_report,
         external_validity_report=external_validity_report,
         external_validity_ladder_report=external_validity_ladder_report,
+        adaptive_credit_field_report=adaptive_credit_field_report or None,
+        adaptive_credit_event_memory_report=adaptive_credit_event_memory_report or None,
         execution_log=execution_log,
         strict_production=bool(args.strict_production),
         retry_max_attempts=int(args.retry_max_attempts),
@@ -7388,11 +7566,15 @@ def main() -> int:
             "external_validity_ladder": str(args.external_validity_ladder_report_path),
             "ann_efficiency_roadmap": str(args.ann_efficiency_roadmap_report_path),
             "sara_ann_comparison": str(args.sara_ann_comparison_report_path),
+            "adaptive_credit_field": str(args.adaptive_credit_field_report_path),
+            "adaptive_credit_event_memory": str(args.adaptive_credit_event_memory_report_path),
             "release": str(args.release_report_path),
             "research_journal": str(args.research_journal_path),
         },
         "ann_efficiency_roadmap": ann_efficiency_roadmap_report,
         "sara_ann_comparison": sara_ann_comparison_report,
+        "adaptive_credit_field": adaptive_credit_field_report,
+        "adaptive_credit_event_memory": adaptive_credit_event_memory_report,
         "research_journal_summary": research_journal_summary,
         "repair_auto_dispatch": {
             "requested": int(args.auto_dispatch_retry),
@@ -7474,6 +7656,8 @@ def main() -> int:
                 phase5_completion_gate_report=phase5_completion_gate_report,
                 external_validity_report=external_validity_report,
                 external_validity_ladder_report=external_validity_ladder_report,
+                adaptive_credit_field_report=adaptive_credit_field_report or None,
+                adaptive_credit_event_memory_report=adaptive_credit_event_memory_report or None,
                 execution_log=execution_log,
                 strict_production=bool(args.strict_production),
                 retry_max_attempts=int(args.retry_max_attempts),
@@ -7501,6 +7685,8 @@ def main() -> int:
                 phase5_completion_gate_report=phase5_completion_gate_report,
                 external_validity_report=external_validity_report,
                 external_validity_ladder_report=external_validity_ladder_report,
+                adaptive_credit_field_report=adaptive_credit_field_report or None,
+                adaptive_credit_event_memory_report=adaptive_credit_event_memory_report or None,
                 execution_log=execution_log,
                 strict_production=bool(args.strict_production),
                 retry_max_attempts=int(args.retry_max_attempts),
@@ -7554,6 +7740,8 @@ def main() -> int:
                 phase5_completion_gate_report=phase5_completion_gate_report,
                 external_validity_report=external_validity_report,
                 external_validity_ladder_report=external_validity_ladder_report,
+                adaptive_credit_field_report=adaptive_credit_field_report or None,
+                adaptive_credit_event_memory_report=adaptive_credit_event_memory_report or None,
                 execution_log=execution_log,
                 strict_production=bool(args.strict_production),
                 retry_max_attempts=int(args.retry_max_attempts),

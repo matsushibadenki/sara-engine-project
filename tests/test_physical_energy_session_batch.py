@@ -40,6 +40,8 @@ def test_build_physical_energy_session_batch_deduplicates_pair_runs():
                     "python scripts/sara_cli.py run-physical-energy-pair "
                     "--pair-id lab-session-real_data_external_validity-pair-<replicate> "
                     "--replicate-index <replicate> "
+                    "--event-memory-maintenance-coupling-report-path "
+                    "workspace/evaluation/event_memory_maintenance_coupling_benchmark.json "
                     "--meter-template-path workspace/evaluation/lab-session_real_data_external_validity_r<replicate>_meter_template.json"
                 ),
                 "meter_template_path": "workspace/evaluation/lab-session_real_data_external_validity_r<replicate>_meter_template.json",
@@ -59,6 +61,8 @@ def test_build_physical_energy_session_batch_deduplicates_pair_runs():
                     "python scripts/sara_cli.py run-physical-energy-pair "
                     "--pair-id lab-session-real_data_external_validity-pair-<replicate> "
                     "--replicate-index <replicate> "
+                    "--event-memory-maintenance-coupling-report-path "
+                    "workspace/evaluation/event_memory_maintenance_coupling_benchmark.json "
                     "--meter-template-path workspace/evaluation/lab-session_real_data_external_validity_r<replicate>_meter_template.json"
                 ),
                 "meter_template_path": "workspace/evaluation/lab-session_real_data_external_validity_r<replicate>_meter_template.json",
@@ -76,6 +80,7 @@ def test_build_physical_energy_session_batch_deduplicates_pair_runs():
     assert report["batch_runs"][0]["pair_id"] == "lab-session-real_data_external_validity-pair-1"
     assert report["batch_runs"][0]["systems"] == ["ann", "sara"]
     assert "--replicate-index 1" in report["batch_runs"][0]["command"]
+    assert "--event-memory-maintenance-coupling-report-path" in report["batch_runs"][0]["command"]
     assert report["batch_runs"][2]["meter_template_path"].endswith("_r3_meter_template.json")
 
 
@@ -97,7 +102,9 @@ def test_physical_energy_session_batch_main_writes_report():
                 "pair_command_template": (
                     "python scripts/sara_cli.py run-physical-energy-pair "
                     "--pair-id lab-session-energy_efficiency_benchmark-pair-<replicate> "
-                    "--replicate-index <replicate>"
+                    "--replicate-index <replicate> "
+                    "--event-memory-maintenance-coupling-report-path "
+                    "workspace/evaluation/event_memory_maintenance_coupling_benchmark.json"
                 ),
                 "meter_template_path": "workspace/evaluation/lab-session_energy_efficiency_benchmark_r<replicate>_meter_template.json",
                 "manifest_path_template": "workspace/evaluation/lab-session_energy_efficiency_benchmark_r<replicate>_manifest.json",

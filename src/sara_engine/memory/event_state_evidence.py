@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping
 
+from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
 from sara_engine.learning.resonance_credit import SparseResonanceCreditAssigner
 from sara_engine.learning.resonance_evidence import build_resonance_evidence
 from sara_engine.memory.event_state_cache import EventStateCandidate
@@ -54,6 +55,7 @@ def build_event_state_candidate(
         else {}
     )
     credit = assigner.apply(eligibility, evidence.signals)
+    credit_summary = summarize_event_memory_credit(material.get("route_states", ()))
     material_source_backed = bool(source_ref and material.get("material_hash"))
     promotion_allowed = bool(
         credit.update_allowed
@@ -93,6 +95,10 @@ def build_event_state_candidate(
         resonance_score=float(credit.resonance_score),
         sequence_support_score=float(material.get("sequence_support_score", 0.0) or 0.0),
         sequence_support_count=int(material.get("sequence_support_count", 0) or 0),
+        credit_score=float(credit_summary.get("credit_score", 0.0) or 0.0),
+        credit_responsibility=float(credit_summary.get("credit_responsibility", 0.0) or 0.0),
+        credit_confidence=float(credit_summary.get("credit_confidence", 0.0) or 0.0),
+        credit_longevity=float(credit_summary.get("credit_longevity", 0.0) or 0.0),
         metabolic_headroom=float(
             evidence.signals.get("metabolic_headroom", 0.0) or 0.0
         ),
@@ -127,5 +133,6 @@ def build_event_state_candidate(
             "observed": observed,
             "evidence": evidence.to_dict(),
             "credit": credit.to_dict(),
+            "credit_summary": credit_summary,
         },
     )

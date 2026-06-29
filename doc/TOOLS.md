@@ -148,8 +148,10 @@ Run commands from the repository root unless a script says otherwise.
   - Stage 2/3 require absent-query negative controls and real-data sparse diffusion block controls to pass before ANN-efficiency evidence is accepted.
   - Stage 6 validates `energy_measurement_readiness.py`, separating proxy-only evidence from real joule-per-success evidence.
   - Stage 6 also imports the observed-only internal maintenance-efficiency surface so `maintenance_event_cost_per_selected`, replay refresh counts, and self-state continuity remain visible before physical maintenance joules are available.
+  - Stage 6 now also imports the Event Memory compression-versus-maintenance coupling reference, so missing or weak compression-maintenance tradeoffs become first-class follow-up actions in the same evidence loop.
   - `next_evidence_actions` now includes both Phase 6 physical-measurement follow-up and Phase 8 reference-readiness follow-up, so missing local embedding/cross-encoder baselines can propagate into the operational runbook.
   - `next_evidence_actions` also carries missing or weak internal-maintenance reference follow-up, so self-state maintenance quality is repaired through the same roadmap loop instead of living only in standalone benchmark reports.
+  - `next_evidence_actions` now also lifts orphan physical-session pairs and invalid measurement rows into managed repair work, so Phase 6 data-hygiene problems propagate into the operational runbook instead of remaining buried in session-progress artifacts.
   - propagates `measurement_session_plan.planned_runs` into top-level `next_evidence_actions` and the roadmap summary when available, falling back to `measurement_plan.pending_pairs` and `measurement_plan.weak_pairs`.
   - operational readiness imports these `next_evidence_actions` into `workspace/release/operational_readiness_runbook_actions.json` as `ann_efficiency_next_evidence` actions when the roadmap artifact is present.
   - writes `workspace/evaluation/ann_efficiency_roadmap_gate.json` and `workspace/evaluation/ann_efficiency_roadmap_gate_summary.txt`.
@@ -157,7 +159,7 @@ Run commands from the repository root unless a script says otherwise.
 - `python scripts/sara_cli.py eval-sara-ann-comparison`: builds a research-facing comparison surface across proxy baselines, offline lexical/dense references, and physical energy evidence.
   - writes `workspace/evaluation/sara_ann_comparison_report.json` and `workspace/evaluation/sara_ann_comparison_report.txt`.
   - keeps `proxy`, `offline_reference`, and `physical` evidence tiers separate so Phase 8 baseline strength and Phase 6 physical proof are not conflated.
-  - highlights the strongest currently available offline reference, the current physical joule evidence state, the physical-versus-reference maintenance alignment surface, the Event Memory compression surface, and the next missing comparison actions.
+  - highlights the strongest currently available offline reference, the current physical joule evidence state, the physical-versus-reference maintenance alignment surface, the Event Memory compression surface, the Event Memory compression-versus-maintenance coupling surface, and the next missing comparison actions.
 - `python scripts/sara_cli.py eval-event-memory-ingest-pipeline`: exercises the bounded Event Memory ingest path from change detection to verified relations.
   - writes `workspace/evaluation/event_memory_ingest_pipeline.json` and `workspace/evaluation/event_memory_ingest_pipeline_summary.txt`.
   - reports `eventization_emission_ratio`, `candidate_event_acceptance_rate`, `episode_compression_ratio`, `relation_verification_yield`, `lineage_coverage_ratio`, and self-state continuity so compression and concept-admission changes can be compared against Phase 6/8 evidence instead of judged only qualitatively.
@@ -170,22 +172,28 @@ Run commands from the repository root unless a script says otherwise.
   - also writes the standalone lab plan artifacts `workspace/evaluation/energy_measurement_session_plan.json` and `workspace/evaluation/energy_measurement_session_plan.txt`.
   - also writes `workspace/evaluation/physical_energy_session_progress.json` and `workspace/evaluation/physical_energy_session_progress.txt` from the current session plan plus recorded rows, so incomplete or invalid session coverage is visible without rebuilding the separate batch tool output.
   - can optionally read the observed-only internal maintenance reference report and surface `maintenance_event_cost_per_selected` plus self-state continuity beside the physical-energy readiness summary, so pre-physical maintenance efficiency and post-physical maintenance joules can be read together.
+  - can also read the Event Memory compression-versus-maintenance coupling report, so Phase 6 summaries keep best-profile compression efficiency and continuity visible beside physical maintenance traces.
   - now also computes a physical-versus-reference maintenance alignment surface, exposing SARA physical `maintenance_event_cost_per_selected` against the observed-only internal benchmark so self-state drift can be judged at the aggregated Phase 6 level.
+  - weak paired tasks are now annotated with severity (`moderate` / `high` / `critical`), relative shortfall, and ratio gap so remeasurement priority can be carried into the roadmap gate and operational runbook.
+  - invalid paired rows now feed `invalid_pairs` repair planning, so fairness-field mismatches and run-order conflicts are preserved as managed Phase 6 repair work instead of disappearing from the nested session-progress surface.
   - fairness schema v2 requires paired environment, fixture, criterion, measurement-boundary, tool, CPU, thread, affinity, power-mode, warm-up, repetition, trial-count, and run-order metadata.
   - rejects quality-mismatched or condition-mismatched pairs and reports per-task median `joule_per_success`, MAD, and run-order balance.
 - `python scripts/sara_cli.py run-physical-energy-session-batch`: expands the standalone measurement session plan into concrete pair-level frozen runs.
   - writes `workspace/evaluation/physical_energy_session_batch.json` and `workspace/evaluation/physical_energy_session_batch.txt`.
+  - preserves pair command templates that pin the Event Memory compression-versus-maintenance coupling reference used during each physical pair run.
   - can optionally append `--execute-dry-run-pairs` to smoke-test every planned frozen command.
 - `python scripts/sara_cli.py eval-physical-energy-session-progress`: compares the batch plan against recorded measurement rows.
   - writes `workspace/evaluation/physical_energy_session_progress.json` and `workspace/evaluation/physical_energy_session_progress.txt`.
   - labels each planned pair as complete, partial, invalid, or missing, and also reports orphan measurement pairs that do not belong to the current session batch.
   - can also include the observed-only internal maintenance reference summary so laboratory progress and pre-physical maintenance efficiency are visible in one session-progress artifact.
+  - can also include the Event Memory compression-versus-maintenance coupling reference, so in-flight session reviews keep the active compression profile, efficiency, and continuity target visible beside missing or partial physical pairs.
   - protocol: `doc/ENERGY_MEASUREMENT_PROTOCOL.md`.
 - `python scripts/eval/physical_energy_pair_runner.py`: freezes and executes one same-task SARA/BM25 retrieval pair.
   - alternates run order by replicate and fixes corpus/task hash, exact-match success criterion, CPU identity, thread environment, warm-up count, and repetitions.
   - writes the pair manifest and workload trace under `workspace/evaluation/`.
   - appends validated raw measurement rows only when positive SARA and ANN joules are supplied for the executed pair.
   - can optionally read the observed-only internal maintenance benchmark and add a pair-local maintenance alignment surface, so physical SARA runs can be compared against the pre-physical self-state/event-cost reference without leaving the pair report.
+  - can also read the Event Memory compression-versus-maintenance coupling report, so each pair summary keeps the active compression-maintenance profile visible next to physical maintenance traces.
   - use `python scripts/sara_cli.py run-physical-energy-pair` from the unified CLI.
   - use `--append-measurement --run-id <id> --system sara|ann --task <name> --success-count <n> --joules <J>` to append a validated measurement row before regenerating the readiness report.
   - alternatively pass `--average-watts <W> --duration-seconds <s>` with `--joules 0` or omitted; the tool records `joules = average_watts * duration_seconds` and keeps the derivation in the measurement row.

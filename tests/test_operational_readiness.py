@@ -649,6 +649,32 @@ def _build_external_validity_ladder_report(passed: bool = True):
     }
 
 
+def _build_adaptive_credit_field_report(passed: bool = True):
+    return {
+        "schema": "sara-adaptive-credit-field-benchmark-v1",
+        "passed": bool(passed),
+        "observed_only": True,
+        "metrics": {
+            "decision_integrity": 1.0 if passed else 0.5,
+            "harmful_update_suppression": 1.0 if passed else 0.5,
+            "quantized_behavior_match": 1.0 if passed else 0.5,
+        },
+    }
+
+
+def _build_adaptive_credit_event_memory_report(passed: bool = True):
+    return {
+        "schema": "sara-adaptive-credit-event-memory-benchmark-v1",
+        "passed": bool(passed),
+        "observed_only": True,
+        "metrics": {
+            "harmful_block_preserved_count": 1 if passed else 0,
+            "credit_strong_entry_present": bool(passed),
+            "credit_weak_entry_evicted": bool(passed),
+        },
+    }
+
+
 def test_operational_readiness_evaluation_passes_with_all_gates_green():
     module = _load_script("operational_readiness.py")
     passed, summary = module._evaluate_operational_readiness(
@@ -659,6 +685,8 @@ def test_operational_readiness_evaluation_passes_with_all_gates_green():
         phase5_completion_gate_report=_build_phase5_completion_gate_report(True),
         external_validity_report=_build_external_validity_report(True),
         external_validity_ladder_report=_build_external_validity_ladder_report(True),
+        adaptive_credit_field_report=_build_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_build_adaptive_credit_event_memory_report(True),
     )
     assert passed is True
     assert summary["error_count"] == 0
@@ -670,6 +698,8 @@ def test_operational_readiness_evaluation_passes_with_all_gates_green():
     assert summary["checks"]["phase5_completion_gate"]["passed"] is True
     assert summary["checks"]["external_validity"]["passed"] is True
     assert summary["checks"]["external_validity_ladder"]["passed"] is True
+    assert summary["checks"]["adaptive_credit_field"]["passed"] is True
+    assert summary["checks"]["adaptive_credit_event_memory"]["passed"] is True
     assert summary["checks"]["release_gate"]["passed"] is True
     assert summary["checks"]["production_profile"]["passed"] is True
     assert summary["stage_b_promotion"]["stage_b_passed"] is True
@@ -789,6 +819,8 @@ def test_operational_readiness_evaluation_detects_gate_failures():
         release_report=_build_release_report(False),
         phase5_entry_gate_report=_build_phase5_entry_gate_report(False),
         phase5_completion_gate_report=_build_phase5_completion_gate_report(False),
+        adaptive_credit_field_report=_build_adaptive_credit_field_report(False),
+        adaptive_credit_event_memory_report=_build_adaptive_credit_event_memory_report(False),
     )
     assert passed is False
     assert summary["error_count"] > 0
@@ -797,6 +829,8 @@ def test_operational_readiness_evaluation_detects_gate_failures():
     assert summary["checks"]["phase4_completion"]["passed"] is False
     assert summary["checks"]["phase5_entry_gate"]["passed"] is False
     assert summary["checks"]["phase5_completion_gate"]["passed"] is False
+    assert summary["checks"]["adaptive_credit_field"]["passed"] is False
+    assert summary["checks"]["adaptive_credit_event_memory"]["passed"] is False
     assert summary["checks"]["release_gate"]["passed"] is False
     assert summary["checks"]["production_profile"]["passed"] is True
     assert summary["stage_b_promotion"]["stage_b_passed"] is False
@@ -816,6 +850,8 @@ def test_operational_readiness_evaluation_detects_gate_failures():
     assert summary["phase5_entry_readiness"]["passed"] is False
     assert summary["phase5_entry_readiness"]["counterfactual_transition_separation"] == 0.0
     formatted = module.format_operational_summary(summary)
+    assert "- adaptive_credit_field: FAIL" in formatted
+    assert "- adaptive_credit_event_memory: FAIL" in formatted
     assert "- stage_d_delta_memory_candidate_failure: metric.delta_memory_multi_history_recall_observed value=0.000 required>=1.000 description=delta-memory multi-history recall" in formatted
     assert "- stage_d_acceptance_candidate_failure: metric.delta_memory_multi_history_recall_observed value=0.000 required>=1.000 description=delta-memory multi-history recall" in formatted
     assert len(summary["recovery_actions"]) >= 1
@@ -1819,6 +1855,39 @@ def test_operational_select_dispatch_batch_with_priority_threshold():
     assert batch["skipped_low_priority_count"] == 1
 
 
+def test_prioritize_operational_retry_queue_boosts_critical_energy_measurement_repair():
+    module = _load_script("operational_readiness.py")
+    retry_queue = [
+        {
+            "command": "python scripts/eval/phase3_accuracy_suite.py",
+            "reason": "failed",
+            "covered_checks": ["phase3_accuracy"],
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "source": "manual",
+            "severity": "",
+        },
+        {
+            "command": "python scripts/sara_cli.py run-physical-energy-pair --pair-id p1",
+            "reason": "failed",
+            "covered_checks": ["ann_efficiency_roadmap", "energy_measurement"],
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "source": "runbook_action:ann_efficiency_next_evidence",
+            "severity": "critical",
+        },
+    ]
+
+    prioritized = module.prioritize_operational_retry_queue(
+        retry_queue,
+        iterative_plan={"remaining_checks": ["energy_measurement"]},
+    )
+
+    assert prioritized[0]["command"] == "python scripts/sara_cli.py run-physical-energy-pair --pair-id p1"
+    assert prioritized[0]["priority_tier"] == "high"
+    assert prioritized[0]["priority_urgency_bonus"] >= 2.75
+
+
 def test_operational_summary_includes_auto_dispatch_command_breakdown():
     module = _load_script("operational_readiness.py")
     report = {
@@ -2174,6 +2243,35 @@ def test_append_operational_runbook_actions_to_repair_log_applies_priority_and_l
     assert entries[1]["command"] == "python scripts/eval/release_soak.py --profile extended"
     assert entries[1]["status"] == "pending"
     assert entries[1]["source"] == "runbook_action:retry_queue"
+
+
+def test_append_operational_runbook_actions_to_repair_log_preserves_severity_metadata():
+    module = _load_script("operational_readiness.py")
+    entries = []
+    runbook_actions = [
+        {
+            "command": "python scripts/sara_cli.py run-physical-energy-pair --pair-id p1",
+            "priority": "high",
+            "source": "ann_efficiency_next_evidence",
+            "reason": (
+                "category=weak_joule_pair; task=real_data_external_validity; "
+                "severity=critical; ratio_gap=1.200; relative_ratio=0.400"
+            ),
+            "affected_checks": ["ann_efficiency_roadmap", "energy_measurement"],
+        }
+    ]
+
+    appended = module.append_operational_runbook_actions_to_repair_log(
+        entries,
+        runbook_actions,
+        max_append=1,
+        min_priority="medium",
+    )
+
+    assert appended == 1
+    assert entries[0]["severity"] == "critical"
+    assert entries[0]["priority_hint"] == "high"
+    assert "weak_joule_pair" in entries[0]["reason_hint"]
 
 
 def test_append_efficiency_incident_repair_shortcut_appends_three_commands():
@@ -3870,9 +3968,9 @@ def test_build_operational_runbook_actions_adds_sara_ann_comparison_evidence():
         "sara_ann_comparison": {
             "next_actions": [
                 {
-                    "category": "missing_event_memory_compression_surface",
+                    "category": "missing_event_memory_maintenance_coupling_surface",
                     "priority": "medium",
-                    "command": "python scripts/sara_cli.py eval-event-memory-ingest-pipeline",
+                    "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
                 }
             ]
         },
@@ -3882,9 +3980,95 @@ def test_build_operational_runbook_actions_adds_sara_ann_comparison_evidence():
 
     action = next(item for item in actions if item["source"] == "sara_ann_comparison_next_action")
     assert action["priority"] == "medium"
-    assert "eval-event-memory-ingest-pipeline" in action["command"]
+    assert "eval-event-memory-maintenance-coupling" in action["command"]
     assert "sara_ann_comparison" in action["affected_checks"]
     assert "event_memory_ingest_pipeline" in action["affected_checks"]
+    assert "event_memory_maintenance_coupling" in action["affected_checks"]
+
+
+def test_build_operational_runbook_actions_marks_orphan_pair_as_energy_measurement_work():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "category": "orphan_pair",
+                    "priority": "medium",
+                    "task": "extra_task",
+                    "command": (
+                        "Inspect data/raw/energy_measurements.jsonl for rows that do not belong "
+                        "to the active physical session batch."
+                    ),
+                }
+            ]
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(item for item in actions if item["source"] == "ann_efficiency_next_evidence")
+    assert action["priority"] == "medium"
+    assert "ann_efficiency_roadmap" in action["affected_checks"]
+    assert "energy_measurement" in action["affected_checks"]
+
+
+def test_build_operational_runbook_actions_marks_invalid_pair_fairness_mismatch_as_energy_measurement_work():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "category": "invalid_pair_fairness_mismatch",
+                    "priority": "high",
+                    "task": "real_data_external_validity",
+                    "command": "Repair mismatched pair conditions before rerunning this physical pair.",
+                }
+            ]
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(item for item in actions if item["source"] == "ann_efficiency_next_evidence")
+    assert action["priority"] == "high"
+    assert "ann_efficiency_roadmap" in action["affected_checks"]
+    assert "energy_measurement" in action["affected_checks"]
+
+
+def test_build_operational_runbook_actions_escalates_critical_weak_joule_pair():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "category": "weak_joule_pair",
+                    "priority": "medium",
+                    "severity": "critical",
+                    "task": "real_data_external_validity",
+                    "relative_ratio": 0.4,
+                    "ratio_gap": 1.2,
+                    "command": "Repeat this paired measurement with more replicates.",
+                }
+            ]
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(item for item in actions if item["source"] == "ann_efficiency_next_evidence")
+    assert action["priority"] == "high"
+    assert "severity=critical" in action["reason"]
+    assert "ratio_gap=1.200" in action["reason"]
+    assert "relative_ratio=0.400" in action["reason"]
 
 
 def test_build_operational_runbook_actions_merges_v1_actions_without_duplicates():

@@ -28,6 +28,9 @@ DEFAULT_ENERGY_MEASUREMENT_REPORT_PATH = workspace_path("evaluation", "energy_me
 DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH = workspace_path(
     "evaluation", "internal_maintenance_efficiency_benchmark.json"
 )
+DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH = workspace_path(
+    "evaluation", "event_memory_maintenance_coupling_benchmark.json"
+)
 DEFAULT_OPERATIONAL_REPORT_PATH = workspace_path("release", "operational_readiness_report.json")
 DEFAULT_OUTPUT_REPORT_PATH = workspace_path("evaluation", "ann_efficiency_roadmap_gate.json")
 DEFAULT_OUTPUT_SUMMARY_PATH = workspace_path("evaluation", "ann_efficiency_roadmap_gate_summary.txt")
@@ -93,6 +96,17 @@ def _maintenance_alignment(report: Mapping[str, Any] | None) -> Mapping[str, Any
     return payload if isinstance(payload, Mapping) else {}
 
 
+def _event_memory_maintenance_coupling_reference(
+    report: Mapping[str, Any] | None,
+) -> Mapping[str, Any]:
+    payload = (
+        (report or {}).get("event_memory_maintenance_coupling_reference", {})
+        if isinstance(report or {}, Mapping)
+        else {}
+    )
+    return payload if isinstance(payload, Mapping) else {}
+
+
 def _phase6_internal_maintenance_actions(
     internal_maintenance_report: Mapping[str, Any] | None,
 ) -> List[Dict[str, Any]]:
@@ -140,16 +154,49 @@ def _phase6_maintenance_alignment_actions(
     ratio = _float(alignment, "maintenance_event_cost_per_selected_ratio")
     if ratio <= 1.5:
         return []
+    priority = "high" if ratio >= 2.0 else "medium"
+    severity = "critical" if ratio >= 3.0 else ("high" if ratio >= 2.0 else "moderate")
     return [
         {
             "source": "physical_internal_maintenance_alignment",
             "category": "maintenance_alignment_drift",
-            "priority": "medium",
+            "priority": priority,
             "task": "phase6_maintenance_alignment",
             "ratio": ratio,
+            "severity": severity,
             "command": "Inspect physical pair maintenance traces and rerun python scripts/sara_cli.py eval-internal-maintenance-efficiency before claiming stable self-state efficiency.",
         }
     ]
+
+
+def _phase6_event_memory_maintenance_coupling_actions(
+    energy_measurement_report: Mapping[str, Any] | None,
+) -> List[Dict[str, Any]]:
+    coupling = _event_memory_maintenance_coupling_reference(energy_measurement_report)
+    if not bool(coupling.get("available", False)):
+        return [
+            {
+                "source": "event_memory_maintenance_coupling_reference",
+                "category": "missing_event_memory_maintenance_coupling_reference",
+                "priority": "medium",
+                "task": "phase6_compression_maintenance_coupling",
+                "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+            }
+        ]
+    if (
+        _float(coupling, "best_profile_compression_efficiency_per_maintenance") <= 0.0
+        or _float(coupling, "best_profile_self_state_continuity") < 0.5
+    ):
+        return [
+            {
+                "source": "event_memory_maintenance_coupling_reference",
+                "category": "weak_event_memory_maintenance_coupling_reference",
+                "priority": "medium",
+                "task": "phase6_compression_maintenance_coupling",
+                "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+            }
+        ]
+    return []
 
 
 def _phase8_reference_actions(external_validity_report: Mapping[str, Any] | None) -> List[Dict[str, Any]]:
@@ -236,7 +283,29 @@ def _build_next_evidence_actions(
         if isinstance(session_progress.get("pair_statuses"), list)
         else []
     )
+    orphan_pairs = (
+        session_progress.get("orphan_pairs", [])
+        if isinstance(session_progress.get("orphan_pairs"), list)
+        else []
+    )
+    invalid_measurement_row_count = int(
+        session_progress.get("invalid_measurement_row_count", 0) or 0
+    )
     actionable_statuses = {"partial_pair", "invalid_pair", "missing_pair"}
+    if invalid_measurement_row_count > 0:
+        actions.append(
+            {
+                "source": "energy_measurement_session_progress",
+                "category": "invalid_measurement_rows",
+                "priority": "high",
+                "task": "phase6_measurement_data_hygiene",
+                "invalid_measurement_row_count": invalid_measurement_row_count,
+                "command": (
+                    "Inspect data/raw/energy_measurements.jsonl for malformed or incomplete rows "
+                    "and rerun python scripts/sara_cli.py eval-physical-energy-session-progress."
+                ),
+            }
+        )
     if pair_statuses:
         for item in pair_statuses:
             if not isinstance(item, Mapping):
@@ -244,22 +313,81 @@ def _build_next_evidence_actions(
             status = str(item.get("status", "") or "")
             if status not in actionable_statuses:
                 continue
+            action_category = status
+            action_priority = str(item.get("priority", "high") or "high")
+            action_command = str(item.get("pair_command", "") or "")
+            if status == "invalid_pair":
+                invalid_reason_category = str(item.get("invalid_reason_category", "") or "")
+                invalid_reason_priority = str(item.get("invalid_reason_priority", "") or "")
+                invalid_reason_fields = (
+                    [str(value).strip() for value in item.get("invalid_reason_fields", []) if str(value).strip()]
+                    if isinstance(item.get("invalid_reason_fields"), list)
+                    else []
+                )
+                if invalid_reason_category == "run_order_conflict":
+                    action_category = "invalid_pair_run_order_conflict"
+                    action_priority = invalid_reason_priority or "medium"
+                    action_command = action_command or (
+                        "Rerun the physical pair with alternating or explicitly differentiated run order, "
+                        "then rerun python scripts/sara_cli.py eval-physical-energy-session-progress."
+                    )
+                elif invalid_reason_category in {
+                    "fairness_field_mismatch",
+                    "fairness_and_run_order_conflict",
+                }:
+                    action_category = "invalid_pair_fairness_mismatch"
+                    action_priority = invalid_reason_priority or "high"
+                    field_text = ", ".join(invalid_reason_fields) if invalid_reason_fields else "fairness fields"
+                    action_command = (
+                        f"Repair mismatched pair conditions ({field_text}) before rerunning this physical pair, "
+                        "then rerun python scripts/sara_cli.py eval-physical-energy-session-progress."
+                    )
             actions.append(
                 {
                     "source": "energy_measurement_session_progress",
-                    "category": status,
-                    "priority": str(item.get("priority", "high") or "high"),
+                    "category": action_category,
+                    "priority": action_priority,
                     "task": str(item.get("task", "") or ""),
                     "pair_id": str(item.get("pair_id", "") or ""),
                     "replicate_index": int(item.get("replicate_index", 0) or 0),
-                    "command": str(item.get("pair_command", "") or ""),
+                    "invalid_reason_category": str(item.get("invalid_reason_category", "") or ""),
+                    "invalid_reason_fields": (
+                        [str(value).strip() for value in item.get("invalid_reason_fields", []) if str(value).strip()]
+                        if isinstance(item.get("invalid_reason_fields"), list)
+                        else []
+                    ),
+                    "command": action_command,
                 }
             )
-        if actions:
-            actions.extend(_phase8_reference_actions(external_validity_report))
-            actions.extend(_phase6_internal_maintenance_actions(internal_maintenance_report))
-            actions.extend(_phase6_maintenance_alignment_actions(energy_measurement_report))
-            return actions
+    if orphan_pairs:
+        for item in orphan_pairs:
+            if not isinstance(item, Mapping):
+                continue
+            actions.append(
+                {
+                    "source": "energy_measurement_session_progress",
+                    "category": "orphan_pair",
+                    "priority": "medium",
+                    "task": str(item.get("task", "") or ""),
+                    "pair_id": str(item.get("pair_id", "") or ""),
+                    "replicate_index": int(item.get("replicate_index", 0) or 0),
+                    "command": (
+                        "Inspect data/raw/energy_measurements.jsonl for rows that do not belong "
+                        "to the active physical session batch, then rerun "
+                        "python scripts/sara_cli.py eval-physical-energy-session-progress."
+                    ),
+                }
+            )
+    if actions:
+        actions.extend(_phase8_reference_actions(external_validity_report))
+        actions.extend(_phase6_internal_maintenance_actions(internal_maintenance_report))
+        actions.extend(_phase6_maintenance_alignment_actions(energy_measurement_report))
+        actions.extend(
+            _phase6_event_memory_maintenance_coupling_actions(
+                energy_measurement_report
+            )
+        )
+        return actions
     planned_runs = (
         session_plan.get("planned_runs", [])
         if isinstance(session_plan.get("planned_runs"), list)
@@ -283,6 +411,11 @@ def _build_next_evidence_actions(
         actions.extend(_phase8_reference_actions(external_validity_report))
         actions.extend(_phase6_internal_maintenance_actions(internal_maintenance_report))
         actions.extend(_phase6_maintenance_alignment_actions(energy_measurement_report))
+        actions.extend(
+            _phase6_event_memory_maintenance_coupling_actions(
+                energy_measurement_report
+            )
+        )
         return actions
 
     pending_pairs = plan.get("pending_pairs", []) if isinstance(plan.get("pending_pairs"), list) else []
@@ -311,12 +444,18 @@ def _build_next_evidence_actions(
                 "task": str(item.get("task", "") or ""),
                 "ratio": _float(item, "ann_to_sara_joule_efficiency_ratio"),
                 "required_min": _float(item, "required_min"),
+                "relative_ratio": _float(item, "relative_ratio"),
+                "ratio_gap": _float(item, "ratio_gap"),
+                "severity": str(item.get("severity", "") or ""),
                 "command": str(item.get("next_action", "") or ""),
             }
         )
     actions.extend(_phase8_reference_actions(external_validity_report))
     actions.extend(_phase6_internal_maintenance_actions(internal_maintenance_report))
     actions.extend(_phase6_maintenance_alignment_actions(energy_measurement_report))
+    actions.extend(
+        _phase6_event_memory_maintenance_coupling_actions(energy_measurement_report)
+    )
     return actions
 
 
@@ -358,6 +497,9 @@ def build_ann_efficiency_roadmap_report(
     measurement_checks = _checks(energy_measurement_report or {})
     measurement_plan = _measurement_plan(energy_measurement_report)
     maintenance_alignment = _maintenance_alignment(energy_measurement_report)
+    event_memory_maintenance_coupling_reference = _event_memory_maintenance_coupling_reference(
+        energy_measurement_report
+    )
     internal_maintenance_metrics = _metrics(internal_maintenance_report or {})
     internal_maintenance_counts = _internal_maintenance_counts(internal_maintenance_report)
     internal_maintenance_normalized = _internal_maintenance_normalized(internal_maintenance_report)
@@ -661,6 +803,14 @@ def build_ann_efficiency_roadmap_report(
                 "ann_maintenance_event_cost_per_success": _float(
                     measurement_metrics, "ann_maintenance_event_cost_per_success"
                 ),
+                "measurement_session_invalid_measurement_row_count": _float(
+                    _measurement_session_progress(energy_measurement_report),
+                    "invalid_measurement_row_count",
+                ),
+                "measurement_session_orphan_pair_count": _float(
+                    _measurement_session_progress(energy_measurement_report),
+                    "orphan_pair_count",
+                ),
                 "measurement_pending_pair_count": _float(measurement_plan, "pending_pair_count"),
                 "measurement_weak_pair_count": _float(measurement_plan, "weak_pair_count"),
                 "internal_maintenance_event_cost_per_selected": _float(
@@ -690,11 +840,23 @@ def build_ann_efficiency_roadmap_report(
                 "physical_internal_maintenance_alignment_delta": _float(
                     maintenance_alignment, "maintenance_event_cost_per_selected_delta"
                 ),
+                "event_memory_maintenance_coupling_available": 1.0
+                if bool(event_memory_maintenance_coupling_reference.get("available", False))
+                else 0.0,
+                "event_memory_maintenance_best_efficiency": _float(
+                    event_memory_maintenance_coupling_reference,
+                    "best_profile_compression_efficiency_per_maintenance",
+                ),
+                "event_memory_maintenance_best_continuity": _float(
+                    event_memory_maintenance_coupling_reference,
+                    "best_profile_self_state_continuity",
+                ),
             },
             next_actions=[
                 "Collect paired SARA/ANN joule measurements into data/raw/energy_measurements.jsonl.",
                 "Record spontaneous maintenance counts and maintenance_event_cost whenever persistent self-state or idle replay stays enabled during the run.",
                 "Keep the internal maintenance reference benchmark green so maintenance-side event cost stays interpretable before physical joule capture.",
+                "Keep the Event Memory compression-versus-maintenance coupling surface green so compression gains do not hide self-state carry costs.",
                 "Keep public claims labeled as proxy-only until real_joule_measurements_present=true.",
             ],
         ),
@@ -723,6 +885,9 @@ def build_ann_efficiency_roadmap_report(
             ),
             "internal_maintenance_efficiency": artifact_state(
                 internal_maintenance_report, pass_field=None
+            ),
+            "event_memory_maintenance_coupling": artifact_state(
+                event_memory_maintenance_coupling_reference, pass_field=None
             ),
             "operational_readiness": artifact_state(operational_report),
         },
@@ -756,6 +921,7 @@ def format_ann_efficiency_roadmap_summary(report: Mapping[str, Any]) -> str:
                 ("phase8_ladder", artifact_state.get("real_data_external_validity_ladder")),
                 ("phase6", artifact_state.get("energy_measurement_readiness")),
                 ("maintenance", artifact_state.get("internal_maintenance_efficiency")),
+                ("coupling", artifact_state.get("event_memory_maintenance_coupling")),
                 ("operational", artifact_state.get("operational_readiness")),
             ],
         ),
@@ -806,6 +972,7 @@ def _refresh_artifacts() -> None:
         [sys.executable, "scripts/eval/real_data_external_validity_ladder.py"],
         [sys.executable, "scripts/eval/energy_measurement_readiness.py"],
         [sys.executable, "scripts/eval/internal_maintenance_efficiency_benchmark.py"],
+        [sys.executable, "scripts/eval/event_memory_maintenance_coupling_benchmark.py"],
     ]
     for command in commands:
         result = subprocess.run(command, cwd=PROJECT_ROOT)
@@ -820,6 +987,10 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--external-ladder-report-path", default=DEFAULT_EXTERNAL_LADDER_REPORT_PATH)
     parser.add_argument("--energy-measurement-report-path", default=DEFAULT_ENERGY_MEASUREMENT_REPORT_PATH)
     parser.add_argument("--internal-maintenance-report-path", default=DEFAULT_INTERNAL_MAINTENANCE_REPORT_PATH)
+    parser.add_argument(
+        "--event-memory-maintenance-coupling-report-path",
+        default=DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH,
+    )
     parser.add_argument("--operational-report-path", default=DEFAULT_OPERATIONAL_REPORT_PATH)
     parser.add_argument("--output-report-path", default=DEFAULT_OUTPUT_REPORT_PATH)
     parser.add_argument("--output-summary-path", default=DEFAULT_OUTPUT_SUMMARY_PATH)
@@ -854,7 +1025,15 @@ def main(argv: List[str] | None = None) -> int:
         energy_report=_load_json(args.energy_report_path),
         external_validity_report=_load_json(args.external_validity_report_path),
         external_ladder_report=_load_json(args.external_ladder_report_path),
-        energy_measurement_report=_load_json(args.energy_measurement_report_path),
+        energy_measurement_report=(
+            lambda payload: (
+                dict(payload, event_memory_maintenance_coupling_reference=(
+                    _load_json(args.event_memory_maintenance_coupling_report_path)
+                    if os.path.exists(args.event_memory_maintenance_coupling_report_path)
+                    else {}
+                ))
+            )
+        )(_load_json(args.energy_measurement_report_path)),
         internal_maintenance_report=(
             _load_json(args.internal_maintenance_report_path)
             if os.path.exists(args.internal_maintenance_report_path)

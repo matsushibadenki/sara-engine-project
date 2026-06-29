@@ -448,6 +448,18 @@ def main():
         default=workspace_path("evaluation", "energy_measurement_readiness.json"),
     )
     parser_sara_ann_comparison.add_argument(
+        "--internal-maintenance-report-path",
+        default=workspace_path("evaluation", "internal_maintenance_efficiency_benchmark.json"),
+    )
+    parser_sara_ann_comparison.add_argument(
+        "--event-memory-report-path",
+        default=workspace_path("evaluation", "event_memory_ingest_pipeline.json"),
+    )
+    parser_sara_ann_comparison.add_argument(
+        "--event-memory-maintenance-coupling-report-path",
+        default=workspace_path("evaluation", "event_memory_maintenance_coupling_benchmark.json"),
+    )
+    parser_sara_ann_comparison.add_argument(
         "--report-path",
         default=workspace_path("evaluation", "sara_ann_comparison_report.json"),
     )
@@ -720,6 +732,61 @@ def main():
     parser_resonance_credit.add_argument(
         "--summary-path",
         default=workspace_path("evaluation", "resonance_credit_benchmark_summary.txt"),
+    )
+
+    parser_adaptive_credit = subparsers.add_parser(
+        "eval-adaptive-credit-field",
+        help="Run the observed-only SARA adaptive credit field benchmark.",
+    )
+    parser_adaptive_credit.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "adaptive_credit_field_cases.jsonl",
+        ),
+    )
+    parser_adaptive_credit.add_argument(
+        "--trace-path",
+        default=workspace_path("evaluation", "adaptive_credit_field_traces.jsonl"),
+    )
+    parser_adaptive_credit.add_argument(
+        "--state-path",
+        default=workspace_path("evaluation", "adaptive_credit_field_state.json"),
+    )
+    parser_adaptive_credit.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "adaptive_credit_field_benchmark.json"),
+    )
+    parser_adaptive_credit.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "adaptive_credit_field_benchmark_summary.txt"),
+    )
+
+    parser_adaptive_credit_event_memory = subparsers.add_parser(
+        "eval-adaptive-credit-event-memory",
+        help="Run the observed-only adaptive credit/Event Memory integration benchmark.",
+    )
+    parser_adaptive_credit_event_memory.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "adaptive_credit_event_memory_cases.jsonl",
+        ),
+    )
+    parser_adaptive_credit_event_memory.add_argument(
+        "--trace-path",
+        default=workspace_path("evaluation", "adaptive_credit_event_memory_traces.jsonl"),
+    )
+    parser_adaptive_credit_event_memory.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "adaptive_credit_event_memory_benchmark.json"),
+    )
+    parser_adaptive_credit_event_memory.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation",
+            "adaptive_credit_event_memory_benchmark_summary.txt",
+        ),
     )
 
     parser_resonance_integration = subparsers.add_parser(
@@ -1091,6 +1158,14 @@ def main():
     parser_physical_session_progress.add_argument(
         "--summary-path",
         default=workspace_path("evaluation", "physical_energy_session_progress.txt"),
+    )
+    parser_physical_session_progress.add_argument(
+        "--internal-maintenance-report-path",
+        default=workspace_path("evaluation", "internal_maintenance_efficiency_benchmark.json"),
+    )
+    parser_physical_session_progress.add_argument(
+        "--event-memory-maintenance-coupling-report-path",
+        default=workspace_path("evaluation", "event_memory_maintenance_coupling_benchmark.json"),
     )
 
     parser_clean = subparsers.add_parser("clean", help="中間データを削除して環境をリセットします。")
@@ -1606,6 +1681,12 @@ def main():
             str(args.external_ladder_report_path),
             "--energy-measurement-report-path",
             str(args.energy_measurement_report_path),
+            "--internal-maintenance-report-path",
+            str(args.internal_maintenance_report_path),
+            "--event-memory-report-path",
+            str(args.event_memory_report_path),
+            "--event-memory-maintenance-coupling-report-path",
+            str(args.event_memory_maintenance_coupling_report_path),
             "--report-path",
             str(args.report_path),
             "--summary-path",
@@ -1832,6 +1913,40 @@ def main():
             str(args.trace_path),
             "--state-path",
             str(args.state_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-adaptive-credit-field":
+        command = [
+            sys.executable,
+            "scripts/eval/adaptive_credit_field_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--trace-path",
+            str(args.trace_path),
+            "--state-path",
+            str(args.state_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-adaptive-credit-event-memory":
+        command = [
+            sys.executable,
+            "scripts/eval/adaptive_credit_event_memory_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--trace-path",
+            str(args.trace_path),
             "--report-path",
             str(args.report_path),
             "--summary-path",
@@ -2129,6 +2244,10 @@ def main():
             str(args.report_path),
             "--summary-path",
             str(args.summary_path),
+            "--internal-maintenance-report-path",
+            str(args.internal_maintenance_report_path),
+            "--event-memory-maintenance-coupling-report-path",
+            str(args.event_memory_maintenance_coupling_report_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
