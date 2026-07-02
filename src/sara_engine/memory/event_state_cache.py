@@ -22,6 +22,22 @@ def _jaccard(left: Sequence[int], right: Sequence[int]) -> float:
     return float(len(left_set & right_set)) / float(len(union))
 
 
+def _bundle_affinity_from_ids(*, entry_id: str = "", own_latent_id: str = "", source_ref: str = "") -> float:
+    entry_text = str(entry_id)
+    latent_text = str(own_latent_id)
+    source_text = str(source_ref)
+    if (
+        entry_text.startswith("bundle:")
+        or latent_text.startswith("bundle:")
+        or "bundle:" in entry_text
+        or "bundle:" in latent_text
+    ):
+        return 1.0
+    if source_text.startswith("bundle::"):
+        return 0.8
+    return 0.0
+
+
 @dataclass(frozen=True)
 class EventStateCandidate:
     entry_id: str
@@ -367,6 +383,11 @@ class VerifiedHierarchicalEventStateCache:
             source_agreement = float(bool(source_ref) and source_ref == entry.source_ref)
             sequence_support = _clamp01(entry.sequence_support_score)
             credit_support = _clamp01(entry.credit_score)
+            bundle_affinity = _bundle_affinity_from_ids(
+                entry_id=entry.entry_id,
+                own_latent_id=entry.own_latent_id,
+                source_ref=entry.source_ref,
+            )
             self_state_alignment = _clamp01(
                 memory_self_state_alignment(
                     own_latent_id=entry.own_latent_id,
@@ -390,6 +411,7 @@ class VerifiedHierarchicalEventStateCache:
                 + 0.03 * temporal_relevance
                 + 0.05 * sequence_support
                 + 0.04 * credit_support
+                + 0.03 * bundle_affinity
                 + 0.05 * self_state_alignment
             )
             event_cost += len(entry.signature)
@@ -404,6 +426,7 @@ class VerifiedHierarchicalEventStateCache:
                         "source_agreement": source_agreement,
                         "sequence_support": round(sequence_support, 6),
                         "credit_support": round(credit_support, 6),
+                        "multimodal_bundle_affinity": round(bundle_affinity, 6),
                         "self_state_alignment": round(self_state_alignment, 6),
                         "temporal_relevance": round(temporal_relevance, 6),
                     },
@@ -684,27 +707,51 @@ class VerifiedHierarchicalEventStateCache:
             "credit_responsibility": _clamp01(candidate.credit_responsibility),
             "credit_confidence": _clamp01(candidate.credit_confidence),
             "credit_longevity": _clamp01(candidate.credit_longevity),
+            "multimodal_bundle_affinity": _bundle_affinity_from_ids(
+                entry_id=candidate.entry_id,
+                own_latent_id=candidate.own_latent_id,
+                source_ref=candidate.source_ref,
+            ),
             "metabolic_headroom": _clamp01(candidate.metabolic_headroom),
             "retention_profile": self.retention_profile,
         }
 
     def _utility(self, candidate: EventStateCandidate) -> float:
-        return round(
+        bundle_affinity = _bundle_affinity_from_ids(
+            entry_id=candidate.entry_id,
+            own_latent_id=candidate.own_latent_id,
+            source_ref=candidate.source_ref,
+        )
+        score = (
             0.40 * _clamp01(candidate.resonance_score)
             + 0.25 * _clamp01(candidate.confidence)
             + 0.20 * _clamp01(candidate.source_reliability)
             + 0.10 * (1.0 - _clamp01(candidate.uncertainty))
             + 0.04 * _clamp01(candidate.sequence_support_score)
-            + 0.01 * _clamp01(candidate.credit_score),
-            6,
+            + 0.01 * _clamp01(candidate.credit_score)
         )
+        if bundle_affinity > 0.0:
+            score += 0.02 * bundle_affinity
+        return round(score, 6)
 
     def _select_tier(self, candidate: EventStateCandidate, utility: float) -> str:
+        bundle_affinity = _bundle_affinity_from_ids(
+            entry_id=candidate.entry_id,
+            own_latent_id=candidate.own_latent_id,
+            source_ref=candidate.source_ref,
+        )
         if self.retention_profile == "fixed":
             return "recent"
         if self.retention_profile == "linear":
             age_band = max(0, int(candidate.time_segment)) % len(self.TIER_ORDER)
             return self.TIER_ORDER[age_band]
+        if (
+            bundle_affinity > 0.0
+            and candidate.resonance_score >= self.durable_resonance
+            and _clamp01(candidate.credit_longevity) >= 0.60
+            and utility >= 0.80
+        ):
+            return "durable"
         if candidate.resonance_score >= self.durable_resonance and utility >= 0.82:
             return "durable"
         if candidate.resonance_score >= self.min_resonance + 0.1:
@@ -768,6 +815,7 @@ class VerifiedHierarchicalEventStateCache:
         phase = str(replay_event.get("phase", "") or "")
         selected_branch = str(replay_event.get("selected_branch", "") or "")
         branch_count = max(1, int(replay_event.get("latent_branch_count", 1) or 1))
+        bundle_affinity = _clamp01(replay_event.get("multimodal_bundle_affinity", 0.0))
 
         consolidation_score = _clamp01(
             0.40 * post_retention
@@ -775,6 +823,7 @@ class VerifiedHierarchicalEventStateCache:
             + 0.20 * (1.0 - post_noise)
             + 0.10 * _clamp01(entry.sequence_support_score)
             + 0.05 * min(1.0, float(branch_count) / 3.0)
+            + 0.03 * bundle_affinity
         )
         updated_utility = round(
             _clamp01(0.70 * entry.utility + 0.30 * consolidation_score),
@@ -838,6 +887,7 @@ class VerifiedHierarchicalEventStateCache:
             "health_before": health_before,
             "health_after": health_after,
             "consolidation_score": consolidation_score,
+            "multimodal_bundle_affinity": bundle_affinity,
             "selected_branch": selected_branch,
             "latent_branch_count": branch_count,
         }

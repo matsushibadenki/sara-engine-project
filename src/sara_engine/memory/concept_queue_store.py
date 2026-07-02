@@ -88,12 +88,15 @@ def save_review_report(
     resolved = ensure_parent_directory(report_path)
     ready_credit_scores = [float(item.credit_score) for item in result.schedule.ready_queue]
     blocked_credit_scores = [float(item.credit_score) for item in result.schedule.blocked_queue]
+    ready_bundle_affinities = [float(getattr(item, "multimodal_bundle_affinity", 0.0) or 0.0) for item in result.schedule.ready_queue]
+    blocked_bundle_affinities = [float(getattr(item, "multimodal_bundle_affinity", 0.0) or 0.0) for item in result.schedule.blocked_queue]
     manual_review_candidates = [
         {
             "concept_key": item.concept_key,
             "priority_score": float(item.priority_score),
             "credit_score": float(item.credit_score),
             "credit_confidence": float(item.credit_confidence),
+            "multimodal_bundle_affinity": float(getattr(item, "multimodal_bundle_affinity", 0.0) or 0.0),
             "decision": item.decision,
             "next_action": item.next_action,
         }
@@ -114,6 +117,14 @@ def save_review_report(
         ),
         "blocked_mean_credit_score": round(
             sum(blocked_credit_scores) / float(max(1, len(blocked_credit_scores))),
+            6,
+        ),
+        "ready_mean_multimodal_bundle_affinity": round(
+            sum(ready_bundle_affinities) / float(max(1, len(ready_bundle_affinities))),
+            6,
+        ),
+        "blocked_mean_multimodal_bundle_affinity": round(
+            sum(blocked_bundle_affinities) / float(max(1, len(blocked_bundle_affinities))),
             6,
         ),
         "manual_review_candidates": manual_review_candidates,

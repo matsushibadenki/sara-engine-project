@@ -92,6 +92,17 @@ Event Memoryに蓄積された個々の遷移を、時間的・空間的なま�
 
 * **Relations:** before, after, predicts, overlaps, enables, prevents, requires, supports, contradicts
 
+### **2.4 分離を保ったイベント束ね (Bind, Do Not Collapse)**
+
+共感覚的な近接性を導入する場合でも、各モダリティの表現そのものを1つの混合表現へ溶かし込むべきではない。SARA Engine では、**「混ぜる」のではなく「同じ出来事として束ねる」**ことを原則とする。
+
+* **Modality-specific store:** 視覚、聴覚、触覚、言語、内的状態は、それぞれ独立した sparse event records として保持する。  
+* **Shared binding identity:** 同一の出来事に属すると検証された records には、共通の `event_id` と `time_chunk_id` を付与する。  
+* **Binding metadata:** 各 record / relation には `modality_id`, `confidence`, `binding_strength`, `uncertainty` を保持し、近さの理由を失わない。  
+* **No payload collapse:** 共通IDを持つことは、payloadの完全統合を意味しない。視覚情報は視覚として、音情報は音情報として追跡可能でなければならない。  
+
+この構造により、SARA は「雷」という言語イベントが音・光・驚きと近いことを扱えても、それらを1つの密なベクトルへ潰すことなく、監査可能な形で束ねられる。
+
 ## **3\. Semantic Echo Field: 言語レイヤーと共鳴場**
 
 旧版では言語処理の中心であったSemantic Echo Field（意味残響場）は、再定義された世界モデルの上で、言語（テキストや音声）を内部のイベント記憶と結びつけるインターフェースおよび推論バッファとして機能する。
@@ -113,6 +124,16 @@ Event Memoryに蓄積された個々の遷移を、時間的・空間的なま�
 * **Role (役割仮説):** 物理的イベントにおける動作主や対象との一時的な位相バインディング (Phase-Role Slot)
 
 重要なイベントだけが、Fast (局所), Medium (文脈), Slow (長期) の異なる時間スケールを持つ「残響（Echo）」として場に残り、時間的関係グラフ上のノードと共鳴（Resonance）を起こす。
+
+### **3.3 Event Hub と抽象概念層**
+
+モダリティ間をすべて直接結合すると混線しやすいため、SARA では次の3層を保つ。
+
+1. **Modality-specific sparse spaces:** 各モダリティ固有の近傍表現。  
+2. **Event hub / binding layer:** 同期・反復・検証により、同じ出来事に属する records を束ねる層。  
+3. **Abstract concept layer:** 複数のエピソードと反証テストを通過した durable concepts のみを昇格させる層。  
+
+Semantic Echo Field は主に 1 と 2 の間で働く短期的な共鳴機構であり、概念そのものを即座に固定する装置ではない。
 
 ## **4\. 学習メカニズムとSARA Engine統合仕様**
 

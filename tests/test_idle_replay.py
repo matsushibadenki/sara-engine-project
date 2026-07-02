@@ -138,3 +138,36 @@ def test_idle_replay_reports_state_continuity_during_idle_period():
 
     assert report["self_state_trace"]["current_active_ids"]
     assert report["metrics"]["idle_replay_state_continuity_observed"] == 1.0
+
+
+def test_idle_replay_gives_small_preference_to_verified_multimodal_bundle_memory():
+    cache = VerifiedHierarchicalEventStateCache()
+    cache.admit(
+        _candidate(
+            "plain-close",
+            signature=(51, 53, 57),
+            own_latent_id="latent:plain-close",
+            source_ref="source:plain-close",
+            confidence=0.82,
+            source_reliability=0.82,
+            sequence_support_score=0.2,
+        )
+    )
+    cache.admit(
+        _candidate(
+            "bundle:0:123456",
+            signature=(61, 67, 71),
+            own_latent_id="bundle:0:123456",
+            source_ref="bundle::fixture",
+            confidence=0.82,
+            source_reliability=0.82,
+            sequence_support_score=0.2,
+        )
+    )
+
+    report = plan_idle_replay(cache)
+
+    assert report["selected"]
+    assert report["selected"][0]["entry_id"] == "bundle:0:123456"
+    assert report["selected"][0]["components"]["multimodal_bundle_affinity"] == 1.0
+    assert report["metrics"]["idle_replay_multimodal_bundle_observed"] == 1.0

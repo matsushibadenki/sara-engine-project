@@ -16,6 +16,29 @@ from sara_engine.memory.concept_revalidation import (
 )
 
 
+def _bundle_summary_from_candidates(candidates: Sequence[Any]) -> Dict[str, Any]:
+    bundle_candidates = [
+        candidate
+        for candidate in candidates
+        if str(getattr(candidate, "entry_id", "")).startswith("bundle:")
+        or str(getattr(candidate, "own_latent_id", "")).startswith("bundle:")
+    ]
+    bundle_keys = tuple(
+        sorted(
+            {
+                str(getattr(candidate, "own_latent_id", "") or getattr(candidate, "entry_id", ""))
+                for candidate in bundle_candidates
+                if str(getattr(candidate, "own_latent_id", "") or getattr(candidate, "entry_id", ""))
+            }
+        )
+    )
+    return {
+        "bundle_candidate_count": len(bundle_candidates),
+        "bundle_candidate_keys": list(bundle_keys),
+        "bundle_candidate_ratio": float(len(bundle_candidates)) / float(max(1, len(candidates))),
+    }
+
+
 @dataclass(frozen=True)
 class ConceptReviewLoopResult:
     schedule: ConceptRevalidationSchedule
@@ -24,11 +47,13 @@ class ConceptReviewLoopResult:
     schema: str = "sara-concept-review-loop-result-v1"
 
     def to_dict(self) -> Dict[str, Any]:
+        bundle_summary = _bundle_summary_from_candidates(self.admission_plan.admitted_candidates)
         return {
             "schema": self.schema,
             "schedule": self.schedule.to_dict(),
             "admission_plan": self.admission_plan.to_dict(),
             "next_revalidation_queue": [item.to_dict() for item in self.next_revalidation_queue],
+            "multimodal_bundle_summary": bundle_summary,
         }
 
 

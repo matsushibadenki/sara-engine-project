@@ -885,6 +885,12 @@ def _run_idle_maintenance_trace_case() -> Dict[str, Any]:
         "selected_count": len(selected),
         "phase_count": len(phase_tracks),
         "refresh_count": len(refresh),
+        "bundle_candidate_count": int(
+            loop_result.get("multimodal_bundle_summary", {}).get("bundle_candidate_count", 0) or 0
+        ),
+        "bundle_candidate_ratio": float(
+            loop_result.get("multimodal_bundle_summary", {}).get("bundle_candidate_ratio", 0.0) or 0.0
+        ),
         "description": "Integrated idle maintenance should expose one auditable trace from replay selection through phase-aware retention and cache refresh.",
     }
 
@@ -1202,6 +1208,9 @@ def run_continual_consolidation_benchmark() -> Dict[str, Any]:
         ),
         "idle_maintenance_cache_refresh_observed": float(
             bool(idle_maintenance_trace["refresh_count"] >= 1)
+        ),
+        "idle_maintenance_multimodal_bundle_visibility_observed": float(
+            "multimodal_bundle_summary" in idle_maintenance_trace["idle_consolidation_loop_report"]
         ),
     }
     thresholds = {

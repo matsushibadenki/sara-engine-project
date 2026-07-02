@@ -34,6 +34,14 @@ def _event_cost(entry: EventStateEntry) -> int:
     return max(1, len(entry.signature) + len(entry.causal_predecessors))
 
 
+def _multimodal_bundle_affinity(entry: EventStateEntry) -> float:
+    if str(entry.entry_id).startswith("bundle:") or str(entry.own_latent_id).startswith("bundle:"):
+        return 1.0
+    if str(entry.source_ref).startswith("bundle::"):
+        return 0.8
+    return 0.0
+
+
 @dataclass(frozen=True)
 class IdleReplayConfig:
     max_candidates: int = 3
@@ -100,8 +108,9 @@ def plan_idle_replay(
         )
         access_factor = float(entry.access_count) / float(1 + max(0, int(entry.access_count)))
         sequence_support = _clamp01(entry.sequence_support_score)
+        bundle_affinity = _multimodal_bundle_affinity(entry)
         base_score = _clamp01(
-            0.34 * _clamp01(entry.utility)
+            0.31 * _clamp01(entry.utility)
             + 0.18 * _clamp01(entry.confidence)
             + 0.12 * _clamp01(entry.source_reliability)
             + 0.12 * sequence_support
@@ -109,6 +118,7 @@ def plan_idle_replay(
             + 0.06 * hint_activation
             + 0.02 * access_factor
             + 0.02 * temporal_relevance
+            + 0.03 * bundle_affinity
         )
         replay_score = (
             _clamp01(astro_modulator.modulate_replay_weight(base_score))
@@ -131,12 +141,13 @@ def plan_idle_replay(
                     "confidence": round(_clamp01(entry.confidence), 6),
                     "source_reliability": round(_clamp01(entry.source_reliability), 6),
                     "sequence_support": round(sequence_support, 6),
+                    "multimodal_bundle_affinity": round(bundle_affinity, 6),
                     "self_state_alignment": round(self_state_alignment, 6),
                     "hint_activation": round(hint_activation, 6),
                     "access_factor": round(access_factor, 6),
                     "temporal_relevance": round(temporal_relevance, 6),
                 },
-                "selected_branch": f"{entry.tier}:{'self_state' if self_state_alignment > 0.0 else 'memory'}",
+                "selected_branch": f"{entry.tier}:{'bundle' if bundle_affinity > 0.0 else ('self_state' if self_state_alignment > 0.0 else 'memory')}",
                 "mutates_durable_state": False,
             }
         )
@@ -145,6 +156,7 @@ def plan_idle_replay(
         scored,
         key=lambda item: (
             -float(item["replay_score"]),
+            -float(item["components"]["multimodal_bundle_affinity"]),
             -float(item["components"]["self_state_alignment"]),
             -float(item["components"]["sequence_support"]),
             item["entry_id"],
@@ -171,6 +183,9 @@ def plan_idle_replay(
     selected_hint = max(
         [float(item["components"]["hint_activation"]) for item in selected] + [0.0]
     )
+    selected_bundle_affinity = max(
+        [float(item["components"]["multimodal_bundle_affinity"]) for item in selected] + [0.0]
+    )
     metrics = {
         "idle_replay_candidate_selection_observed": 1.0 if selected else 0.0,
         "idle_replay_budget_observed": 1.0 if total_event_cost <= cfg.event_budget else 0.0,
@@ -178,6 +193,7 @@ def plan_idle_replay(
         "idle_replay_memory_reactivation_observed": 1.0
         if selected_hint > 0.0 or bool(self_state_trace.get("memory_event_ids", ()))
         else 0.0,
+        "idle_replay_multimodal_bundle_observed": 1.0 if selected_bundle_affinity > 0.0 else 0.0,
         "idle_replay_state_continuity_observed": 1.0
         if bool(self_state_trace.get("idle_self_state_ok", False))
         else 0.0,

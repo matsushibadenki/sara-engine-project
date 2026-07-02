@@ -310,6 +310,8 @@ def summarize_event_memory_credit(
             responsibility = float(raw.get("responsibility", 0.0) or 0.0)
             confidence = float(raw.get("confidence", 0.0) or 0.0)
             longevity = float(raw.get("longevity", 0.0) or 0.0)
+            bundle_affinity = float(raw.get("multimodal_bundle_affinity", 0.0) or 0.0)
+            longevity = _clamp(longevity + (0.08 * _clamp(bundle_affinity, 0.0, 1.0)), 0.0, 1.0)
         else:
             continue
         normalized.append(

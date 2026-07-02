@@ -47,3 +47,4 @@ def test_adaptive_credit_event_memory_benchmark_writes_managed_evidence():
     assert report["metrics"]["credit_strong_entry_present"] is True
     assert report["metrics"]["credit_weak_entry_evicted"] is True
     assert report["metrics"]["harmful_block_preserved_count"] >= 1
+    assert report["metrics"]["bundle_longevity_bonus_present"] is True

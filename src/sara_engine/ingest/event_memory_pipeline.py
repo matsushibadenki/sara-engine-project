@@ -8,6 +8,10 @@ from sara_engine.dynamics import (
     stable_self_state_id,
 )
 from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
+from sara_engine.memory.multimodal_event_bundle_admission import (
+    build_multimodal_event_state_candidate,
+)
+from sara_engine.multimodal.synesthetic_binding import SparseEventBundle
 
 from .candidate_proposals import (
     CandidateEvent,
@@ -93,6 +97,7 @@ class EventMemoryIngestPipeline:
         source_hash: str,
         candidate_events: Sequence[CandidateEvent] = (),
         reactivation_hints: Sequence[Mapping[str, Any]] = (),
+        multimodal_bundles: Sequence[SparseEventBundle] = (),
     ) -> EventMemoryIngestResult:
         change_points: List[ChangePoint] = []
         observed_events: List[ObservedEvent] = []
@@ -172,6 +177,13 @@ class EventMemoryIngestPipeline:
             for verification in relation_verifications
             if verification.promoted_record
         )
+        bundle_admission_results = tuple(
+            build_multimodal_event_state_candidate(
+                bundle,
+                time_segment=int(bundle.time_chunk_id),
+            )
+            for bundle in multimodal_bundles
+        )
 
         ledger = tuple(
             self._build_ledger_entries(
@@ -221,6 +233,16 @@ class EventMemoryIngestPipeline:
                     }
                     for relation in verified_relations
                 ],
+            },
+            "multimodal_bundle_admission": {
+                "bundle_count": len(multimodal_bundles),
+                "promotion_allowed_count": len(
+                    [item for item in bundle_admission_results if item.promotion_allowed]
+                ),
+                "promotion_blocked_count": len(
+                    [item for item in bundle_admission_results if not item.promotion_allowed]
+                ),
+                "results": [item.to_dict() for item in bundle_admission_results],
             },
             "persistent_self_state": persistent_self_state_trace,
         }

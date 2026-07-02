@@ -2,7 +2,9 @@
 
 from .synesthetic_binding import (
     AudioEventAdapter,
+    BindingAuditRecord,
     LanguageEventAdapter,
+    SparseEventBundle,
     SparseMultimodalEvent,
     SparseModalityAdapter,
     SparsePluggableCorticalColumn,
@@ -16,7 +18,9 @@ from .synesthetic_binding import (
 
 __all__ = [
     "AudioEventAdapter",
+    "BindingAuditRecord",
     "LanguageEventAdapter",
+    "SparseEventBundle",
     "SparseMultimodalEvent",
     "SparseModalityAdapter",
     "SparsePluggableCorticalColumn",

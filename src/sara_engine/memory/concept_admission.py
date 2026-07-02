@@ -24,6 +24,17 @@ def _stable_id(text: str, modulus: int = 4096) -> int:
     return int.from_bytes(digest[:8], "big", signed=False) % max(1, int(modulus))
 
 
+def _bundle_affinity_for_relation(relation: CandidateRelation) -> float:
+    if str(relation.lineage.source_ref or "").startswith("bundle::"):
+        return 0.8
+    if (
+        "bundle:" in str(relation.source_event_id or "")
+        or "bundle:" in str(relation.target_event_id or "")
+    ):
+        return 1.0
+    return 0.0
+
+
 @dataclass(frozen=True)
 class ConceptRevalidationEntry:
     concept_key: str
@@ -118,6 +129,14 @@ class ConceptAdmissionPlanner:
                 revalidation.append(
                     self._to_revalidation_entry(candidate, audit, supporting_relations, time_segment=time_segment)
                 )
+        admitted.sort(
+            key=lambda item: (
+                -float(item.credit_score),
+                -float(item.credit_longevity),
+                -float(item.sequence_support_score),
+                item.entry_id,
+            )
+        )
         return ConceptAdmissionPlan(
             admitted_candidates=tuple(admitted),
             revalidation_queue=tuple(revalidation),
@@ -250,6 +269,15 @@ class ConceptAdmissionPlanner:
                     "responsibility": _clamp01(float(relation.prediction_gain) * min(1.0, evidence / 4.0)),
                     "confidence": _clamp01(float(relation.confidence)),
                     "longevity": _clamp01(evidence / (evidence + counterexamples + 1.0)),
+                    "multimodal_bundle_affinity": _bundle_affinity_for_relation(relation),
                 }
             )
-        return summarize_event_memory_credit(route_states)
+        summary = summarize_event_memory_credit(route_states)
+        summary["multimodal_bundle_affinity"] = round(
+            max(
+                [float(state.get("multimodal_bundle_affinity", 0.0) or 0.0) for state in route_states]
+                + [0.0]
+            ),
+            6,
+        )
+        return summary

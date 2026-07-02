@@ -1,6 +1,7 @@
 from sara_engine.multimodal.synesthetic_binding import (
     AudioEventAdapter,
     LanguageEventAdapter,
+    SparseEventBundle,
     SparsePluggableCorticalColumn,
     SparseSynestheticLinker,
     SparseTemporalBinder,
@@ -54,6 +55,22 @@ def test_temporal_binder_places_modalities_in_same_chunk():
 
     assert list(buckets) == [0]
     assert {event.modality for event in buckets[0]} == {"language", "vision", "audio", "tactile"}
+    assert all(event.event_id for event in buckets[0])
+
+
+def test_temporal_binder_builds_auditable_event_bundles_without_payload_collapse():
+    events = _events()
+    bundles = SparseTemporalBinder(window_ms=32.0).bundle_events(events)
+
+    assert len(bundles) == 1
+    bundle = bundles[0]
+    assert isinstance(bundle, SparseEventBundle)
+    assert bundle.audit is not None
+    assert bundle.audit.admitted is True
+    assert bundle.audit.payload_separable is True
+    assert set(bundle.modality_ids) == {"language", "vision", "audio", "tactile"}
+    assert len(bundle.child_records) == 4
+    assert all(record.event_id for record in bundle.child_records)
 
 
 def test_pluggable_cortical_column_uses_same_learning_rule_for_modalities():

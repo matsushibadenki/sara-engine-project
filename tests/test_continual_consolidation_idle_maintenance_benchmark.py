@@ -62,6 +62,7 @@ def test_continual_consolidation_benchmark_exposes_idle_maintenance_trace():
     assert report["metrics"]["idle_maintenance_trace_integrity_observed"] == 1.0
     assert report["metrics"]["idle_maintenance_phase_alignment_observed"] == 1.0
     assert report["metrics"]["idle_maintenance_cache_refresh_observed"] == 1.0
+    assert report["metrics"]["idle_maintenance_multimodal_bundle_visibility_observed"] == 1.0
 
     maintenance_case = report["details"]["test_results"][-1]
     loop_report = maintenance_case["idle_consolidation_loop_report"]
@@ -70,3 +71,4 @@ def test_continual_consolidation_benchmark_exposes_idle_maintenance_trace():
     assert loop_report["delta_retention_policy_report"]["observed_only"] is True
     assert maintenance_case["selected_count"] >= 1
     assert maintenance_case["refresh_count"] >= 1
+    assert "multimodal_bundle_summary" in loop_report

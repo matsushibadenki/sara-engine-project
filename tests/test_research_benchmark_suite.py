@@ -43,6 +43,7 @@ def test_research_benchmark_suite_dry_run_writes_manifest(tmp_path):
     assert manifest["rust_iterations"] == 3
     assert manifest["passed"] is True
     assert manifest["artifact_state"]["autobot_gap_loop_readiness"] == "missing"
+    assert "operational_readiness" in manifest["artifact_state"]
     assert [item["command_id"] for item in manifest["commands"]] == [
         "research_fixture_readiness",
         "rust_core_readiness",
@@ -108,6 +109,7 @@ def test_research_benchmark_suite_records_command_failure(monkeypatch, tmp_path)
 def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypatch):
     suite = _load_suite_module()
     original_loader = suite._load_json_if_present
+    original_list_loader = suite._load_json_list_if_present
 
     def _stub_loader(path):
         if str(path).endswith("event_state_cache_integration_benchmark.json"):
@@ -270,6 +272,12 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                     "episode_compression_ratio": 5.0,
                     "relation_verification_yield": 1.0,
                     "self_state_continuity": 0.285714,
+                    "multimodal_bundle_promotion_rate": 1.0,
+                },
+                "traces": {
+                    "multimodal_bundle_admission": {
+                        "promotion_allowed_count": 1,
+                    }
                 },
             }
         if str(path).endswith("event_memory_maintenance_coupling_benchmark.json"):
@@ -302,9 +310,51 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                     "harmful_block_preserved_count": 1,
                 },
             }
+        if str(path).endswith("operational_readiness_report.json"):
+            return {
+                "passed": False,
+                "checks": {
+                    "adaptive_credit_field": {"passed": False},
+                    "adaptive_credit_event_memory": {"passed": False},
+                },
+                "error_details": [
+                    {"category": "adaptive_credit_field_validation"},
+                    {"category": "adaptive_credit_event_memory_validation"},
+                ],
+                "recovery_actions": [
+                    {
+                        "command": "python scripts/eval/adaptive_credit_field_benchmark.py",
+                        "affected_checks": ["adaptive_credit_field"],
+                    },
+                    {
+                        "command": "python scripts/eval/adaptive_credit_event_memory_benchmark.py",
+                        "affected_checks": ["adaptive_credit_event_memory", "event_memory_ingest_pipeline"],
+                    },
+                ],
+                "failure_focus": {
+                    "primary_category": "adaptive_credit_field_validation",
+                },
+            }
         return original_loader(path)
 
+    def _stub_list_loader(path):
+        if str(path).endswith("operational_repair_execution_log.json"):
+            return [
+                {
+                    "source": "adaptive_credit_repair",
+                    "status": "success",
+                    "covered_checks": ["adaptive_credit_field"],
+                },
+                {
+                    "source": "adaptive_credit_repair",
+                    "status": "success",
+                    "covered_checks": ["adaptive_credit_event_memory", "event_memory_ingest_pipeline"],
+                },
+            ]
+        return original_list_loader(path)
+
     monkeypatch.setattr(suite, "_load_json_if_present", _stub_loader)
+    monkeypatch.setattr(suite, "_load_json_list_if_present", _stub_list_loader)
 
     manifest = suite.build_manifest(
         command_results=[],
@@ -372,5 +422,15 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
     assert evidence["adaptive_credit_event_memory_strong_entry_present"] is True
     assert evidence["adaptive_credit_event_memory_weak_entry_evicted"] is True
     assert evidence["adaptive_credit_event_memory_harmful_block_preserved_count"] == 1
+    assert evidence["adaptive_credit_operational_visibility"] is True
+    assert evidence["adaptive_credit_operational_error_count"] == 2
+    assert evidence["adaptive_credit_operational_repair_action_count"] == 2
+    assert evidence["adaptive_credit_operational_primary_focus"] == "adaptive_credit_field_validation"
+    assert evidence["adaptive_credit_repair_log_entry_count"] == 2
+    assert evidence["adaptive_credit_repair_log_success_count"] == 2
+    assert evidence["adaptive_credit_repair_log_pending_count"] == 0
+    assert evidence["adaptive_credit_repair_log_failure_count"] == 0
+    assert evidence["adaptive_credit_repair_log_recovered"] is True
+    assert evidence["adaptive_credit_repair_log_chronic"] is False
     assert evidence["sara_ann_comparison_status"] == "proxy_only_or_partial_reference_surface"
     assert evidence["sara_ann_best_offline_reference"] == "BM25 Offline Baseline"

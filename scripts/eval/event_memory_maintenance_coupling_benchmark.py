@@ -273,6 +273,11 @@ def _run_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
         payload = result.to_dict()
         traces = payload["traces"]
         persistent = traces.get("persistent_self_state", {})
+        bundle_trace = (
+            traces.get("multimodal_bundle_admission", {})
+            if isinstance(traces.get("multimodal_bundle_admission", {}), dict)
+            else {}
+        )
         observed_event_count = len(payload["observed_events"])
         accepted_candidate_count = len(payload["accepted_candidate_events"])
         episode_count = len(payload["episodes"])
@@ -282,6 +287,9 @@ def _run_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
         total_candidate_count = accepted_candidate_count + len(
             payload["rejected_candidate_events"]
         )
+        bundle_count = int(bundle_trace.get("bundle_count", 0) or 0)
+        bundle_promotion_allowed_count = int(bundle_trace.get("promotion_allowed_count", 0) or 0)
+        bundle_promotion_rate = float(bundle_promotion_allowed_count) / float(max(bundle_count, 1))
         fixture_runs.append(
             {
                 "source_ref": fixture["source_ref"],
@@ -301,6 +309,13 @@ def _run_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
                 / float(max(episode_count, 1)),
                 "relation_verification_yield": float(verified_relation_count)
                 / float(max(candidate_relation_count, 1)),
+                "multimodal_bundle_promotion_rate": bundle_promotion_rate,
+                "multimodal_bundle_relation_verification_yield": bundle_promotion_rate
+                * float(verified_relation_count)
+                / float(max(candidate_relation_count, 1)),
+                "multimodal_bundle_compression_contribution": bundle_promotion_rate
+                * float(observed_event_count + accepted_candidate_count)
+                / float(max(episode_count, 1)),
                 "lineage_coverage_ratio": float(lineage_count)
                 / float(
                     max(
@@ -353,6 +368,15 @@ def _run_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
             ),
             "avg_relation_verification_yield": mean(
                 float(run["relation_verification_yield"]) for run in fixture_runs
+            ),
+            "avg_multimodal_bundle_promotion_rate": mean(
+                float(run["multimodal_bundle_promotion_rate"]) for run in fixture_runs
+            ),
+            "avg_multimodal_bundle_relation_verification_yield": mean(
+                float(run["multimodal_bundle_relation_verification_yield"]) for run in fixture_runs
+            ),
+            "avg_multimodal_bundle_compression_contribution": mean(
+                float(run["multimodal_bundle_compression_contribution"]) for run in fixture_runs
             ),
             "avg_lineage_coverage_ratio": mean(
                 float(run["lineage_coverage_ratio"]) for run in fixture_runs
@@ -422,6 +446,12 @@ def build_report() -> Dict[str, Any]:
                 )
                 or 0.0
             ),
+            "best_profile_multimodal_bundle_compression_contribution": float(
+                best_profile.get("metrics", {}).get(
+                    "avg_multimodal_bundle_compression_contribution", 0.0
+                )
+                or 0.0
+            ),
         },
         "best_profile": {
             "profile_id": str(best_profile.get("profile_id", "") or ""),
@@ -445,6 +475,7 @@ def build_summary(report: Dict[str, Any]) -> str:
         f"- best_profile_episode_compression_ratio: {float(metrics.get('best_profile_episode_compression_ratio', 0.0) or 0.0):.3f}",
         f"- best_profile_self_state_continuity: {float(metrics.get('best_profile_self_state_continuity', 0.0) or 0.0):.3f}",
         f"- best_profile_compression_efficiency_per_maintenance: {float(metrics.get('best_profile_compression_efficiency_per_maintenance', 0.0) or 0.0):.3f}",
+        f"- best_profile_multimodal_bundle_compression_contribution: {float(metrics.get('best_profile_multimodal_bundle_compression_contribution', 0.0) or 0.0):.3f}",
     ]
     return "\n".join(lines) + "\n"
 

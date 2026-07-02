@@ -904,12 +904,20 @@ Design principle: treat modality differences as differences in input statistics,
 ### Adoption Boundary
 
 - Adopt equal-modality processing for language, vision, audio, and tactile streams as sparse event sources.
+- Adopt the rule **"do not mix; bind"**: modality-specific evidence should remain in separate sparse channels and become close through verified event binding rather than being collapsed into one dense representation.
 - Adopt common time chunking for cross-modal temporal binding, starting with a configurable 25-40 ms equivalent event window.
 - Adopt synesthetic cross-wiring as bounded sparse cross-modal links, not all-to-all dense cross-attention.
 - Adopt sensory substitution as uncertainty-aware missing-modality event prediction, not ungrounded generation.
 - Adopt thalamic gating as a sparse route selector over event pathways, not softmax/MoE dense weighting.
 - Adopt a pluggable sparse cortical-column primitive whose local update rule is shared across language, vision, audio, and tactile streams.
 - Adopt Hebbian/STDP-style local plasticity as the shared learning rule; modality specialization should emerge from input distribution, timing, sparse topology, and connection history.
+- Adopt explicit binding metadata per event or relation: `modality_id`, `event_id`, `time_chunk_id`, `confidence`, and `binding_strength`.
+- Adopt a three-layer interpretation boundary:
+  - modality-specific sparse spaces for raw or near-raw evidence,
+  - an event-binding layer for time-local cross-modal grouping,
+  - an abstract concept layer for verified durable concepts only.
+- Adopt separate modality readout and verification paths so shared event bindings do not overwrite modality-specific detail.
+- Treat interoceptive or internal-state signals as optional peer event sources when available, not as privileged control-only metadata.
 - Do not use a universal dense embedding space, dense hidden-state fusion, GPU-first multimodal training, or runtime backpropagation.
 
 ### Deliverables
@@ -917,6 +925,7 @@ Design principle: treat modality differences as differences in input statistics,
 1. Add a shared sparse multimodal event IR.
    - Proposed module: `src/sara_engine/multimodal/synesthetic_binding.py`.
    - Represent each event with modality, time chunk, source ID, sparse signature, confidence, uncertainty, and energy/event cost.
+   - Keep `event_id` stable across aligned per-modality records without forcing the payloads themselves into one merged record body.
    - Support at least `language`, `vision`, `audio`, and `tactile` event sources while allowing missing modalities.
    - Keep the IR compatible with the neuromorphic capability matrix and existing spike-event reports.
 
@@ -938,6 +947,7 @@ Design principle: treat modality differences as differences in input statistics,
    - Learn local cross-modal links from co-occurrence, STDP-style timing, own-latent cluster agreement, and source-backed evidence.
    - Permit direct audio-to-tactile, tactile-to-vision, vision-to-language, and other non-language-centered routes.
    - Cap links per event, per modality pair, and per time chunk.
+   - Route most cross-modal influence through explicit binding nodes or binding records so modalities do not drift into uncontrolled pairwise all-to-all coupling.
 
 5. Add a sparse thalamic gate.
    - Proposed helper: `SparseThalamicGate`.
@@ -1005,14 +1015,31 @@ Design principle: treat modality differences as differences in input statistics,
 5. Expose dendritic and synesthetic routing operations in the neuromorphic capability matrix.
    - DONE: both operations are represented as optional state traces with backend adapter policy.
 
+### Third Implementation Slice
+
+1. Add explicit event-bundle records that keep modality payloads separate while sharing one verified binding identity.
+   - Proposed artifact shape: a bundle header with `event_id`, `time_chunk_id`, uncertainty, and route trace plus per-modality child records keyed by `modality_id`.
+   - Preserve modality-local confidence, source lineage, and sparse signatures instead of flattening them into one mixed payload.
+2. Add a binding-hub audit path.
+   - Record whether a cross-modal relation was admitted through direct synchrony, repeated co-activation, source-backed language evidence, or verifier-confirmed abstraction.
+   - Reject durable promotion when only one weak channel or one accidental coincidence supports the binding.
+3. Add modality-specific reconstruction or replay checks.
+   - Verify that a shared event binding can still be traced back into modality-local evidence summaries without erasing visual, audio, tactile, or language distinctions.
+   - Treat failure here as a binding-collapse regression, even if abstract task accuracy appears unchanged.
+4. Add an optional interoceptive/self-state lane.
+   - Represent bounded internal signals such as surprise, reward, continuity pressure, or discomfort proxies as sparse peer events that may bind to experience episodes.
+   - Keep these signals typed and weakly coupled so they bias routing and retention without becoming universal semantic labels.
+
 ### Acceptance Criteria
 
 - All modality streams are represented as sparse events, not dense universal embeddings.
 - Language is not required as a hub for cross-modal binding or route selection.
+- Modality-specific evidence remains separable after binding; shared `event_id` values must not imply payload collapse.
 - The same sparse cortical primitive can process multiple modality adapters without changing its learning rule.
 - Modality specialization is explained by input statistics, timing windows, topology, and local plasticity traces rather than by hidden dense model-specific logic.
 - Missing-modality predictions remain clearly labeled, uncertainty-aware, and source-bounded.
 - Cross-modal links are capped, auditable, and reversible; no all-to-all dense cross-attention is introduced.
+- Binding promotion records why channels were grouped and what evidence type justified that grouping.
 - Event cost, state budget, temporal alignment quality, route decisions, and abstention behavior are visible in managed reports.
 - The implementation remains CPU-first, bounded-state, backpropagation-free at runtime, and useful without GPU or external large models.
 - Generated artifacts stay under managed `workspace/`, `data/processed/`, or `data/interim/` paths.

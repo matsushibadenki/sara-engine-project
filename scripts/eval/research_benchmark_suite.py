@@ -480,6 +480,23 @@ def _load_json_if_present(path: str) -> Optional[Dict[str, Any]]:
     return payload if isinstance(payload, dict) else None
 
 
+def _load_json_list_if_present(path: str) -> List[Dict[str, Any]]:
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return []
+    if isinstance(payload, list):
+        return [dict(item) for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        entries = payload.get("entries", [])
+        if isinstance(entries, list):
+            return [dict(item) for item in entries if isinstance(item, dict)]
+    return []
+
+
 def _run_command(item: BenchmarkCommand, *, dry_run: bool) -> Dict[str, Any]:
     started_at = time.time()
     if dry_run:
@@ -519,6 +536,10 @@ def build_manifest(
 ) -> Dict[str, Any]:
     passed_count = sum(1 for item in command_results if item.get("status") in {"passed", "planned"})
     v1_report = _load_json_if_present(workspace_path("release", "v1_release_gate_report.json"))
+    operational_report = _load_json_if_present(workspace_path("release", "operational_readiness_report.json"))
+    operational_repair_log = _load_json_list_if_present(
+        workspace_path("release", "operational_repair_execution_log.json")
+    )
     research_report = _load_json_if_present(workspace_path("evaluation", "research_product_completion_gate_report.json"))
     rust_report = _load_json_if_present(workspace_path("evaluation", "rust_core_readiness.json"))
     fixture_report = _load_json_if_present(workspace_path("evaluation", "research_fixture_readiness.json"))
@@ -600,6 +621,7 @@ def build_manifest(
         "Adaptive Credit Field records event-driven sparse credit assignment without turning dense backpropagation into the runtime learning rule.",
         "Adaptive Credit Field pressure can be traced into Event Memory admission without bypassing contradiction or source verification guards.",
         "Equal-modality sparse binding and non-language sensory-substitution routes are recorded as observed-only evidence.",
+        "Verified multimodal event bundles can be traced into Event Memory promotion checks without collapsing modality-local payloads.",
         "Verified hierarchical event-state caching records bounded delayed-recall, abstention, and state-growth evidence.",
         "Source-aware cache promotion, read-only reactivation, persistence validation, and corruption rejection are recorded.",
         "Benchmark and gate outputs stay inside managed workspace or release paths.",
@@ -669,6 +691,76 @@ def build_manifest(
         what_is_not_proven.append(
             "Phase 7 autonomous gap-loop readiness is not yet proven for the current managed materials, targets, and queue handoff."
         )
+    adaptive_credit_operational_checks = (
+        operational_report.get("checks", {})
+        if isinstance(operational_report, dict) and isinstance(operational_report.get("checks"), dict)
+        else {}
+    )
+    adaptive_credit_operational_has_visibility = bool(
+        "adaptive_credit_field" in adaptive_credit_operational_checks
+        or "adaptive_credit_event_memory" in adaptive_credit_operational_checks
+    )
+    if adaptive_credit_operational_has_visibility:
+        what_is_proven.append(
+            "Operational readiness now classifies adaptive-credit failures explicitly and binds them to benchmark rerun repair actions."
+        )
+    else:
+        what_is_not_proven.append(
+            "Adaptive-credit failure classification and repair binding are not yet surfaced in the current operational readiness artifact."
+        )
+    adaptive_credit_repair_log_entries = [
+        dict(item)
+        for item in operational_repair_log
+        if (
+            isinstance(item, dict)
+            and (
+                str(item.get("source", "")).strip() == "adaptive_credit_repair"
+                or any(
+                    str(check).startswith("adaptive_credit_")
+                    for check in (
+                        item.get("covered_checks", [])
+                        if isinstance(item.get("covered_checks"), list)
+                        else []
+                    )
+                )
+            )
+        )
+    ]
+    adaptive_credit_repair_log_success_count = sum(
+        1
+        for item in adaptive_credit_repair_log_entries
+        if str(item.get("status", "")).strip().lower() == "success"
+    )
+    adaptive_credit_repair_log_pending_count = sum(
+        1
+        for item in adaptive_credit_repair_log_entries
+        if str(item.get("status", "")).strip().lower() == "pending"
+    )
+    adaptive_credit_repair_log_failure_count = sum(
+        1
+        for item in adaptive_credit_repair_log_entries
+        if str(item.get("status", "")).strip().lower() in {"failed", "error", "timeout"}
+    )
+    adaptive_credit_repair_log_recovered = bool(
+        adaptive_credit_repair_log_success_count > 0
+        and adaptive_credit_repair_log_pending_count == 0
+        and adaptive_credit_repair_log_failure_count == 0
+    )
+    adaptive_credit_repair_log_chronic = bool(
+        adaptive_credit_repair_log_failure_count >= 2
+    )
+    if adaptive_credit_repair_log_recovered:
+        what_is_proven.append(
+            "Adaptive-credit repair history shows at least one clean recovery without pending or repeated failed repair entries."
+        )
+    elif adaptive_credit_repair_log_chronic:
+        what_is_not_proven.append(
+            "Adaptive-credit repair history still shows repeated failed repair attempts, so recovery stability is not yet proven."
+        )
+    elif adaptive_credit_repair_log_pending_count > 0:
+        what_is_not_proven.append(
+            "Adaptive-credit repair history still has pending repair work, so recovery stability is not yet proven."
+        )
 
     return {
         "schema": "sara-research-benchmark-manifest-v1",
@@ -681,6 +773,7 @@ def build_manifest(
         "commands": list(command_results),
         "artifact_state": {
             "v1_release_gate": artifact_state(v1_report),
+            "operational_readiness": artifact_state(operational_report),
             "research_product_completion_gate": artifact_state(research_report),
             "rust_core_readiness": artifact_state(
                 rust_report, pass_field="source_readiness_passed"
@@ -723,6 +816,9 @@ def build_manifest(
         },
         "evidence": {
             "v1_release_passed": None if v1_report is None else bool(v1_report.get("passed")),
+            "operational_readiness_passed": None
+            if operational_report is None
+            else bool(operational_report.get("passed")),
             "research_product_passed": None if research_report is None else bool(research_report.get("passed")),
             "rust_core_status": None if rust_report is None else rust_report.get("status"),
             "rust_extension_available": None
@@ -866,6 +962,51 @@ def build_manifest(
             else adaptive_credit_event_memory_report.get("metrics", {}).get(
                 "harmful_block_preserved_count"
             ),
+            "adaptive_credit_operational_visibility": adaptive_credit_operational_has_visibility,
+            "adaptive_credit_operational_error_count": 0
+            if operational_report is None
+            else sum(
+                1
+                for item in (
+                    operational_report.get("error_details", [])
+                    if isinstance(operational_report.get("error_details"), list)
+                    else []
+                )
+                if isinstance(item, dict)
+                and str(item.get("category", "")).startswith("adaptive_credit_")
+            ),
+            "adaptive_credit_operational_repair_action_count": 0
+            if operational_report is None
+            else sum(
+                1
+                for item in (
+                    operational_report.get("recovery_actions", [])
+                    if isinstance(operational_report.get("recovery_actions"), list)
+                    else []
+                )
+                if isinstance(item, dict)
+                and any(
+                    str(check).startswith("adaptive_credit_")
+                    for check in (
+                        item.get("affected_checks", [])
+                        if isinstance(item.get("affected_checks"), list)
+                        else []
+                    )
+                )
+            ),
+            "adaptive_credit_operational_primary_focus": None
+            if operational_report is None
+            else (
+                operational_report.get("failure_focus", {}).get("primary_category")
+                if isinstance(operational_report.get("failure_focus"), dict)
+                else None
+            ),
+            "adaptive_credit_repair_log_entry_count": len(adaptive_credit_repair_log_entries),
+            "adaptive_credit_repair_log_success_count": adaptive_credit_repair_log_success_count,
+            "adaptive_credit_repair_log_pending_count": adaptive_credit_repair_log_pending_count,
+            "adaptive_credit_repair_log_failure_count": adaptive_credit_repair_log_failure_count,
+            "adaptive_credit_repair_log_recovered": adaptive_credit_repair_log_recovered,
+            "adaptive_credit_repair_log_chronic": adaptive_credit_repair_log_chronic,
             "synesthetic_multimodal_binding_passed": None
             if synesthetic_report is None
             else bool(synesthetic_report.get("passed")),
@@ -1058,6 +1199,16 @@ def build_manifest(
             else event_memory_ingest_report.get("metrics", {}).get(
                 "self_state_continuity"
             ),
+            "event_memory_multimodal_bundle_promotion_rate": None
+            if event_memory_ingest_report is None
+            else event_memory_ingest_report.get("metrics", {}).get(
+                "multimodal_bundle_promotion_rate"
+            ),
+            "event_memory_multimodal_bundle_promotion_count": None
+            if event_memory_ingest_report is None
+            else event_memory_ingest_report.get("traces", {}).get(
+                "multimodal_bundle_admission", {}
+            ).get("promotion_allowed_count"),
             "event_memory_maintenance_coupling_passed": None
             if event_memory_maintenance_coupling_report is None
             else bool(event_memory_maintenance_coupling_report.get("passed")),
@@ -1166,6 +1317,8 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             f"maintenance_coupling={display_artifact_value(artifact_state.get('event_memory_maintenance_coupling'))}, "
             f"compression_ratio={display_artifact_value(evidence.get('event_memory_episode_compression_ratio'))}, "
             f"relation_yield={display_artifact_value(evidence.get('event_memory_relation_verification_yield'))}, "
+            f"bundle_promotion_rate={display_artifact_value(evidence.get('event_memory_multimodal_bundle_promotion_rate'))}, "
+            f"bundle_promotion_count={display_artifact_value(evidence.get('event_memory_multimodal_bundle_promotion_count'))}, "
             f"coupling_best_profile={display_artifact_value(evidence.get('event_memory_maintenance_best_profile'))}, "
             f"coupling_efficiency={display_artifact_value(evidence.get('event_memory_maintenance_best_efficiency'))}, "
             f"coupling_continuity={display_artifact_value(evidence.get('event_memory_maintenance_best_continuity'))}"
@@ -1202,7 +1355,16 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             f"memory_state={display_artifact_value(artifact_state.get('adaptive_credit_event_memory'))}, "
             f"memory_passed={display_artifact_value(evidence.get('adaptive_credit_event_memory_passed'))}, "
             f"strong_entry={display_artifact_value(evidence.get('adaptive_credit_event_memory_strong_entry_present'))}, "
-            f"weak_evicted={display_artifact_value(evidence.get('adaptive_credit_event_memory_weak_entry_evicted'))}"
+            f"weak_evicted={display_artifact_value(evidence.get('adaptive_credit_event_memory_weak_entry_evicted'))}, "
+            f"operational_visibility={display_artifact_value(evidence.get('adaptive_credit_operational_visibility'))}, "
+            f"repair_actions={display_artifact_value(evidence.get('adaptive_credit_operational_repair_action_count'))}, "
+            f"primary_focus={display_artifact_value(evidence.get('adaptive_credit_operational_primary_focus'))}, "
+            f"repair_log_entries={display_artifact_value(evidence.get('adaptive_credit_repair_log_entry_count'))}, "
+            f"repair_log_success={display_artifact_value(evidence.get('adaptive_credit_repair_log_success_count'))}, "
+            f"repair_log_pending={display_artifact_value(evidence.get('adaptive_credit_repair_log_pending_count'))}, "
+            f"repair_log_failures={display_artifact_value(evidence.get('adaptive_credit_repair_log_failure_count'))}, "
+            f"recovered={display_artifact_value(evidence.get('adaptive_credit_repair_log_recovered'))}, "
+            f"chronic={display_artifact_value(evidence.get('adaptive_credit_repair_log_chronic'))}"
         ),
         (
             "Concept revalidation: "

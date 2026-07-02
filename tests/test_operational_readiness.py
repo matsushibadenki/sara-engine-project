@@ -954,6 +954,46 @@ def test_operational_readiness_rejects_failed_external_validity_ladder_artifact(
     )
 
 
+def test_operational_readiness_rejects_failed_adaptive_credit_artifacts():
+    module = _load_script("operational_readiness.py")
+
+    passed, summary = module._evaluate_operational_readiness(
+        phase3_report=_build_phase3_report(True),
+        phase4_report=_build_phase4_report(True),
+        release_report=_build_release_report(True),
+        phase5_entry_gate_report=_build_phase5_entry_gate_report(True),
+        phase5_completion_gate_report=_build_phase5_completion_gate_report(True),
+        adaptive_credit_field_report=_build_adaptive_credit_field_report(False),
+        adaptive_credit_event_memory_report=_build_adaptive_credit_event_memory_report(False),
+    )
+
+    assert passed is False
+    assert summary["checks"]["adaptive_credit_field"]["passed"] is False
+    assert summary["checks"]["adaptive_credit_event_memory"]["passed"] is False
+    categories = {
+        item.get("category")
+        for item in summary["error_details"]
+        if isinstance(item, dict)
+    }
+    assert "adaptive_credit_field_validation" in categories
+    assert "adaptive_credit_event_memory_validation" in categories
+    commands = [
+        str(action.get("command", ""))
+        for action in summary["recovery_actions"]
+        if isinstance(action, dict)
+    ]
+    assert "python scripts/eval/adaptive_credit_field_benchmark.py" in commands
+    assert "python scripts/eval/adaptive_credit_event_memory_benchmark.py" in commands
+    assert any(
+        isinstance(action, dict)
+        and action.get("command") == "python scripts/eval/adaptive_credit_event_memory_benchmark.py"
+        and "event_memory_ingest_pipeline" in action.get("affected_checks", [])
+        for action in summary["recovery_actions"]
+    )
+    assert summary["repair_plan"]["coverage_ratio"] == 1.0
+    assert summary["failure_focus"]["primary_category"].startswith("adaptive_credit_")
+
+
 def test_operational_readiness_rejects_phase5_completion_gate_missing_required_checks():
     module = _load_script("operational_readiness.py")
     incomplete = _build_phase5_completion_gate_report(True)
@@ -3986,6 +4026,39 @@ def test_build_operational_runbook_actions_adds_sara_ann_comparison_evidence():
     assert "event_memory_maintenance_coupling" in action["affected_checks"]
 
 
+def test_build_operational_runbook_actions_adds_adaptive_credit_repair_actions():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "checks": {
+            "adaptive_credit_field": {"passed": False},
+            "adaptive_credit_event_memory": {"passed": False},
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    field_action = next(
+        item
+        for item in actions
+        if item["source"] == "adaptive_credit_repair"
+        and "adaptive_credit_field_benchmark.py" in item["command"]
+    )
+    memory_action = next(
+        item
+        for item in actions
+        if item["source"] == "adaptive_credit_repair"
+        and "adaptive_credit_event_memory_benchmark.py" in item["command"]
+    )
+    assert field_action["priority"] == "high"
+    assert field_action["affected_checks"] == ["adaptive_credit_field"]
+    assert memory_action["priority"] == "high"
+    assert "adaptive_credit_event_memory" in memory_action["affected_checks"]
+    assert "event_memory_ingest_pipeline" in memory_action["affected_checks"]
+
+
 def test_build_operational_runbook_actions_marks_orphan_pair_as_energy_measurement_work():
     module = _load_script("operational_readiness.py")
     report = {
@@ -5127,6 +5200,14 @@ def test_build_refresh_commands_updates_phase5_entry_artifacts():
     sparse_diffusion_index = next(
         index for index, command in enumerate(command_texts) if "sparse_diffusion_block_readiness.py" in command
     )
+    adaptive_credit_field_index = next(
+        index for index, command in enumerate(command_texts) if "adaptive_credit_field_benchmark.py" in command
+    )
+    adaptive_credit_event_memory_index = next(
+        index
+        for index, command in enumerate(command_texts)
+        if "adaptive_credit_event_memory_benchmark.py" in command
+    )
     phase5_completion_index = next(
         index for index, command in enumerate(command_texts) if "phase5_completion_gate.py" in command
     )
@@ -5141,13 +5222,17 @@ def test_build_refresh_commands_updates_phase5_entry_artifacts():
     assert any("scripts/eval/phase5_predictive_coding_benchmark.py" in command for command in command_texts)
     assert any("scripts/eval/phase5_entry_gate.py" in command for command in command_texts)
     assert any("scripts/eval/sparse_diffusion_block_readiness.py" in command for command in command_texts)
+    assert any("scripts/eval/adaptive_credit_field_benchmark.py" in command for command in command_texts)
+    assert any("scripts/eval/adaptive_credit_event_memory_benchmark.py" in command for command in command_texts)
     assert any("scripts/eval/phase5_completion_gate.py" in command for command in command_texts)
     assert any("scripts/eval/real_data_external_validity.py" in command for command in command_texts)
     assert any("scripts/eval/real_data_external_validity_ladder.py" in command for command in command_texts)
     assert "--regression-tolerance 0.050000" in command_texts[phase3_suite_index]
     assert phase5_benchmark_index < phase5_gate_index
     assert phase5_gate_index < sparse_diffusion_index
-    assert sparse_diffusion_index < phase5_completion_index
+    assert sparse_diffusion_index < adaptive_credit_field_index
+    assert adaptive_credit_field_index < adaptive_credit_event_memory_index
+    assert adaptive_credit_event_memory_index < phase5_completion_index
     assert phase5_gate_index < phase5_completion_index
     assert phase5_completion_index < external_validity_index
     assert external_validity_index < external_validity_ladder_index

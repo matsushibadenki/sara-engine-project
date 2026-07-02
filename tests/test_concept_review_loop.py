@@ -1,7 +1,9 @@
 from sara_engine.dynamics import PersistentSelfStateController, stable_self_state_id
 from sara_engine.ingest import FrequentSequence, make_candidate_relation
-from sara_engine.memory.concept_admission import ConceptRevalidationEntry
-from sara_engine.memory.concept_review_loop import ConceptReviewLoop
+from sara_engine.memory.concept_admission import ConceptAdmissionPlan, ConceptRevalidationEntry
+from sara_engine.memory.concept_review_loop import ConceptReviewLoop, ConceptReviewLoopResult
+from sara_engine.memory.concept_revalidation import ConceptRevalidationSchedule
+from sara_engine.memory.event_state_cache import EventStateCandidate
 
 
 def _relation(
@@ -67,6 +69,9 @@ def test_review_loop_rebuilds_ready_concept_into_admission_candidate():
     assert len(result.admission_plan.admitted_candidates) == 1
     assert result.admission_plan.admitted_candidates[0].verified is True
     assert result.next_revalidation_queue == ()
+    payload = result.to_dict()
+    assert payload["multimodal_bundle_summary"]["bundle_candidate_count"] == 0
+    assert payload["multimodal_bundle_summary"]["bundle_candidate_ratio"] == 0.0
 
 
 def test_review_loop_keeps_blocked_entries_in_next_queue():
@@ -169,3 +174,35 @@ def test_review_loop_can_use_persistent_self_state_for_ready_priority():
 
     assert len(result.admission_plan.admitted_candidates) == 1
     assert result.schedule.ready_queue[0].self_state_alignment_score == 1.0
+
+
+def test_review_loop_result_reports_multimodal_bundle_candidates():
+    bundle_candidate = EventStateCandidate(
+        entry_id="bundle:0:123456",
+        signature=(1, 2, 3, 4),
+        source_ref="bundle::fixture",
+        time_segment=3,
+        own_latent_id="bundle:0:123456",
+        confidence=0.9,
+        uncertainty=0.1,
+        source_reliability=0.9,
+        resonance_score=0.9,
+        observed=True,
+        source_backed=True,
+        verified=True,
+    )
+    result = ConceptReviewLoopResult(
+        schedule=ConceptRevalidationSchedule(ready_queue=(), blocked_queue=()),
+        admission_plan=ConceptAdmissionPlan(
+            admitted_candidates=(bundle_candidate,),
+            revalidation_queue=(),
+            audits=(),
+        ),
+        next_revalidation_queue=(),
+    )
+
+    payload = result.to_dict()
+
+    assert payload["multimodal_bundle_summary"]["bundle_candidate_count"] == 1
+    assert payload["multimodal_bundle_summary"]["bundle_candidate_keys"] == ["bundle:0:123456"]
+    assert payload["multimodal_bundle_summary"]["bundle_candidate_ratio"] == 1.0

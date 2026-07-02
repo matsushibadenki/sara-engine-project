@@ -146,3 +146,44 @@ def test_concept_admission_can_use_sequence_backing():
     assert plan.admitted_candidates[0].sequence_support_score > 0.3
     assert plan.admitted_candidates[0].sequence_support_count == 1
     assert len(plan.revalidation_queue) == 0
+
+
+def test_concept_admission_prioritizes_bundle_supported_candidate_when_credit_is_higher():
+    relations = [
+        _relation(
+            record_id="bundle-1",
+            source_ref="bundle::episode-1",
+            source_hash="hash-a",
+            source_event_id="bundle:0:123456",
+            prediction_gain=0.22,
+        ),
+        _relation(
+            record_id="bundle-2",
+            source_ref="episode-2",
+            source_hash="hash-b",
+            source_event_id="bundle:0:123456",
+            prediction_gain=0.22,
+        ),
+        _relation(
+            record_id="plain-1",
+            source_ref="episode-3",
+            source_hash="hash-c",
+            source_event_id="vision:visual_cluster_018",
+            target_event_id="audio:audio_cluster_099",
+            prediction_gain=0.18,
+        ),
+        _relation(
+            record_id="plain-2",
+            source_ref="episode-4",
+            source_hash="hash-d",
+            source_event_id="vision:visual_cluster_018",
+            target_event_id="audio:audio_cluster_099",
+            prediction_gain=0.18,
+        ),
+    ]
+
+    plan = ConceptAdmissionPlanner().build_plan(relations, _concepts(relations), time_segment=12)
+
+    assert len(plan.admitted_candidates) == 2
+    assert "bundle:" in plan.admitted_candidates[0].own_latent_id
+    assert plan.admitted_candidates[0].credit_score >= plan.admitted_candidates[1].credit_score

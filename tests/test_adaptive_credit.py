@@ -67,3 +67,26 @@ def test_adaptive_credit_quantized_mode_uses_bucketed_credit():
     state = field.routes[(1, 2)]
     assert state.responsibility in {0.0, 0.33, 0.66, 1.0}
     assert state.confidence in {0.0, 0.33, 0.66, 1.0}
+
+
+def test_event_memory_credit_summary_gives_small_longevity_bonus_to_multimodal_bundle_routes():
+    from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
+
+    plain = summarize_event_memory_credit(
+        [{"responsibility": 0.7, "confidence": 0.7, "longevity": 0.5}]
+    )
+    bundle = summarize_event_memory_credit(
+        [
+            {
+                "responsibility": 0.7,
+                "confidence": 0.7,
+                "longevity": 0.5,
+                "multimodal_bundle_affinity": 1.0,
+            }
+        ]
+    )
+
+    assert bundle["credit_responsibility"] == plain["credit_responsibility"]
+    assert bundle["credit_confidence"] == plain["credit_confidence"]
+    assert bundle["credit_longevity"] > plain["credit_longevity"]
+    assert bundle["credit_score"] > plain["credit_score"]

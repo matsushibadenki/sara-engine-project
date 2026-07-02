@@ -62,6 +62,30 @@ def default_cases() -> List[Dict[str, Any]]:
         },
         {
             "schema": "sara-adaptive-credit-event-memory-case-v1",
+            "entry_id": "bundle_supported",
+            "signature": [41, 43, 47],
+            "source_ref": "bundle::fixture-supported",
+            "time_segment": 1,
+            "own_latent_id": "bundle:0:123456",
+            "confidence": 0.8,
+            "uncertainty": 0.15,
+            "source_reliability": 0.82,
+            "resonance_score": 0.8,
+            "sequence_support_score": 0.3,
+            "source_backed": True,
+            "verified": True,
+            "observed": True,
+            "route_states": [
+                {
+                    "responsibility": 0.70,
+                    "confidence": 0.72,
+                    "longevity": 0.58,
+                    "multimodal_bundle_affinity": 1.0,
+                }
+            ],
+        },
+        {
+            "schema": "sara-adaptive-credit-event-memory-case-v1",
             "entry_id": "baseline_weak",
             "signature": [21, 23, 27],
             "source_ref": "fixture:baseline-weak",
@@ -122,7 +146,12 @@ def write_jsonl(path: str, rows: Iterable[Dict[str, Any]]) -> str:
 
 def ensure_fixture(path: str) -> str:
     rows = read_jsonl(path)
-    if rows and all(row.get("schema") == "sara-adaptive-credit-event-memory-case-v1" for row in rows):
+    required_entry_ids = {row["entry_id"] for row in default_cases()}
+    if (
+        rows
+        and all(row.get("schema") == "sara-adaptive-credit-event-memory-case-v1" for row in rows)
+        and required_entry_ids.issubset({str(row.get("entry_id", "")) for row in rows})
+    ):
         return path
     return write_jsonl(path, default_cases())
 
@@ -174,14 +203,24 @@ def build_report(cases: Sequence[Dict[str, Any]], *, trace_path: str) -> Dict[st
         )
     write_jsonl(trace_path, rows)
     strong_entry_present = any(
-        entry.entry_id == "baseline_supported"
+        entry.entry_id in {"baseline_supported", "bundle_supported"}
         for entry in credit.entries.values()
+    )
+    bundle_longevity_bonus_present = any(
+        row.get("entry_id") == "bundle_supported"
+        and float(row.get("credit_summary", {}).get("credit_longevity", 0.0) or 0.0) > 0.58
+        for row in rows
     )
     weak_entry_evicted = all(
         entry.entry_id != "baseline_weak"
         for entry in credit.entries.values()
     )
-    passed = bool(strong_entry_present and weak_entry_evicted and harmful_block_preserved >= 1)
+    passed = bool(
+        strong_entry_present
+        and weak_entry_evicted
+        and harmful_block_preserved >= 1
+        and bundle_longevity_bonus_present
+    )
     return {
         "schema": "sara-adaptive-credit-event-memory-benchmark-v1",
         "passed": passed,
@@ -193,6 +232,7 @@ def build_report(cases: Sequence[Dict[str, Any]], *, trace_path: str) -> Dict[st
             "credit_entry_count": len(credit.entries),
             "credit_strong_entry_present": strong_entry_present,
             "credit_weak_entry_evicted": weak_entry_evicted,
+            "bundle_longevity_bonus_present": bundle_longevity_bonus_present,
         },
         "rows": rows,
         "outputs": {

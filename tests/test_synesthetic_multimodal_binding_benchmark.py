@@ -67,7 +67,15 @@ def test_synesthetic_multimodal_binding_benchmark_writes_managed_outputs():
     assert report["metrics"]["missing_modality_abstention_integrity"] == 1.0
     assert report["metrics"]["non_language_route_usefulness"] == 1.0
     assert report["metrics"]["route_traceability"] == 1.0
+    assert report["metrics"]["bundle_integrity"] == 1.0
+    assert report["metrics"]["binding_audit_coverage"] == 1.0
+    assert report["metrics"]["bundle_event_state_promotion"] == 1.0
+    assert report["metrics"]["bundle_event_state_cache_integrity"] == 1.0
     assert report["metrics"]["adapter_ir_integrity"] == 1.0
     assert report["metrics"]["own_latent_integration"] == 1.0
     assert report["metrics"]["dendritic_route_hint_integrity"] == 1.0
     assert {row["window_ms"] for row in report["window_profiles"]} == {25.0, 32.0, 40.0}
+    manifest_rows = benchmark.read_jsonl(binding_manifest_path)
+    assert manifest_rows
+    assert manifest_rows[0]["schema"] == "sara-synesthetic-binding-manifest-v2"
+    assert manifest_rows[0]["bundles"]

@@ -26,6 +26,7 @@ class ConceptRetryDecision:
     credit_score: float
     credit_confidence: float
     credit_longevity: float
+    multimodal_bundle_affinity: float
     self_state_alignment_score: float
     distinct_source_refs: int
     distinct_source_hashes: int
@@ -49,6 +50,7 @@ class ConceptRetryDecision:
             "credit_score": float(self.credit_score),
             "credit_confidence": float(self.credit_confidence),
             "credit_longevity": float(self.credit_longevity),
+            "multimodal_bundle_affinity": float(self.multimodal_bundle_affinity),
             "self_state_alignment_score": float(self.self_state_alignment_score),
             "distinct_source_refs": int(self.distinct_source_refs),
             "distinct_source_hashes": int(self.distinct_source_hashes),
@@ -213,6 +215,7 @@ class ConceptRevalidationScheduler:
                 + 0.10 * min(1.0, float(getattr(sequence_support, "supporting_sequence_count", 0) or 0) / 3.0)
                 + 0.05 * _clamp01(self_state_alignment)
                 + 0.05 * float(credit_summary.get("credit_score", 0.0) or 0.0)
+                + 0.03 * float(credit_summary.get("multimodal_bundle_affinity", 0.0) or 0.0)
                 + 0.05 * (1.0 - _clamp01(stats["contradiction_score"])),
                 6,
             )
@@ -294,6 +297,7 @@ class ConceptRevalidationScheduler:
             credit_score=float(credit_summary.get("credit_score", 0.0) or 0.0),
             credit_confidence=float(credit_summary.get("credit_confidence", 0.0) or 0.0),
             credit_longevity=float(credit_summary.get("credit_longevity", 0.0) or 0.0),
+            multimodal_bundle_affinity=float(credit_summary.get("multimodal_bundle_affinity", 0.0) or 0.0),
             self_state_alignment_score=float(_clamp01(self_state_alignment)),
             distinct_source_refs=int(stats["distinct_source_refs"]),
             distinct_source_hashes=int(stats["distinct_source_hashes"]),
@@ -311,11 +315,28 @@ class ConceptRevalidationScheduler:
         for relation in relations:
             evidence = max(1.0, float(max(0, int(relation.evidence_count))))
             counterexamples = float(max(0, int(relation.counterexample_count)))
+            bundle_affinity = 0.0
+            if str(relation.lineage.source_ref or "").startswith("bundle::"):
+                bundle_affinity = 0.8
+            if (
+                str(relation.source_event_id or "").startswith("bundle:")
+                or str(relation.target_event_id or "").startswith("bundle:")
+            ):
+                bundle_affinity = 1.0
             route_states.append(
                 {
                     "responsibility": _clamp01(float(relation.prediction_gain) * min(1.0, evidence / 4.0)),
                     "confidence": _clamp01(float(relation.confidence)),
                     "longevity": _clamp01(evidence / (evidence + counterexamples + 1.0)),
+                    "multimodal_bundle_affinity": bundle_affinity,
                 }
             )
-        return summarize_event_memory_credit(route_states)
+        summary = summarize_event_memory_credit(route_states)
+        summary["multimodal_bundle_affinity"] = round(
+            max(
+                [float(state.get("multimodal_bundle_affinity", 0.0) or 0.0) for state in route_states]
+                + [0.0]
+            ),
+            6,
+        )
+        return summary

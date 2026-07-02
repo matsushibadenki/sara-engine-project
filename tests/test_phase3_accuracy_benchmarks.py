@@ -328,6 +328,7 @@ def test_continual_consolidation_benchmark_returns_expected_metrics():
     assert report["metrics"]["idle_maintenance_trace_integrity_observed"] == 1.0
     assert report["metrics"]["idle_maintenance_phase_alignment_observed"] == 1.0
     assert report["metrics"]["idle_maintenance_cache_refresh_observed"] == 1.0
+    assert report["metrics"]["idle_maintenance_multimodal_bundle_visibility_observed"] == 1.0
     delta_case = next(
         case
         for case in report["details"]["test_results"]
@@ -385,6 +386,7 @@ def test_continual_consolidation_benchmark_returns_expected_metrics():
     assert idle_maintenance_case["idle_consolidation_loop_report"]["sleep_consolidation_report"]["observed_only"] is True
     assert idle_maintenance_case["idle_consolidation_loop_report"]["memory_phase_report"]["observed_only"] is True
     assert idle_maintenance_case["idle_consolidation_loop_report"]["delta_retention_policy_report"]["observed_only"] is True
+    assert "multimodal_bundle_summary" in idle_maintenance_case["idle_consolidation_loop_report"]
     assert idle_maintenance_case["selected_count"] >= 1
     assert idle_maintenance_case["refresh_count"] >= 1
     assert refresh_case["anchor_refresh_count"] == 2

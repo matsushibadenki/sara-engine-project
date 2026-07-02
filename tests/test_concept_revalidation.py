@@ -13,6 +13,7 @@ def _relation(
     target_event_id: str = "audio:audio_cluster_044",
     evidence_count: int = 5,
     counterexample_count: int = 0,
+    prediction_gain: float = 0.18,
 ):
     return make_candidate_relation(
         {
@@ -29,7 +30,7 @@ def _relation(
             "extractor_version": "v1",
             "evidence_count": evidence_count,
             "counterexample_count": counterexample_count,
-            "prediction_gain": 0.18,
+            "prediction_gain": prediction_gain,
         }
     )
 
@@ -193,3 +194,70 @@ def test_revalidation_scheduler_uses_self_state_alignment_in_ready_priority():
 
     assert aligned.ready_queue[0].self_state_alignment_score == 1.0
     assert aligned.ready_queue[0].priority_score > plain.ready_queue[0].priority_score
+
+
+def test_revalidation_scheduler_surfaces_multimodal_bundle_affinity_in_credit_summary():
+    entry = _entry(
+        "quarantine_source_revision_conflict",
+        concept_key="predicts:bundle:0:123456->audio:audio_cluster_044",
+    )
+    relations = [
+        _relation(
+            record_id="rel-1",
+            source_ref="bundle::episode-1",
+            source_hash="hash-a",
+            source_event_id="bundle:0:123456",
+            prediction_gain=0.2,
+        ),
+        _relation(
+            record_id="rel-2",
+            source_ref="episode-2",
+            source_hash="hash-b",
+            source_event_id="bundle:0:123456",
+            prediction_gain=0.2,
+        ),
+    ]
+
+    schedule = ConceptRevalidationScheduler().build_schedule(
+        [entry],
+        relations,
+        current_segment=5,
+    )
+
+    assert schedule.ready_queue[0].multimodal_bundle_affinity == 1.0
+
+
+def test_revalidation_scheduler_uses_multimodal_bundle_affinity_in_ready_priority():
+    plain_entry = _entry(
+        "quarantine_source_revision_conflict",
+        concept_key="predicts:vision:visual_cluster_018->audio:audio_cluster_044",
+    )
+    bundle_entry = _entry(
+        "quarantine_source_revision_conflict",
+        concept_key="predicts:bundle:0:123456->audio:audio_cluster_044",
+    )
+    plain_relations = [
+        _relation(record_id="plain-1", source_ref="episode-1", source_hash="hash-a", prediction_gain=0.2),
+        _relation(record_id="plain-2", source_ref="episode-2", source_hash="hash-b", prediction_gain=0.2),
+    ]
+    bundle_relations = [
+        _relation(
+            record_id="bundle-1",
+            source_ref="bundle::episode-1",
+            source_hash="hash-a",
+            source_event_id="bundle:0:123456",
+            prediction_gain=0.2,
+        ),
+        _relation(
+            record_id="bundle-2",
+            source_ref="episode-2",
+            source_hash="hash-b",
+            source_event_id="bundle:0:123456",
+            prediction_gain=0.2,
+        ),
+    ]
+
+    plain = ConceptRevalidationScheduler().build_schedule([plain_entry], plain_relations, current_segment=5)
+    bundle = ConceptRevalidationScheduler().build_schedule([bundle_entry], bundle_relations, current_segment=5)
+
+    assert bundle.ready_queue[0].priority_score > plain.ready_queue[0].priority_score

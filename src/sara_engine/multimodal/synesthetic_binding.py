@@ -8,11 +8,13 @@ from sara_engine.learning.own_latent import build_sparse_signature, stable_event
 from sara_engine.nn.common_spike_space import SparseSpikeEvent
 
 
-SUPPORTED_MODALITIES = frozenset({"language", "vision", "audio", "tactile"})
+SUPPORTED_MODALITIES = frozenset({"language", "vision", "audio", "tactile", "interoception"})
 MODALITY_ALIASES = {
     "text": "language",
     "image": "vision",
     "sensor": "tactile",
+    "body": "interoception",
+    "internal": "interoception",
 }
 
 
@@ -38,9 +40,12 @@ class SparseMultimodalEvent:
     source_ref: str = ""
     latent_cluster_id: str = ""
     specialization_factors: Tuple[str, ...] = ()
+    event_id: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "event_id": self.event_id,
+            "modality_id": self.modality,
             "modality": self.modality,
             "timestamp_ms": self.timestamp_ms,
             "time_chunk_id": self.time_chunk_id,
@@ -54,6 +59,61 @@ class SparseMultimodalEvent:
             "source_ref": self.source_ref,
             "latent_cluster_id": self.latent_cluster_id,
             "specialization_factors": list(self.specialization_factors),
+        }
+
+
+@dataclass(frozen=True)
+class BindingAuditRecord:
+    event_id: str
+    time_chunk_id: int
+    evidence_types: Tuple[str, ...]
+    modality_ids: Tuple[str, ...]
+    source_ids: Tuple[str, ...]
+    confidence: float
+    binding_strength: float
+    payload_separable: bool
+    admitted: bool
+    reasons: Tuple[str, ...]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "event_id": self.event_id,
+            "time_chunk_id": self.time_chunk_id,
+            "evidence_types": list(self.evidence_types),
+            "modality_ids": list(self.modality_ids),
+            "source_ids": list(self.source_ids),
+            "confidence": self.confidence,
+            "binding_strength": self.binding_strength,
+            "payload_separable": self.payload_separable,
+            "admitted": self.admitted,
+            "reasons": list(self.reasons),
+        }
+
+
+@dataclass(frozen=True)
+class SparseEventBundle:
+    event_id: str
+    time_chunk_id: int
+    modality_ids: Tuple[str, ...]
+    binding_strength: float
+    uncertainty: float
+    evidence_types: Tuple[str, ...]
+    child_records: Tuple[SparseMultimodalEvent, ...]
+    route_trace: Tuple[Dict[str, Any], ...] = ()
+    audit: Optional[BindingAuditRecord] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema": "sara-synesthetic-event-bundle-v1",
+            "event_id": self.event_id,
+            "time_chunk_id": self.time_chunk_id,
+            "modality_ids": list(self.modality_ids),
+            "binding_strength": self.binding_strength,
+            "uncertainty": self.uncertainty,
+            "evidence_types": list(self.evidence_types),
+            "route_trace": list(self.route_trace),
+            "child_records": [record.to_dict() for record in self.child_records],
+            "audit": self.audit.to_dict() if self.audit is not None else None,
         }
 
 
@@ -93,10 +153,13 @@ class SparseTemporalBinder:
             if uncertainty is not None
             else round(1.0 - bounded_confidence, 6)
         )
+        normalized_modality = normalize_modality(modality)
+        chunk_id = self.chunk_id(timestamp_ms)
+        stable_id = f"{normalized_modality}:{source_id}:{chunk_id}:{stable_event_id((normalized_modality, source_id, chunk_id, signature), width=1_000_000):06d}"
         return SparseMultimodalEvent(
-            modality=normalize_modality(modality),
+            modality=normalized_modality,
             timestamp_ms=float(timestamp_ms),
-            time_chunk_id=self.chunk_id(timestamp_ms),
+            time_chunk_id=chunk_id,
             source_id=str(source_id),
             sparse_signature=signature,
             confidence=bounded_confidence,
@@ -109,6 +172,7 @@ class SparseTemporalBinder:
             specialization_factors=tuple(
                 sorted(set(str(item) for item in specialization_factors if str(item).strip()))
             ),
+            event_id=stable_id,
         )
 
     def from_spike_events(
@@ -149,6 +213,80 @@ class SparseTemporalBinder:
             )
             for chunk_id, bucket in sorted(buckets.items())
         }
+
+    def bundle_events(
+        self,
+        events: Sequence[SparseMultimodalEvent],
+        *,
+        route_trace: Optional[Sequence[Mapping[str, Any]]] = None,
+    ) -> List[SparseEventBundle]:
+        trace_rows = list(route_trace or ())
+        bundles: List[SparseEventBundle] = []
+        for chunk_id, bucket in self.bind(events).items():
+            modalities = tuple(sorted({event.modality for event in bucket}))
+            labels = [event.label for event in bucket if event.label]
+            evidence_types = ["direct_synchrony"]
+            if len(modalities) > 1:
+                evidence_types.append("cross_modal_group")
+            if labels and len(set(labels)) == 1:
+                evidence_types.append("repeated_coactivation")
+            if any(event.source_ref for event in bucket):
+                evidence_types.append("source_backed")
+            confidence = round(
+                sum(float(event.confidence) for event in bucket) / float(max(1, len(bucket))),
+                6,
+            )
+            binding_strength = round(
+                min(
+                    1.0,
+                    confidence * (0.5 + (0.125 * len(modalities))) + (0.05 if "source_backed" in evidence_types else 0.0),
+                ),
+                6,
+            )
+            uncertainty = round(
+                sum(float(event.uncertainty) for event in bucket) / float(max(1, len(bucket))),
+                6,
+            )
+            payload_separable = len({(event.modality, event.source_id) for event in bucket}) == len(bucket)
+            bundle_event_id = f"bundle:{chunk_id}:{stable_event_id(tuple(event.event_id for event in bucket), width=1_000_000):06d}"
+            bundle_trace = tuple(
+                dict(row)
+                for row in trace_rows
+                if int(row.get("time_chunk_id", chunk_id)) == chunk_id
+                or str(row.get("source_id", "")) in {event.source_id for event in bucket}
+            )
+            reasons = [
+                f"modality_count:{len(modalities)}",
+                f"record_count:{len(bucket)}",
+            ]
+            if payload_separable:
+                reasons.append("payloads_preserved_per_modality")
+            audit = BindingAuditRecord(
+                event_id=bundle_event_id,
+                time_chunk_id=int(chunk_id),
+                evidence_types=tuple(sorted(set(evidence_types))),
+                modality_ids=modalities,
+                source_ids=tuple(sorted(event.source_id for event in bucket)),
+                confidence=confidence,
+                binding_strength=binding_strength,
+                payload_separable=payload_separable,
+                admitted=bool(len(modalities) > 1 and payload_separable),
+                reasons=tuple(reasons),
+            )
+            bundles.append(
+                SparseEventBundle(
+                    event_id=bundle_event_id,
+                    time_chunk_id=int(chunk_id),
+                    modality_ids=modalities,
+                    binding_strength=binding_strength,
+                    uncertainty=uncertainty,
+                    evidence_types=tuple(sorted(set(evidence_types))),
+                    child_records=tuple(bucket),
+                    route_trace=bundle_trace,
+                    audit=audit,
+                )
+            )
+        return bundles
 
 
 class SparsePluggableCorticalColumn:

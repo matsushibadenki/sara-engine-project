@@ -133,6 +133,7 @@ def test_idle_consolidation_loop_connects_replay_sleep_and_concept_review():
     assert result.prioritized_concept_keys == (
         "predicts:vision:visual_cluster_018->audio:audio_cluster_044",
     )
+    assert "idle_replay_multimodal_bundle_observed" in result.idle_replay_report["metrics"]
     assert len(result.concept_review_result.admission_plan.admitted_candidates) == 1
     assert result.sleep_consolidation_report["event_budget_ok"] is True
     assert result.sleep_consolidation_report["metrics"]["sleep_consolidation_retention_observed"] == 1.0
@@ -142,6 +143,9 @@ def test_idle_consolidation_loop_connects_replay_sleep_and_concept_review():
     assert "delta_memory_policy_state_budget_observed" in result.delta_retention_policy_report["metrics"]
     assert result.cache_refresh
     assert result.cache_refresh[0]["new_utility"] >= result.cache_refresh[0]["previous_utility"]
+    payload = result.to_dict()
+    assert payload["multimodal_bundle_summary"]["bundle_candidate_count"] == 0
+    assert payload["multimodal_bundle_summary"]["bundle_candidate_ratio"] == 0.0
 
 
 def test_idle_consolidation_loop_keeps_nonprioritized_queue_entries_after_replay():

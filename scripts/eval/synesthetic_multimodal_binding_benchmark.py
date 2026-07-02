@@ -27,6 +27,10 @@ from sara_engine.multimodal.synesthetic_binding import (  # noqa: E402
     VisionEventAdapter,
 )
 from sara_engine.learning.dendritic_feedback import SparseDendriticFeedbackGate  # noqa: E402
+from sara_engine.memory.event_state_cache import VerifiedHierarchicalEventStateCache  # noqa: E402
+from sara_engine.memory.multimodal_event_bundle_admission import (  # noqa: E402
+    build_multimodal_event_state_candidate,
+)  # noqa: E402
 from sara_engine.utils.project_paths import (  # noqa: E402
     ensure_parent_directory,
     interim_data_path,
@@ -122,6 +126,7 @@ def _normalize_cases(
 ) -> Dict[str, List[SparseMultimodalEvent]]:
     normalized: Dict[str, List[SparseMultimodalEvent]] = {}
     for case in cases:
+        case_id = str(case["case_id"])
         case_events: List[SparseMultimodalEvent] = []
         for event in case.get("events", []):
             case_events.append(
@@ -132,9 +137,10 @@ def _normalize_cases(
                     sparse_signature=event["signature"],
                     confidence=float(event.get("confidence", 0.9)),
                     label=str(event.get("label", "")),
+                    source_ref=str(event.get("source_ref", f"fixture://{case_id}")),
                 )
             )
-        normalized[str(case["case_id"])] = case_events
+        normalized[case_id] = case_events
     return normalized
 
 
@@ -299,6 +305,36 @@ def build_report(
             for row in equal_gate.trace + focused_gate.trace
         )
     )
+    event_bundles = binder.bundle_events(training_events, route_trace=focused_gate.trace)
+    bundle_integrity = float(
+        bool(event_bundles)
+        and all(bundle.audit is not None for bundle in event_bundles)
+        and all(bundle.audit.payload_separable for bundle in event_bundles if bundle.audit is not None)
+        and all(len(bundle.child_records) >= len(bundle.modality_ids) for bundle in event_bundles)
+    )
+    binding_audit_coverage = float(
+        len([bundle for bundle in event_bundles if bundle.audit is not None and bundle.audit.admitted])
+        / float(max(1, len(event_bundles)))
+    )
+    bundle_admission_results = [
+        build_multimodal_event_state_candidate(bundle, time_segment=bundle.time_chunk_id)
+        for bundle in event_bundles
+    ]
+    event_state_cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic", max_entries=8)
+    cache_admissions = [
+        event_state_cache.admit(result.candidate)
+        for result in bundle_admission_results
+        if result.promotion_allowed
+    ]
+    bundle_event_state_promotion = float(
+        len([result for result in bundle_admission_results if result.promotion_allowed])
+        / float(max(1, len(bundle_admission_results)))
+    )
+    bundle_event_state_cache_integrity = float(
+        bool(cache_admissions)
+        and all(admission.accepted for admission in cache_admissions)
+        and event_state_cache.state_dict()["entry_count"] >= 1
+    )
 
     link_rows = [
         {
@@ -312,9 +348,10 @@ def build_report(
     ]
     manifest_rows = [
         {
-            "schema": "sara-synesthetic-binding-manifest-v1",
+            "schema": "sara-synesthetic-binding-manifest-v2",
             "case_id": case_id,
             "events": [event.to_dict() for event in events],
+            "bundles": [bundle.to_dict() for bundle in binder.bundle_events(events)],
             "observed_only": True,
         }
         for case_id, events in sorted(normalized.items())
@@ -323,6 +360,14 @@ def build_report(
         {"trace_type": "equal_gate", "trace": equal_gate.trace},
         {"trace_type": "focused_gate", "trace": focused_gate.trace},
         {"trace_type": "missing_modality", "trace": missing_rows},
+        {
+            "trace_type": "binding_audit",
+            "trace": [bundle.audit.to_dict() for bundle in event_bundles if bundle.audit is not None],
+        },
+        {
+            "trace_type": "bundle_event_state_admission",
+            "trace": [result.to_dict() for result in bundle_admission_results],
+        },
     ]
     write_jsonl(cross_link_path, link_rows)
     write_jsonl(binding_manifest_path, manifest_rows)
@@ -357,6 +402,10 @@ def build_report(
         and missing_modality_abstention == 1.0
         and non_language_route_useful == 1.0
         and route_traceability == 1.0
+        and bundle_integrity == 1.0
+        and binding_audit_coverage == 1.0
+        and bundle_event_state_promotion == 1.0
+        and bundle_event_state_cache_integrity == 1.0
         and adapter_ir_integrity == 1.0
         and own_latent_integration == 1.0
         and dendritic_route_hint_integrity == 1.0
@@ -378,6 +427,10 @@ def build_report(
             "missing_modality_abstention_integrity": missing_modality_abstention,
             "non_language_route_usefulness": non_language_route_useful,
             "route_traceability": route_traceability,
+            "bundle_integrity": bundle_integrity,
+            "binding_audit_coverage": binding_audit_coverage,
+            "bundle_event_state_promotion": bundle_event_state_promotion,
+            "bundle_event_state_cache_integrity": bundle_event_state_cache_integrity,
             "adapter_ir_integrity": adapter_ir_integrity,
             "own_latent_integration": own_latent_integration,
             "dendritic_route_hint_integrity": dendritic_route_hint_integrity,
@@ -399,6 +452,8 @@ def build_report(
             "The same cortical-column learning rule processes every modality.",
             "Missing-modality predictions are observed-only and uncertainty-aware.",
             "Cross-modal links and thalamic routes are bounded and auditable.",
+            "Shared event bundles preserve modality-local payloads rather than collapsing them.",
+            "Only verified source-backed multimodal bundles may bridge into durable Event Memory candidates.",
         ],
     }
 

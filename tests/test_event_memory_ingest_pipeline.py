@@ -29,7 +29,13 @@ def test_event_memory_ingest_pipeline_exposes_compression_metrics():
     assert report["metrics"]["relation_verification_yield"] >= 1.0
     assert report["metrics"]["lineage_coverage_ratio"] >= 1.0
     assert report["metrics"]["self_state_continuity"] >= 0.0
+    assert report["metrics"]["multimodal_bundle_promotion_rate"] >= 1.0
+    assert report["metrics"]["multimodal_bundle_relation_verification_yield"] >= 1.0
+    assert report["metrics"]["multimodal_bundle_compression_contribution"] >= 1.0
+    assert report["traces"]["multimodal_bundle_admission"]["promotion_allowed_count"] >= 1
     summary = module.build_summary(report)
     assert "episode_compression_ratio:" in summary
     assert "relation_verification_yield:" in summary
-
+    assert "multimodal_bundle_promotion_rate:" in summary
+    assert "multimodal_bundle_relation_verification_yield:" in summary
+    assert "multimodal_bundle_compression_contribution:" in summary

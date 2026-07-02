@@ -2480,6 +2480,24 @@ def _build_recovery_actions(
             expected_effect="Recomputes small/medium/large real-corpus ANN-ratio and performance-energy evidence.",
             affected_checks=["external_validity_ladder"],
         )
+    if not bool(checks.get("adaptive_credit_field", {}).get("passed", False)):
+        _append_recovery_action(
+            actions,
+            title="Re-run Adaptive Credit Field Benchmark",
+            command="python scripts/eval/adaptive_credit_field_benchmark.py",
+            priority="high",
+            expected_effect="Recomputes sparse local-credit integrity, harmful-update suppression, and quantized-credit parity evidence.",
+            affected_checks=["adaptive_credit_field"],
+        )
+    if not bool(checks.get("adaptive_credit_event_memory", {}).get("passed", False)):
+        _append_recovery_action(
+            actions,
+            title="Re-run Adaptive Credit Event Memory Benchmark",
+            command="python scripts/eval/adaptive_credit_event_memory_benchmark.py",
+            priority="high",
+            expected_effect="Recomputes Event Memory admission pressure, contradiction blocking, and strong-vs-weak credit preservation evidence.",
+            affected_checks=["adaptive_credit_event_memory", "event_memory_ingest_pipeline"],
+        )
     if not bool(checks.get("release_gate", {}).get("passed", False)):
         _append_recovery_action(
             actions,
@@ -2811,6 +2829,10 @@ def _build_operational_error_details(checks: Dict[str, Any]) -> List[Dict[str, A
                     category = "release_gate_efficiency_kpi"
                 else:
                     category = "efficiency_kpi"
+            elif str(section_name) == "adaptive_credit_field":
+                category = "adaptive_credit_field_validation"
+            elif str(section_name) == "adaptive_credit_event_memory":
+                category = "adaptive_credit_event_memory_validation"
             details.append(
                 {
                     "index": int(index),
@@ -4431,6 +4453,11 @@ def build_operational_runbook_actions(
         if isinstance(report.get("repair_plan"), dict)
         else {}
     )
+    checks = (
+        report.get("checks", {})
+        if isinstance(report.get("checks"), dict)
+        else {}
+    )
     v1_actions_snapshot = (
         report.get("v1_actions_snapshot", {})
         if isinstance(report.get("v1_actions_snapshot"), dict)
@@ -4670,6 +4697,24 @@ def build_operational_runbook_actions(
                     else []
                 ),
             )
+    if "adaptive_credit_field" in checks and not bool(checks.get("adaptive_credit_field", {}).get("passed", False)):
+        _append_action(
+            command="python scripts/eval/adaptive_credit_field_benchmark.py",
+            source="adaptive_credit_repair",
+            priority="high",
+            reason="rerun_adaptive_credit_field_benchmark",
+            affected_checks=["adaptive_credit_field"],
+        )
+    if "adaptive_credit_event_memory" in checks and not bool(
+        checks.get("adaptive_credit_event_memory", {}).get("passed", False)
+    ):
+        _append_action(
+            command="python scripts/eval/adaptive_credit_event_memory_benchmark.py",
+            source="adaptive_credit_repair",
+            priority="high",
+            reason="rerun_adaptive_credit_event_memory_benchmark",
+            affected_checks=["adaptive_credit_event_memory", "event_memory_ingest_pipeline"],
+        )
 
     fallback_actions = (
         repair_plan.get("fallback_actions", [])
@@ -6667,6 +6712,8 @@ def _build_refresh_commands(
         [python_bin, os.path.join("scripts", "eval", "phase5_predictive_coding_benchmark.py")],
         [python_bin, os.path.join("scripts", "eval", "phase5_entry_gate.py")],
         [python_bin, os.path.join("scripts", "eval", "sparse_diffusion_block_readiness.py")],
+        [python_bin, os.path.join("scripts", "eval", "adaptive_credit_field_benchmark.py")],
+        [python_bin, os.path.join("scripts", "eval", "adaptive_credit_event_memory_benchmark.py")],
         [python_bin, os.path.join("scripts", "eval", "phase5_completion_gate.py")],
         [python_bin, os.path.join("scripts", "eval", "real_data_external_validity.py")],
         [python_bin, os.path.join("scripts", "eval", "real_data_external_validity_ladder.py")],

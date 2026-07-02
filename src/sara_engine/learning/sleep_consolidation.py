@@ -37,6 +37,7 @@ def evaluate_sleep_consolidation(
         post_noise = _clamp01(float(event.get("post_noise", baseline_noise) or 0.0))
         health_before = _clamp01(float(event.get("health_before", baseline_retention) or 0.0))
         health_after = _clamp01(float(event.get("health_after", post_retention) or 0.0))
+        bundle_affinity = _clamp01(float(event.get("multimodal_bundle_affinity", 0.0) or 0.0))
         event_cost = max(0.0, float(event.get("event_cost", 0.0) or 0.0))
         branch_count = int(event.get("latent_branch_count", 1) or 1)
         selected_branch = str(event.get("selected_branch", ""))
@@ -54,6 +55,7 @@ def evaluate_sleep_consolidation(
                 "health_before": health_before,
                 "health_after": health_after,
                 "health_delta": health_after - health_before,
+                "multimodal_bundle_affinity": bundle_affinity,
                 "event_cost": event_cost,
                 "latent_branch_count": branch_count,
                 "selected_branch": selected_branch,
@@ -68,12 +70,14 @@ def evaluate_sleep_consolidation(
     noise_ok = bool(traces) and all(bool(trace["noise_ok"]) for trace in traces)
     health_ok = bool(traces) and all(bool(trace["health_ok"]) for trace in traces)
     branch_ok = bool(traces) and any(bool(trace["branch_ok"]) for trace in traces)
+    bundle_ok = bool(traces) and any(float(trace.get("multimodal_bundle_affinity", 0.0) or 0.0) > 0.0 for trace in traces)
     budget_ok = total_event_cost <= cfg.event_budget
     metrics = {
         "sleep_consolidation_retention_observed": 1.0 if retention_ok else 0.0,
         "latent_replay_noise_resilience_observed": 1.0 if noise_ok else 0.0,
         "sleep_consolidation_memory_health_observed": 1.0 if health_ok else 0.0,
         "latent_replay_counterfactual_branch_observed": 1.0 if branch_ok else 0.0,
+        "multimodal_bundle_sleep_observed": 1.0 if bundle_ok else 0.0,
         "sleep_consolidation_energy_budget_observed": 1.0 if budget_ok else 0.0,
     }
     return {

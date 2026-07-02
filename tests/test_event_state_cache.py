@@ -201,6 +201,43 @@ def test_cache_credit_support_improves_utility_for_equal_candidates():
     assert state["entries"][0]["credit_score"] == 0.9
 
 
+def test_cache_multimodal_bundle_affinity_improves_utility_for_equal_candidates():
+    cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic", max_entries=1)
+    cache.admit(
+        _candidate(
+            "plain-affinity",
+            signature=(41, 43, 47),
+            own_latent_id="latent:plain-affinity",
+            source_ref="source:plain-affinity",
+            resonance_score=0.82,
+            confidence=0.82,
+            source_reliability=0.82,
+            uncertainty=0.18,
+            credit_score=0.0,
+            credit_longevity=0.58,
+        )
+    )
+    cache.admit(
+        _candidate(
+            "bundle:0:123456",
+            signature=(51, 53, 59),
+            own_latent_id="bundle:0:123456",
+            source_ref="bundle::fixture-supported",
+            resonance_score=0.82,
+            confidence=0.82,
+            source_reliability=0.82,
+            uncertainty=0.18,
+            credit_score=0.0,
+            credit_longevity=0.58,
+        )
+    )
+
+    state = cache.state_dict()
+
+    assert state["entry_count"] == 1
+    assert state["entries"][0]["entry_id"] == "bundle:0:123456"
+
+
 def test_cache_sequence_support_improves_utility_for_equal_candidates():
     cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic", max_entries=1)
     cache.admit(
@@ -257,6 +294,22 @@ def test_cache_retrieval_exposes_self_state_alignment_component():
 
     assert result.abstained is False
     assert result.matches[0]["components"]["self_state_alignment"] == 1.0
+
+
+def test_cache_retrieval_exposes_multimodal_bundle_affinity_component():
+    cache = VerifiedHierarchicalEventStateCache(retrieval_threshold=0.1)
+    cache.admit(
+        _candidate(
+            "bundle:0:123456",
+            source_ref="bundle::fixture-supported",
+            own_latent_id="bundle:0:123456",
+        )
+    )
+
+    result = cache.retrieve((1, 3, 5), own_latent_id="bundle:0:123456")
+
+    assert result.abstained is False
+    assert result.matches[0]["components"]["multimodal_bundle_affinity"] == 1.0
 
 
 def test_cache_self_state_alignment_breaks_tie_between_equal_entries():
@@ -402,6 +455,7 @@ def test_cache_refresh_from_consolidation_can_promote_crystal_memory_to_durable(
                 "post_noise": 0.16,
                 "health_before": 0.72,
                 "health_after": 0.79,
+                "multimodal_bundle_affinity": 1.0,
                 "latent_branch_count": 3,
                 "selected_branch": "consolidated:self_state",
             },
@@ -410,3 +464,4 @@ def test_cache_refresh_from_consolidation_can_promote_crystal_memory_to_durable(
 
     assert results[0].updated is True
     assert results[0].new_tier == "durable"
+    assert results[0].trace["multimodal_bundle_affinity"] == 1.0

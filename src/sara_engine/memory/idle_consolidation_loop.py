@@ -50,13 +50,17 @@ class IdleConsolidationLoopResult:
     schema: str = "sara-idle-consolidation-loop-result-v1"
 
     def to_dict(self) -> Dict[str, Any]:
+        concept_review_payload = self.concept_review_result.to_dict()
         return {
             "schema": self.schema,
             "idle_replay_report": dict(self.idle_replay_report),
             "sleep_consolidation_report": dict(self.sleep_consolidation_report),
             "memory_phase_report": dict(self.memory_phase_report),
             "delta_retention_policy_report": dict(self.delta_retention_policy_report),
-            "concept_review_result": self.concept_review_result.to_dict(),
+            "concept_review_result": concept_review_payload,
+            "multimodal_bundle_summary": dict(
+                concept_review_payload.get("multimodal_bundle_summary", {})
+            ),
             "prioritized_concept_keys": list(self.prioritized_concept_keys),
             "cache_refresh": [dict(item) for item in self.cache_refresh],
         }
@@ -198,6 +202,7 @@ class IdleConsolidationLoop:
             utility = _clamp01(components.get("utility", 0.0) or 0.0)
             confidence = _clamp01(components.get("confidence", 0.0) or 0.0)
             sequence_support = _clamp01(components.get("sequence_support", 0.0) or 0.0)
+            bundle_affinity = _clamp01(components.get("multimodal_bundle_affinity", 0.0) or 0.0)
             self_state_alignment = _clamp01(components.get("self_state_alignment", 0.0) or 0.0)
             hint_activation = _clamp01(components.get("hint_activation", 0.0) or 0.0)
             baseline_retention = _clamp01(
@@ -207,18 +212,20 @@ class IdleConsolidationLoop:
                 + 0.10 * self_state_alignment
             )
             admission_bonus = 0.08 if str(candidate.get("own_latent_id", "")) in admitted_keys else 0.0
+            bundle_bonus = 0.03 * bundle_affinity
             post_retention = _clamp01(
                 baseline_retention
                 + 0.12 * replay_score
                 + 0.06 * hint_activation
                 + admission_bonus
+                + bundle_bonus
             )
             baseline_noise = _clamp01(
                 1.0 - (0.55 * utility + 0.25 * sequence_support + 0.20 * confidence)
             )
             post_noise = _clamp01(
                 baseline_noise
-                - (0.18 * replay_score + 0.08 * self_state_alignment + admission_bonus)
+                - (0.18 * replay_score + 0.08 * self_state_alignment + admission_bonus + (0.02 * bundle_affinity))
             )
             health_before = _clamp01(0.60 * utility + 0.25 * confidence + 0.15 * sequence_support)
             health_after = _clamp01(
@@ -226,6 +233,7 @@ class IdleConsolidationLoop:
                 + 0.10 * replay_score
                 + 0.05 * self_state_alignment
                 + admission_bonus
+                + bundle_bonus
             )
             replay_events.append(
                 {
@@ -236,6 +244,7 @@ class IdleConsolidationLoop:
                     "post_noise": post_noise,
                     "health_before": health_before,
                     "health_after": health_after,
+                    "multimodal_bundle_affinity": bundle_affinity,
                     "event_cost": float(candidate.get("event_cost", 0)),
                     "latent_branch_count": 3
                     if str(candidate.get("own_latent_id", "")) in admitted_keys

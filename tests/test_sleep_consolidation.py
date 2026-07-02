@@ -14,6 +14,7 @@ def test_sleep_consolidation_observes_retention_noise_and_energy_budget():
             "post_noise": 0.18,
             "health_before": 0.74,
             "health_after": 0.82,
+            "multimodal_bundle_affinity": 1.0,
             "event_cost": 0.40,
             "latent_branch_count": 3,
             "selected_branch": "stable-branch",
@@ -43,9 +44,11 @@ def test_sleep_consolidation_observes_retention_noise_and_energy_budget():
     assert report["metrics"]["latent_replay_noise_resilience_observed"] == 1.0
     assert report["metrics"]["sleep_consolidation_memory_health_observed"] == 1.0
     assert report["metrics"]["latent_replay_counterfactual_branch_observed"] == 1.0
+    assert report["metrics"]["multimodal_bundle_sleep_observed"] == 1.0
     assert report["metrics"]["sleep_consolidation_energy_budget_observed"] == 1.0
     assert report["traces"][0]["retention_delta"] > 0.0
     assert report["traces"][0]["noise_delta"] < 0.0
+    assert report["traces"][0]["multimodal_bundle_affinity"] == 1.0
 
 
 def test_sleep_consolidation_reports_energy_budget_failure():

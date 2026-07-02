@@ -11,6 +11,7 @@ from sara_engine.ingest import (
     SynchronyDetector,
     make_candidate_event,
 )
+from sara_engine.multimodal.synesthetic_binding import SparseTemporalBinder
 from sara_engine.utils.project_paths import ensure_parent_directory, workspace_path
 
 
@@ -61,6 +62,49 @@ def _synthetic_fixture() -> Dict[str, Any]:
     }
 
 
+def _synthetic_multimodal_bundles():
+    binder = SparseTemporalBinder(window_ms=32.0)
+    events = [
+        binder.normalize_event(
+            modality="language",
+            timestamp_ms=128.0,
+            source_id="bundle-language",
+            sparse_signature=[101, 102],
+            confidence=0.9,
+            label="hard",
+            source_ref="fixture://bundle-hard",
+        ),
+        binder.normalize_event(
+            modality="vision",
+            timestamp_ms=130.0,
+            source_id="bundle-vision",
+            sparse_signature=[201, 202],
+            confidence=0.9,
+            label="hard",
+            source_ref="fixture://bundle-hard",
+        ),
+        binder.normalize_event(
+            modality="audio",
+            timestamp_ms=136.0,
+            source_id="bundle-audio",
+            sparse_signature=[301, 302],
+            confidence=0.9,
+            label="hard",
+            source_ref="fixture://bundle-hard",
+        ),
+        binder.normalize_event(
+            modality="tactile",
+            timestamp_ms=140.0,
+            source_id="bundle-tactile",
+            sparse_signature=[401, 402],
+            confidence=0.9,
+            label="hard",
+            source_ref="fixture://bundle-hard",
+        ),
+    ]
+    return binder.bundle_events(events)
+
+
 def build_report() -> Dict[str, Any]:
     fixture = _synthetic_fixture()
     pipeline = EventMemoryIngestPipeline(
@@ -79,6 +123,7 @@ def build_report() -> Dict[str, Any]:
         source_ref=str(fixture["source_ref"]),
         source_hash=str(fixture["source_hash"]),
         candidate_events=fixture["candidate_events"],
+        multimodal_bundles=_synthetic_multimodal_bundles(),
     )
     payload = result.to_dict()
     change_point_count = len(payload["change_points"])
@@ -95,6 +140,20 @@ def build_report() -> Dict[str, Any]:
         traces.get("persistent_self_state", {})
         if isinstance(traces.get("persistent_self_state", {}), dict)
         else {}
+    )
+    bundle_trace = (
+        traces.get("multimodal_bundle_admission", {})
+        if isinstance(traces.get("multimodal_bundle_admission", {}), dict)
+        else {}
+    )
+    bundle_count = int(bundle_trace.get("bundle_count", 0) or 0)
+    bundle_promotion_allowed_count = int(bundle_trace.get("promotion_allowed_count", 0) or 0)
+    bundle_promotion_rate = float(bundle_promotion_allowed_count) / float(max(bundle_count, 1))
+    bundle_supported_relation_yield = bundle_promotion_rate * (
+        float(verified_relation_count) / float(max(candidate_relation_count, 1))
+    )
+    bundle_compression_contribution = bundle_promotion_rate * (
+        float(observed_event_count + accepted_candidate_count) / float(max(episode_count, 1))
     )
     metrics = {
         "eventization_emission_ratio": float(observed_event_count) / float(max(change_point_count, 1)),
@@ -122,6 +181,9 @@ def build_report() -> Dict[str, Any]:
             len(persistent_trace.get("current_active_ids", []) or [])
         )
         / float(max(int(persistent_trace.get("external_event_count", 0) or 0), 1)),
+        "multimodal_bundle_promotion_rate": bundle_promotion_rate,
+        "multimodal_bundle_relation_verification_yield": bundle_supported_relation_yield,
+        "multimodal_bundle_compression_contribution": bundle_compression_contribution,
     }
     return {
         "schema": "sara-event-memory-ingest-pipeline-report-v1",
@@ -130,6 +192,7 @@ def build_report() -> Dict[str, Any]:
             and payload["episodes"]
             and payload["verified_relations"]
             and payload["traces"].get("persistent_self_state", {}).get("current_active_ids")
+            and int(bundle_trace.get("promotion_allowed_count", 0) or 0) >= 1
         ),
         "counts": {
             "change_points": len(payload["change_points"]),
@@ -169,6 +232,9 @@ def build_summary(report: Dict[str, Any]) -> str:
         f"- sequence_patterns: {int(traces.get('frequent_sequence', {}).get('accepted_sequences', 0) or 0)}",
         f"- self_state_active: {len(traces.get('persistent_self_state', {}).get('current_active_ids', []) or [])}",
         f"- self_state_continuity: {float(traces.get('persistent_self_state', {}).get('continuity_score', 0.0) or 0.0):.3f}",
+        f"- multimodal_bundle_promotion_rate: {float(metrics.get('multimodal_bundle_promotion_rate', 0.0) or 0.0):.3f}",
+        f"- multimodal_bundle_relation_verification_yield: {float(metrics.get('multimodal_bundle_relation_verification_yield', 0.0) or 0.0):.3f}",
+        f"- multimodal_bundle_compression_contribution: {float(metrics.get('multimodal_bundle_compression_contribution', 0.0) or 0.0):.3f}",
     ]
     return "\n".join(lines) + "\n"
 

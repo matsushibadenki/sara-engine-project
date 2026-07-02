@@ -35,13 +35,15 @@ def _relation(
     record_id: str,
     source_ref: str,
     source_hash: str,
+    source_event_id: str = "vision:visual_cluster_018",
+    target_event_id: str = "audio:audio_cluster_044",
 ):
     return make_candidate_relation(
         {
             "record_id": record_id,
             "relation": "predicts",
-            "source_event_id": "vision:visual_cluster_018",
-            "target_event_id": "audio:audio_cluster_044",
+            "source_event_id": source_event_id,
+            "target_event_id": target_event_id,
             "delay_lower_ms": 60,
             "delay_upper_ms": 140,
             "confidence": 0.88,
@@ -106,6 +108,7 @@ def test_run_persisted_concept_review_cycle_updates_queue_and_report():
     assert report["revalidation_queue_count"] == 0
     assert report["ready_mean_credit_score"] > 0.0
     assert report["blocked_mean_credit_score"] == 0.0
+    assert report["ready_mean_multimodal_bundle_affinity"] == 0.0
 
 
 def test_review_report_surfaces_manual_review_candidates():
@@ -124,3 +127,36 @@ def test_review_report_surfaces_manual_review_candidates():
     with open(report_path, "r", encoding="utf-8") as handle:
         report = json.load(handle)
     assert report["manual_review_candidates"][0]["next_action"] == "manual_review"
+
+
+def test_review_report_surfaces_multimodal_bundle_affinity_metrics():
+    queue_path = workspace_path("memory", f"test_revalidation_bundle_{os.getpid()}.json")
+    report_path = workspace_path("memory", f"test_revalidation_bundle_report_{os.getpid()}.json")
+    bundle_key = "predicts:bundle:0:123456->audio:audio_cluster_044"
+    save_revalidation_queue((_entry(concept_key=bundle_key),), queue_path)
+    relations = [
+        _relation(
+            record_id="rel-1",
+            source_ref="bundle::episode-1",
+            source_hash="hash-a",
+            source_event_id="bundle:0:123456",
+        ),
+        _relation(
+            record_id="rel-2",
+            source_ref="episode-2",
+            source_hash="hash-b",
+            source_event_id="bundle:0:123456",
+        ),
+    ]
+
+    run_persisted_concept_review_cycle(
+        relations,
+        current_segment=6,
+        queue_path=queue_path,
+        report_path=report_path,
+    )
+
+    with open(report_path, "r", encoding="utf-8") as handle:
+        report = json.load(handle)
+    assert report["ready_mean_multimodal_bundle_affinity"] == 1.0
+    assert report["blocked_mean_multimodal_bundle_affinity"] == 0.0
