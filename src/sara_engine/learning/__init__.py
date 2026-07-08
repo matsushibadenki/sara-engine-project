@@ -52,3 +52,7 @@ from .adaptive_credit import AdaptiveCreditField as AdaptiveCreditField
 from .adaptive_credit import AdaptiveCreditResult as AdaptiveCreditResult
 from .adaptive_credit import AdaptiveCreditRouteState as AdaptiveCreditRouteState
 from .adaptive_credit import summarize_event_memory_credit as summarize_event_memory_credit
+from .structural_plasticity import BoundedStructuralPlasticityController as BoundedStructuralPlasticityController
+from .structural_plasticity import StructuralPlasticityManager as StructuralPlasticityManager
+from .structural_plasticity import StructuralPlasticityResult as StructuralPlasticityResult
+from .structural_plasticity import StructuralRouteState as StructuralRouteState

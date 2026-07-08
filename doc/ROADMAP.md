@@ -1177,6 +1177,64 @@ This slice is the most promising way to absorb the recent Adaptive Credit Field 
 - Any optional dense calibration path remains offline, explicitly labeled, and non-required for normal runtime correctness.
 - If these criteria fail, keep Phase 17 as verified resonance credit plus existing eligibility/homeostasis mechanisms and record ACF as a negative or partial result.
 
+### Fourth Experimental Slice: Bounded Structural Plasticity
+
+Goal: extend local plasticity from "update existing sparse links" to "selectively preserve, prune, or provisionally create sparse links" so SARA can keep reorganizing useful circuits over long operation horizons without surrendering bounded-state or auditability.
+
+This slice should not introduce unconstrained growth. The design target is **budgeted sparse rewiring**: experience updates weights through STDP and related local rules, while longer-horizon evidence decides which routes deserve stabilization, pruning, or cautious new-link trials.
+
+#### Adoption Boundary
+
+- Keep structural plasticity sparse, bounded, CPU-first, and event-driven.
+- Treat structure changes as a companion to STDP, homeostasis, delayed spikes, persistent self-state, replay, and Event Memory rather than as a replacement for them.
+- Prefer three explicit route states:
+  - `provisional`: recently added or weakly justified links
+  - `stable`: repeatedly useful verified links
+  - `decaying`: links scheduled for pruning unless they regain verified utility
+- Permit pruning, refresh, and provisional growth only under hard caps on:
+  - total link count
+  - per-neuron or per-column fan-in/fan-out
+  - rewires per learning event
+  - serialized adaptive-state size
+- Use Event Memory, replay, contradiction history, prediction gain, responsibility, longevity, and source-backed verification as the main evidence for structural decisions.
+- Do not let temporary noise, one-off reward spikes, or unverified sources directly create durable structure.
+- Do not mutate structure during frozen evaluation or physical paired-measurement runs except in explicitly declared continual-learning studies.
+- Do not allow recurrent growth to become a hidden durable-memory substitute; durable experience still belongs in Phase 18 Event Memory.
+
+#### First Experimental Slice
+
+1. Add a bounded structural-plasticity controller under `src/sara_engine/learning/`.
+   - Proposed helper: `BoundedStructuralPlasticityController`.
+   - Track sparse per-link metadata such as `last_active_step`, `responsibility`, `longevity`, `contradiction_count`, `prediction_gain_support`, and `route_state`.
+2. Add prune criteria.
+   - Prefer pruning links that stay low-responsibility, low-longevity, low-use, or contradiction-heavy across a bounded horizon.
+   - Require a grace window before removing a newly added link.
+3. Add stabilization criteria.
+   - Promote provisional links to stable links only after repeated verified utility across replay/reactivation or source-backed prediction improvement.
+   - Let stable links become harder to remove than provisional links.
+4. Add cautious growth criteria.
+   - Allow new provisional links only when repeated co-activation, delay-consistent timing, Event Memory relation support, or unresolved prediction error suggests missing structure.
+   - Require local fan-in/fan-out budget checks before adding any link.
+5. Add a focused observed-only benchmark.
+   - Proposed script: `scripts/eval/structural_plasticity_benchmark.py`.
+   - Compare:
+     - STDP + homeostasis only
+     - STDP + homeostasis + prune
+     - STDP + homeostasis + prune + provisional growth
+   - Measure long-horizon revision uptake, delayed correction, harmful-update suppression, event cost, rewire count, stable-link retention, and self-state continuity impact.
+6. Add an Event Memory integration benchmark.
+   - Test whether Event Memory-supported replay and verified relation traces improve prune/grow decisions versus activity-only heuristics.
+7. Keep this slice observed-only until it shows useful long-horizon adaptation without uncontrolled growth or energy regression.
+
+#### Acceptance Criteria
+
+- Structural updates remain bounded by explicit link and rewrite budgets.
+- Useful long-horizon adaptation improves over weight-only controls on at least one revision or delayed-correction fixture.
+- Harmful-update suppression, contradiction handling, and abstention do not regress.
+- Rewire counts, stable/provisional/decaying link counts, and prune/grow reasons remain inspectable in managed traces.
+- Event cost and maintenance load stay below the configured ceiling and do not erase SARA's sparse-runtime advantage.
+- If these criteria fail, retain weight-only plasticity plus Event Memory and record structural plasticity as a negative or partial result rather than silently promoting it.
+
 ### Managed Outputs
 
 - Fixture: `data/processed/benchmark_fixtures/resonance_credit_cases.jsonl`
@@ -1564,6 +1622,7 @@ Design paper: [Semantic Echo Field v2: Event-Centric World Model Extension for S
    - IN PROGRESS: weak bundle-backed compression is now routed as its own repair class, distinct from measurement gaps and external-baseline gaps, and the first return target is Phase 7 source-aware bundle-fixture strengthening.
    - SUPPORTING DIRECTION: converge storage formats toward `append-only JSONL records + canonical JSON manifests + compact runtime payloads`, as documented in `doc/STORAGE_FORMAT_STRATEGY.md`, but do not let this migration delay Phase 6, Phase 7, or Phase 8 evidence collection.
    - NEXT WHEN PHASE 6/8 PRESSURE EASES: activate the Phase 17 Adaptive Credit Field slice, because stronger multi-timescale local credit assignment is currently the most plausible route to better concept formation, compression, and long-gap learning without surrendering SARA's sparse-runtime identity.
+   - NEXT AFTER ACF OBSERVED-ONLY BASELINES EXIST: activate the bounded structural-plasticity slice, because prune/stabilize/provisional-growth control is the most natural next step if SARA needs better long-horizon self-organization than weight-only local plasticity can provide.
    - NEXT WHEN PHASE 6/8 PRESSURE EASES: define a bounded continual-learning horizon benchmark that tests whether persistent self-state, idle replay, resonance credit, and Event Memory together improve revision uptake and delayed correction under equal long-run task streams.
 8. Keep Phase 19 inactive until its activation gate is satisfied; use it only to address an observed temporal-accuracy limitation without erasing SNN efficiency.
 9. Keep Phase 20 inactive until a frozen independent language benchmark and cost ceilings exist; begin with echo-only fixed-timescale controls before phase binding, phonological recoding, or adaptive time constants.
