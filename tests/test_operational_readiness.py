@@ -2907,6 +2907,18 @@ def test_build_operational_runbook_includes_bundle_fixture_followup_section():
                 "priority": "high",
                 "command": "Review fixture request fixture_source_diversity_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
                 "reason": "bundle_gap_followup; fixture_request=fixture_source_diversity_gap; missing_slots=1; skipped_slots=0",
+            },
+            {
+                "source": "autobot_bundle_fixture_churn_followup",
+                "priority": "medium",
+                "command": "Review churned fixture request fixture_source_diversity_gap and expand distinct source evidence before rerunning python bot/gap_materials_builder.py --targets-path \"/tmp/fresh.json\"",
+                "reason": "bundle_isolation_review_churn_without_resolution; request_id=fixture_source_diversity_gap; return_phase=phase7; return_lane=phase7_source_aware_bundle_fixtures",
+            },
+            {
+                "source": "autobot_bundle_fixture_reblocked_followup",
+                "priority": "high",
+                "command": "Review reblocked fixture request fixture_counterexample_gap and validate clear-release evidence before rerunning Clear fixture isolation block for fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/recovered.json\" --clear-blocked-request-id \"fixture_counterexample_gap\"",
+                "reason": "bundle_isolation_reblocked_after_resolution; request_id=fixture_counterexample_gap; return_phase=phase7; return_lane=phase7_clear_release_validation",
             }
         ],
         "bundle_repair_log_summary": {
@@ -2945,6 +2957,10 @@ def test_build_operational_runbook_includes_bundle_fixture_followup_section():
     assert "- Max gap reduction: 4" in runbook
     assert "- Retry queue fresh count: 1" in runbook
     assert "- Retry queue recovered-before count: 1" in runbook
+    assert "- Phase 7 churn follow-up actions: 1" in runbook
+    assert "- Clear-release reblocked follow-up actions: 1" in runbook
+    assert "Recommended route for churn: return to Phase 7 source-aware bundle-fixture strengthening" in runbook
+    assert "Recommended route for reblocked requests: validate clear-release evidence and isolation clearance" in runbook
     assert "- Isolation-blocked request count: 1" in runbook
     assert "- Isolation-blocked request ids: fixture_counterexample_gap" in runbook
     assert "- Isolation-blocked missing axes: source_lineage" in runbook

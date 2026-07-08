@@ -623,6 +623,7 @@ Goal: improve useful intelligence while preserving the energy-policy advantage.
 ### Candidate Directions
 
 - Larger continual-memory experiments with bounded replay.
+- Long-horizon continual-learning yardsticks that measure whether SARA improves under continued bounded operation rather than only at one static checkpoint.
 - Event-camera or DVS classification and association tasks.
 - Stronger local credit assignment without runtime backpropagation.
 - Better route selection between specialist submodels.
@@ -631,6 +632,7 @@ Goal: improve useful intelligence while preserving the energy-policy advantage.
 - Sparse reasoning priors for forecasting and future-state prediction, inspired by reasoning-aware time-series forecasting but implemented without dense LLM/TSFM fusion.
 - Sparse synesthetic multimodal binding that treats language, vision, audio, and tactile events as equal sparse event sources rather than language-centered multimodal inputs.
 - Sparse verifiable planning traces that decompose action plans into state-action-next-state checks, inspired by PDDL-INSTRUCT but implemented without LLM instruction tuning.
+- Bounded structural plasticity experiments where sparse links may be pruned, refreshed, or added under hard caps and audit traces, without treating unbounded network growth as an acceptable default.
 
 ### Focused Candidate: Sparse Reasoning Prior For Future-State Prediction
 
@@ -1114,6 +1116,7 @@ This slice is the most promising way to absorb the recent Adaptive Credit Field 
 
 - Keep the main runtime SNN-first, sparse, CPU-first, bounded-state, and event-driven.
 - Extend local learning state with bounded `eligibility`, `responsibility`, `confidence`, and `longevity` rather than introducing dense hidden credit tensors.
+- Treat useful knowledge as a combination of sparse weights, route history, local activity traces, and verified memory state rather than as weights alone; any added state must remain bounded and auditable.
 - Prefer stateful local credit accumulation over explicit whole-network credit recomputation. Credit should behave like a bounded synaptic state variable, not a hidden backpropagation graph.
 - Prefer coarse credit broadcast from the world model or verifier over exact gradient flow.
 - Treat "error field" as **relation-local credit diffusion** across sparse event, memory, and route neighborhoods, not as dense spatial backpropagation.
@@ -1316,6 +1319,7 @@ Design role in SARA: this phase is the primary home of **Event Memory**. Recurre
 - Do not try to make recurrent activity itself the durable memory store.
 - Permit only bounded transient recurrence outside this phase, with explicit decay, hard occupancy limits, deterministic replay, and auditable handoff into verified event-memory records.
 - If a behavior can be explained by a verified event-memory retrieval path, prefer that over adding larger or more persistent recurrent state.
+- Treat persistent self-state, replay state, and route history as bounded companions to durable memory, not as hidden substitutes for it; the system should remain explainable in terms of verified event-memory traces.
 - DONE: `PersistentSelfStateController` now provides bounded self-sustaining activity by combining tonic spontaneous firing, sparse recurrent reuse, Event Memory reactivation hints, and local transition prediction, while keeping the durable store in Phase 18 Event Memory rather than in unbounded recurrent state.
 - DONE: self-state continuity now feeds back into relation verification and concept revalidation as a small bounded preference signal, so SARA can keep pursuing coherent hypotheses across sparse or intermittent input without letting recurrent state override source checks or verifier gates.
 - DONE: bounded idle replay selection now uses persistent self-state continuity, Event Memory utility, sequence support, and optional astro-style modulation to decide which verified memories are worth replaying during low-input periods.
@@ -1325,6 +1329,14 @@ Design role in SARA: this phase is the primary home of **Event Memory**. Recurre
 - DONE: `idle_replay_benchmark.py` now records observed-only evidence that verified memories can be replay-ranked under an explicit event budget using self-state alignment, reactivation hints, and astro-style modulation.
 - DONE: `internal_maintenance_efficiency_benchmark.py` now records fixed-loop `maintenance_selected_count`, `maintenance_refresh_count`, `maintenance_event_cost`, and normalized `maintenance_event_cost_per_selected`, providing a pre-physical reference surface for the same maintenance fields exported by Phase 6 energy-pair runs.
 - DONE: the compact research benchmark suite now includes both persistent self-state and idle replay maintenance surfaces, so internal continuity evidence is tracked beside Event Memory, consolidation, and ANN-comparison evidence.
+
+### Continual-Learning Evaluation Boundary
+
+- Do not evaluate SARA's long-term learning identity only by one-shot benchmark accuracy.
+- When continual-adaptation claims are made, require at least one fixed-initial-budget horizon comparison such as `initial checkpoint -> bounded continued operation -> later checkpoint`.
+- Prefer metrics such as contradiction-repair latency, revision uptake latency, retained useful recall after later correction, cumulative `joule_per_success`, and maintenance cost over time.
+- Compare against a frozen ANN or offline-refresh baseline under the same task stream and success criteria; if SARA only wins by changing the task boundary, do not count it as a valid continual-learning advantage.
+- Keep early horizon studies observed-only until the project can show that long-run improvement does not hide leakage, uncontrolled maintenance growth, or degraded abstention.
 
 ## Phase 19: Sparse Liquid Time-Constant Spiking Dynamics
 
@@ -1550,7 +1562,9 @@ Design paper: [Semantic Echo Field v2: Event-Centric World Model Extension for S
    - IN PROGRESS: `energy_measurement_readiness.py` and `ann_efficiency_roadmap_gate.py` now also consume the coupling reference, so Phase 6 laboratory readiness and roadmap next-action generation can flag missing or weak compression-versus-maintenance evidence before a physical energy claim is promoted.
    - IN PROGRESS: `run-physical-energy-pair` and the session batch plan now pin that same coupling reference into pair-level commands and summaries, so laboratory pair artifacts keep their internal compression-maintenance assumption explicit instead of depending on out-of-band context.
    - IN PROGRESS: weak bundle-backed compression is now routed as its own repair class, distinct from measurement gaps and external-baseline gaps, and the first return target is Phase 7 source-aware bundle-fixture strengthening.
+   - SUPPORTING DIRECTION: converge storage formats toward `append-only JSONL records + canonical JSON manifests + compact runtime payloads`, as documented in `doc/STORAGE_FORMAT_STRATEGY.md`, but do not let this migration delay Phase 6, Phase 7, or Phase 8 evidence collection.
    - NEXT WHEN PHASE 6/8 PRESSURE EASES: activate the Phase 17 Adaptive Credit Field slice, because stronger multi-timescale local credit assignment is currently the most plausible route to better concept formation, compression, and long-gap learning without surrendering SARA's sparse-runtime identity.
+   - NEXT WHEN PHASE 6/8 PRESSURE EASES: define a bounded continual-learning horizon benchmark that tests whether persistent self-state, idle replay, resonance credit, and Event Memory together improve revision uptake and delayed correction under equal long-run task streams.
 8. Keep Phase 19 inactive until its activation gate is satisfied; use it only to address an observed temporal-accuracy limitation without erasing SNN efficiency.
 9. Keep Phase 20 inactive until a frozen independent language benchmark and cost ceilings exist; begin with echo-only fixed-timescale controls before phase binding, phonological recoding, or adaptive time constants.
 

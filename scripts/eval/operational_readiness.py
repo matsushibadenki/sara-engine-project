@@ -4355,6 +4355,11 @@ def build_operational_runbook(report: Dict[str, Any]) -> str:
         if isinstance(report.get("repair_retry_queue"), list)
         else []
     )
+    bundle_retry_queue_summary = (
+        report.get("bundle_retry_queue_summary", {})
+        if isinstance(report.get("bundle_retry_queue_summary"), dict)
+        else {}
+    )
     bundle_retry_queue_entries = [
         item
         for item in retry_queue
@@ -4381,6 +4386,11 @@ def build_operational_runbook(report: Dict[str, Any]) -> str:
         for item in bundle_retry_queue_summary.get("isolation_reblocked_request_ids", [])
         if str(item).strip()
     ]
+    bundle_repair_log_summary = (
+        report.get("bundle_repair_log_summary", {})
+        if isinstance(report.get("bundle_repair_log_summary"), dict)
+        else {}
+    )
     checks = report.get("checks", {}) if isinstance(report.get("checks"), dict) else {}
     autobot_gap_loop = (
         checks.get("autobot_gap_loop_readiness", {})
@@ -4420,6 +4430,20 @@ def build_operational_runbook(report: Dict[str, Any]) -> str:
             )
             if str(axis).strip()
         }
+    )
+    bundle_isolation_clear_release_request_ids = sorted(
+        str(item).strip()
+        for item in (
+            bundle_repair_log_summary.get("isolation_clear_release_request_ids", [])
+            if isinstance(bundle_repair_log_summary.get("isolation_clear_release_request_ids", []), list)
+            else []
+        )
+        if str(item).strip()
+    )
+    bundle_isolation_resolved_request_ids = sorted(
+        request_id
+        for request_id in bundle_isolation_clear_release_request_ids
+        if request_id not in set(bundle_blocked_request_ids)
     )
     failed_checks = sorted(
         name
@@ -4495,11 +4519,6 @@ def build_operational_runbook(report: Dict[str, Any]) -> str:
     research_review_compact = (
         research_review.get("compact", {})
         if isinstance(research_review.get("compact"), dict)
-        else {}
-    )
-    bundle_repair_log_summary = (
-        report.get("bundle_repair_log_summary", {})
-        if isinstance(report.get("bundle_repair_log_summary"), dict)
         else {}
     )
     execution_log = (

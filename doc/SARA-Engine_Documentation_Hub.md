@@ -25,6 +25,7 @@ The v1.1 release surface is completion-gated. The current gates validate Phase 3
 - [Tools](TOOLS.md): active CLI, evaluation, release, and maintenance command map.
 - [Training Manual](SARA-Engine_Training_Manual.md): data import, training, inference, memory inspection, and cleanup guide.
 - [Competitive Analysis](COMPETITIVE_ANALYSIS.md): comparison against existing SNN libraries and remaining strategic gaps.
+- [Storage Format Strategy](STORAGE_FORMAT_STRATEGY.md): long-term division between append-only records, canonical manifests, and compact runtime payloads.
 
 ## Research And Idea Archive
 
