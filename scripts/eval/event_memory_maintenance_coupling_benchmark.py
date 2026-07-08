@@ -16,6 +16,7 @@ from sara_engine.ingest import (
     make_candidate_event,
 )
 from sara_engine.ingest.episode_segmentation import EpisodeSegmenter
+from sara_engine.multimodal.synesthetic_binding import SparseTemporalBinder
 from sara_engine.utils.project_paths import ensure_parent_directory, workspace_path
 
 
@@ -207,6 +208,49 @@ def _profile_definitions() -> List[Dict[str, Any]]:
     ]
 
 
+def _synthetic_multimodal_bundles(*, window_ms: int, source_ref: str):
+    binder = SparseTemporalBinder(window_ms=float(window_ms))
+    events = [
+        binder.normalize_event(
+            modality="language",
+            timestamp_ms=128.0,
+            source_id=f"{source_ref}-bundle-language",
+            sparse_signature=[101, 102],
+            confidence=0.9,
+            label="hard",
+            source_ref=f"bundle::{source_ref}",
+        ),
+        binder.normalize_event(
+            modality="vision",
+            timestamp_ms=130.0,
+            source_id=f"{source_ref}-bundle-vision",
+            sparse_signature=[201, 202],
+            confidence=0.9,
+            label="hard",
+            source_ref=f"bundle::{source_ref}",
+        ),
+        binder.normalize_event(
+            modality="audio",
+            timestamp_ms=136.0,
+            source_id=f"{source_ref}-bundle-audio",
+            sparse_signature=[301, 302],
+            confidence=0.9,
+            label="hard",
+            source_ref=f"bundle::{source_ref}",
+        ),
+        binder.normalize_event(
+            modality="tactile",
+            timestamp_ms=140.0,
+            source_id=f"{source_ref}-bundle-tactile",
+            sparse_signature=[401, 402],
+            confidence=0.9,
+            label="hard",
+            source_ref=f"bundle::{source_ref}",
+        ),
+    ]
+    return binder.bundle_events(events)
+
+
 def _pearson(xs: Sequence[float], ys: Sequence[float]) -> float:
     if len(xs) != len(ys) or len(xs) < 2:
         return 0.0
@@ -269,6 +313,10 @@ def _run_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
             source_ref=str(fixture["source_ref"]),
             source_hash=str(fixture["source_hash"]),
             candidate_events=fixture["candidate_events"],
+            multimodal_bundles=_synthetic_multimodal_bundles(
+                window_ms=int(profile["synchrony_window_ms"]),
+                source_ref=str(fixture["source_ref"]),
+            ),
         )
         payload = result.to_dict()
         traces = payload["traces"]

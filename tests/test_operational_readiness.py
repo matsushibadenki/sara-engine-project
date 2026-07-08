@@ -1810,6 +1810,40 @@ def test_operational_retry_queue_builds_from_failed_entries():
     assert queue[0]["next_attempt"] == 2
 
 
+def test_operational_retry_queue_groups_request_scoped_entries_separately():
+    module = _load_script("operational_readiness.py")
+    now = 200.0
+    entries = [
+        {
+            "command": "python scripts/sara_cli.py eval-autobot-gap-loop-readiness",
+            "status": "failed",
+            "covered_checks": ["autobot_gap_loop_readiness"],
+            "source": "runbook_action:autobot_bundle_fixture_isolation_review",
+            "request_id": "fixture_counterexample_gap",
+            "timestamp": now - 60.0,
+        },
+        {
+            "command": "python scripts/sara_cli.py eval-autobot-gap-loop-readiness",
+            "status": "failed",
+            "covered_checks": ["autobot_gap_loop_readiness"],
+            "source": "runbook_action:autobot_bundle_fixture_isolation_review",
+            "request_id": "fixture_source_diversity_gap",
+            "timestamp": now - 50.0,
+        },
+    ]
+    queue = module.build_operational_retry_queue_from_repair_log(
+        entries,
+        max_attempts=2,
+        cooldown_seconds=0.0,
+        now_timestamp=now,
+    )
+    assert len(queue) == 2
+    assert {item["request_id"] for item in queue} == {
+        "fixture_counterexample_gap",
+        "fixture_source_diversity_gap",
+    }
+
+
 def test_operational_retry_cooldown_blocked_respects_window():
     module = _load_script("operational_readiness.py")
     now = 300.0
@@ -1995,7 +2029,15 @@ def test_collect_operational_checklist_status_marks_managed_paths():
     module = _load_script("operational_readiness.py")
     report = {
         "passed": True,
-        "checks": {},
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["source_lineage"],
+                    }
+                }
+            }
+        },
         "repair_plan": {},
         "iterative_repair_plan": {},
     }
@@ -2042,7 +2084,15 @@ def test_collect_operational_checklist_status_fails_for_unmanaged_paths():
     module = _load_script("operational_readiness.py")
     report = {
         "passed": True,
-        "checks": {},
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["source_lineage"],
+                    }
+                }
+            }
+        },
         "repair_plan": {},
         "iterative_repair_plan": {},
     }
@@ -2067,7 +2117,15 @@ def test_collect_operational_checklist_status_flags_high_drop_rate():
     module = _load_script("operational_readiness.py")
     report = {
         "passed": True,
-        "checks": {},
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["source_lineage"],
+                    }
+                }
+            }
+        },
         "repair_plan": {},
         "iterative_repair_plan": {},
         "runbook_action_build_rates": {"drop_rate": 0.95},
@@ -2312,6 +2370,156 @@ def test_append_operational_runbook_actions_to_repair_log_preserves_severity_met
     assert entries[0]["severity"] == "critical"
     assert entries[0]["priority_hint"] == "high"
     assert "weak_joule_pair" in entries[0]["reason_hint"]
+
+
+def test_append_operational_runbook_actions_to_repair_log_preserves_bundle_metadata():
+    module = _load_script("operational_readiness.py")
+    entries = []
+    runbook_actions = [
+        {
+            "command": "Review fixture request fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+            "priority": "high",
+            "source": "autobot_bundle_fixture_repair",
+            "reason": (
+                "bundle_gap_followup; bundle_closed_loop_overlap=yes; bundle_gap_reduction=4; "
+                "fixture_request=fixture_counterexample_gap; missing_slots=1; skipped_slots=0"
+            ),
+            "affected_checks": ["autobot_gap_loop_readiness", "event_memory_ingest_pipeline"],
+        }
+    ]
+
+    appended = module.append_operational_runbook_actions_to_repair_log(
+        entries,
+        runbook_actions,
+        max_append=1,
+        min_priority="medium",
+    )
+
+    assert appended == 1
+    assert entries[0]["bundle_closed_loop_overlap"] is True
+    assert entries[0]["bundle_gap_reduction"] == 4
+    assert entries[0]["priority_hint"] == "high"
+
+
+def test_append_operational_runbook_actions_to_repair_log_preserves_isolation_review_metadata():
+    module = _load_script("operational_readiness.py")
+    entries = []
+    runbook_actions = [
+        {
+            "command": "python scripts/sara_cli.py eval-autobot-gap-loop-readiness",
+            "priority": "high",
+            "source": "autobot_bundle_fixture_isolation_review",
+            "reason": (
+                "bundle_overlap_isolation_review; request_id=fixture_counterexample_gap; "
+                "missing_axes=source_lineage,collection_time; highest_risk_axis=source_lineage; "
+                "review_priority=high; return_phase=phase7"
+            ),
+            "affected_checks": [
+                "autobot_gap_loop_readiness",
+                "event_memory_ingest_pipeline",
+                "sara_ann_comparison",
+            ],
+        }
+    ]
+
+    appended = module.append_operational_runbook_actions_to_repair_log(
+        entries,
+        runbook_actions,
+        max_append=1,
+        min_priority="medium",
+    )
+
+    assert appended == 1
+    assert entries[0]["isolation_review_priority"] == "high"
+    assert entries[0]["isolation_highest_risk_axis"] == "source_lineage"
+
+
+def test_summarize_bundle_repair_log_counts_recovery_and_overlap():
+    module = _load_script("operational_readiness.py")
+    summary = module._summarize_bundle_repair_log(
+        [
+            {
+                "command": "python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                "status": "pending",
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "bundle_closed_loop_overlap": True,
+                "bundle_gap_reduction": 4,
+                "timestamp": 1.0,
+            },
+            {
+                "command": "python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                "status": "success",
+                "source": "manual",
+                "bundle_closed_loop_overlap": True,
+                "bundle_gap_reduction": 4,
+                "resolved_timestamp": 2.0,
+            },
+            {
+                "command": "python bot/gap_materials_builder.py --targets-path \"/tmp/other.json\"",
+                "status": "pending",
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "bundle_closed_loop_overlap": False,
+                "bundle_gap_reduction": 1,
+                "timestamp": 3.0,
+            },
+        ]
+    )
+
+    assert summary["entry_count"] == 3
+    assert summary["overlap_entry_count"] == 2
+    assert summary["success_count"] == 1
+    assert summary["pending_count"] == 2
+    assert summary["recovered_count"] == 1
+    assert summary["max_gap_reduction"] == 4
+
+
+def test_summarize_bundle_repair_log_tracks_isolation_clear_release_success():
+    module = _load_script("operational_readiness.py")
+    summary = module._summarize_bundle_repair_log(
+        [
+            {
+                "command": "Clear fixture isolation block for fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\" --clear-blocked-request-id \"fixture_counterexample_gap\"",
+                "status": "success",
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "request_id": "fixture_counterexample_gap",
+                "clearable_after_review": True,
+                "resolved_timestamp": 2.0,
+            },
+        ]
+    )
+
+    assert summary["isolation_clear_release_success_count"] == 1
+    assert summary["isolation_clear_release_request_ids"] == ["fixture_counterexample_gap"]
+
+
+def test_summarize_bundle_retry_queue_tracks_churn_and_reblocked_requests():
+    module = _load_script("operational_readiness.py")
+    summary = module._summarize_bundle_retry_queue(
+        [
+            {
+                "command": "python scripts/sara_cli.py eval-autobot-gap-loop-readiness",
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "request_id": "fixture_counterexample_gap",
+                "isolation_review_churn_without_resolution": True,
+            },
+            {
+                "command": "python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\" --clear-blocked-request-id \"fixture_source_diversity_gap\"",
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "bundle_closed_loop_overlap": True,
+                "bundle_recovered_before": True,
+                "request_id": "fixture_source_diversity_gap",
+                "isolation_reblocked_after_resolution": True,
+            },
+        ]
+    )
+
+    assert summary["entry_count"] == 2
+    assert summary["fresh_count"] == 1
+    assert summary["recovered_before_count"] == 1
+    assert summary["isolation_review_churn_count"] == 1
+    assert summary["isolation_review_churn_request_ids"] == ["fixture_counterexample_gap"]
+    assert summary["isolation_reblocked_count"] == 1
+    assert summary["isolation_reblocked_request_ids"] == ["fixture_source_diversity_gap"]
 
 
 def test_append_efficiency_incident_repair_shortcut_appends_three_commands():
@@ -2598,7 +2806,15 @@ def test_build_operational_runbook_includes_efficiency_shortcut_action_count():
         "error_count": 1,
         "readiness_score": 0.2,
         "strict_production": True,
-        "checks": {},
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["source_lineage"],
+                    }
+                }
+            }
+        },
         "failure_focus": {},
         "iterative_repair_plan": {"next_step_hint": "", "next_actions": []},
         "repair_retry_queue_count": 0,
@@ -2663,6 +2879,75 @@ def test_build_operational_runbook_prefers_report_runbook_actions():
     }
     runbook = module.build_operational_runbook(report)
     assert "python scripts/eval/custom_action.py" in runbook
+
+
+def test_build_operational_runbook_includes_bundle_fixture_followup_section():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "passed": False,
+        "error_count": 1,
+        "readiness_score": 0.5,
+        "strict_production": True,
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["source_lineage"],
+                    }
+                }
+            }
+        },
+        "failure_focus": {},
+        "iterative_repair_plan": {"next_step_hint": "", "next_actions": []},
+        "repair_retry_queue_count": 0,
+        "repair_retry_queue": [],
+        "runbook_actions": [
+            {
+                "source": "autobot_bundle_fixture_repair",
+                "priority": "high",
+                "command": "Review fixture request fixture_source_diversity_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                "reason": "bundle_gap_followup; fixture_request=fixture_source_diversity_gap; missing_slots=1; skipped_slots=0",
+            }
+        ],
+        "bundle_repair_log_summary": {
+            "entry_count": 3,
+            "overlap_entry_count": 2,
+            "success_count": 1,
+            "pending_count": 1,
+            "recovered_count": 1,
+            "max_gap_reduction": 4,
+        },
+        "repair_retry_queue": [
+            {
+                "command": "Review fixture request fixture_source_diversity_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/fresh.json\"",
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "bundle_closed_loop_overlap": True,
+                "bundle_recovered_before": False,
+            },
+            {
+                "command": "Review fixture request fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/recovered.json\"",
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "bundle_closed_loop_overlap": True,
+                "bundle_recovered_before": True,
+            },
+        ],
+        "runbook_action_build_stats": {},
+    }
+    runbook = module.build_operational_runbook(report)
+    assert "## Bundle Fixture Follow-up" in runbook
+    assert "- Prioritized bundle fixture actions: 1" in runbook
+    assert "fixture_source_diversity_gap" in runbook
+    assert "bundle_gap_followup" in runbook
+    assert "## Bundle Repair Status" in runbook
+    assert "- Entry count: 3" in runbook
+    assert "- Overlap entry count: 2" in runbook
+    assert "- Recovered count: 1" in runbook
+    assert "- Max gap reduction: 4" in runbook
+    assert "- Retry queue fresh count: 1" in runbook
+    assert "- Retry queue recovered-before count: 1" in runbook
+    assert "- Isolation-blocked request count: 1" in runbook
+    assert "- Isolation-blocked request ids: fixture_counterexample_gap" in runbook
+    assert "- Isolation-blocked missing axes: source_lineage" in runbook
 
 
 def test_build_operational_runbook_includes_efficiency_kpi_incident_section():
@@ -3999,6 +4284,613 @@ def test_build_operational_runbook_actions_adds_internal_maintenance_evidence():
     assert "internal_maintenance_efficiency" in action["affected_checks"]
 
 
+def test_build_operational_runbook_actions_routes_bundle_repair_to_phase7_surfaces():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "source": "event_memory_maintenance_coupling_reference",
+                    "category": "weak_bundle_compression_contribution",
+                    "priority": "medium",
+                    "task": "phase6_compression_maintenance_coupling",
+                    "return_phase": "phase7",
+                    "return_lane": "phase7_source_aware_bundle_fixtures",
+                    "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+                }
+            ]
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(item for item in actions if item["source"] == "ann_efficiency_next_evidence")
+    assert action["priority"] == "medium"
+    assert "ann_efficiency_roadmap" in action["affected_checks"]
+    assert "event_memory_maintenance_coupling" in action["affected_checks"]
+    assert "event_memory_ingest_pipeline" in action["affected_checks"]
+    assert "return_phase=phase7" in action["reason"]
+    assert "return_lane=phase7_source_aware_bundle_fixtures" in action["reason"]
+
+
+def test_build_operational_runbook_actions_prioritizes_bundle_fixture_followup():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "source": "event_memory_maintenance_coupling_reference",
+                    "category": "weak_bundle_compression_contribution",
+                    "priority": "medium",
+                    "task": "phase6_compression_maintenance_coupling",
+                    "return_phase": "phase7",
+                    "return_lane": "phase7_source_aware_bundle_fixtures",
+                    "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+                }
+            ]
+        },
+        "sara_ann_comparison": {
+            "metrics": {
+                "event_memory_bundle_support_closed_loop_overlap_ids": [
+                    "fixture_counterexample_gap"
+                ],
+                "event_memory_bundle_support_closed_loop_gap_reduction": 4,
+            }
+        },
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_repair_actions": [
+                    {
+                        "request_id": "fixture_counterexample_gap",
+                        "priority": "medium",
+                        "command": "Review fixture request fixture_counterexample_gap (missing_types=counterexample) and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                        "reason": "fixture_request=fixture_counterexample_gap; missing_slots=1; skipped_slots=0",
+                        "affected_checks": [
+                            "autobot_gap_loop_readiness",
+                            "event_memory_ingest_pipeline",
+                        ],
+                    },
+                    {
+                        "request_id": "fixture_source_diversity_gap",
+                        "priority": "medium",
+                        "command": "Review fixture request fixture_source_diversity_gap (missing_types=transcript_segment) and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                        "reason": "fixture_request=fixture_source_diversity_gap; missing_slots=1; skipped_slots=0",
+                        "affected_checks": [
+                            "autobot_gap_loop_readiness",
+                            "event_memory_ingest_pipeline",
+                        ],
+                    }
+                ]
+            }
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    bundle_actions = [
+        item for item in actions if item["source"] == "autobot_bundle_fixture_repair"
+    ]
+    assert bundle_actions[0]["priority"] == "high"
+    assert "fixture_counterexample_gap" in bundle_actions[0]["command"]
+    assert "bundle_gap_followup" in bundle_actions[0]["reason"]
+    assert "bundle_closed_loop_overlap=yes" in bundle_actions[0]["reason"]
+    assert "bundle_gap_reduction=4" in bundle_actions[0]["reason"]
+    assert "event_memory_ingest_pipeline" in bundle_actions[0]["affected_checks"]
+    assert "fixture_source_diversity_gap" in bundle_actions[1]["command"]
+
+
+def test_build_operational_runbook_actions_adds_bundle_overlap_isolation_review():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "sara_ann_comparison": {
+            "metrics": {
+                "event_memory_bundle_support_closed_loop_overlap_ids": [
+                    "fixture_counterexample_gap"
+                ],
+                "event_memory_bundle_support_closed_loop_gap_reduction": 4,
+            }
+        },
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["collection_time"],
+                    }
+                }
+            }
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(
+        item for item in actions if item["source"] == "autobot_bundle_fixture_isolation_review"
+    )
+    assert action["priority"] == "medium"
+    assert action["command"] == "python scripts/sara_cli.py eval-autobot-gap-loop-readiness"
+    assert "request_id=fixture_counterexample_gap" in action["reason"]
+    assert "missing_axes=collection_time" in action["reason"]
+    assert "highest_risk_axis=collection_time" in action["reason"]
+    assert "review_priority=medium" in action["reason"]
+    assert "return_phase=phase7" in action["reason"]
+    assert "autobot_gap_loop_readiness" in action["affected_checks"]
+    assert "sara_ann_comparison" in action["affected_checks"]
+
+
+def test_build_operational_runbook_actions_escalates_bundle_overlap_isolation_review_for_lineage_gap():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "sara_ann_comparison": {
+            "metrics": {
+                "event_memory_bundle_support_closed_loop_overlap_ids": [
+                    "fixture_counterexample_gap"
+                ],
+                "event_memory_bundle_support_closed_loop_gap_reduction": 4,
+            }
+        },
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["source_lineage", "collection_time"],
+                    }
+                }
+            }
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(
+        item for item in actions if item["source"] == "autobot_bundle_fixture_isolation_review"
+    )
+    assert action["priority"] == "high"
+    assert "highest_risk_axis=source_lineage" in action["reason"]
+    assert "review_priority=high" in action["reason"]
+
+
+def test_build_operational_runbook_actions_blocks_bundle_rerun_until_high_risk_isolation_review_clears():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "source": "event_memory_maintenance_coupling_reference",
+                    "category": "weak_bundle_compression_contribution",
+                    "priority": "medium",
+                    "task": "phase6_compression_maintenance_coupling",
+                    "return_phase": "phase7",
+                    "return_lane": "phase7_source_aware_bundle_fixtures",
+                    "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+                }
+            ]
+        },
+        "sara_ann_comparison": {
+            "metrics": {
+                "event_memory_bundle_support_closed_loop_overlap_ids": [
+                    "fixture_counterexample_gap"
+                ],
+                "event_memory_bundle_support_closed_loop_gap_reduction": 4,
+            }
+        },
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["source_lineage"],
+                    }
+                },
+                "fixture_repair_actions": [
+                    {
+                        "request_id": "fixture_counterexample_gap",
+                        "priority": "medium",
+                        "command": "Review fixture request fixture_counterexample_gap (missing_types=counterexample) and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                        "reason": "fixture_request=fixture_counterexample_gap; missing_slots=1; skipped_slots=0",
+                        "affected_checks": [
+                            "autobot_gap_loop_readiness",
+                            "event_memory_ingest_pipeline",
+                        ],
+                    }
+                ],
+            }
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    assert any(
+        item["source"] == "autobot_bundle_fixture_isolation_review"
+        for item in actions
+    )
+    assert not any(
+        item["source"] == "autobot_bundle_fixture_repair"
+        and "fixture_counterexample_gap" in item["command"]
+        for item in actions
+    )
+    assert not any(
+        item["source"] == "autobot_fixture_repair"
+        and "fixture_counterexample_gap" in item["command"]
+        for item in actions
+    )
+
+
+def test_build_operational_runbook_actions_releases_clearable_bundle_block_with_clear_command():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "ann_efficiency_roadmap": {
+            "next_evidence_actions": [
+                {
+                    "source": "event_memory_maintenance_coupling_reference",
+                    "category": "weak_bundle_compression_contribution",
+                    "priority": "medium",
+                    "task": "phase6_compression_maintenance_coupling",
+                    "return_phase": "phase7",
+                    "return_lane": "phase7_source_aware_bundle_fixtures",
+                    "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+                }
+            ]
+        },
+        "sara_ann_comparison": {
+            "metrics": {
+                "event_memory_bundle_support_closed_loop_overlap_ids": [
+                    "fixture_counterexample_gap"
+                ],
+                "event_memory_bundle_support_closed_loop_gap_reduction": 4,
+            }
+        },
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": [],
+                    }
+                },
+                "fixture_execution_policy": {
+                    "clearable_blocked_request_ids": ["fixture_counterexample_gap"],
+                },
+                "fixture_repair_actions": [
+                    {
+                        "request_id": "fixture_counterexample_gap",
+                        "priority": "medium",
+                        "command": "Clear fixture isolation block for fixture_counterexample_gap (missing_axes=none) and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\" --clear-blocked-request-id \"fixture_counterexample_gap\"",
+                        "reason": "fixture_request=fixture_counterexample_gap; missing_slots=1; skipped_slots=0; blocked_by_isolation_review=true; clearable_after_review=true",
+                        "affected_checks": [
+                            "autobot_gap_loop_readiness",
+                            "event_memory_ingest_pipeline",
+                        ],
+                    }
+                ],
+            }
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    assert any(
+        item["source"] == "autobot_bundle_fixture_repair"
+        and "--clear-blocked-request-id" in item["command"]
+        for item in actions
+    )
+
+
+def test_build_operational_runbook_actions_routes_bundle_retry_churn_to_phase7_followup():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_plan": {"fallback_actions": []},
+        "repair_retry_queue": [
+            {
+                "command": "Review fixture request fixture_source_diversity_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/fresh.json\"",
+                "reason": "failed",
+                "covered_checks": ["event_memory_ingest_pipeline"],
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "request_id": "fixture_source_diversity_gap",
+                "bundle_closed_loop_overlap": True,
+                "isolation_review_churn_without_resolution": True,
+                "priority_tier": "medium",
+                "priority_score": 3.0,
+            }
+        ],
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    churn_action = next(
+        item
+        for item in actions
+        if item["source"] == "autobot_bundle_fixture_churn_followup"
+    )
+    assert churn_action["priority"] == "medium"
+    assert "fixture_source_diversity_gap" in churn_action["command"]
+    assert "expand distinct source evidence" in churn_action["command"]
+    assert "return_phase=phase7" in churn_action["reason"]
+    assert "return_lane=phase7_source_aware_bundle_fixtures" in churn_action["reason"]
+    assert "event_memory_ingest_pipeline" in churn_action["affected_checks"]
+    assert "sara_ann_comparison" in churn_action["affected_checks"]
+    assert not any(
+        item["source"] == "retry_queue"
+        and "fixture_source_diversity_gap" in item["command"]
+        for item in actions
+    )
+
+
+def test_build_operational_runbook_actions_routes_bundle_retry_reblocked_to_clear_release_followup():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_plan": {"fallback_actions": []},
+        "repair_retry_queue": [
+            {
+                "command": "Clear fixture isolation block for fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/recovered.json\" --clear-blocked-request-id \"fixture_counterexample_gap\"",
+                "reason": "failed",
+                "covered_checks": [
+                    "autobot_gap_loop_readiness",
+                    "event_memory_ingest_pipeline",
+                ],
+                "source": "runbook_action:autobot_bundle_fixture_repair",
+                "request_id": "fixture_counterexample_gap",
+                "bundle_closed_loop_overlap": True,
+                "isolation_reblocked_after_resolution": True,
+                "priority_tier": "high",
+                "priority_score": 5.0,
+            }
+        ],
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    reblocked_action = next(
+        item
+        for item in actions
+        if item["source"] == "autobot_bundle_fixture_reblocked_followup"
+    )
+    assert reblocked_action["priority"] == "high"
+    assert "fixture_counterexample_gap" in reblocked_action["command"]
+    assert "validate clear-release evidence" in reblocked_action["command"]
+    assert "--clear-blocked-request-id" in reblocked_action["command"]
+    assert "return_phase=phase7" in reblocked_action["reason"]
+    assert "return_lane=phase7_clear_release_validation" in reblocked_action["reason"]
+    assert "autobot_gap_loop_readiness" in reblocked_action["affected_checks"]
+    assert "sara_ann_comparison" in reblocked_action["affected_checks"]
+    assert not any(
+        item["source"] == "retry_queue"
+        and "fixture_counterexample_gap" in item["command"]
+        for item in actions
+    )
+
+
+def test_prioritize_operational_retry_queue_boosts_bundle_closed_loop_repairs():
+    module = _load_script("operational_readiness.py")
+    retry_queue = [
+        {
+            "command": "python scripts/eval/phase3_accuracy_suite.py",
+            "reason": "failed",
+            "covered_checks": ["phase3_accuracy"],
+            "source": "runbook_action:fallback_action",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "bundle_closed_loop_overlap": False,
+            "bundle_gap_reduction": 0,
+        },
+        {
+            "command": "Review fixture request fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+            "reason": "failed",
+            "covered_checks": ["event_memory_ingest_pipeline"],
+            "source": "runbook_action:autobot_bundle_fixture_repair",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "bundle_closed_loop_overlap": True,
+            "bundle_gap_reduction": 4,
+        },
+    ]
+
+    prioritized = module.prioritize_operational_retry_queue(retry_queue)
+
+    assert prioritized[0]["bundle_closed_loop_overlap"] is True
+    assert prioritized[0]["priority_bundle_closed_loop_overlap"] is True
+    assert prioritized[0]["priority_bundle_gap_reduction"] == 4
+    assert prioritized[0]["priority_score"] > prioritized[1]["priority_score"]
+
+
+def test_prioritize_operational_retry_queue_boosts_high_risk_isolation_review():
+    module = _load_script("operational_readiness.py")
+    retry_queue = [
+        {
+            "command": "Review fixture request fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+            "reason": "failed",
+            "covered_checks": ["event_memory_ingest_pipeline"],
+            "source": "runbook_action:autobot_bundle_fixture_repair",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "bundle_closed_loop_overlap": True,
+            "bundle_gap_reduction": 4,
+        },
+        {
+            "command": "python scripts/sara_cli.py eval-autobot-gap-loop-readiness",
+            "reason": "failed",
+            "covered_checks": [
+                "autobot_gap_loop_readiness",
+                "event_memory_ingest_pipeline",
+                "sara_ann_comparison",
+            ],
+            "source": "runbook_action:autobot_bundle_fixture_isolation_review",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "bundle_closed_loop_overlap": False,
+            "bundle_gap_reduction": 0,
+            "isolation_review_priority": "high",
+            "isolation_highest_risk_axis": "source_lineage",
+        },
+    ]
+
+    prioritized = module.prioritize_operational_retry_queue(retry_queue)
+
+    assert prioritized[0]["command"] == "python scripts/sara_cli.py eval-autobot-gap-loop-readiness"
+    assert prioritized[0]["priority_isolation_review_priority"] == "high"
+    assert prioritized[0]["priority_isolation_highest_risk_axis"] == "source_lineage"
+    assert prioritized[0]["priority_score"] > prioritized[1]["priority_score"]
+
+
+def test_prioritize_operational_retry_queue_downweights_isolation_review_churn_without_resolution():
+    module = _load_script("operational_readiness.py")
+    retry_queue = [
+        {
+            "command": "python scripts/sara_cli.py eval-autobot-gap-loop-readiness",
+            "reason": "failed",
+            "covered_checks": ["autobot_gap_loop_readiness"],
+            "source": "runbook_action:autobot_bundle_fixture_isolation_review",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "isolation_review_churn_without_resolution": True,
+            "isolation_reblocked_after_resolution": False,
+        },
+        {
+            "command": "python scripts/eval/phase3_accuracy_suite.py",
+            "reason": "failed",
+            "covered_checks": ["phase3_accuracy"],
+            "source": "runbook_action:fallback_action",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+        },
+    ]
+
+    prioritized = module.prioritize_operational_retry_queue(retry_queue)
+
+    churn_entry = next(
+        item for item in prioritized if "eval-autobot-gap-loop-readiness" in item["command"]
+    )
+    assert churn_entry["priority_isolation_review_churn_without_resolution"] is True
+    assert churn_entry["priority_urgency_bonus"] < 0.0
+
+
+def test_prioritize_operational_retry_queue_boosts_isolation_reblocked_after_resolution():
+    module = _load_script("operational_readiness.py")
+    retry_queue = [
+        {
+            "command": "Clear fixture isolation block for fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\" --clear-blocked-request-id \"fixture_counterexample_gap\"",
+            "reason": "failed",
+            "covered_checks": ["autobot_gap_loop_readiness", "event_memory_ingest_pipeline"],
+            "source": "runbook_action:autobot_bundle_fixture_repair",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "bundle_closed_loop_overlap": True,
+            "bundle_gap_reduction": 4,
+            "isolation_reblocked_after_resolution": True,
+            "isolation_review_churn_without_resolution": False,
+        },
+        {
+            "command": "python scripts/eval/phase3_accuracy_suite.py",
+            "reason": "failed",
+            "covered_checks": ["phase3_accuracy"],
+            "source": "runbook_action:fallback_action",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+        },
+    ]
+
+    prioritized = module.prioritize_operational_retry_queue(retry_queue)
+
+    assert prioritized[0]["priority_isolation_reblocked_after_resolution"] is True
+    assert "--clear-blocked-request-id" in prioritized[0]["command"]
+
+
+def test_prioritize_operational_retry_queue_downweights_previously_recovered_bundle_repairs():
+    module = _load_script("operational_readiness.py")
+    retry_queue = [
+        {
+            "command": "Review fixture request fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/recovered.json\"",
+            "reason": "failed",
+            "covered_checks": ["event_memory_ingest_pipeline"],
+            "source": "runbook_action:autobot_bundle_fixture_repair",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "bundle_closed_loop_overlap": True,
+            "bundle_gap_reduction": 4,
+            "bundle_recovered_before": True,
+        },
+        {
+            "command": "Review fixture request fixture_source_diversity_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/fresh.json\"",
+            "reason": "failed",
+            "covered_checks": ["event_memory_ingest_pipeline"],
+            "source": "runbook_action:autobot_bundle_fixture_repair",
+            "severity": "",
+            "attempts_used": 0,
+            "max_attempts": 2,
+            "bundle_closed_loop_overlap": True,
+            "bundle_gap_reduction": 4,
+            "bundle_recovered_before": False,
+        },
+    ]
+
+    prioritized = module.prioritize_operational_retry_queue(retry_queue)
+
+    assert prioritized[0]["command"].endswith("/tmp/fresh.json\"")
+    assert prioritized[0]["priority_bundle_recovered_before"] is False
+    assert prioritized[1]["priority_bundle_recovered_before"] is True
+    assert prioritized[0]["priority_score"] > prioritized[1]["priority_score"]
+
+
+def test_build_operational_runbook_actions_adds_autobot_fixture_repair_actions():
+    module = _load_script("operational_readiness.py")
+    report = {
+        "iterative_repair_plan": {"next_actions": []},
+        "repair_retry_queue": [],
+        "repair_plan": {"fallback_actions": []},
+        "checks": {
+            "autobot_gap_loop_readiness": {
+                "fixture_repair_actions": [
+                    {
+                        "request_id": "fixture_counterexample_gap",
+                        "priority": "high",
+                        "command": "python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                        "reason": "fixture_request=fixture_counterexample_gap; missing_slots=1; skipped_slots=0",
+                        "affected_checks": [
+                            "autobot_gap_loop_readiness",
+                            "event_memory_ingest_pipeline",
+                        ],
+                    }
+                ]
+            }
+        },
+    }
+
+    actions = module.build_operational_runbook_actions(report)
+
+    action = next(item for item in actions if item["source"] == "autobot_fixture_repair")
+    assert action["priority"] == "high"
+    assert "gap_materials_builder.py" in action["command"]
+    assert "fixture_counterexample_gap" in action["reason"]
+    assert "autobot_gap_loop_readiness" in action["affected_checks"]
+    assert "event_memory_ingest_pipeline" in action["affected_checks"]
+
+
 def test_build_operational_runbook_actions_adds_sara_ann_comparison_evidence():
     module = _load_script("operational_readiness.py")
     report = {
@@ -5048,6 +5940,16 @@ def test_format_operational_summary_includes_runbook_action_distribution():
                 "phase5_entry_gate": {"passed": True},
                 "release_gate": {"passed": True},
                 "production_profile": {"passed": True},
+                "autobot_gap_loop_readiness": {
+                    "fixture_request_isolation_audit": {
+                        "fixture_counterexample_gap": {
+                            "missing_axes": ["source_lineage"],
+                        },
+                        "fixture_source_diversity_gap": {
+                            "missing_axes": [],
+                        },
+                    }
+                },
             },
             "stage_b_promotion": {},
             "stage_d_readiness": {},
@@ -5057,8 +5959,49 @@ def test_format_operational_summary_includes_runbook_action_distribution():
             "repair_plan": {"covered_checks": [], "uncovered_checks": []},
             "failure_focus": {},
             "repair_retry_queue_count": 0,
+            "repair_retry_queue": [
+                {
+                    "command": "Review fixture request fixture_source_diversity_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/fresh.json\"",
+                    "source": "runbook_action:autobot_bundle_fixture_repair",
+                    "bundle_closed_loop_overlap": True,
+                    "bundle_recovered_before": False,
+                    "request_id": "fixture_source_diversity_gap",
+                    "isolation_review_churn_without_resolution": True,
+                },
+                {
+                    "command": "Review fixture request fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/recovered.json\"",
+                    "source": "runbook_action:autobot_bundle_fixture_repair",
+                    "bundle_closed_loop_overlap": True,
+                    "bundle_recovered_before": True,
+                    "request_id": "fixture_counterexample_gap",
+                    "isolation_reblocked_after_resolution": True,
+                },
+            ],
+            "bundle_retry_queue_summary": {
+                "entry_count": 2,
+                "fresh_count": 1,
+                "recovered_before_count": 1,
+                "isolation_review_churn_count": 1,
+                "isolation_review_churn_request_ids": ["fixture_source_diversity_gap"],
+                "isolation_reblocked_count": 1,
+                "isolation_reblocked_request_ids": ["fixture_counterexample_gap"],
+            },
             "repair_retry_cooldown_seconds": 0.0,
             "repair_retry_cooldown_blocked_count": 0,
+            "repair_retry_queue": [
+                {
+                    "command": "Review fixture request fixture_source_diversity_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/fresh.json\"",
+                    "source": "runbook_action:autobot_bundle_fixture_repair",
+                    "bundle_closed_loop_overlap": True,
+                    "bundle_recovered_before": False,
+                },
+                {
+                    "command": "Review fixture request fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/recovered.json\"",
+                    "source": "runbook_action:autobot_bundle_fixture_repair",
+                    "bundle_closed_loop_overlap": True,
+                    "bundle_recovered_before": True,
+                },
+            ],
             "repair_pending_count": 0,
             "repair_timeout_count": 0,
             "runbook_max_actions": 25,
@@ -5107,6 +6050,181 @@ def test_format_operational_summary_includes_runbook_action_distribution():
     assert "- runbook_action_skipped_max_actions_by_source: fallback_action=1" in summary
     assert "- runbook_action_drop_rate: 1.000" in summary
     assert "- efficiency_shortcut_overuse_event_count: 0" in summary
+
+
+def test_format_operational_summary_includes_sara_ann_bundle_metrics():
+    module = _load_script("operational_readiness.py")
+    summary = module.format_operational_summary(
+        {
+            "passed": True,
+            "error_count": 0,
+            "readiness_score": 1.0,
+            "strict_production": True,
+            "checks": {
+                "phase3_accuracy": {"passed": True},
+                "phase3_completion": {"passed": True},
+                "phase4_completion": {"passed": True},
+                "phase5_entry_gate": {"passed": True},
+                "release_gate": {"passed": True},
+                "production_profile": {"passed": True},
+                "external_validity": {"passed": True, "metrics": {}},
+                "external_validity_ladder": {"passed": True, "metrics": {}},
+                "autobot_gap_loop_readiness": {
+                    "passed": True,
+                    "metrics": {
+                        "fixture_request_count": 2,
+                        "fixture_requested_slot_count": 2,
+                        "fixture_gap_material_built_count": 2,
+                        "fixture_gap_build_coverage": 1.0,
+                        "fixture_source_domain_count": 2,
+                        "fixture_source_lineage_coverage": 1.0,
+                    },
+                "fixture_lane": {
+                    "requested_slots_by_request": {
+                        "fixture_counterexample_gap": 1,
+                        "fixture_source_diversity_gap": 1,
+                        },
+                        "built_by_request": {
+                            "fixture_counterexample_gap": 1,
+                            "fixture_source_diversity_gap": 1,
+                        },
+                        "skipped_by_request": {
+                        "fixture_counterexample_gap": 0,
+                        "fixture_source_diversity_gap": 0,
+                    },
+                },
+                "fixture_repair_actions": [
+                    {
+                        "request_id": "fixture_counterexample_gap",
+                        "priority": "high",
+                        "command": "python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                        "reason": "fixture_request=fixture_counterexample_gap; missing_slots=1; skipped_slots=0",
+                    },
+                    {
+                        "request_id": "fixture_source_diversity_gap",
+                        "priority": "medium",
+                        "command": "python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                        "reason": "fixture_request=fixture_source_diversity_gap; missing_slots=0; skipped_slots=1",
+                    },
+                ],
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["source_lineage"],
+                    },
+                    "fixture_source_diversity_gap": {
+                        "missing_axes": [],
+                    },
+                },
+            },
+            },
+            "stage_b_promotion": {},
+            "stage_d_readiness": {},
+            "stage_e_readiness": {},
+            "phase5_entry_readiness": {},
+            "iterative_repair_plan": {"completed": True, "stalled": False, "stop_reason": "", "next_step_hint": "", "next_actions": []},
+            "repair_plan": {"covered_checks": [], "uncovered_checks": []},
+            "failure_focus": {},
+            "repair_retry_queue_count": 0,
+            "repair_retry_queue": [
+                {
+                    "command": "Review fixture request fixture_source_diversity_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/fresh.json\"",
+                    "source": "runbook_action:autobot_bundle_fixture_repair",
+                    "bundle_closed_loop_overlap": True,
+                    "bundle_recovered_before": False,
+                    "request_id": "fixture_source_diversity_gap",
+                    "isolation_review_churn_without_resolution": True,
+                },
+                {
+                    "command": "Review fixture request fixture_counterexample_gap and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/recovered.json\"",
+                    "source": "runbook_action:autobot_bundle_fixture_repair",
+                    "bundle_closed_loop_overlap": True,
+                    "bundle_recovered_before": True,
+                    "request_id": "fixture_counterexample_gap",
+                    "isolation_reblocked_after_resolution": True,
+                },
+            ],
+            "bundle_retry_queue_summary": {
+                "entry_count": 2,
+                "fresh_count": 1,
+                "recovered_before_count": 1,
+                "isolation_review_churn_count": 1,
+                "isolation_review_churn_request_ids": ["fixture_source_diversity_gap"],
+                "isolation_reblocked_count": 1,
+                "isolation_reblocked_request_ids": ["fixture_counterexample_gap"],
+            },
+            "repair_retry_cooldown_seconds": 0.0,
+            "repair_retry_cooldown_blocked_count": 0,
+            "repair_pending_count": 0,
+            "repair_timeout_count": 0,
+            "runbook_action_summary": {"total_actions": 0, "source_counts": {}, "priority_counts": {}},
+            "runbook_action_build_stats": {},
+            "runbook_action_build_rates": {},
+            "bundle_repair_log_summary": {
+                "entry_count": 3,
+                "overlap_entry_count": 2,
+                "success_count": 1,
+                "pending_count": 1,
+                "recovered_count": 1,
+                "max_gap_reduction": 4,
+                "isolation_clear_release_success_count": 1,
+                "isolation_clear_release_request_ids": ["fixture_source_diversity_gap"],
+            },
+            "repair_auto_dispatch": {},
+            "error_details": [],
+            "error_details_summary": {},
+            "operational_checklist": {"passed": True, "managed_output_paths_ok": True, "report_summary_review_ready": True},
+            "recovery_actions": [],
+            "sara_ann_comparison": {
+                "passed": True,
+                "metrics": {
+                    "event_memory_episode_compression_ratio": 5.0,
+                    "event_memory_multimodal_bundle_compression_contribution": 1.25,
+                    "event_memory_maintenance_best_bundle_compression_contribution": 1.83,
+                    "event_memory_bundle_support_closed_loop_overlap_count": 2,
+                    "event_memory_bundle_support_closed_loop_gap_reduction": 4,
+                    "event_memory_bundle_support_closed_loop_coverage_ready": True,
+                },
+            },
+        }
+    )
+    assert "- sara_ann_comparison_present: True" in summary
+    assert "- sara_ann_comparison_passed: True" in summary
+    assert "- sara_ann_event_memory_episode_compression_ratio: 5.000" in summary
+    assert "- sara_ann_event_memory_multimodal_bundle_compression_contribution: 1.250" in summary
+    assert "- sara_ann_event_memory_maintenance_best_bundle_compression_contribution: 1.830" in summary
+    assert "- sara_ann_bundle_closed_loop_overlap_count: 2" in summary
+    assert "- sara_ann_bundle_closed_loop_gap_reduction: 4" in summary
+    assert "- sara_ann_bundle_closed_loop_coverage_ready: True" in summary
+    assert "- autobot_gap_loop_fixture_request_count: 2" in summary
+    assert "- autobot_gap_loop_fixture_build_coverage: 1.000" in summary
+    assert "- autobot_gap_loop_fixture_source_lineage_coverage: 1.000" in summary
+    assert "- autobot_gap_loop_fixture_breakdown: fixture_counterexample_gap:1/1/0, fixture_source_diversity_gap:1/1/0" in summary
+    assert "- autobot_gap_loop_fixture_repair_action_count: 2" in summary
+    assert "- bundle_repair_log_entry_count: 3" in summary
+    assert "- bundle_repair_log_overlap_entry_count: 2" in summary
+    assert "- bundle_repair_log_success_count: 1" in summary
+    assert "- bundle_repair_log_pending_count: 1" in summary
+    assert "- bundle_repair_log_recovered_count: 1" in summary
+    assert "- bundle_repair_log_max_gap_reduction: 4" in summary
+    assert "- bundle_isolation_clear_release_success_count: 1" in summary
+    assert "- bundle_isolation_clear_release_request_ids: fixture_source_diversity_gap" in summary
+    assert "- bundle_isolation_resolved_request_ids: fixture_source_diversity_gap" in summary
+    assert "- bundle_retry_queue_entry_count: 2" in summary
+    assert "- bundle_retry_queue_fresh_count: 1" in summary
+    assert "- bundle_retry_queue_recovered_before_count: 1" in summary
+    assert "- bundle_retry_queue_isolation_review_churn_count: 1" in summary
+    assert (
+        "- bundle_retry_queue_isolation_review_churn_request_ids: fixture_source_diversity_gap"
+        in summary
+    )
+    assert "- bundle_retry_queue_isolation_reblocked_count: 1" in summary
+    assert (
+        "- bundle_retry_queue_isolation_reblocked_request_ids: fixture_counterexample_gap"
+        in summary
+    )
+    assert "- bundle_isolation_blocked_request_count: 1" in summary
+    assert "- bundle_isolation_blocked_request_ids: fixture_counterexample_gap" in summary
+    assert "- bundle_isolation_blocked_missing_axes: source_lineage" in summary
 
 
 def test_summarize_runbook_action_build_stats_computes_drop_rates():

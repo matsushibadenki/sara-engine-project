@@ -112,6 +112,37 @@ def build_report(
     augmented_gap_count = int(augmented_report.get("fixture_material_coverage_gap_count", 0) or 0)
     planner = CollectionPlanner()
     requests = planner.material_requests_from_fixture_feedback(request_plan_payload or {})
+    target_request_ids = sorted(
+        {
+            str(item.get("request_id", "") or "")
+            for item in (
+                targets_payload.get("targets", [])
+                if isinstance(targets_payload, dict) and isinstance(targets_payload.get("targets", []), list)
+                else []
+            )
+            if isinstance(item, dict) and str(item.get("request_id", "") or "")
+        }
+    )
+    built_request_ids = sorted(
+        {
+            str(item.get("request_id", "") or "")
+            for item in gap_rows
+            if isinstance(item, dict) and str(item.get("request_id", "") or "")
+        }
+    )
+    bundle_request_tokens = (
+        "bundle",
+        "source_diversity",
+        "counterexample",
+        "repair_support",
+        "revision_conflict",
+    )
+    bundle_relevant_target_request_ids = [
+        request_id for request_id in target_request_ids if any(token in request_id for token in bundle_request_tokens)
+    ]
+    bundle_relevant_built_request_ids = [
+        request_id for request_id in built_request_ids if any(token in request_id for token in bundle_request_tokens)
+    ]
 
     return {
         "schema": "sara-gap-materials-closed-loop-benchmark-report-v1",
@@ -128,6 +159,15 @@ def build_report(
         "gap_material_built_type_counts": dict(sorted(built_type_counts.items())),
         "gap_material_skipped_count": len(skipped),
         "fixture_request_count": len(requests),
+        "target_request_ids": target_request_ids,
+        "built_request_ids": built_request_ids,
+        "bundle_relevant_target_request_ids": bundle_relevant_target_request_ids,
+        "bundle_relevant_built_request_ids": bundle_relevant_built_request_ids,
+        "bundle_relevant_request_coverage": (
+            1.0
+            if not bundle_relevant_target_request_ids
+            else float(len(bundle_relevant_built_request_ids)) / float(len(bundle_relevant_target_request_ids))
+        ),
         "policy_notes": [
             "Closed-loop evidence compares accepted-only own-latent coverage against accepted-plus-gap-material coverage.",
             "Gap materials remain deterministic and source-backed throughout the comparison.",
@@ -143,6 +183,7 @@ def summarize_report(report: Dict[str, Any]) -> str:
         f"Augmented coverage gaps: {report.get('augmented_fixture_material_coverage_gap_count')}",
         f"Gap reduction: {report.get('coverage_gap_reduction')}",
         f"Built gap materials: {report.get('gap_material_built_count')}",
+        f"Bundle-relevant request coverage: {float(report.get('bundle_relevant_request_coverage', 0.0) or 0.0):.3f}",
         "Built gap material types:",
     ]
     for key, value in sorted(report.get("gap_material_built_type_counts", {}).items()):

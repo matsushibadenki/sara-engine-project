@@ -108,6 +108,7 @@ def _ann_efficiency_roadmap_report(passed=True):
         "completion_score": 1.0 if passed else 0.8,
         "stage_count": 6,
         "passed_stage_count": 6 if passed else 5,
+        "next_evidence_actions": [],
         "stages": [
             {"name": name, "passed": bool(passed or index < 4)}
             for index, name in enumerate(stage_names)
@@ -341,7 +342,7 @@ def test_research_product_completion_gate_passes_all_green():
     assert report["artifact_state"]["autobot_gap_loop_readiness"] == "passed"
     assert "- artifact_state: phase6=present, phase8=passed, phase7=passed" in summary
     assert "- phase6_energy_metrics: status=pending_measurement, session_id=ann-efficiency-real-joule, planned_runs=1, task_count=1" in summary
-    assert "- phase8_baseline_metrics: roadmap_completion=1.000, passed_stages=6/6, fixture_cases=8, fixture_task_types=7" in summary
+    assert "- phase8_baseline_metrics: roadmap_completion=1.000, passed_stages=6/6, bundle_gap_actions=0, fixture_cases=8, fixture_task_types=7" in summary
     assert "- ann_efficiency_roadmap: PASS" in summary
     assert "- energy_measurement_session_plan: PASS" in summary
     assert "- sparse_diffusion_block_readiness: PASS" in summary
@@ -432,6 +433,44 @@ def test_research_product_completion_gate_rejects_ann_efficiency_roadmap_failure
     assert report["passed"] is False
     assert "ann_efficiency_roadmap" in report["failed_checks"]
     assert report["checks"]["ann_efficiency_roadmap"]["errors"]
+
+
+def test_research_product_completion_gate_rejects_bundle_support_gap_in_roadmap():
+    module = _load_module()
+    roadmap = _ann_efficiency_roadmap_report(True)
+    roadmap["next_evidence_actions"] = [
+        {
+            "category": "weak_bundle_compression_contribution",
+            "return_phase": "phase7",
+            "return_lane": "phase7_source_aware_bundle_fixtures",
+            "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+        }
+    ]
+
+    report = module.build_research_product_completion_report(
+        policy_text=_policy_text(),
+        roadmap_report=_roadmap_report(True),
+        phase3_report=_phase3_report(True),
+        phase4_report=_phase4_report(True),
+        phase5_completion_report=_phase5_completion_report(True),
+        operational_report=_operational_report(True),
+        ann_efficiency_roadmap_report=roadmap,
+        sparse_diffusion_block_report=_sparse_diffusion_block_report(True),
+        energy_measurement_session_plan=_energy_measurement_session_plan(True),
+        adaptive_credit_field_report=_adaptive_credit_field_report(True),
+        adaptive_credit_event_memory_report=_adaptive_credit_event_memory_report(True),
+        rust_core_readiness_report=_rust_core_readiness_report(True),
+        research_fixture_readiness_report=_research_fixture_readiness_report(True),
+        autobot_gap_loop_readiness_report=_autobot_gap_loop_readiness_report(True),
+        source_texts=_source_texts(),
+    )
+
+    assert report["passed"] is False
+    assert "ann_efficiency_roadmap" in report["failed_checks"]
+    assert any(
+        "bundle-support gap" in error
+        for error in report["checks"]["ann_efficiency_roadmap"]["errors"]
+    )
 
 
 def test_research_product_completion_gate_rejects_sparse_diffusion_failure():

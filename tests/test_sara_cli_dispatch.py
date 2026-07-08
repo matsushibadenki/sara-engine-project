@@ -215,6 +215,10 @@ def test_build_autobot_gap_materials_dispatches_to_builder_script(monkeypatch):
             "workspace/autobot/test_gap_materials_report.json",
             "--summary-path",
             "workspace/autobot/test_gap_materials_summary.txt",
+            "--blocked-request-id",
+            "fixture_counterexample_gap",
+            "--clear-blocked-request-id",
+            "fixture_source_diversity_gap",
         ],
     )
 
@@ -229,6 +233,10 @@ def test_build_autobot_gap_materials_dispatches_to_builder_script(monkeypatch):
     assert "data/processed/autobot/test_materials.jsonl" in args
     assert "--targets-path" in args
     assert "workspace/autobot/test_collection_targets.json" in args
+    assert "--blocked-request-id" in args
+    assert "fixture_counterexample_gap" in args
+    assert "--clear-blocked-request-id" in args
+    assert "fixture_source_diversity_gap" in args
 
 
 def test_enqueue_autobot_gap_curriculum_dispatches_to_builder_script(monkeypatch):
@@ -301,6 +309,10 @@ def test_run_autobot_gap_loop_dispatches_to_runner_script(monkeypatch):
             "workspace/autobot/test_gap_loop_summary.txt",
             "--evaluation-gap",
             "negative_control",
+            "--blocked-request-id",
+            "fixture_counterexample_gap",
+            "--clear-blocked-request-id",
+            "fixture_source_diversity_gap",
         ],
     )
 
@@ -317,6 +329,10 @@ def test_run_autobot_gap_loop_dispatches_to_runner_script(monkeypatch):
     assert "data/interim/autobot/test_rejected.jsonl" in args
     assert "--gap-curriculum-path" in args
     assert "data/processed/autobot/test_gap_curriculum.jsonl" in args
+    assert "--blocked-request-id" in args
+    assert "fixture_counterexample_gap" in args
+    assert "--clear-blocked-request-id" in args
+    assert "fixture_source_diversity_gap" in args
 
 
 def test_eval_autobot_gap_loop_readiness_dispatches_to_eval_script(monkeypatch):

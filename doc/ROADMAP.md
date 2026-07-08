@@ -86,6 +86,8 @@ Goal: move from proxy-only ANN-efficiency claims to paired physical measurements
   - DONE: session progress monitoring now compares planned pair runs against recorded rows and surfaces completion, partial coverage, invalid fairness matches, and orphan measurements under `workspace/evaluation/physical_energy_session_progress.json`.
   - DONE: `energy_measurement_readiness.py` now emits that same session-progress surface directly from the managed session plan, so partial laboratory sessions appear in the main Phase 6 readiness artifact instead of hiding behind aggregate row counts.
   - DONE: session-progress artifacts now also surface the Event Memory compression-versus-maintenance coupling reference, so physical-pair collection can be reviewed against the currently best self-state/compression profile without opening a separate benchmark report.
+  - DONE: Phase 6 readiness, session-progress, physical-pair summaries, and roadmap gating now also surface `best_profile_multimodal_bundle_compression_contribution`, so a measured compression win can be distinguished from a weakly bound or non-synesthetic shortcut.
+  - DONE: Phase 6 reports now emit explicit bundle-contribution warnings when compression remains cheap but verified multimodal bundle contribution is too weak, preventing premature "SARA-native compression" claims.
   - DONE: ANN-efficiency next-action generation now lifts orphan measurement pairs and invalid measurement rows into explicit Phase 6 repair commands, so data-hygiene issues reach the operational runbook instead of remaining passive diagnostics.
   - DONE: weak paired joule results now carry severity, relative shortfall, and ratio-gap metadata, so Phase 6 remeasurement priority is driven by how far the result is from the claim threshold instead of treating all weak pairs equally.
   - DONE: invalid pairs are now classified into fairness-field mismatch versus run-order conflict and fed back into managed `invalid_pairs` repair planning, so nested session-progress artifacts can distinguish "fix the contract" from "rerun the pair."
@@ -109,6 +111,7 @@ Goal: move from proxy-only ANN-efficiency claims to paired physical measurements
 - The minimum paired ANN/SARA joule-per-success ratio passes the configured threshold.
 - Reports continue to label claims as proxy-only until physical measurements pass.
 - Measurement commands and results remain reproducible from managed artifacts.
+- If bundle-backed compression remains weak, the repair loop explicitly returns to Phase 7 source-aware bundle-fixture preparation before another public Phase 6 efficiency claim is attempted.
 
 ## Phase 7: Autonomous Learning Data Preparation
 
@@ -201,6 +204,13 @@ The bot should not simply crawl more pages. It should transform collected materi
    - DONE: the research benchmark suite now surfaces this readiness report alongside closed-loop gap reduction so Phase 7 can be monitored as both "did coverage improve?" and "did the loop operationally complete?".
    - DONE: `research_product_completion_gate.py` now requires this readiness report, so the high-level research-product gate fails loudly when the autonomous gap-repair loop stops producing usable repair/replay curriculum.
 
+11. Add a dedicated bundle-support repair lane.
+   - When Phase 6 readiness, ANN-efficiency gating, or SARA-vs-ANN comparison artifacts report weak bundle-backed compression, treat the first repair target as Phase 7 source-aware bundle-fixture strengthening unless a stronger fairness or measurement-integrity fault is already present.
+   - Keep the repair lane explicit from source hash -> synchronized record -> bundle fixture -> Event Memory promotion trace, so stronger bundle support remains auditable and does not silently leak evaluation data into training.
+   - Prefer repairs that improve verified cross-modal support while preserving modality-local separability; do not accept unlabeled collapse as evidence of better concept compression.
+   - DONE: the research benchmark suite and operational readiness surfaces now expose bundle-repair log counts, recovered retries, maximum closed-loop gap reduction, and explicit `phase7` return-route counts so "go strengthen source-aware bundle fixtures" is measurable rather than implicit.
+   - DONE: high-risk bundle-overlap isolation gaps now block automatic rerun promotion until the missing Phase 7 audit axes are reviewed, and both operational and research summaries surface the blocked request IDs plus missing-axis reasons.
+
 ### Future Slice: Synchronized Experience Data
 
 Goal: prepare small, high-integrity time-aligned multimodal learning records for Phase 16 and Phase 20 without turning broad web video scraping into the collection strategy.
@@ -283,6 +293,7 @@ The useful signal is not raw channel count. It is the density of independently i
    - Level 6 stores only verified reusable invariants with source counts, contradiction history, scope, and expiry/revalidation policy.
    - Every higher-level record must retain lineage to the lower-level event IDs and source hashes used to construct it.
    - Require explicit promotion tests between levels so the system can prove that a derived abstraction improves downstream quality or compression efficiency without silently discarding needed evidence.
+   - If a higher-level compression path improves cost but weakens verified bundle contribution, block promotion and send the repair loop back to Phase 7 bundle-fixture/data strengthening before calling it a valid compression win.
    - Delay human-readable semantic labels until repeated synchrony or source-backed language evidence justifies them; the early Event Memory should work even when events are only cluster IDs.
    - If ANN proposals are used, preserve the same delay rule: candidate labels may aid search and audit, but promotion to durable memory must still depend on repeated support, contradiction checks, and prediction value.
    - DONE: a unified `EventMemoryIngestPipeline` now runs `change detection -> temporal eventization -> bounded episode segmentation -> frequent sequence mining -> synchrony/prediction-gain relation proposals -> verification`, while keeping observed records and ANN-assisted candidate records distinct.
@@ -1020,9 +1031,11 @@ Design principle: treat modality differences as differences in input statistics,
 1. Add explicit event-bundle records that keep modality payloads separate while sharing one verified binding identity.
    - Proposed artifact shape: a bundle header with `event_id`, `time_chunk_id`, uncertainty, and route trace plus per-modality child records keyed by `modality_id`.
    - Preserve modality-local confidence, source lineage, and sparse signatures instead of flattening them into one mixed payload.
+   - DONE for the first bounded slice: verified bundle admission now promotes separable multimodal bundles into Event Memory candidates while preserving per-modality child lineage and confidence in the bundle audit trace.
 2. Add a binding-hub audit path.
    - Record whether a cross-modal relation was admitted through direct synchrony, repeated co-activation, source-backed language evidence, or verifier-confirmed abstraction.
    - Reject durable promotion when only one weak channel or one accidental coincidence supports the binding.
+   - DONE for the first bounded slice: bundle admission traces now preserve evidence types, payload-separability status, route-trace count, and promotion/block decisions so Phase 16 bindings remain auditable when handed to Event Memory.
 3. Add modality-specific reconstruction or replay checks.
    - Verify that a shared event binding can still be traced back into modality-local evidence summaries without erasing visual, audio, tactile, or language distinctions.
    - Treat failure here as a binding-collapse regression, even if abstract task accuracy appears unchanged.
@@ -1129,6 +1142,7 @@ This slice is the most promising way to absorb the recent Adaptive Credit Field 
 4. Add event-memory compression pressure from ACF.
    - Promote or refresh only events whose combined `prediction_error * novelty * reward` survives contradiction, source, and budget checks.
    - Let low-responsibility or low-longevity structures decay earlier than verified, repeatedly useful structures.
+   - DONE for the first observed-only slice: multimodal bundle affinity now slightly increases ACF-derived longevity, Event Memory utility, retrieval priority, concept revalidation priority, and concept-admission ordering without bypassing verification or source/diversity guards.
 5. Add confidence-gated route selection.
    - Start with bounded local confidence state and confidence-weighted route arbitration before introducing any explicit confidence-event protocol.
    - Require abstention when confidence conflict remains unresolved.
@@ -1242,6 +1256,7 @@ Design role in SARA: this phase is the primary home of **Event Memory**. Recurre
    - Report cache growth, retained utility, retrieval event cost, merge count, eviction count, and state-budget headroom.
    - DONE: redundant entries merge, tier budgets evict low-utility states, expiry is explicit, and managed state reports lifecycle counts and bounded tier occupancy.
    - DONE: cache utility and retrieval scoring now accept sequence-backed support as an explicit bounded factor, so repeated ordered episode evidence can improve durable retention priority without replacing source, resonance, or verification requirements.
+   - DONE: verified multimodal bundle affinity now appears as a bounded utility/retrieval/consolidation factor, so cross-modal event bindings can become slightly easier to retain and reactivate without collapsing modality-local evidence into one opaque score.
 
 6. Add a focused benchmark.
    - Proposed script: `scripts/eval/event_state_cache_benchmark.py`.
@@ -1516,17 +1531,25 @@ Design paper: [Semantic Echo Field v2: Event-Centric World Model Extension for S
 3. Publish the Phase 6 measurement protocol and regenerate readiness, ANN-efficiency, research-product, and release evidence.
    - PARTIAL: the pre-session protocol and v2 session plan are generated; physical rows and post-session observations remain pending.
    - IN PROGRESS: the readiness and session-progress summaries can now also surface the observed-only internal maintenance reference, so pre-physical maintenance efficiency and post-physical maintenance rows stay aligned in the same Phase 6 reading surface. The readiness aggregate now also compares physical SARA maintenance-event cost per selected replay against that reference, and the roadmap gate can raise a dedicated maintenance-alignment drift action when physical self-state cost moves too far from the bounded internal benchmark.
+   - IN PROGRESS: the same Phase 6 surfaces now also expose bundle-backed compression contribution and can warn when physical compression wins are weakly tied to verified multimodal binding, but this still needs real laboratory rows before it can support a public claim.
+   - IN PROGRESS: roadmap-gate next-evidence actions and operational runbook generation now preserve explicit `return_phase` routing, so weak bundle-backed compression can return to Phase 7 source-aware bundle-fixture work instead of being treated as a pure Phase 6 rerun issue.
 4. Strengthen Phase 8 with one real lightweight pretrained embedding baseline, followed by optional FAISS CPU and tiny-Transformer retrieval baselines.
    - IN PROGRESS: `eval-sara-ann-comparison` now reads the same physical-versus-reference maintenance alignment surface used by Phase 6 readiness and exposes missing-alignment or high-drift follow-up directly in the comparison report, so baseline-strength discussion stays tied to persistent-self-state efficiency rather than only task cost.
    - IN PROGRESS: the comparison report now also reads the Event Memory ingest compression surface (`eventization_emission_ratio`, `episode_compression_ratio`, `relation_verification_yield`, self-state continuity) so changes in concept formation or compression can be judged against Phase 6/8 evidence instead of being discussed separately.
 5. Expand Phase 8 onto frozen independently sourced noisy, adversarial, negative-query, contrastive, and delayed-recall tasks.
 6. Audit Phase 7 train/evaluation isolation by source hash, revision, domain, time split, and near-duplicate signature before generating more autonomous material.
    - IN PROGRESS: Event Memory compression quality now propagates into the research benchmark manifest and operational runbook generation via the comparison report, so weak episode compression or relation-verification yield can surface as managed repair work instead of remaining an isolated evaluator detail.
+   - IN PROGRESS: bundle-repair telemetry now preserves whether weak bundle-backed compression was actually routed back to Phase 7 in both operational and research summaries; the next step is to connect that routing to train/evaluation-isolation audit results so repair success never masks leakage risk.
+   - IN PROGRESS: overlap-isolation review now carries per-request blocked IDs and missing-axis summaries into both the operational retry queue and the research benchmark manifest; builder and gap-loop executors now honor blocked request IDs, and clearable requests can now emit explicit block-release rerun commands that remove the managed block before rebuild.
+   - DONE for the next bounded slice: successful clear-release reruns now become durable request-level evidence, and operational/research summaries can distinguish repeated isolation-review churn from requests that reblocked after an earlier clearance.
+   - IN PROGRESS: runbook action generation now routes request-level `churn` back to Phase 7 source-aware bundle-fixture strengthening and routes `reblocked` requests to clear-release validation, but the next step is to bind those routes to explicit source-hash/revision/domain/time-split audit outcomes so repair success never masks leakage risk.
 7. Keep completed Phase 13-18 mechanisms stable; do not prioritize further architecture expansion over Phase 6, Phase 8, and Phase 7 evidence.
    - IN PROGRESS: `event_memory_maintenance_coupling_benchmark.py` now compares bounded Event Memory compression profiles (`tight`, `balanced`, `wide`) against persistent self-state continuity and maintenance-load proxy, so concept compression changes can be screened for hidden self-state cost before they are treated as accuracy or efficiency wins.
+   - IN PROGRESS: the same coupling benchmark now carries profile-level multimodal bundle promotion, relation-yield, and compression-contribution traces, so future compression wins can be judged for whether they actually arise from verified cross-modal binding.
    - IN PROGRESS: `eval-sara-ann-comparison` and the operational runbook now consume that coupling surface, so weak compression-versus-maintenance tradeoffs can trigger managed follow-up alongside Phase 6 physical measurement gaps and Phase 8 baseline gaps.
    - IN PROGRESS: `energy_measurement_readiness.py` and `ann_efficiency_roadmap_gate.py` now also consume the coupling reference, so Phase 6 laboratory readiness and roadmap next-action generation can flag missing or weak compression-versus-maintenance evidence before a physical energy claim is promoted.
    - IN PROGRESS: `run-physical-energy-pair` and the session batch plan now pin that same coupling reference into pair-level commands and summaries, so laboratory pair artifacts keep their internal compression-maintenance assumption explicit instead of depending on out-of-band context.
+   - IN PROGRESS: weak bundle-backed compression is now routed as its own repair class, distinct from measurement gaps and external-baseline gaps, and the first return target is Phase 7 source-aware bundle-fixture strengthening.
    - NEXT WHEN PHASE 6/8 PRESSURE EASES: activate the Phase 17 Adaptive Credit Field slice, because stronger multi-timescale local credit assignment is currently the most plausible route to better concept formation, compression, and long-gap learning without surrendering SARA's sparse-runtime identity.
 8. Keep Phase 19 inactive until its activation gate is satisfied; use it only to address an observed temporal-accuracy limitation without erasing SNN efficiency.
 9. Keep Phase 20 inactive until a frozen independent language benchmark and cost ceilings exist; begin with echo-only fixed-timescale controls before phase binding, phonological recoding, or adaptive time constants.

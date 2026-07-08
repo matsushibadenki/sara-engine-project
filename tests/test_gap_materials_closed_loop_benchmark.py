@@ -209,7 +209,21 @@ def test_gap_materials_closed_loop_benchmark_reduces_coverage_gaps():
     assert report["augmented_fixture_material_coverage_gap_count"] == 0
     assert report["coverage_gap_reduction"] == 4
     assert report["gap_material_built_count"] == 4
+    assert report["bundle_relevant_target_request_ids"] == [
+        "fixture_counterexample_gap",
+        "fixture_repair_support_gap",
+        "fixture_revision_conflict_gap",
+        "fixture_source_diversity_gap",
+    ]
+    assert report["bundle_relevant_built_request_ids"] == [
+        "fixture_counterexample_gap",
+        "fixture_repair_support_gap",
+        "fixture_revision_conflict_gap",
+        "fixture_source_diversity_gap",
+    ]
+    assert report["bundle_relevant_request_coverage"] == 1.0
     with open(summary_path, "r", encoding="utf-8") as handle:
         summary = handle.read()
     assert "Gap materials closed loop: PASS" in summary
     assert "Gap reduction: 4" in summary
+    assert "Bundle-relevant request coverage: 1.000" in summary

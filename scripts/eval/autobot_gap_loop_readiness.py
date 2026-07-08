@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import sys
+from collections import Counter
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 
@@ -33,6 +34,26 @@ def read_json(path: str) -> Optional[Dict[str, Any]]:
     except (OSError, json.JSONDecodeError):
         return None
     return payload if isinstance(payload, dict) else None
+
+
+def read_jsonl(path: str) -> Sequence[Dict[str, Any]]:
+    if not path or not os.path.exists(path):
+        return []
+    rows = []
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                try:
+                    payload = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(payload, dict):
+                    rows.append(payload)
+    except OSError:
+        return []
+    return rows
 
 
 def write_json(path: str, payload: Mapping[str, Any]) -> str:
@@ -80,12 +101,238 @@ def _count_requested_slots(targets_payload: Optional[Dict[str, Any]]) -> int:
     return total
 
 
+def _fixture_targets(targets_payload: Optional[Dict[str, Any]]) -> Sequence[Dict[str, Any]]:
+    if not isinstance(targets_payload, dict):
+        return []
+    targets = targets_payload.get("targets", [])
+    if not isinstance(targets, list):
+        return []
+    return [
+        item
+        for item in targets
+        if isinstance(item, dict) and str(item.get("request_id", "") or "").startswith("fixture_")
+    ]
+
+
+def _count_fixture_requested_slots(targets_payload: Optional[Dict[str, Any]]) -> int:
+    total = 0
+    for item in _fixture_targets(targets_payload):
+        total += len([value for value in item.get("missing_material_types", []) if str(value)])
+    return total
+
+
 def _check(condition: bool, value: Any, detail: str = "") -> Dict[str, Any]:
     return {
         "passed": bool(condition),
         "value": value,
         "detail": detail,
     }
+
+
+def _build_fixture_repair_actions(
+    *,
+    fixture_targets: Sequence[Dict[str, Any]],
+    requested_slots_by_request: Mapping[str, int],
+    built_by_request: Mapping[str, int],
+    skipped_by_request: Mapping[str, int],
+    input_paths: Optional[Mapping[str, str]] = None,
+    blocked_request_ids: Optional[Sequence[str]] = None,
+    blocked_request_missing_axes: Optional[Mapping[str, Sequence[str]]] = None,
+    clearable_blocked_request_ids: Optional[Sequence[str]] = None,
+) -> Sequence[Dict[str, Any]]:
+    targets_by_request = {
+        str(item.get("request_id", "") or ""): item
+        for item in fixture_targets
+        if isinstance(item, dict) and str(item.get("request_id", "") or "")
+    }
+    gap_report_path = ""
+    collection_targets_path = ""
+    if isinstance(input_paths, Mapping):
+        gap_report_path = str(input_paths.get("gap_report", "") or "")
+        collection_targets_path = str(input_paths.get("collection_targets", "") or "")
+    blocked_request_id_set = {str(item) for item in (blocked_request_ids or []) if str(item)}
+    clearable_blocked_request_id_set = {
+        str(item) for item in (clearable_blocked_request_ids or []) if str(item)
+    }
+    actions = []
+    for request_id in sorted(requested_slots_by_request):
+        requested = _safe_int(requested_slots_by_request.get(request_id))
+        built = _safe_int(built_by_request.get(request_id))
+        skipped = _safe_int(skipped_by_request.get(request_id))
+        if requested <= 0:
+            continue
+        missing_slots = max(requested - built, 0)
+        if missing_slots <= 0 and skipped <= 0:
+            continue
+        target = targets_by_request.get(request_id, {})
+        missing_material_types = [
+            str(value)
+            for value in (
+                target.get("missing_material_types", [])
+                if isinstance(target.get("missing_material_types", []), list)
+                else []
+            )
+            if str(value)
+        ]
+        evaluation_gaps = [
+            str(value)
+            for value in (
+                target.get("evaluation_gaps", [])
+                if isinstance(target.get("evaluation_gaps", []), list)
+                else []
+            )
+            if str(value)
+        ]
+        candidate_source_domains = [
+            str(value)
+            for value in (
+                target.get("candidate_source_domains", [])
+                if isinstance(target.get("candidate_source_domains", []), list)
+                else []
+            )
+            if str(value)
+        ]
+        blocked_missing_axes = []
+        if isinstance(blocked_request_missing_axes, Mapping):
+            blocked_missing_axes = [
+                str(value)
+                for value in (
+                    blocked_request_missing_axes.get(request_id, [])
+                    if isinstance(blocked_request_missing_axes.get(request_id, []), list)
+                    else []
+                )
+                if str(value)
+            ]
+        is_blocked = request_id in blocked_request_id_set
+        is_clearable = request_id in clearable_blocked_request_id_set
+        command = ""
+        if is_blocked and is_clearable and collection_targets_path:
+            command = (
+                f"Clear fixture isolation block for {request_id} "
+                f"(missing_axes={','.join(blocked_missing_axes) or 'none'}) and rerun "
+                "python bot/gap_materials_builder.py "
+                f"--targets-path {json.dumps(collection_targets_path)} "
+                f"--clear-blocked-request-id {json.dumps(request_id)}"
+            )
+            if gap_report_path:
+                command += f" --report-path {json.dumps(gap_report_path)}"
+        elif is_blocked:
+            command = (
+                f"Review fixture isolation block for {request_id} "
+                f"(missing_axes={','.join(blocked_missing_axes) or 'none'}) before rerunning "
+                "python bot/gap_materials_builder.py"
+            )
+        elif collection_targets_path:
+            command = (
+                f"Review fixture request {request_id} "
+                f"(missing_types={','.join(missing_material_types) or 'none'}) and rerun "
+                "python bot/gap_materials_builder.py "
+                f"--targets-path {json.dumps(collection_targets_path)}"
+            )
+        if gap_report_path:
+            command = (
+                f"{command} --report-path {json.dumps(gap_report_path)}"
+                if command
+                else (
+                    "python bot/gap_materials_builder.py "
+                    f"--report-path {json.dumps(gap_report_path)}"
+                )
+            )
+        actions.append(
+            {
+                "request_id": request_id,
+                "priority": "high" if missing_slots > 0 else "medium",
+                "missing_slots": missing_slots,
+                "skipped_slots": skipped,
+                "missing_material_types": missing_material_types,
+                "evaluation_gaps": evaluation_gaps,
+                "candidate_source_domains": candidate_source_domains,
+                "command": command,
+                "reason": (
+                    f"fixture_request={request_id}; missing_slots={missing_slots}; "
+                    f"skipped_slots={skipped}; "
+                    f"blocked_by_isolation_review={str(is_blocked).lower()}; "
+                    f"clearable_after_review={str(is_clearable).lower()}"
+                ),
+                "blocked_by_isolation_review": is_blocked,
+                "clearable_after_review": is_clearable,
+                "blocked_missing_axes": blocked_missing_axes,
+                "affected_checks": [
+                    "autobot_gap_loop_readiness",
+                    "event_memory_ingest_pipeline",
+                ],
+            }
+        )
+    return actions
+
+
+def _fixture_request_isolation_audit(
+    *,
+    fixture_targets: Sequence[Dict[str, Any]],
+    fixture_gap_rows: Sequence[Dict[str, Any]],
+    accepted_rows: Sequence[Dict[str, Any]],
+) -> Dict[str, Dict[str, Any]]:
+    accepted_source_domains = {
+        str(row.get("source_domain", "") or "local")
+        for row in accepted_rows
+        if isinstance(row, dict) and str(row.get("source_domain", "") or "local")
+    }
+    rows_by_request: Dict[str, list[Dict[str, Any]]] = {}
+    for row in fixture_gap_rows:
+        if not isinstance(row, dict):
+            continue
+        request_id = str(row.get("request_id", "") or "")
+        if not request_id:
+            continue
+        rows_by_request.setdefault(request_id, []).append(row)
+
+    audit: Dict[str, Dict[str, Any]] = {}
+    for target in fixture_targets:
+        if not isinstance(target, dict):
+            continue
+        request_id = str(target.get("request_id", "") or "")
+        if not request_id:
+            continue
+        request_rows = rows_by_request.get(request_id, [])
+        candidate_source_domains = {
+            str(domain or "local")
+            for domain in (
+                target.get("candidate_source_domains", [])
+                if isinstance(target.get("candidate_source_domains", []), list)
+                else []
+            )
+            if str(domain or "local")
+        }
+        row_count = len(request_rows)
+        lineage_ready_count = sum(
+            1
+            for row in request_rows
+            if str(row.get("source_url", "") or "").strip()
+            or str(row.get("source_path", "") or "").strip()
+        )
+        collection_time_ready_count = sum(
+            1 for row in request_rows if str(row.get("collection_time", "") or "").strip()
+        )
+        lineage_coverage = 1.0 if row_count <= 0 else lineage_ready_count / float(row_count)
+        collection_time_coverage = (
+            1.0 if row_count <= 0 else collection_time_ready_count / float(row_count)
+        )
+        axis_status = {
+            "source_domain": bool(candidate_source_domains) or bool(accepted_source_domains),
+            "source_lineage": row_count <= 0 or lineage_coverage >= 1.0,
+            "collection_time": row_count <= 0 or collection_time_coverage >= 1.0,
+        }
+        missing_axes = sorted(key for key, ready in axis_status.items() if not bool(ready))
+        audit[request_id] = {
+            "row_count": row_count,
+            "candidate_source_domain_count": len(candidate_source_domains),
+            "accepted_source_domain_count": len(accepted_source_domains),
+            "lineage_coverage": lineage_coverage,
+            "collection_time_coverage": collection_time_coverage,
+            "axis_status": axis_status,
+            "missing_axes": missing_axes,
+        }
+    return dict(sorted(audit.items()))
 
 
 def build_report(
@@ -95,8 +342,11 @@ def build_report(
     gap_report: Optional[Dict[str, Any]],
     enqueue_report: Optional[Dict[str, Any]],
     collection_targets: Optional[Dict[str, Any]],
+    accepted_rows: Sequence[Dict[str, Any]],
+    gap_rows: Sequence[Dict[str, Any]],
     min_accepted_count: int,
     min_gap_build_coverage: float,
+    input_paths: Optional[Mapping[str, str]] = None,
 ) -> Dict[str, Any]:
     target_count = 0 if not isinstance(collection_targets, dict) else _safe_int(collection_targets.get("target_count"))
     requested_slot_count = _count_requested_slots(collection_targets)
@@ -116,6 +366,124 @@ def build_report(
     total_curriculum = sum(_safe_int(value) for value in gap_curriculum_distribution.values())
     repair_share = 0.0 if total_curriculum <= 0 else repair_count / float(total_curriculum)
     replay_share = 0.0 if total_curriculum <= 0 else replay_count / float(total_curriculum)
+    fixture_targets = _fixture_targets(collection_targets)
+    fixture_request_count = len(fixture_targets)
+    fixture_requested_slot_count = _count_fixture_requested_slots(collection_targets)
+    fixture_requested_slots_by_request = {
+        str(item.get("request_id", "") or ""): len(
+            [value for value in item.get("missing_material_types", []) if str(value)]
+        )
+        for item in fixture_targets
+        if str(item.get("request_id", "") or "")
+    }
+    fixture_gap_rows = [
+        row
+        for row in gap_rows
+        if str(row.get("request_id", "") or "").startswith("fixture_")
+    ]
+    fixture_gap_built_count = len(fixture_gap_rows)
+    fixture_built_by_request = Counter(
+        str(row.get("request_id", "") or "")
+        for row in fixture_gap_rows
+        if str(row.get("request_id", "") or "")
+    )
+    gap_report_skipped = (
+        gap_report.get("skipped", [])
+        if isinstance(gap_report, dict) and isinstance(gap_report.get("skipped"), list)
+        else []
+    )
+    fixture_skipped_by_request = Counter(
+        str(row.get("request_id", "") or "")
+        for row in gap_report_skipped
+        if isinstance(row, dict) and str(row.get("request_id", "") or "").startswith("fixture_")
+    )
+    fixture_build_coverage = (
+        1.0
+        if fixture_requested_slot_count <= 0
+        else fixture_gap_built_count / float(fixture_requested_slot_count)
+    )
+    fixture_source_domain_counter = Counter(
+        str(row.get("source_domain", "") or "local") for row in fixture_gap_rows
+    )
+    fixture_source_domain_count = len(fixture_source_domain_counter)
+    fixture_lineage_ready_count = sum(
+        1
+        for row in fixture_gap_rows
+        if str(row.get("request_id", "") or "").startswith("fixture_")
+        and (
+            str(row.get("source_url", "") or "").strip()
+            or str(row.get("source_path", "") or "").strip()
+        )
+    )
+    fixture_lineage_coverage = (
+        1.0 if fixture_gap_built_count <= 0 else fixture_lineage_ready_count / float(fixture_gap_built_count)
+    )
+    accepted_source_domains = {
+        str(row.get("source_domain", "") or "local")
+        for row in accepted_rows
+        if isinstance(row, dict)
+    }
+    fixture_candidate_source_domains = {
+        str(domain or "local")
+        for item in fixture_targets
+        for domain in (
+            item.get("candidate_source_domains", [])
+            if isinstance(item.get("candidate_source_domains", []), list)
+            else []
+        )
+        if str(domain or "local")
+    }
+    fixture_collection_time_ready_count = sum(
+        1 for row in fixture_gap_rows if str(row.get("collection_time", "") or "").strip()
+    )
+    fixture_collection_time_coverage = (
+        1.0
+        if fixture_gap_built_count <= 0
+        else fixture_collection_time_ready_count / float(fixture_gap_built_count)
+    )
+    fixture_isolation_axis_status = {
+        "source_domain": bool(fixture_candidate_source_domains) or bool(accepted_source_domains),
+        "source_lineage": fixture_gap_built_count <= 0 or fixture_lineage_coverage >= 1.0,
+        "collection_time": fixture_gap_built_count <= 0 or fixture_collection_time_coverage >= 1.0,
+    }
+    missing_isolation_axes = sorted(
+        key for key, ready in fixture_isolation_axis_status.items() if not bool(ready)
+    )
+    fixture_request_isolation_audit = _fixture_request_isolation_audit(
+        fixture_targets=fixture_targets,
+        fixture_gap_rows=fixture_gap_rows,
+        accepted_rows=accepted_rows,
+    )
+    blocked_request_ids = []
+    blocked_request_missing_axes = {}
+    if isinstance(collection_targets, dict):
+        blocked_request_ids = [
+            str(item)
+            for item in (
+                collection_targets.get("blocked_request_ids", [])
+                if isinstance(collection_targets.get("blocked_request_ids"), list)
+                else []
+            )
+            if str(item)
+        ]
+        blocked_request_missing_axes = (
+            collection_targets.get("blocked_request_missing_axes", {})
+            if isinstance(collection_targets.get("blocked_request_missing_axes"), dict)
+            else {}
+        )
+    clearable_blocked_request_ids = sorted(
+        request_id
+        for request_id in blocked_request_ids
+        if not (
+            fixture_request_isolation_audit.get(request_id, {}).get("missing_axes", [])
+            if isinstance(fixture_request_isolation_audit.get(request_id, {}), dict)
+            and isinstance(
+                fixture_request_isolation_audit.get(request_id, {}).get("missing_axes", []),
+                list,
+            )
+            else []
+        )
+    )
     checks = {
         "loop_report_present": _check(isinstance(loop_report, dict), bool(loop_report)),
         "dataset_report_present": _check(isinstance(dataset_report, dict), bool(dataset_report)),
@@ -143,8 +511,43 @@ def build_report(
             built_count <= 0 or (repair_count + replay_count) > 0,
             {"repair": repair_count, "replay": replay_count},
         ),
+        "fixture_lane_coverage_ready": _check(
+            fixture_requested_slot_count <= 0 or fixture_build_coverage >= float(min_gap_build_coverage),
+            round(fixture_build_coverage, 6),
+            f"fixture_requested_slot_count={fixture_requested_slot_count}",
+        ),
+        "fixture_source_lineage_ready": _check(
+            fixture_gap_built_count <= 0 or fixture_lineage_coverage >= 1.0,
+            round(fixture_lineage_coverage, 6),
+            "fixture rows should preserve request_id plus source_url/source_path lineage",
+        ),
+        "fixture_source_isolation_ready": _check(
+            fixture_request_count <= 0
+            or bool(fixture_candidate_source_domains)
+            or bool(accepted_source_domains),
+            {
+                "candidate_source_domain_count": len(fixture_candidate_source_domains),
+                "accepted_source_domain_count": len(accepted_source_domains),
+            },
+            "fixture repair lane should retain source-aware domain candidates",
+        ),
+        "fixture_collection_time_ready": _check(
+            fixture_gap_built_count <= 0 or fixture_collection_time_coverage >= 1.0,
+            round(fixture_collection_time_coverage, 6),
+            "fixture rows should preserve collection_time for train/evaluation split audits",
+        ),
     }
     passed = all(bool(item.get("passed")) for item in checks.values())
+    fixture_repair_actions = _build_fixture_repair_actions(
+        fixture_targets=fixture_targets,
+        requested_slots_by_request=fixture_requested_slots_by_request,
+        built_by_request=fixture_built_by_request,
+        skipped_by_request=fixture_skipped_by_request,
+        input_paths=input_paths,
+        blocked_request_ids=blocked_request_ids,
+        blocked_request_missing_axes=blocked_request_missing_axes,
+        clearable_blocked_request_ids=clearable_blocked_request_ids,
+    )
     return {
         "schema": "sara-autobot-gap-loop-readiness-v1",
         "passed": passed,
@@ -161,7 +564,43 @@ def build_report(
             "gap_skip_ratio": skipped_ratio,
             "repair_curriculum_share": repair_share,
             "replay_curriculum_share": replay_share,
+            "fixture_request_count": fixture_request_count,
+            "fixture_requested_slot_count": fixture_requested_slot_count,
+            "fixture_gap_material_built_count": fixture_gap_built_count,
+            "fixture_gap_build_coverage": fixture_build_coverage,
+            "fixture_source_domain_count": fixture_source_domain_count,
+            "fixture_source_lineage_coverage": fixture_lineage_coverage,
+            "fixture_candidate_source_domain_count": len(fixture_candidate_source_domains),
+            "fixture_accepted_source_domain_count": len(accepted_source_domains),
+            "fixture_collection_time_coverage": fixture_collection_time_coverage,
         },
+        "fixture_isolation_audit": {
+            "axis_status": fixture_isolation_axis_status,
+            "missing_axes": missing_isolation_axes,
+        },
+        "fixture_request_isolation_audit": fixture_request_isolation_audit,
+        "fixture_lane": {
+            "requested_slots_by_request": dict(sorted(fixture_requested_slots_by_request.items())),
+            "built_by_request": dict(sorted(fixture_built_by_request.items())),
+            "skipped_by_request": dict(sorted(fixture_skipped_by_request.items())),
+        },
+        "fixture_execution_policy": {
+            "blocked_request_count": len(blocked_request_ids),
+            "blocked_request_ids": sorted(blocked_request_ids),
+            "blocked_request_missing_axes": {
+                str(request_id): [
+                    str(axis)
+                    for axis in (
+                        axes if isinstance(axes, list) else []
+                    )
+                    if str(axis)
+                ]
+                for request_id, axes in blocked_request_missing_axes.items()
+                if str(request_id)
+            },
+            "clearable_blocked_request_ids": clearable_blocked_request_ids,
+        },
+        "fixture_repair_actions": list(fixture_repair_actions),
         "checks": checks,
         "input_paths": {},
         "policy_notes": [
@@ -175,6 +614,22 @@ def build_report(
 def summarize_report(report: Mapping[str, Any]) -> str:
     metrics = report.get("metrics", {}) if isinstance(report.get("metrics"), dict) else {}
     checks = report.get("checks", {}) if isinstance(report.get("checks"), dict) else {}
+    fixture_lane = report.get("fixture_lane", {}) if isinstance(report.get("fixture_lane"), dict) else {}
+    fixture_isolation_audit = (
+        report.get("fixture_isolation_audit", {})
+        if isinstance(report.get("fixture_isolation_audit"), dict)
+        else {}
+    )
+    fixture_request_isolation_audit = (
+        report.get("fixture_request_isolation_audit", {})
+        if isinstance(report.get("fixture_request_isolation_audit"), dict)
+        else {}
+    )
+    fixture_execution_policy = (
+        report.get("fixture_execution_policy", {})
+        if isinstance(report.get("fixture_execution_policy"), dict)
+        else {}
+    )
     lines = [
         f"Autobot gap loop readiness: {'PASS' if report.get('passed') else 'FAIL'}",
         f"Accepted materials: {metrics.get('accepted_count')}",
@@ -185,8 +640,108 @@ def summarize_report(report: Mapping[str, Any]) -> str:
         f"Gap curriculum enqueued: {metrics.get('gap_curriculum_enqueued_count')}",
         f"Gap build coverage: {float(metrics.get('gap_build_coverage', 0.0) or 0.0):.3f}",
         f"Gap enqueue coverage: {float(metrics.get('gap_enqueue_coverage', 0.0) or 0.0):.3f}",
+        f"Fixture requests: {metrics.get('fixture_request_count')}",
+        f"Fixture requested slots: {metrics.get('fixture_requested_slot_count')}",
+        f"Fixture gap materials built: {metrics.get('fixture_gap_material_built_count')}",
+        f"Fixture build coverage: {float(metrics.get('fixture_gap_build_coverage', 0.0) or 0.0):.3f}",
+        f"Fixture source domain count: {metrics.get('fixture_source_domain_count')}",
+        f"Fixture candidate source domain count: {metrics.get('fixture_candidate_source_domain_count')}",
+        f"Fixture accepted source domain count: {metrics.get('fixture_accepted_source_domain_count')}",
+        f"Fixture lineage coverage: {float(metrics.get('fixture_source_lineage_coverage', 0.0) or 0.0):.3f}",
+        f"Fixture collection-time coverage: {float(metrics.get('fixture_collection_time_coverage', 0.0) or 0.0):.3f}",
         "Checks:",
     ]
+    requested_slots_by_request = (
+        fixture_lane.get("requested_slots_by_request", {})
+        if isinstance(fixture_lane.get("requested_slots_by_request"), dict)
+        else {}
+    )
+    built_by_request = (
+        fixture_lane.get("built_by_request", {})
+        if isinstance(fixture_lane.get("built_by_request"), dict)
+        else {}
+    )
+    skipped_by_request = (
+        fixture_lane.get("skipped_by_request", {})
+        if isinstance(fixture_lane.get("skipped_by_request"), dict)
+        else {}
+    )
+    fixture_repair_actions = (
+        report.get("fixture_repair_actions", [])
+        if isinstance(report.get("fixture_repair_actions"), list)
+        else []
+    )
+    if requested_slots_by_request:
+        lines.append("Fixture lane by request:")
+        for request_id in sorted(requested_slots_by_request):
+            lines.append(
+                "- "
+                f"{request_id}: "
+                f"requested_slots={int(requested_slots_by_request.get(request_id, 0) or 0)}, "
+                f"built={int(built_by_request.get(request_id, 0) or 0)}, "
+                f"skipped={int(skipped_by_request.get(request_id, 0) or 0)}"
+            )
+    if fixture_repair_actions:
+        lines.append("Fixture repair actions:")
+        for action in fixture_repair_actions:
+            if not isinstance(action, dict):
+                continue
+            lines.append(
+                "- "
+                f"{str(action.get('request_id', '') or '')}: "
+                f"missing_slots={int(action.get('missing_slots', 0) or 0)}, "
+                f"skipped_slots={int(action.get('skipped_slots', 0) or 0)}, "
+                f"missing_types={','.join(str(item) for item in action.get('missing_material_types', []) if str(item)) or 'none'}, "
+                f"blocked={bool(action.get('blocked_by_isolation_review', False))}"
+            )
+    blocked_request_ids = (
+        fixture_execution_policy.get("blocked_request_ids", [])
+        if isinstance(fixture_execution_policy.get("blocked_request_ids"), list)
+        else []
+    )
+    lines.append(
+        "Fixture execution blocked requests: "
+        + (",".join(str(item) for item in blocked_request_ids if str(item)) or "none")
+    )
+    clearable_blocked_request_ids = (
+        fixture_execution_policy.get("clearable_blocked_request_ids", [])
+        if isinstance(fixture_execution_policy.get("clearable_blocked_request_ids"), list)
+        else []
+    )
+    lines.append(
+        "Fixture execution clearable blocked requests: "
+        + (",".join(str(item) for item in clearable_blocked_request_ids if str(item)) or "none")
+    )
+    axis_status = (
+        fixture_isolation_audit.get("axis_status", {})
+        if isinstance(fixture_isolation_audit.get("axis_status"), dict)
+        else {}
+    )
+    missing_axes = (
+        fixture_isolation_audit.get("missing_axes", [])
+        if isinstance(fixture_isolation_audit.get("missing_axes"), list)
+        else []
+    )
+    if axis_status:
+        lines.append("Fixture isolation axes:")
+        for axis_name, ready in sorted(axis_status.items()):
+            lines.append(f"- {axis_name}: {bool(ready)}")
+        lines.append(
+            f"Fixture isolation missing axes: {','.join(str(item) for item in missing_axes if str(item)) or 'none'}"
+        )
+    if fixture_request_isolation_audit:
+        lines.append("Fixture isolation by request:")
+        for request_id, payload in sorted(fixture_request_isolation_audit.items()):
+            if not isinstance(payload, dict):
+                continue
+            lines.append(
+                "- "
+                f"{request_id}: "
+                f"row_count={int(payload.get('row_count', 0) or 0)}, "
+                f"lineage={float(payload.get('lineage_coverage', 0.0) or 0.0):.3f}, "
+                f"collection_time={float(payload.get('collection_time_coverage', 0.0) or 0.0):.3f}, "
+                f"missing_axes={','.join(str(item) for item in payload.get('missing_axes', []) if str(item)) or 'none'}"
+            )
     for name, payload in sorted(checks.items()):
         if not isinstance(payload, dict):
             continue
@@ -217,22 +772,28 @@ def run_readiness(
     gap_report = read_json(gap_report_path)
     enqueue_report = read_json(enqueue_report_path)
     collection_targets = read_json(collection_targets_path)
-    report = build_report(
-        loop_report=loop_report,
-        dataset_report=dataset_report,
-        gap_report=gap_report,
-        enqueue_report=enqueue_report,
-        collection_targets=collection_targets,
-        min_accepted_count=min_accepted_count,
-        min_gap_build_coverage=min_gap_build_coverage,
-    )
-    report["input_paths"] = {
+    accepted_rows = read_jsonl(_resolve_output_path(loop_report, "accepted_materials"))
+    gap_rows = read_jsonl(_resolve_output_path(loop_report, "gap_materials"))
+    input_paths = {
         "loop_report": os.path.abspath(loop_report_path),
         "collection_targets": os.path.abspath(collection_targets_path),
         "dataset_report": os.path.abspath(dataset_report_path) if dataset_report_path else "",
         "gap_report": os.path.abspath(gap_report_path) if gap_report_path else "",
         "enqueue_report": os.path.abspath(enqueue_report_path) if enqueue_report_path else "",
     }
+    report = build_report(
+        loop_report=loop_report,
+        dataset_report=dataset_report,
+        gap_report=gap_report,
+        enqueue_report=enqueue_report,
+        collection_targets=collection_targets,
+        accepted_rows=accepted_rows,
+        gap_rows=gap_rows,
+        min_accepted_count=min_accepted_count,
+        min_gap_build_coverage=min_gap_build_coverage,
+        input_paths=input_paths,
+    )
+    report["input_paths"] = input_paths
     report["report_path"] = write_json(report_path, report)
     resolved_summary_path = ensure_parent_directory(summary_path)
     with open(resolved_summary_path, "w", encoding="utf-8") as handle:

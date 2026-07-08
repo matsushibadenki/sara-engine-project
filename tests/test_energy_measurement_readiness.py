@@ -233,6 +233,7 @@ def test_energy_measurement_readiness_surfaces_event_memory_maintenance_coupling
                 "best_profile_compression_efficiency_per_maintenance": 0.19,
                 "best_profile_self_state_continuity": 0.83,
                 "best_profile_episode_compression_ratio": 3.67,
+                "best_profile_multimodal_bundle_compression_contribution": 1.83,
             },
         },
     )
@@ -241,13 +242,46 @@ def test_energy_measurement_readiness_surfaces_event_memory_maintenance_coupling
     assert reference["available"] is True
     assert reference["best_profile_id"] == "wide"
     assert reference["best_profile_compression_efficiency_per_maintenance"] == 0.19
+    assert reference["best_profile_multimodal_bundle_compression_contribution"] == 1.83
     summary = module.format_energy_measurement_summary(report)
     assert "event_memory_maintenance_coupling_reference_available: True" in summary
+    assert "event_memory_maintenance_best_bundle_contribution: 1.830" in summary
     assert "Event Memory Maintenance Coupling Reference:" in summary
     progress = report["measurement_session_progress"]
     assert progress["event_memory_maintenance_coupling_reference"]["best_profile_id"] == "wide"
     progress_summary = module.format_measurement_session_progress_summary(progress)
     assert "Event Memory Maintenance Coupling Reference:" in progress_summary
+
+
+def test_energy_measurement_readiness_warns_when_bundle_contribution_is_weak():
+    module = _load_module()
+
+    report = module.build_energy_measurement_readiness_report(
+        [],
+        event_memory_maintenance_coupling_report={
+            "passed": True,
+            "observed_only": True,
+            "profile_count": 3,
+            "best_profile": {
+                "profile_id": "wide",
+            },
+            "metrics": {
+                "compression_to_maintenance_correlation": 0.51,
+                "best_profile_compression_efficiency_per_maintenance": 0.19,
+                "best_profile_self_state_continuity": 0.83,
+                "best_profile_episode_compression_ratio": 3.67,
+                "best_profile_multimodal_bundle_compression_contribution": 0.1,
+            },
+        },
+    )
+
+    assert "Bundle-backed compression contribution is weak" in report["bundle_contribution_warning"]
+    summary = module.format_energy_measurement_summary(report)
+    assert "Bundle Contribution Warning:" in summary
+    progress_summary = module.format_measurement_session_progress_summary(
+        report["measurement_session_progress"]
+    )
+    assert "Bundle Contribution Warning:" in progress_summary
 
 
 def test_energy_measurement_readiness_surfaces_physical_internal_alignment():

@@ -270,6 +270,7 @@ def _event_memory_maintenance_coupling_reference():
         "best_profile_id": "wide",
         "compression_to_maintenance_correlation": 0.51,
         "best_profile_compression_efficiency_per_maintenance": 0.19,
+        "best_profile_multimodal_bundle_compression_contribution": 1.83,
         "best_profile_self_state_continuity": 0.83,
         "best_profile_episode_compression_ratio": 3.67,
     }
@@ -346,6 +347,7 @@ def test_ann_efficiency_roadmap_gate_surfaces_maintenance_metrics_when_present()
     assert stage_6["metrics"]["physical_internal_maintenance_alignment_ratio"] == 1.25
     assert stage_6["metrics"]["event_memory_maintenance_coupling_available"] == 1.0
     assert stage_6["metrics"]["event_memory_maintenance_best_efficiency"] == 0.19
+    assert stage_6["metrics"]["event_memory_maintenance_best_bundle_compression_contribution"] == 1.83
 
 
 def test_ann_efficiency_roadmap_gate_blocks_weak_external_ratio():
@@ -525,6 +527,33 @@ def test_ann_efficiency_roadmap_gate_requests_event_memory_maintenance_coupling_
         action["category"] == "weak_event_memory_maintenance_coupling_reference"
         for action in report["next_evidence_actions"]
     )
+
+
+def test_ann_efficiency_roadmap_gate_requests_bundle_compression_repair_when_bundle_contribution_is_weak():
+    module = _load_gate_module()
+    weak_reference = _event_memory_maintenance_coupling_reference()
+    weak_reference["best_profile_multimodal_bundle_compression_contribution"] = 0.1
+
+    report = module.build_ann_efficiency_roadmap_report(
+        energy_report=_energy_report(),
+        external_validity_report=_external_validity_report(),
+        external_ladder_report=_external_ladder_report(),
+        energy_measurement_report=dict(
+            _energy_measurement_report(real_measurements=True),
+            event_memory_maintenance_coupling_reference=weak_reference,
+        ),
+        internal_maintenance_report=_internal_maintenance_report(),
+        operational_report=_operational_report(),
+    )
+
+    action = next(
+        action
+        for action in report["next_evidence_actions"]
+        if action["category"] == "weak_bundle_compression_contribution"
+    )
+    assert action["bundle_contribution"] == 0.1
+    assert action["return_phase"] == "phase7"
+    assert action["return_lane"] == "phase7_source_aware_bundle_fixtures"
 
 
 def test_ann_efficiency_roadmap_gate_preserves_weak_pair_severity_from_measurement_plan():

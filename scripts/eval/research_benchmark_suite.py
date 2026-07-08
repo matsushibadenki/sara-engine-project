@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -469,6 +469,241 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
     ]
 
 
+def _bundle_support_gap(
+    *,
+    event_memory_ingest_report: Optional[Dict[str, Any]],
+    event_memory_maintenance_coupling_report: Optional[Dict[str, Any]],
+    sara_ann_comparison_report: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    ingest_metrics = (
+        event_memory_ingest_report.get("metrics", {})
+        if isinstance(event_memory_ingest_report, dict)
+        and isinstance(event_memory_ingest_report.get("metrics"), dict)
+        else {}
+    )
+    coupling_metrics = (
+        event_memory_maintenance_coupling_report.get("metrics", {})
+        if isinstance(event_memory_maintenance_coupling_report, dict)
+        and isinstance(event_memory_maintenance_coupling_report.get("metrics"), dict)
+        else {}
+    )
+    comparison_next_actions = (
+        sara_ann_comparison_report.get("next_actions", [])
+        if isinstance(sara_ann_comparison_report, dict)
+        and isinstance(sara_ann_comparison_report.get("next_actions"), list)
+        else []
+    )
+    comparison_categories = [
+        str(item.get("category", "") or "").strip()
+        for item in comparison_next_actions
+        if isinstance(item, dict)
+    ]
+    ingest_bundle_contribution = ingest_metrics.get("multimodal_bundle_compression_contribution")
+    coupling_bundle_contribution = coupling_metrics.get(
+        "best_profile_multimodal_bundle_compression_contribution"
+    )
+    ingest_weak = bool(
+        isinstance(ingest_bundle_contribution, (int, float))
+        and float(ingest_bundle_contribution) < 0.5
+    )
+    coupling_weak = bool(
+        isinstance(coupling_bundle_contribution, (int, float))
+        and float(coupling_bundle_contribution) < 0.5
+    )
+    comparison_weak = any(
+        category in {
+            "weak_event_memory_bundle_compression_surface",
+            "weak_event_memory_bundle_coupling_surface",
+        }
+        for category in comparison_categories
+    )
+    gap_present = ingest_weak or coupling_weak or comparison_weak
+    trigger = ""
+    if comparison_weak:
+        trigger = "comparison_surface"
+    elif coupling_weak:
+        trigger = "maintenance_coupling"
+    elif ingest_weak:
+        trigger = "ingest_pipeline"
+    return {
+        "present": gap_present,
+        "trigger": trigger,
+        "repair_target": "phase7_source_aware_bundle_fixtures" if gap_present else None,
+        "ingest_weak": ingest_weak,
+        "coupling_weak": coupling_weak,
+        "comparison_weak": comparison_weak,
+    }
+
+
+def _bundle_support_fixture_repairs(
+    *,
+    bundle_support_gap: Mapping[str, Any],
+    autobot_gap_loop_readiness_report: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    if not bool(bundle_support_gap.get("present")):
+        return {
+            "action_count": 0,
+            "request_ids": [],
+            "coverage_ready": True,
+        }
+    if not isinstance(autobot_gap_loop_readiness_report, dict):
+        return {
+            "action_count": 0,
+            "request_ids": [],
+            "coverage_ready": False,
+        }
+    fixture_repair_actions = (
+        autobot_gap_loop_readiness_report.get("fixture_repair_actions", [])
+        if isinstance(autobot_gap_loop_readiness_report.get("fixture_repair_actions"), list)
+        else []
+    )
+    preferred_tokens = (
+        "bundle",
+        "source_diversity",
+        "counterexample",
+        "repair_support",
+        "revision_conflict",
+    )
+    preferred_actions = [
+        item
+        for item in fixture_repair_actions
+        if isinstance(item, dict)
+        and any(token in str(item.get("request_id", "") or "") for token in preferred_tokens)
+    ]
+    selected_actions = preferred_actions or [
+        item for item in fixture_repair_actions if isinstance(item, dict)
+    ]
+    request_ids = sorted(
+        {
+            str(item.get("request_id", "") or "")
+            for item in selected_actions
+            if str(item.get("request_id", "") or "")
+        }
+    )
+    return {
+        "action_count": len(selected_actions),
+        "request_ids": request_ids,
+        "coverage_ready": bool(selected_actions),
+    }
+
+
+def _bundle_support_closed_loop_effect(
+    *,
+    bundle_support_gap: Mapping[str, Any],
+    bundle_support_fixture_repairs: Mapping[str, Any],
+    gap_materials_closed_loop_report: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    if not bool(bundle_support_gap.get("present")):
+        return {
+            "request_overlap_count": 0,
+            "request_overlap_ids": [],
+            "gap_reduction": 0,
+            "coverage_ready": True,
+        }
+    if not isinstance(gap_materials_closed_loop_report, dict):
+        return {
+            "request_overlap_count": 0,
+            "request_overlap_ids": [],
+            "gap_reduction": 0,
+            "coverage_ready": False,
+        }
+    bundle_request_ids = {
+        str(item)
+        for item in (
+            bundle_support_fixture_repairs.get("request_ids", [])
+            if isinstance(bundle_support_fixture_repairs.get("request_ids", []), list)
+            else []
+        )
+        if str(item)
+    }
+    closed_loop_request_ids = {
+        str(item)
+        for item in (
+            gap_materials_closed_loop_report.get("bundle_relevant_built_request_ids", [])
+            if isinstance(gap_materials_closed_loop_report.get("bundle_relevant_built_request_ids", []), list)
+            else []
+        )
+        if str(item)
+    }
+    overlap_ids = sorted(bundle_request_ids & closed_loop_request_ids)
+    return {
+        "request_overlap_count": len(overlap_ids),
+        "request_overlap_ids": overlap_ids,
+        "gap_reduction": int(gap_materials_closed_loop_report.get("coverage_gap_reduction", 0) or 0),
+        "coverage_ready": bool(overlap_ids)
+        and int(gap_materials_closed_loop_report.get("coverage_gap_reduction", 0) or 0) > 0,
+    }
+
+
+def _select_request_audit_subset(
+    request_audit: Mapping[str, Any],
+    request_ids: Sequence[str],
+) -> Dict[str, Dict[str, Any]]:
+    if not isinstance(request_audit, Mapping):
+        return {}
+    selected: Dict[str, Dict[str, Any]] = {}
+    for request_id in request_ids:
+        key = str(request_id or "")
+        value = request_audit.get(key)
+        if key and isinstance(value, dict):
+            selected[key] = dict(value)
+    return dict(sorted(selected.items()))
+
+
+def _bundle_overlap_isolation_risk_summary(
+    request_audit: Mapping[str, Any],
+    request_ids: Sequence[str],
+) -> Dict[str, Any]:
+    selected = _select_request_audit_subset(request_audit, request_ids)
+    axis_weight = {
+        "source_lineage": 3,
+        "source_domain": 3,
+        "collection_time": 1,
+    }
+    all_missing_axes = sorted(
+        {
+            str(axis)
+            for payload in selected.values()
+            if isinstance(payload, dict)
+            for axis in (
+                payload.get("missing_axes", [])
+                if isinstance(payload.get("missing_axes", []), list)
+                else []
+            )
+            if str(axis)
+        }
+    )
+    risk_count = sum(
+        1
+        for payload in selected.values()
+        if isinstance(payload, dict)
+        and bool(
+            payload.get("missing_axes", [])
+            if isinstance(payload.get("missing_axes", []), list)
+            else []
+        )
+    )
+    highest_risk_axis = ""
+    highest_risk_weight = 0
+    for axis in all_missing_axes:
+        weight = int(axis_weight.get(axis, 1))
+        if weight > highest_risk_weight:
+            highest_risk_axis = axis
+            highest_risk_weight = weight
+    risk_priority = "none"
+    if highest_risk_weight >= 3:
+        risk_priority = "high"
+    elif highest_risk_weight > 0:
+        risk_priority = "medium"
+    return {
+        "request_audit": selected,
+        "missing_axes": all_missing_axes,
+        "risk_count": risk_count,
+        "highest_risk_axis": highest_risk_axis,
+        "risk_priority": risk_priority,
+    }
+
+
 def _load_json_if_present(path: str) -> Optional[Dict[str, Any]]:
     if not os.path.exists(path):
         return None
@@ -605,6 +840,28 @@ def build_manifest(
     sara_ann_comparison_report = _load_json_if_present(
         workspace_path("evaluation", "sara_ann_comparison_report.json")
     )
+    bundle_support_gap = _bundle_support_gap(
+        event_memory_ingest_report=event_memory_ingest_report,
+        event_memory_maintenance_coupling_report=event_memory_maintenance_coupling_report,
+        sara_ann_comparison_report=sara_ann_comparison_report,
+    )
+    bundle_support_fixture_repairs = _bundle_support_fixture_repairs(
+        bundle_support_gap=bundle_support_gap,
+        autobot_gap_loop_readiness_report=autobot_gap_loop_readiness_report,
+    )
+    bundle_support_closed_loop_effect = _bundle_support_closed_loop_effect(
+        bundle_support_gap=bundle_support_gap,
+        bundle_support_fixture_repairs=bundle_support_fixture_repairs,
+        gap_materials_closed_loop_report=gap_materials_closed_loop_report,
+    )
+    bundle_overlap_isolation_risk = _bundle_overlap_isolation_risk_summary(
+        autobot_gap_loop_readiness_report.get("fixture_request_isolation_audit", {})
+        if isinstance(autobot_gap_loop_readiness_report, dict)
+        else {},
+        bundle_support_closed_loop_effect.get("request_overlap_ids", [])
+        if isinstance(bundle_support_closed_loop_effect.get("request_overlap_ids", []), list)
+        else [],
+    )
 
     what_is_proven = [
         "The managed v1.1 release gate can be reproduced from repository commands.",
@@ -674,6 +931,59 @@ def build_manifest(
     else:
         what_is_not_proven.append(
             "Compression-to-maintenance coupling is not yet recorded in the current managed benchmark surface."
+        )
+    if bool(bundle_support_gap.get("present")):
+        what_is_not_proven.append(
+            "Verified multimodal bundle support remains too weak for a clean compression claim, so the repair loop should return to Phase 7 source-aware bundle-fixture strengthening before promoting this as a SARA-native efficiency win."
+        )
+        overlap_missing_axes = sorted(
+            {
+                str(axis)
+                for payload in _select_request_audit_subset(
+                    autobot_gap_loop_readiness_report.get("fixture_request_isolation_audit", {})
+                    if isinstance(autobot_gap_loop_readiness_report, dict)
+                    else {},
+                    bundle_support_closed_loop_effect.get("request_overlap_ids", [])
+                    if isinstance(bundle_support_closed_loop_effect.get("request_overlap_ids", []), list)
+                    else [],
+                ).values()
+                if isinstance(payload, dict)
+                for axis in (
+                    payload.get("missing_axes", [])
+                    if isinstance(payload.get("missing_axes", []), list)
+                    else []
+                )
+                if str(axis)
+            }
+        )
+        if overlap_missing_axes:
+            what_is_not_proven.append(
+                "Closed-loop bundle repairs currently touch requests with incomplete Phase 7 isolation audit axes "
+                f"({', '.join(overlap_missing_axes)}), so the repair win should remain under isolation review before promotion."
+            )
+            overlap_request_ids = [
+                str(item)
+                for item in (
+                    bundle_support_closed_loop_effect.get("request_overlap_ids", [])
+                    if isinstance(bundle_support_closed_loop_effect.get("request_overlap_ids", []), list)
+                    else []
+                )
+                if str(item)
+            ]
+            if overlap_request_ids:
+                what_is_not_proven.append(
+                    "The current blocked overlap repair requests are "
+                    f"{', '.join(overlap_request_ids)}."
+                )
+            if str(bundle_overlap_isolation_risk.get("highest_risk_axis", "") or ""):
+                what_is_not_proven.append(
+                    "Current overlap isolation risk is prioritized as "
+                    f"{bundle_overlap_isolation_risk.get('risk_priority')} due to "
+                    f"{bundle_overlap_isolation_risk.get('highest_risk_axis')} gaps."
+                )
+    else:
+        what_is_proven.append(
+            "The current managed compression surfaces do not show a standalone bundle-support gap that would force a return from Phase 6/8 evidence work back to Phase 7 fixture strengthening."
         )
     if gap_materials_closed_loop_report is not None and bool(gap_materials_closed_loop_report.get("passed")):
         what_is_proven.insert(
@@ -868,6 +1178,12 @@ def build_manifest(
             "gap_materials_closed_loop_gap_reduction": None
             if gap_materials_closed_loop_report is None
             else gap_materials_closed_loop_report.get("coverage_gap_reduction"),
+            "gap_materials_closed_loop_bundle_relevant_request_coverage": None
+            if gap_materials_closed_loop_report is None
+            else gap_materials_closed_loop_report.get("bundle_relevant_request_coverage"),
+            "gap_materials_closed_loop_bundle_relevant_built_request_ids": []
+            if gap_materials_closed_loop_report is None
+            else gap_materials_closed_loop_report.get("bundle_relevant_built_request_ids", []),
             "autobot_gap_loop_readiness_passed": None
             if autobot_gap_loop_readiness_report is None
             else bool(autobot_gap_loop_readiness_report.get("passed")),
@@ -877,6 +1193,97 @@ def build_manifest(
             "autobot_gap_loop_build_coverage": None
             if autobot_gap_loop_readiness_report is None
             else autobot_gap_loop_readiness_report.get("metrics", {}).get("gap_build_coverage"),
+            "autobot_gap_loop_fixture_request_count": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_request_count"),
+            "autobot_gap_loop_fixture_requested_slot_count": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_requested_slot_count"),
+            "autobot_gap_loop_fixture_gap_material_built_count": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_gap_material_built_count"),
+            "autobot_gap_loop_fixture_build_coverage": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_gap_build_coverage"),
+            "autobot_gap_loop_fixture_source_domain_count": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_source_domain_count"),
+            "autobot_gap_loop_fixture_candidate_source_domain_count": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_candidate_source_domain_count"),
+            "autobot_gap_loop_fixture_accepted_source_domain_count": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_accepted_source_domain_count"),
+            "autobot_gap_loop_fixture_source_lineage_coverage": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_source_lineage_coverage"),
+            "autobot_gap_loop_fixture_collection_time_coverage": None
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("metrics", {}).get("fixture_collection_time_coverage"),
+            "autobot_gap_loop_fixture_source_isolation_ready": None
+            if autobot_gap_loop_readiness_report is None
+            else bool(
+                autobot_gap_loop_readiness_report.get("checks", {})
+                .get("fixture_source_isolation_ready", {})
+                .get("passed")
+            ),
+            "autobot_gap_loop_fixture_source_lineage_ready": None
+            if autobot_gap_loop_readiness_report is None
+            else bool(
+                autobot_gap_loop_readiness_report.get("checks", {})
+                .get("fixture_source_lineage_ready", {})
+                .get("passed")
+            ),
+            "autobot_gap_loop_fixture_collection_time_ready": None
+            if autobot_gap_loop_readiness_report is None
+            else bool(
+                autobot_gap_loop_readiness_report.get("checks", {})
+                .get("fixture_collection_time_ready", {})
+                .get("passed")
+            ),
+            "autobot_gap_loop_fixture_missing_isolation_axes": []
+            if autobot_gap_loop_readiness_report is None
+            else (
+                autobot_gap_loop_readiness_report.get("fixture_isolation_audit", {}).get("missing_axes", [])
+                if isinstance(autobot_gap_loop_readiness_report.get("fixture_isolation_audit"), dict)
+                else []
+            ),
+            "autobot_gap_loop_fixture_request_isolation_audit": {}
+            if autobot_gap_loop_readiness_report is None
+            else (
+                autobot_gap_loop_readiness_report.get("fixture_request_isolation_audit", {})
+                if isinstance(autobot_gap_loop_readiness_report.get("fixture_request_isolation_audit"), dict)
+                else {}
+            ),
+            "autobot_gap_loop_fixture_requested_slots_by_request": {}
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("fixture_lane", {}).get(
+                "requested_slots_by_request", {}
+            ),
+            "autobot_gap_loop_fixture_built_by_request": {}
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("fixture_lane", {}).get(
+                "built_by_request", {}
+            ),
+            "autobot_gap_loop_fixture_skipped_by_request": {}
+            if autobot_gap_loop_readiness_report is None
+            else autobot_gap_loop_readiness_report.get("fixture_lane", {}).get(
+                "skipped_by_request", {}
+            ),
+            "autobot_gap_loop_fixture_repair_action_count": 0
+            if autobot_gap_loop_readiness_report is None
+            else len(
+                autobot_gap_loop_readiness_report.get("fixture_repair_actions", [])
+                if isinstance(autobot_gap_loop_readiness_report.get("fixture_repair_actions"), list)
+                else []
+            ),
+            "autobot_gap_loop_fixture_repair_request_ids": []
+            if autobot_gap_loop_readiness_report is None
+            else [
+                str(item.get("request_id", "") or "")
+                for item in autobot_gap_loop_readiness_report.get("fixture_repair_actions", [])
+                if isinstance(item, dict) and str(item.get("request_id", "") or "")
+            ],
             "autobot_gap_loop_enqueue_coverage": None
             if autobot_gap_loop_readiness_report is None
             else autobot_gap_loop_readiness_report.get("metrics", {}).get("gap_enqueue_coverage"),
@@ -1007,6 +1414,322 @@ def build_manifest(
             "adaptive_credit_repair_log_failure_count": adaptive_credit_repair_log_failure_count,
             "adaptive_credit_repair_log_recovered": adaptive_credit_repair_log_recovered,
             "adaptive_credit_repair_log_chronic": adaptive_credit_repair_log_chronic,
+            "operational_bundle_repair_log_entry_count": None
+            if operational_report is None
+            else (
+                operational_report.get("bundle_repair_log_summary", {}).get("entry_count")
+                if isinstance(operational_report.get("bundle_repair_log_summary"), dict)
+                else None
+            ),
+            "operational_bundle_repair_log_recovered_count": None
+            if operational_report is None
+            else (
+                operational_report.get("bundle_repair_log_summary", {}).get("recovered_count")
+                if isinstance(operational_report.get("bundle_repair_log_summary"), dict)
+                else None
+            ),
+            "operational_bundle_repair_log_max_gap_reduction": None
+            if operational_report is None
+            else (
+                operational_report.get("bundle_repair_log_summary", {}).get("max_gap_reduction")
+                if isinstance(operational_report.get("bundle_repair_log_summary"), dict)
+                else None
+            ),
+            "operational_bundle_isolation_clear_release_success_count": None
+            if operational_report is None
+            else (
+                operational_report.get("bundle_repair_log_summary", {}).get(
+                    "isolation_clear_release_success_count"
+                )
+                if isinstance(operational_report.get("bundle_repair_log_summary"), dict)
+                else None
+            ),
+            "operational_bundle_isolation_clear_release_request_ids": []
+            if operational_report is None
+            else (
+                [
+                    str(item)
+                    for item in (
+                        operational_report.get("bundle_repair_log_summary", {}).get(
+                            "isolation_clear_release_request_ids", []
+                        )
+                        if isinstance(operational_report.get("bundle_repair_log_summary"), dict)
+                        and isinstance(
+                            operational_report.get("bundle_repair_log_summary", {}).get(
+                                "isolation_clear_release_request_ids", []
+                            ),
+                            list,
+                        )
+                        else []
+                    )
+                    if str(item)
+                ]
+            ),
+            "operational_bundle_retry_queue_fresh_count": None
+            if operational_report is None
+            else sum(
+                1
+                for item in (
+                    operational_report.get("repair_retry_queue", [])
+                    if isinstance(operational_report.get("repair_retry_queue"), list)
+                    else []
+                )
+                if isinstance(item, dict)
+                and (
+                    "autobot_bundle_fixture_repair" in str(item.get("source", "")).strip().lower()
+                    or bool(item.get("bundle_closed_loop_overlap", False))
+                )
+                and not bool(item.get("bundle_recovered_before", False))
+            ),
+            "operational_bundle_retry_queue_recovered_before_count": None
+            if operational_report is None
+            else sum(
+                1
+                for item in (
+                    operational_report.get("repair_retry_queue", [])
+                    if isinstance(operational_report.get("repair_retry_queue"), list)
+                    else []
+                )
+                if isinstance(item, dict)
+                and (
+                    "autobot_bundle_fixture_repair" in str(item.get("source", "")).strip().lower()
+                    or bool(item.get("bundle_closed_loop_overlap", False))
+                )
+                and bool(item.get("bundle_recovered_before", False))
+            ),
+            "operational_bundle_retry_queue_isolation_review_churn_count": None
+            if operational_report is None
+            else (
+                operational_report.get("bundle_retry_queue_summary", {}).get(
+                    "isolation_review_churn_count"
+                )
+                if isinstance(operational_report.get("bundle_retry_queue_summary"), dict)
+                else None
+            ),
+            "operational_bundle_retry_queue_isolation_review_churn_request_ids": []
+            if operational_report is None
+            else (
+                [
+                    str(item)
+                    for item in (
+                        operational_report.get("bundle_retry_queue_summary", {}).get(
+                            "isolation_review_churn_request_ids", []
+                        )
+                        if isinstance(operational_report.get("bundle_retry_queue_summary"), dict)
+                        and isinstance(
+                            operational_report.get("bundle_retry_queue_summary", {}).get(
+                                "isolation_review_churn_request_ids", []
+                            ),
+                            list,
+                        )
+                        else []
+                    )
+                    if str(item)
+                ]
+            ),
+            "operational_bundle_retry_queue_isolation_reblocked_count": None
+            if operational_report is None
+            else (
+                operational_report.get("bundle_retry_queue_summary", {}).get(
+                    "isolation_reblocked_count"
+                )
+                if isinstance(operational_report.get("bundle_retry_queue_summary"), dict)
+                else None
+            ),
+            "operational_bundle_retry_queue_isolation_reblocked_request_ids": []
+            if operational_report is None
+            else (
+                [
+                    str(item)
+                    for item in (
+                        operational_report.get("bundle_retry_queue_summary", {}).get(
+                            "isolation_reblocked_request_ids", []
+                        )
+                        if isinstance(operational_report.get("bundle_retry_queue_summary"), dict)
+                        and isinstance(
+                            operational_report.get("bundle_retry_queue_summary", {}).get(
+                                "isolation_reblocked_request_ids", []
+                            ),
+                            list,
+                        )
+                        else []
+                    )
+                    if str(item)
+                ]
+            ),
+            "operational_bundle_phase7_routed_action_count": None
+            if operational_report is None
+            else sum(
+                1
+                for item in (
+                    operational_report.get("runbook_actions", [])
+                    if isinstance(operational_report.get("runbook_actions"), list)
+                    else []
+                )
+                if isinstance(item, dict)
+                and str(item.get("source", "")).strip().lower() == "autobot_bundle_fixture_repair"
+                and (
+                    str(item.get("return_phase", "")).strip().lower() == "phase7"
+                    or "return_phase=phase7" in str(item.get("reason", "")).strip().lower()
+                )
+            ),
+            "operational_bundle_phase7_routed_retry_count": None
+            if operational_report is None
+            else sum(
+                1
+                for item in (
+                    operational_report.get("repair_retry_queue", [])
+                    if isinstance(operational_report.get("repair_retry_queue"), list)
+                    else []
+                )
+                if isinstance(item, dict)
+                and (
+                    "autobot_bundle_fixture_repair" in str(item.get("source", "")).strip().lower()
+                    or bool(item.get("bundle_closed_loop_overlap", False))
+                )
+                and (
+                    str(item.get("return_phase", "")).strip().lower() == "phase7"
+                    or "return_phase=phase7" in str(item.get("reason", "")).strip().lower()
+                )
+            ),
+            "operational_bundle_phase7_isolation_ready": None
+            if operational_report is None
+            else (
+                bool(
+                    autobot_gap_loop_readiness_report.get("checks", {})
+                    .get("fixture_source_isolation_ready", {})
+                    .get("passed")
+                )
+                if autobot_gap_loop_readiness_report is not None
+                else None
+            ),
+            "operational_bundle_phase7_lineage_ready": None
+            if operational_report is None
+            else (
+                bool(
+                    autobot_gap_loop_readiness_report.get("checks", {})
+                    .get("fixture_source_lineage_ready", {})
+                    .get("passed")
+                )
+                if autobot_gap_loop_readiness_report is not None
+                else None
+            ),
+            "operational_bundle_phase7_collection_time_ready": None
+            if operational_report is None
+            else (
+                bool(
+                    autobot_gap_loop_readiness_report.get("checks", {})
+                    .get("fixture_collection_time_ready", {})
+                    .get("passed")
+                )
+                if autobot_gap_loop_readiness_report is not None
+                else None
+            ),
+            "operational_bundle_phase7_missing_isolation_axes": []
+            if operational_report is None
+            else (
+                autobot_gap_loop_readiness_report.get("fixture_isolation_audit", {}).get("missing_axes", [])
+                if autobot_gap_loop_readiness_report is not None
+                and isinstance(autobot_gap_loop_readiness_report.get("fixture_isolation_audit"), dict)
+                else []
+            ),
+            "operational_bundle_phase7_request_isolation_audit": {}
+            if operational_report is None
+            else (
+                autobot_gap_loop_readiness_report.get("fixture_request_isolation_audit", {})
+                if autobot_gap_loop_readiness_report is not None
+                and isinstance(autobot_gap_loop_readiness_report.get("fixture_request_isolation_audit"), dict)
+                else {}
+            ),
+            "operational_bundle_isolation_blocked_request_count": None
+            if operational_report is None
+            else operational_report.get("bundle_isolation_blocked_request_count"),
+            "operational_bundle_isolation_blocked_request_ids": []
+            if operational_report is None
+            else (
+                [
+                    str(item)
+                    for item in (
+                        operational_report.get("bundle_isolation_blocked_request_ids", [])
+                        if isinstance(operational_report.get("bundle_isolation_blocked_request_ids"), list)
+                        else []
+                    )
+                    if str(item)
+                ]
+            ),
+            "operational_bundle_isolation_blocked_missing_axes": []
+            if operational_report is None
+            else (
+                [
+                    str(item)
+                    for item in (
+                        operational_report.get("bundle_isolation_blocked_missing_axes", [])
+                        if isinstance(operational_report.get("bundle_isolation_blocked_missing_axes"), list)
+                        else []
+                    )
+                    if str(item)
+                ]
+            ),
+            "operational_bundle_overlap_blocked_request_ids": []
+            if operational_report is None
+            else (
+                sorted(
+                    str(item)
+                    for item in (
+                        operational_report.get("bundle_isolation_blocked_request_ids", [])
+                        if isinstance(operational_report.get("bundle_isolation_blocked_request_ids"), list)
+                        else []
+                    )
+                    if str(item)
+                    and str(item)
+                    in {
+                        str(request_id)
+                        for request_id in (
+                            bundle_support_closed_loop_effect.get("request_overlap_ids", [])
+                            if isinstance(bundle_support_closed_loop_effect.get("request_overlap_ids", []), list)
+                            else []
+                        )
+                        if str(request_id)
+                    }
+                )
+            ),
+            "operational_bundle_isolation_resolved_request_ids": []
+            if operational_report is None
+            else (
+                sorted(
+                    request_id
+                    for request_id in (
+                        [
+                            str(item)
+                            for item in (
+                                operational_report.get("bundle_repair_log_summary", {}).get(
+                                    "isolation_clear_release_request_ids", []
+                                )
+                                if isinstance(operational_report.get("bundle_repair_log_summary"), dict)
+                                and isinstance(
+                                    operational_report.get("bundle_repair_log_summary", {}).get(
+                                        "isolation_clear_release_request_ids", []
+                                    ),
+                                    list,
+                                )
+                                else []
+                            )
+                            if str(item)
+                        ]
+                    )
+                    if request_id
+                    and request_id
+                    not in {
+                        str(item)
+                        for item in (
+                            operational_report.get("bundle_isolation_blocked_request_ids", [])
+                            if isinstance(operational_report.get("bundle_isolation_blocked_request_ids"), list)
+                            else []
+                        )
+                        if str(item)
+                    }
+                )
+            ),
             "synesthetic_multimodal_binding_passed": None
             if synesthetic_report is None
             else bool(synesthetic_report.get("passed")),
@@ -1204,6 +1927,16 @@ def build_manifest(
             else event_memory_ingest_report.get("metrics", {}).get(
                 "multimodal_bundle_promotion_rate"
             ),
+            "event_memory_multimodal_bundle_relation_verification_yield": None
+            if event_memory_ingest_report is None
+            else event_memory_ingest_report.get("metrics", {}).get(
+                "multimodal_bundle_relation_verification_yield"
+            ),
+            "event_memory_multimodal_bundle_compression_contribution": None
+            if event_memory_ingest_report is None
+            else event_memory_ingest_report.get("metrics", {}).get(
+                "multimodal_bundle_compression_contribution"
+            ),
             "event_memory_multimodal_bundle_promotion_count": None
             if event_memory_ingest_report is None
             else event_memory_ingest_report.get("traces", {}).get(
@@ -1226,6 +1959,54 @@ def build_manifest(
             if event_memory_maintenance_coupling_report is None
             else event_memory_maintenance_coupling_report.get("metrics", {}).get(
                 "best_profile_compression_efficiency_per_maintenance"
+            ),
+            "event_memory_maintenance_best_bundle_compression_contribution": None
+            if event_memory_maintenance_coupling_report is None
+            else event_memory_maintenance_coupling_report.get("metrics", {}).get(
+                "best_profile_multimodal_bundle_compression_contribution"
+            ),
+            "event_memory_bundle_support_gap_present": bool(
+                bundle_support_gap.get("present")
+            ),
+            "event_memory_bundle_support_gap_trigger": bundle_support_gap.get("trigger"),
+            "event_memory_bundle_support_repair_target": bundle_support_gap.get(
+                "repair_target"
+            ),
+            "event_memory_bundle_support_fixture_repair_action_count": bundle_support_fixture_repairs.get(
+                "action_count"
+            ),
+            "event_memory_bundle_support_fixture_request_ids": bundle_support_fixture_repairs.get(
+                "request_ids"
+            ),
+            "event_memory_bundle_support_fixture_coverage_ready": bundle_support_fixture_repairs.get(
+                "coverage_ready"
+            ),
+            "event_memory_bundle_support_closed_loop_overlap_count": bundle_support_closed_loop_effect.get(
+                "request_overlap_count"
+            ),
+            "event_memory_bundle_support_closed_loop_overlap_ids": bundle_support_closed_loop_effect.get(
+                "request_overlap_ids"
+            ),
+            "event_memory_bundle_support_closed_loop_gap_reduction": bundle_support_closed_loop_effect.get(
+                "gap_reduction"
+            ),
+            "event_memory_bundle_support_closed_loop_coverage_ready": bundle_support_closed_loop_effect.get(
+                "coverage_ready"
+            ),
+            "event_memory_bundle_support_overlap_request_isolation_audit": bundle_overlap_isolation_risk.get(
+                "request_audit"
+            ),
+            "event_memory_bundle_support_overlap_missing_isolation_axes": bundle_overlap_isolation_risk.get(
+                "missing_axes"
+            ),
+            "event_memory_bundle_support_overlap_isolation_risk_count": bundle_overlap_isolation_risk.get(
+                "risk_count"
+            ),
+            "event_memory_bundle_support_overlap_highest_risk_axis": bundle_overlap_isolation_risk.get(
+                "highest_risk_axis"
+            ),
+            "event_memory_bundle_support_overlap_risk_priority": bundle_overlap_isolation_risk.get(
+                "risk_priority"
             ),
             "event_memory_maintenance_best_continuity": None
             if event_memory_maintenance_coupling_report is None
@@ -1266,6 +2047,30 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
     evidence = evidence if isinstance(evidence, dict) else {}
     artifact_state = manifest.get("artifact_state", {})
     artifact_state = artifact_state if isinstance(artifact_state, dict) else {}
+    fixture_requested_by_request = (
+        evidence.get("autobot_gap_loop_fixture_requested_slots_by_request", {})
+        if isinstance(evidence.get("autobot_gap_loop_fixture_requested_slots_by_request", {}), dict)
+        else {}
+    )
+    fixture_built_by_request = (
+        evidence.get("autobot_gap_loop_fixture_built_by_request", {})
+        if isinstance(evidence.get("autobot_gap_loop_fixture_built_by_request", {}), dict)
+        else {}
+    )
+    fixture_skipped_by_request = (
+        evidence.get("autobot_gap_loop_fixture_skipped_by_request", {})
+        if isinstance(evidence.get("autobot_gap_loop_fixture_skipped_by_request", {}), dict)
+        else {}
+    )
+    fixture_breakdown = ", ".join(
+        (
+            f"{request_id}:"
+            f"{int(fixture_built_by_request.get(request_id, 0) or 0)}"
+            f"/{int(fixture_requested_by_request.get(request_id, 0) or 0)}"
+            f"/{int(fixture_skipped_by_request.get(request_id, 0) or 0)}"
+        )
+        for request_id in sorted(fixture_requested_by_request)
+    )
 
     lines = [
         f"Research benchmark suite: {'PASS' if manifest.get('passed') else 'FAIL'}",
@@ -1298,6 +2103,12 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             "Phase 7 loop metrics: "
             f"requested_slots={display_artifact_value(evidence.get('autobot_gap_loop_requested_slot_count'))}, "
             f"build_coverage={display_artifact_value(evidence.get('autobot_gap_loop_build_coverage'))}, "
+            f"fixture_requests={display_artifact_value(evidence.get('autobot_gap_loop_fixture_request_count'))}, "
+            f"fixture_slots={display_artifact_value(evidence.get('autobot_gap_loop_fixture_requested_slot_count'))}, "
+            f"fixture_build_coverage={display_artifact_value(evidence.get('autobot_gap_loop_fixture_build_coverage'))}, "
+            f"fixture_lineage_coverage={display_artifact_value(evidence.get('autobot_gap_loop_fixture_source_lineage_coverage'))}, "
+            f"fixture_breakdown={fixture_breakdown or 'missing_artifact'}, "
+            f"fixture_repair_actions={display_artifact_value(evidence.get('autobot_gap_loop_fixture_repair_action_count'))}, "
             f"enqueue_coverage={display_artifact_value(evidence.get('autobot_gap_loop_enqueue_coverage'))}, "
             f"skip_ratio={display_artifact_value(evidence.get('autobot_gap_loop_skip_ratio'))}"
         ),
@@ -1318,10 +2129,25 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             f"compression_ratio={display_artifact_value(evidence.get('event_memory_episode_compression_ratio'))}, "
             f"relation_yield={display_artifact_value(evidence.get('event_memory_relation_verification_yield'))}, "
             f"bundle_promotion_rate={display_artifact_value(evidence.get('event_memory_multimodal_bundle_promotion_rate'))}, "
+            f"bundle_relation_yield={display_artifact_value(evidence.get('event_memory_multimodal_bundle_relation_verification_yield'))}, "
+            f"bundle_compression_contribution={display_artifact_value(evidence.get('event_memory_multimodal_bundle_compression_contribution'))}, "
             f"bundle_promotion_count={display_artifact_value(evidence.get('event_memory_multimodal_bundle_promotion_count'))}, "
             f"coupling_best_profile={display_artifact_value(evidence.get('event_memory_maintenance_best_profile'))}, "
             f"coupling_efficiency={display_artifact_value(evidence.get('event_memory_maintenance_best_efficiency'))}, "
-            f"coupling_continuity={display_artifact_value(evidence.get('event_memory_maintenance_best_continuity'))}"
+            f"coupling_bundle_contribution={display_artifact_value(evidence.get('event_memory_maintenance_best_bundle_compression_contribution'))}, "
+            f"coupling_continuity={display_artifact_value(evidence.get('event_memory_maintenance_best_continuity'))}, "
+            f"bundle_gap={display_artifact_value(evidence.get('event_memory_bundle_support_gap_present'))}, "
+            f"bundle_gap_trigger={display_artifact_value(evidence.get('event_memory_bundle_support_gap_trigger'))}, "
+            f"bundle_repair_target={display_artifact_value(evidence.get('event_memory_bundle_support_repair_target'))}, "
+            f"bundle_fixture_repairs={display_artifact_value(evidence.get('event_memory_bundle_support_fixture_repair_action_count'))}, "
+            f"bundle_fixture_coverage_ready={display_artifact_value(evidence.get('event_memory_bundle_support_fixture_coverage_ready'))}, "
+            f"bundle_closed_loop_overlap={display_artifact_value(evidence.get('event_memory_bundle_support_closed_loop_overlap_count'))}, "
+            f"bundle_closed_loop_gap_reduction={display_artifact_value(evidence.get('event_memory_bundle_support_closed_loop_gap_reduction'))}, "
+            f"bundle_closed_loop_ready={display_artifact_value(evidence.get('event_memory_bundle_support_closed_loop_coverage_ready'))}, "
+            f"bundle_overlap_isolation_risk={display_artifact_value(evidence.get('event_memory_bundle_support_overlap_isolation_risk_count'))}, "
+            f"bundle_overlap_missing_axes={','.join(str(item) for item in evidence.get('event_memory_bundle_support_overlap_missing_isolation_axes', []) if str(item)) or 'none'}, "
+            f"bundle_overlap_highest_risk_axis={display_artifact_value(evidence.get('event_memory_bundle_support_overlap_highest_risk_axis'))}, "
+            f"bundle_overlap_risk_priority={display_artifact_value(evidence.get('event_memory_bundle_support_overlap_risk_priority'))}"
         ),
         (
             "Own-latent fixture alignment: "
@@ -1335,7 +2161,8 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             f"passed={display_artifact_value(evidence.get('gap_materials_closed_loop_passed'))}, "
             f"baseline_gaps={display_artifact_value(evidence.get('gap_materials_closed_loop_baseline_gap_count'))}, "
             f"augmented_gaps={display_artifact_value(evidence.get('gap_materials_closed_loop_augmented_gap_count'))}, "
-            f"reduction={display_artifact_value(evidence.get('gap_materials_closed_loop_gap_reduction'))}"
+            f"reduction={display_artifact_value(evidence.get('gap_materials_closed_loop_gap_reduction'))}, "
+            f"bundle_request_coverage={display_artifact_value(evidence.get('gap_materials_closed_loop_bundle_relevant_request_coverage'))}"
         ),
         (
             "Gap loop readiness: "
@@ -1343,8 +2170,36 @@ def write_outputs(manifest: Dict[str, Any], manifest_path: str, summary_path: st
             f"passed={display_artifact_value(evidence.get('autobot_gap_loop_readiness_passed'))}, "
             f"requested_slots={display_artifact_value(evidence.get('autobot_gap_loop_requested_slot_count'))}, "
             f"build_coverage={display_artifact_value(evidence.get('autobot_gap_loop_build_coverage'))}, "
+            f"fixture_requests={display_artifact_value(evidence.get('autobot_gap_loop_fixture_request_count'))}, "
+            f"fixture_build_coverage={display_artifact_value(evidence.get('autobot_gap_loop_fixture_build_coverage'))}, "
+            f"fixture_lineage_coverage={display_artifact_value(evidence.get('autobot_gap_loop_fixture_source_lineage_coverage'))}, "
             f"enqueue_coverage={display_artifact_value(evidence.get('autobot_gap_loop_enqueue_coverage'))}, "
             f"skip_ratio={display_artifact_value(evidence.get('autobot_gap_loop_skip_ratio'))}"
+        ),
+        (
+            "Operational bundle repair: "
+            f"log_entries={display_artifact_value(evidence.get('operational_bundle_repair_log_entry_count'))}, "
+            f"recovered={display_artifact_value(evidence.get('operational_bundle_repair_log_recovered_count'))}, "
+            f"max_gap_reduction={display_artifact_value(evidence.get('operational_bundle_repair_log_max_gap_reduction'))}, "
+            f"clear_release_success_count={display_artifact_value(evidence.get('operational_bundle_isolation_clear_release_success_count'))}, "
+            f"clear_release_request_ids={','.join(str(item) for item in evidence.get('operational_bundle_isolation_clear_release_request_ids', []) if str(item)) or 'none'}, "
+            f"resolved_request_ids={','.join(str(item) for item in evidence.get('operational_bundle_isolation_resolved_request_ids', []) if str(item)) or 'none'}, "
+            f"fresh_retry={display_artifact_value(evidence.get('operational_bundle_retry_queue_fresh_count'))}, "
+            f"recovered_retry={display_artifact_value(evidence.get('operational_bundle_retry_queue_recovered_before_count'))}, "
+            f"churn_retry={display_artifact_value(evidence.get('operational_bundle_retry_queue_isolation_review_churn_count'))}, "
+            f"churn_request_ids={','.join(str(item) for item in evidence.get('operational_bundle_retry_queue_isolation_review_churn_request_ids', []) if str(item)) or 'none'}, "
+            f"reblocked_retry={display_artifact_value(evidence.get('operational_bundle_retry_queue_isolation_reblocked_count'))}, "
+            f"reblocked_request_ids={','.join(str(item) for item in evidence.get('operational_bundle_retry_queue_isolation_reblocked_request_ids', []) if str(item)) or 'none'}, "
+            f"phase7_routed_actions={display_artifact_value(evidence.get('operational_bundle_phase7_routed_action_count'))}, "
+            f"phase7_routed_retry={display_artifact_value(evidence.get('operational_bundle_phase7_routed_retry_count'))}, "
+            f"phase7_isolation_ready={display_artifact_value(evidence.get('operational_bundle_phase7_isolation_ready'))}, "
+            f"phase7_lineage_ready={display_artifact_value(evidence.get('operational_bundle_phase7_lineage_ready'))}, "
+            f"phase7_collection_time_ready={display_artifact_value(evidence.get('operational_bundle_phase7_collection_time_ready'))}, "
+            f"phase7_missing_axes={','.join(str(item) for item in evidence.get('operational_bundle_phase7_missing_isolation_axes', []) if str(item)) or 'none'}, "
+            f"blocked_request_count={display_artifact_value(evidence.get('operational_bundle_isolation_blocked_request_count'))}, "
+            f"blocked_request_ids={','.join(str(item) for item in evidence.get('operational_bundle_isolation_blocked_request_ids', []) if str(item)) or 'none'}, "
+            f"blocked_missing_axes={','.join(str(item) for item in evidence.get('operational_bundle_isolation_blocked_missing_axes', []) if str(item)) or 'none'}, "
+            f"overlap_blocked_request_ids={','.join(str(item) for item in evidence.get('operational_bundle_overlap_blocked_request_ids', []) if str(item)) or 'none'}"
         ),
         (
             "Adaptive credit: "

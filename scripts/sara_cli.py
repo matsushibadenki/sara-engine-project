@@ -250,6 +250,8 @@ def main():
         "--summary-path",
         default=workspace_path("autobot", "gap_materials_builder_summary.txt"),
     )
+    parser_autobot_gap_materials.add_argument("--blocked-request-id", action="append", default=None)
+    parser_autobot_gap_materials.add_argument("--clear-blocked-request-id", action="append", default=None)
     parser_autobot_gap_enqueue = subparsers.add_parser(
         "enqueue-autobot-gap-curriculum",
         help="Enqueue gap curriculum materials into the autobot training queue.",
@@ -323,6 +325,8 @@ def main():
         default=workspace_path("autobot", "gap_loop_summary.txt"),
     )
     parser_autobot_gap_loop.add_argument("--evaluation-gap", action="append", default=None)
+    parser_autobot_gap_loop.add_argument("--blocked-request-id", action="append", default=None)
+    parser_autobot_gap_loop.add_argument("--clear-blocked-request-id", action="append", default=None)
 
     parser_autobot_gap_loop_readiness = subparsers.add_parser(
         "eval-autobot-gap-loop-readiness",
@@ -1518,6 +1522,10 @@ def main():
             "--summary-path",
             str(args.summary_path),
         ]
+        for request_id in args.blocked_request_id or []:
+            command.extend(["--blocked-request-id", str(request_id)])
+        for request_id in args.clear_blocked_request_id or []:
+            command.extend(["--clear-blocked-request-id", str(request_id)])
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
@@ -1568,6 +1576,10 @@ def main():
         ]
         for gap in args.evaluation_gap or []:
             command.extend(["--evaluation-gap", str(gap)])
+        for request_id in args.blocked_request_id or []:
+            command.extend(["--blocked-request-id", str(request_id)])
+        for request_id in args.clear_blocked_request_id or []:
+            command.extend(["--clear-blocked-request-id", str(request_id)])
         result = subprocess.run(command)
         sys.exit(result.returncode)
 

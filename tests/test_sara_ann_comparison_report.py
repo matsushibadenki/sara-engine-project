@@ -173,6 +173,8 @@ def _event_memory_report():
             "candidate_event_acceptance_rate": 1.0,
             "episode_compression_ratio": 5.0,
             "relation_verification_yield": 1.0,
+            "multimodal_bundle_relation_verification_yield": 1.0,
+            "multimodal_bundle_compression_contribution": 1.25,
             "lineage_coverage_ratio": 1.0,
             "self_state_continuity": 0.2857142857,
             "self_state_external_event_ratio": 1.4,
@@ -192,6 +194,7 @@ def _event_memory_maintenance_coupling_report():
             "best_profile_compression_efficiency_per_maintenance": 0.1896551724,
             "best_profile_self_state_continuity": 0.8333333333,
             "best_profile_episode_compression_ratio": 3.6666666667,
+            "best_profile_multimodal_bundle_compression_contribution": 1.83,
         },
     }
 
@@ -259,10 +262,19 @@ def test_sara_ann_comparison_report_accepts_phase6_and_phase8_surface_when_refer
     assert report["maintenance_surface"]["physical_alignment_available"] is True
     assert report["compression_surface"]["available"] is True
     assert report["compression_surface"]["episode_compression_ratio"] == 5.0
+    assert report["compression_surface"]["multimodal_bundle_compression_contribution"] == 1.25
     assert report["compression_maintenance_coupling_surface"]["available"] is True
     assert report["compression_maintenance_coupling_surface"]["best_profile_id"] == "wide"
+    assert (
+        report["compression_maintenance_coupling_surface"][
+            "best_profile_multimodal_bundle_compression_contribution"
+        ]
+        == 1.83
+    )
     assert report["metrics"]["event_memory_episode_compression_ratio"] == 5.0
+    assert report["metrics"]["event_memory_multimodal_bundle_compression_contribution"] == 1.25
     assert report["metrics"]["event_memory_maintenance_best_profile"] == "wide"
+    assert report["metrics"]["event_memory_maintenance_best_bundle_compression_contribution"] == 1.83
     assert report["metrics"]["physical_maintenance_event_cost_per_selected"] == 0.05
     assert report["metrics"]["sara_maintenance_event_cost_per_success"] == 0.06
     physical = [card for card in report["baseline_cards"] if card["baseline_id"] == "physical_ann_measurement"][0]
@@ -273,8 +285,10 @@ def test_sara_ann_comparison_report_accepts_phase6_and_phase8_surface_when_refer
     assert "alignment_ratio=0.033" in summary
     assert "Compression Surface:" in summary
     assert "episode_compression_ratio=5.000" in summary
+    assert "bundle_compression_contribution=1.250" in summary
     assert "Compression Maintenance Coupling Surface:" in summary
     assert "best_profile=wide" in summary
+    assert "best_bundle_contribution=1.830" in summary
 
 
 def test_sara_ann_comparison_report_prioritizes_missing_directory_over_not_configured():
@@ -507,5 +521,45 @@ def test_sara_ann_comparison_report_requests_event_memory_coupling_followup_when
 
     assert any(
         action.get("category") == "weak_event_memory_maintenance_coupling_surface"
+        for action in report["next_actions"]
+    )
+
+
+def test_sara_ann_comparison_report_requests_bundle_followup_when_compression_surface_is_weak():
+    module = _load_module()
+    weak_event_memory = _event_memory_report()
+    weak_event_memory["metrics"]["multimodal_bundle_compression_contribution"] = 0.1
+
+    report = module.build_sara_ann_comparison_report(
+        external_validity_report=_external_validity_report(with_real_reference=True),
+        external_ladder_report=_ladder_report(),
+        energy_measurement_report=_energy_measurement_report(real=True),
+        internal_maintenance_report=_internal_maintenance_report(),
+        event_memory_report=weak_event_memory,
+        event_memory_maintenance_coupling_report=_event_memory_maintenance_coupling_report(),
+    )
+
+    assert any(
+        action.get("category") == "weak_event_memory_bundle_compression_surface"
+        for action in report["next_actions"]
+    )
+
+
+def test_sara_ann_comparison_report_requests_bundle_followup_when_coupling_surface_is_weak():
+    module = _load_module()
+    weak_coupling = _event_memory_maintenance_coupling_report()
+    weak_coupling["metrics"]["best_profile_multimodal_bundle_compression_contribution"] = 0.1
+
+    report = module.build_sara_ann_comparison_report(
+        external_validity_report=_external_validity_report(with_real_reference=True),
+        external_ladder_report=_ladder_report(),
+        energy_measurement_report=_energy_measurement_report(real=True),
+        internal_maintenance_report=_internal_maintenance_report(),
+        event_memory_report=_event_memory_report(),
+        event_memory_maintenance_coupling_report=weak_coupling,
+    )
+
+    assert any(
+        action.get("category") == "weak_event_memory_bundle_coupling_surface"
         for action in report["next_actions"]
     )

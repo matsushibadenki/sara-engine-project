@@ -159,8 +159,9 @@ def test_build_physical_energy_session_progress_tracks_pair_completion():
             "profile_count": 3,
             "best_profile": {"profile_id": "wide"},
             "metrics": {
-                "best_efficiency_score": 1.8,
-                "best_self_state_continuity": 0.92,
+                "best_profile_compression_efficiency_per_maintenance": 1.8,
+                "best_profile_self_state_continuity": 0.92,
+                "best_profile_multimodal_bundle_compression_contribution": 1.4,
             },
         },
     )
@@ -176,6 +177,38 @@ def test_build_physical_energy_session_progress_tracks_pair_completion():
     assert report["task_progress"]["real_data_external_validity"]["complete_valid_pair_count"] == 1
     assert report["internal_maintenance_reference"]["available"] is True
     assert report["event_memory_maintenance_coupling_reference"]["best_profile_id"] == "wide"
+    assert report["event_memory_maintenance_coupling_reference"]["best_profile_multimodal_bundle_compression_contribution"] == 1.4
+
+
+def test_build_physical_energy_session_progress_warns_when_bundle_contribution_is_weak():
+    progress_module = _load_module(
+        "physical_energy_session_progress_bundle_warning",
+        "scripts/eval/physical_energy_session_progress.py",
+    )
+    batch_report = {
+        "session_id": "lab-session",
+        "batch_runs": [],
+    }
+
+    report = progress_module.build_physical_energy_session_progress(
+        batch_report,
+        [],
+        event_memory_maintenance_coupling_report={
+            "passed": True,
+            "observed_only": True,
+            "profile_count": 3,
+            "best_profile": {"profile_id": "wide"},
+            "metrics": {
+                "best_profile_compression_efficiency_per_maintenance": 1.8,
+                "best_profile_self_state_continuity": 0.92,
+                "best_profile_multimodal_bundle_compression_contribution": 0.1,
+            },
+        },
+    )
+
+    assert "Bundle-backed compression contribution is weak" in report["bundle_contribution_warning"]
+    summary = progress_module.format_summary(report)
+    assert "Bundle Contribution Warning:" in summary
 
 
 def test_build_physical_energy_session_progress_classifies_invalid_pair_reason():

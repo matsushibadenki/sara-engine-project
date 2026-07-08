@@ -19,6 +19,7 @@ for path in (SCRIPT_DIR, SRC_PATH):
 
 from sara_engine.utils.project_paths import ensure_parent_directory, raw_data_path, workspace_path  # noqa: E402
 from energy_measurement_readiness import (  # noqa: E402
+    _bundle_contribution_warning,
     _classify_pair_fairness_errors,
     _event_memory_maintenance_coupling_reference_summary,
     _internal_maintenance_reference_summary,
@@ -216,6 +217,11 @@ def build_physical_energy_session_progress(
                 event_memory_maintenance_coupling_report
             )
         ),
+        "bundle_contribution_warning": _bundle_contribution_warning(
+            _event_memory_maintenance_coupling_reference_summary(
+                event_memory_maintenance_coupling_report
+            )
+        ),
     }
 
 
@@ -233,6 +239,7 @@ def format_summary(report: Mapping[str, Any]) -> str:
         if isinstance(report.get("event_memory_maintenance_coupling_reference"), Mapping)
         else {}
     )
+    bundle_contribution_warning = str(report.get("bundle_contribution_warning", "") or "")
     lines = [
         "# SARA Physical Energy Session Progress",
         f"- session_id: {report.get('session_id', '')}",
@@ -308,9 +315,12 @@ def format_summary(report: Mapping[str, Any]) -> str:
             f"available={bool(event_memory_maintenance_coupling_reference.get('available', False))}, "
             f"passed={bool(event_memory_maintenance_coupling_reference.get('passed', False))}, "
             f"best_profile={event_memory_maintenance_coupling_reference.get('best_profile_id', '')}, "
-            f"best_efficiency={_safe_float(event_memory_maintenance_coupling_reference.get('best_efficiency')):.3f}, "
-            f"best_continuity={_safe_float(event_memory_maintenance_coupling_reference.get('best_continuity')):.3f}"
+            f"best_efficiency={_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_compression_efficiency_per_maintenance')):.3f}, "
+            f"best_bundle_contribution={_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_multimodal_bundle_compression_contribution')):.3f}, "
+            f"best_continuity={_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_self_state_continuity')):.3f}"
         )
+    if bundle_contribution_warning:
+        lines.append(f"Bundle Contribution Warning: {bundle_contribution_warning}")
     return "\n".join(lines) + "\n"
 
 

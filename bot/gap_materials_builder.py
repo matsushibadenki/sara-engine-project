@@ -6,7 +6,7 @@ import os
 import re
 import sys
 from collections import Counter
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC_PATH = os.path.join(PROJECT_ROOT, "src")
@@ -254,6 +254,51 @@ def derive_evaluation_gaps(targets_payload: Optional[Dict[str, Any]]) -> List[st
     return sorted(merged)
 
 
+def _blocked_request_ids_from_targets_payload(targets_payload: Optional[Mapping[str, Any]]) -> List[str]:
+    if not isinstance(targets_payload, Mapping):
+        return []
+    blocked = targets_payload.get("blocked_request_ids", [])
+    if not isinstance(blocked, list):
+        return []
+    return sorted({str(item) for item in blocked if str(item)})
+
+
+def _blocked_request_missing_axes_from_targets_payload(
+    targets_payload: Optional[Mapping[str, Any]]
+) -> Dict[str, List[str]]:
+    if not isinstance(targets_payload, Mapping):
+        return {}
+    payload = targets_payload.get("blocked_request_missing_axes", {})
+    if not isinstance(payload, Mapping):
+        return {}
+    normalized: Dict[str, List[str]] = {}
+    for request_id, axes in payload.items():
+        key = str(request_id or "")
+        if not key or not isinstance(axes, list):
+            continue
+        normalized[key] = sorted({str(axis) for axis in axes if str(axis)})
+    return dict(sorted(normalized.items()))
+
+
+def _apply_block_policy_to_targets_payload(
+    *,
+    targets_payload: Optional[Dict[str, Any]],
+    blocked_request_ids: Sequence[str],
+    clear_blocked_request_ids: Sequence[str],
+) -> Dict[str, Any]:
+    payload = dict(targets_payload) if isinstance(targets_payload, dict) else {}
+    current_blocked_ids = set(_blocked_request_ids_from_targets_payload(payload))
+    blocked_id_set = {str(item) for item in blocked_request_ids if str(item)}
+    clear_id_set = {str(item) for item in clear_blocked_request_ids if str(item)}
+    merged_blocked_ids = sorted((current_blocked_ids | blocked_id_set) - clear_id_set)
+    payload["blocked_request_ids"] = merged_blocked_ids
+    blocked_request_missing_axes = _blocked_request_missing_axes_from_targets_payload(payload)
+    for request_id in clear_id_set:
+        blocked_request_missing_axes.pop(request_id, None)
+    payload["blocked_request_missing_axes"] = dict(sorted(blocked_request_missing_axes.items()))
+    return payload
+
+
 def build_report(
     *,
     accepted_path: str,
@@ -263,6 +308,8 @@ def build_report(
     skipped_rows: Sequence[Dict[str, Any]],
     curriculum_manifest: Sequence[Dict[str, Any]],
     evaluation_gaps: Sequence[str],
+    blocked_request_ids: Sequence[str],
+    blocked_request_missing_axes: Optional[Mapping[str, Sequence[str]]] = None,
 ) -> Dict[str, Any]:
     type_counts = Counter(str(item.get("material_type", "unknown")) for item in built_rows)
     skipped_counts = Counter(str(item.get("material_type", "unknown")) for item in skipped_rows)
@@ -278,6 +325,19 @@ def build_report(
         "built_material_type_counts": dict(sorted(type_counts.items())),
         "skipped_material_type_counts": dict(sorted(skipped_counts.items())),
         "evaluation_gaps": list(evaluation_gaps),
+        "blocked_request_count": len([item for item in blocked_request_ids if str(item)]),
+        "blocked_request_ids": [str(item) for item in blocked_request_ids if str(item)],
+        "blocked_request_missing_axes": (
+            {
+                str(request_id): [str(axis) for axis in axes if str(axis)]
+                for request_id, axes in (
+                    blocked_request_missing_axes.items()
+                    if isinstance(blocked_request_missing_axes, Mapping)
+                    else []
+                )
+                if str(request_id)
+            }
+        ),
         "curriculum_distribution": curriculum_summary["curriculum_distribution"],
         "curriculum_material_type_counts": curriculum_summary["material_type_counts"],
         "policy_notes": [
@@ -294,6 +354,7 @@ def summarize_report(report: Dict[str, Any]) -> str:
         f"Built: {report.get('built_count')}",
         f"Skipped: {report.get('skipped_count')}",
         f"Evaluation gaps: {','.join(report.get('evaluation_gaps', []))}",
+        f"Blocked requests: {','.join(report.get('blocked_request_ids', [])) or 'none'}",
         "Built material types:",
     ]
     for key, value in sorted(report.get("built_material_type_counts", {}).items()):
@@ -312,10 +373,69 @@ def run_builder(
     curriculum_path: str = DEFAULT_CURRICULUM_PATH,
     report_path: str = DEFAULT_REPORT_PATH,
     summary_path: str = DEFAULT_SUMMARY_PATH,
+    blocked_request_ids: Optional[Sequence[str]] = None,
+    clear_blocked_request_ids: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
     accepted = read_jsonl(accepted_path)
     targets_payload = read_json(targets_path)
-    built_rows, skipped_rows = build_gap_materials(accepted=accepted, targets_payload=targets_payload)
+    policy_targets_payload = _apply_block_policy_to_targets_payload(
+        targets_payload=targets_payload,
+        blocked_request_ids=blocked_request_ids or (),
+        clear_blocked_request_ids=clear_blocked_request_ids or (),
+    )
+    if policy_targets_payload:
+        write_json(targets_path, policy_targets_payload)
+    blocked_request_ids_merged = _blocked_request_ids_from_targets_payload(policy_targets_payload)
+    blocked_request_missing_axes = _blocked_request_missing_axes_from_targets_payload(policy_targets_payload)
+    filtered_targets_payload = dict(policy_targets_payload) if isinstance(policy_targets_payload, dict) else {}
+    if blocked_request_ids_merged:
+        filtered_targets = []
+        original_targets = (
+            filtered_targets_payload.get("targets", [])
+            if isinstance(filtered_targets_payload.get("targets"), list)
+            else []
+        )
+        for target in original_targets:
+            if not isinstance(target, dict):
+                continue
+            request_id = str(target.get("request_id", "") or "")
+            if request_id in blocked_request_ids_merged:
+                skipped_missing_types = [
+                    str(item)
+                    for item in (
+                        target.get("missing_material_types", [])
+                        if isinstance(target.get("missing_material_types", []), list)
+                        else []
+                    )
+                    if str(item)
+                ]
+                for missing_type in skipped_missing_types:
+                    skipped_reason = "blocked_request"
+                    if blocked_request_missing_axes.get(request_id):
+                        skipped_reason = (
+                            "blocked_request:"
+                            + ",".join(blocked_request_missing_axes.get(request_id, []))
+                        )
+                    filtered_targets_payload.setdefault("_blocked_skipped_rows", []).append(
+                        {
+                            "request_id": request_id,
+                            "material_type": missing_type,
+                            "reason": skipped_reason,
+                        }
+                    )
+                continue
+            filtered_targets.append(dict(target))
+        filtered_targets_payload["targets"] = filtered_targets
+    built_rows, skipped_rows = build_gap_materials(
+        accepted=accepted,
+        targets_payload=filtered_targets_payload if filtered_targets_payload else targets_payload,
+    )
+    blocked_skipped_rows = (
+        filtered_targets_payload.get("_blocked_skipped_rows", [])
+        if isinstance(filtered_targets_payload.get("_blocked_skipped_rows"), list)
+        else []
+    )
+    skipped_rows = list(skipped_rows) + [dict(item) for item in blocked_skipped_rows if isinstance(item, dict)]
     evaluation_gaps = derive_evaluation_gaps(targets_payload)
     curriculum_manifest = build_curriculum_manifest(built_rows, evaluation_gaps=evaluation_gaps)
     outputs = {"all_gap_materials": write_jsonl(output_path, built_rows)}
@@ -331,6 +451,8 @@ def run_builder(
         skipped_rows=skipped_rows,
         curriculum_manifest=curriculum_manifest,
         evaluation_gaps=evaluation_gaps,
+        blocked_request_ids=blocked_request_ids_merged,
+        blocked_request_missing_axes=blocked_request_missing_axes,
     )
     report["outputs"] = outputs
     report["skipped"] = skipped_rows
@@ -349,6 +471,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--curriculum-path", default=DEFAULT_CURRICULUM_PATH)
     parser.add_argument("--report-path", default=DEFAULT_REPORT_PATH)
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
+    parser.add_argument("--blocked-request-id", action="append", default=None)
+    parser.add_argument("--clear-blocked-request-id", action="append", default=None)
     return parser.parse_args(argv)
 
 
@@ -361,6 +485,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         curriculum_path=args.curriculum_path,
         report_path=args.report_path,
         summary_path=args.summary_path,
+        blocked_request_ids=args.blocked_request_id or (),
+        clear_blocked_request_ids=args.clear_blocked_request_id or (),
     )
     print(
         json.dumps(

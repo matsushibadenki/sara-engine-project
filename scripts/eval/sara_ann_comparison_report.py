@@ -431,6 +431,12 @@ def _compression_surface(
         ),
         "episode_compression_ratio": _safe_float(metrics.get("episode_compression_ratio")),
         "relation_verification_yield": _safe_float(metrics.get("relation_verification_yield")),
+        "multimodal_bundle_relation_verification_yield": _safe_float(
+            metrics.get("multimodal_bundle_relation_verification_yield")
+        ),
+        "multimodal_bundle_compression_contribution": _safe_float(
+            metrics.get("multimodal_bundle_compression_contribution")
+        ),
         "lineage_coverage_ratio": _safe_float(metrics.get("lineage_coverage_ratio")),
         "self_state_continuity": _safe_float(metrics.get("self_state_continuity")),
         "self_state_external_event_ratio": _safe_float(
@@ -466,6 +472,9 @@ def _compression_maintenance_coupling_surface(
         ),
         "best_profile_episode_compression_ratio": _safe_float(
             metrics.get("best_profile_episode_compression_ratio")
+        ),
+        "best_profile_multimodal_bundle_compression_contribution": _safe_float(
+            metrics.get("best_profile_multimodal_bundle_compression_contribution")
         ),
     }
 
@@ -549,6 +558,19 @@ def build_sara_ann_comparison_report(
         "event_memory_compression_visible": bool(compression_surface.get("available", False)),
         "event_memory_maintenance_coupling_visible": bool(
             compression_maintenance_coupling_surface.get("available", False)
+        ),
+        "event_memory_bundle_compression_visible": (
+            not bool(compression_surface.get("available", False))
+            or _safe_float(compression_surface.get("multimodal_bundle_compression_contribution")) > 0.0
+        ),
+        "event_memory_bundle_coupling_visible": (
+            not bool(compression_maintenance_coupling_surface.get("available", False))
+            or _safe_float(
+                compression_maintenance_coupling_surface.get(
+                    "best_profile_multimodal_bundle_compression_contribution"
+                )
+            )
+            > 0.0
         ),
     }
     completion_score = sum(1 for passed in checks.values() if bool(passed)) / max(len(checks), 1)
@@ -634,6 +656,14 @@ def build_sara_ann_comparison_report(
                 "command": "Review Event Memory compression, proposal verification, and episode segmentation before promoting the current comparison surface.",
             }
         )
+    elif _safe_float(compression_surface.get("multimodal_bundle_compression_contribution")) < 0.5:
+        next_actions.append(
+            {
+                "priority": "medium",
+                "category": "weak_event_memory_bundle_compression_surface",
+                "command": "Strengthen verified multimodal bundle support in the Event Memory ingest pipeline before promoting the current comparison surface.",
+            }
+        )
     if not bool(compression_maintenance_coupling_surface.get("available", False)):
         next_actions.append(
             {
@@ -661,6 +691,21 @@ def build_sara_ann_comparison_report(
                 "priority": "medium",
                 "category": "weak_event_memory_maintenance_coupling_surface",
                 "command": "Review Event Memory profile width, episode segmentation, and self-state carry-over before promoting the current comparison surface.",
+            }
+        )
+    elif (
+        _safe_float(
+            compression_maintenance_coupling_surface.get(
+                "best_profile_multimodal_bundle_compression_contribution"
+            )
+        )
+        < 0.5
+    ):
+        next_actions.append(
+            {
+                "priority": "medium",
+                "category": "weak_event_memory_bundle_coupling_surface",
+                "command": "Rerun the Event Memory maintenance coupling benchmark with stronger verified multimodal bundle fixtures before promoting the current comparison surface.",
             }
         )
     report = {
@@ -703,6 +748,12 @@ def build_sara_ann_comparison_report(
             "event_memory_relation_verification_yield": _safe_float(
                 compression_surface.get("relation_verification_yield")
             ),
+            "event_memory_multimodal_bundle_relation_verification_yield": _safe_float(
+                compression_surface.get("multimodal_bundle_relation_verification_yield")
+            ),
+            "event_memory_multimodal_bundle_compression_contribution": _safe_float(
+                compression_surface.get("multimodal_bundle_compression_contribution")
+            ),
             "event_memory_self_state_continuity": _safe_float(
                 compression_surface.get("self_state_continuity")
             ),
@@ -722,6 +773,11 @@ def build_sara_ann_comparison_report(
             "event_memory_maintenance_best_continuity": _safe_float(
                 compression_maintenance_coupling_surface.get(
                     "best_profile_self_state_continuity"
+                )
+            ),
+            "event_memory_maintenance_best_bundle_compression_contribution": _safe_float(
+                compression_maintenance_coupling_surface.get(
+                    "best_profile_multimodal_bundle_compression_contribution"
                 )
             ),
         },
@@ -795,11 +851,14 @@ def format_sara_ann_comparison_summary(report: Mapping[str, Any]) -> str:
         f"- ann_maintenance_event_cost_per_success: {_safe_float(metrics.get('ann_maintenance_event_cost_per_success')):.3f}",
         f"- event_memory_episode_compression_ratio: {_safe_float(metrics.get('event_memory_episode_compression_ratio')):.3f}",
         f"- event_memory_relation_verification_yield: {_safe_float(metrics.get('event_memory_relation_verification_yield')):.3f}",
+        f"- event_memory_multimodal_bundle_relation_verification_yield: {_safe_float(metrics.get('event_memory_multimodal_bundle_relation_verification_yield')):.3f}",
+        f"- event_memory_multimodal_bundle_compression_contribution: {_safe_float(metrics.get('event_memory_multimodal_bundle_compression_contribution')):.3f}",
         f"- event_memory_self_state_continuity: {_safe_float(metrics.get('event_memory_self_state_continuity')):.3f}",
         f"- event_memory_maintenance_best_profile: {metrics.get('event_memory_maintenance_best_profile', '')}",
         f"- event_memory_maintenance_correlation: {_safe_float(metrics.get('event_memory_maintenance_correlation')):.3f}",
         f"- event_memory_maintenance_best_efficiency: {_safe_float(metrics.get('event_memory_maintenance_best_efficiency')):.3f}",
         f"- event_memory_maintenance_best_continuity: {_safe_float(metrics.get('event_memory_maintenance_best_continuity')):.3f}",
+        f"- event_memory_maintenance_best_bundle_compression_contribution: {_safe_float(metrics.get('event_memory_maintenance_best_bundle_compression_contribution')):.3f}",
         "Checks:",
     ]
     for name in sorted(checks):
@@ -860,6 +919,8 @@ def format_sara_ann_comparison_summary(report: Mapping[str, Any]) -> str:
             f"passed={bool(compression_surface.get('passed', False))}, "
             f"episode_compression_ratio={_safe_float(compression_surface.get('episode_compression_ratio')):.3f}, "
             f"relation_verification_yield={_safe_float(compression_surface.get('relation_verification_yield')):.3f}, "
+            f"bundle_relation_verification_yield={_safe_float(compression_surface.get('multimodal_bundle_relation_verification_yield')):.3f}, "
+            f"bundle_compression_contribution={_safe_float(compression_surface.get('multimodal_bundle_compression_contribution')):.3f}, "
             f"self_state_continuity={_safe_float(compression_surface.get('self_state_continuity')):.3f}"
         )
     if compression_maintenance_coupling_surface:
@@ -871,7 +932,8 @@ def format_sara_ann_comparison_summary(report: Mapping[str, Any]) -> str:
             f"best_profile={compression_maintenance_coupling_surface.get('best_profile_id', '')}, "
             f"correlation={_safe_float(compression_maintenance_coupling_surface.get('compression_to_maintenance_correlation')):.3f}, "
             f"best_efficiency={_safe_float(compression_maintenance_coupling_surface.get('best_profile_compression_efficiency_per_maintenance')):.3f}, "
-            f"best_continuity={_safe_float(compression_maintenance_coupling_surface.get('best_profile_self_state_continuity')):.3f}"
+            f"best_continuity={_safe_float(compression_maintenance_coupling_surface.get('best_profile_self_state_continuity')):.3f}, "
+            f"best_bundle_contribution={_safe_float(compression_maintenance_coupling_surface.get('best_profile_multimodal_bundle_compression_contribution')):.3f}"
         )
     lines.append(f"Next Actions: {len(next_actions)}")
     for action in next_actions:

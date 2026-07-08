@@ -164,3 +164,102 @@ def test_gap_materials_builder_generates_source_backed_gap_materials():
     assert "Gap materials builder: PASS" in summary
     assert "Built: 4" in summary
     assert "Curriculum distribution:" in summary
+
+
+def test_gap_materials_builder_blocks_flagged_requests():
+    builder = _load_builder()
+    accepted_path = processed_data_path("autobot", "test_gap_materials_blocked_accepted.jsonl")
+    targets_path = workspace_path("autobot", "test_gap_collection_targets_blocked.json")
+    output_path = processed_data_path("autobot", "test_gap_materials_blocked.jsonl")
+    curriculum_path = processed_data_path("autobot", "test_gap_curriculum_manifest_blocked.jsonl")
+    report_path = workspace_path("autobot", "test_gap_materials_builder_blocked_report.json")
+    summary_path = workspace_path("autobot", "test_gap_materials_builder_blocked_summary.txt")
+    _write_accepted(accepted_path)
+    _write_targets(targets_path)
+    with open(targets_path, "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    payload["blocked_request_ids"] = ["fixture_counterexample_gap"]
+    payload["blocked_request_missing_axes"] = {
+        "fixture_counterexample_gap": ["source_lineage"]
+    }
+    with open(targets_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+
+    exit_code = builder.main(
+        [
+            "--accepted-path",
+            accepted_path,
+            "--targets-path",
+            targets_path,
+            "--output-path",
+            output_path,
+            "--curriculum-path",
+            curriculum_path,
+            "--report-path",
+            report_path,
+            "--summary-path",
+            summary_path,
+        ]
+    )
+
+    assert exit_code == 0
+    with open(report_path, "r", encoding="utf-8") as handle:
+        report = json.load(handle)
+    assert report["built_count"] == 3
+    assert report["blocked_request_count"] == 1
+    assert report["blocked_request_ids"] == ["fixture_counterexample_gap"]
+    assert report["blocked_request_missing_axes"]["fixture_counterexample_gap"] == [
+        "source_lineage"
+    ]
+    assert report["skipped_material_type_counts"]["counterexample"] == 1
+    with open(output_path, "r", encoding="utf-8") as handle:
+        rows = [json.loads(line) for line in handle if line.strip()]
+    assert "counterexample" not in {row["material_type"] for row in rows}
+
+
+def test_gap_materials_builder_clears_blocked_request_before_build():
+    builder = _load_builder()
+    accepted_path = processed_data_path("autobot", "test_gap_materials_clear_accepted.jsonl")
+    targets_path = workspace_path("autobot", "test_gap_collection_targets_clear.json")
+    output_path = processed_data_path("autobot", "test_gap_materials_clear.jsonl")
+    curriculum_path = processed_data_path("autobot", "test_gap_curriculum_manifest_clear.jsonl")
+    report_path = workspace_path("autobot", "test_gap_materials_builder_clear_report.json")
+    summary_path = workspace_path("autobot", "test_gap_materials_builder_clear_summary.txt")
+    _write_accepted(accepted_path)
+    _write_targets(targets_path)
+    with open(targets_path, "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    payload["blocked_request_ids"] = ["fixture_counterexample_gap"]
+    payload["blocked_request_missing_axes"] = {
+        "fixture_counterexample_gap": []
+    }
+    with open(targets_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+
+    exit_code = builder.main(
+        [
+            "--accepted-path",
+            accepted_path,
+            "--targets-path",
+            targets_path,
+            "--output-path",
+            output_path,
+            "--curriculum-path",
+            curriculum_path,
+            "--report-path",
+            report_path,
+            "--summary-path",
+            summary_path,
+            "--clear-blocked-request-id",
+            "fixture_counterexample_gap",
+        ]
+    )
+
+    assert exit_code == 0
+    with open(report_path, "r", encoding="utf-8") as handle:
+        report = json.load(handle)
+    assert report["built_count"] == 4
+    assert report["blocked_request_count"] == 0
+    with open(targets_path, "r", encoding="utf-8") as handle:
+        updated_targets = json.load(handle)
+    assert updated_targets["blocked_request_ids"] == []

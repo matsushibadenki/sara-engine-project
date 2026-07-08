@@ -144,10 +144,149 @@ def test_autobot_gap_loop_readiness_reports_pass_on_managed_gap_cycle():
 
     assert report["passed"] is True
     assert report["metrics"]["requested_slot_count"] == 2
+    assert report["metrics"]["fixture_request_count"] == 2
+    assert report["metrics"]["fixture_requested_slot_count"] == 2
     assert report["metrics"]["gap_material_built_count"] >= 2
+    assert report["metrics"]["fixture_gap_material_built_count"] >= 2
+    assert report["fixture_lane"]["requested_slots_by_request"]["fixture_counterexample_gap"] == 1
+    assert report["fixture_lane"]["requested_slots_by_request"]["fixture_source_diversity_gap"] == 1
+    assert report["fixture_lane"]["built_by_request"]["fixture_counterexample_gap"] == 1
+    assert report["fixture_lane"]["built_by_request"]["fixture_source_diversity_gap"] == 1
     assert report["metrics"]["gap_curriculum_enqueued_count"] >= 2
     assert report["checks"]["gap_material_coverage_ready"]["passed"] is True
     assert report["checks"]["gap_enqueue_ready"]["passed"] is True
+    assert report["checks"]["fixture_lane_coverage_ready"]["passed"] is True
+    assert report["checks"]["fixture_source_lineage_ready"]["passed"] is True
+    assert report["checks"]["fixture_source_isolation_ready"]["passed"] is True
+    assert report["checks"]["fixture_collection_time_ready"]["passed"] is True
+    assert report["metrics"]["fixture_candidate_source_domain_count"] >= 1
+    assert report["metrics"]["fixture_accepted_source_domain_count"] >= 1
+    assert report["metrics"]["fixture_collection_time_coverage"] == 1.0
+    assert report["fixture_isolation_audit"]["missing_axes"] == []
+    assert report["fixture_request_isolation_audit"]["fixture_counterexample_gap"]["missing_axes"] == []
+    assert report["fixture_request_isolation_audit"]["fixture_source_diversity_gap"]["missing_axes"] == []
     with open(readiness_summary_path, "r", encoding="utf-8") as handle:
         summary = handle.read()
     assert "Autobot gap loop readiness: PASS" in summary
+    assert "Fixture requests: 2" in summary
+    assert "Fixture build coverage: 1.000" in summary
+    assert "Fixture lane by request:" in summary
+    assert "fixture_counterexample_gap: requested_slots=1, built=1, skipped=0" in summary
+    assert "Fixture isolation axes:" in summary
+    assert "Fixture isolation missing axes: none" in summary
+    assert "Fixture isolation by request:" in summary
+    assert "fixture_counterexample_gap: row_count=" in summary
+
+
+def test_autobot_gap_loop_readiness_marks_blocked_fixture_requests():
+    readiness = _load_readiness_module()
+    collection_targets_path = workspace_path("autobot", "test_gap_readiness_blocked_collection_targets.json")
+    report_path = workspace_path("evaluation", "test_autobot_gap_loop_readiness_blocked.json")
+    summary_path = workspace_path("evaluation", "test_autobot_gap_loop_readiness_blocked.txt")
+
+    payload = {
+        "schema": "sara-autobot-collection-targets-v1",
+        "target_count": 2,
+        "blocked_request_ids": ["fixture_counterexample_gap"],
+        "blocked_request_missing_axes": {
+            "fixture_counterexample_gap": ["source_lineage"]
+        },
+        "targets": [
+            {
+                "request_id": "fixture_counterexample_gap",
+                "missing_material_types": ["counterexample"],
+                "preferred_material_types": ["contrastive_pair", "counterexample", "qa_pair"],
+                "evaluation_gaps": ["negative_control"],
+                "candidate_source_domains": ["example.org"],
+            },
+            {
+                "request_id": "fixture_source_diversity_gap",
+                "missing_material_types": ["transcript_segment"],
+                "preferred_material_types": ["source_claim", "qa_pair", "transcript_segment"],
+                "evaluation_gaps": ["retrieval_grounding"],
+                "candidate_source_domains": ["example.org"],
+            },
+        ],
+    }
+    os.makedirs(os.path.dirname(collection_targets_path), exist_ok=True)
+    with open(collection_targets_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+
+    report = readiness.build_report(
+        loop_report={"passed": True},
+        dataset_report={"accepted_count": 4, "passed": True},
+        gap_report={"built_count": 1, "skipped_count": 1, "curriculum_distribution": {"repair": 1}},
+        enqueue_report={"enqueued_count": 1, "queue_pending": 1, "passed": True},
+        collection_targets=payload,
+        accepted_rows=[],
+        gap_rows=[
+            {
+                "request_id": "fixture_source_diversity_gap",
+                "source_domain": "example.org",
+                "source_url": "https://example.org/a",
+                "collection_time": "2026-06-02T00:00:00",
+            }
+        ],
+        min_accepted_count=1,
+        min_gap_build_coverage=0.5,
+        input_paths={"collection_targets": collection_targets_path},
+    )
+    readiness.write_json(report_path, report)
+    with open(summary_path, "w", encoding="utf-8") as handle:
+        handle.write(readiness.summarize_report(report))
+
+    assert report["fixture_execution_policy"]["blocked_request_count"] == 1
+    assert report["fixture_execution_policy"]["blocked_request_ids"] == [
+        "fixture_counterexample_gap"
+    ]
+    blocked_action = next(
+        item
+        for item in report["fixture_repair_actions"]
+        if item["request_id"] == "fixture_counterexample_gap"
+    )
+    assert blocked_action["blocked_by_isolation_review"] is True
+    assert blocked_action["blocked_missing_axes"] == ["source_lineage"]
+    assert "Review fixture isolation block" in blocked_action["command"]
+    with open(summary_path, "r", encoding="utf-8") as handle:
+        summary = handle.read()
+    assert "Fixture execution blocked requests: fixture_counterexample_gap" in summary
+
+
+def test_autobot_gap_loop_readiness_marks_clearable_blocked_fixture_requests():
+    readiness = _load_readiness_module()
+    payload = {
+        "schema": "sara-autobot-collection-targets-v1",
+        "target_count": 1,
+        "blocked_request_ids": ["fixture_counterexample_gap"],
+        "blocked_request_missing_axes": {
+            "fixture_counterexample_gap": []
+        },
+        "targets": [
+            {
+                "request_id": "fixture_counterexample_gap",
+                "missing_material_types": ["counterexample"],
+                "preferred_material_types": ["contrastive_pair", "counterexample", "qa_pair"],
+                "evaluation_gaps": ["negative_control"],
+                "candidate_source_domains": ["example.org"],
+            }
+        ],
+    }
+    report = readiness.build_report(
+        loop_report={"passed": True},
+        dataset_report={"accepted_count": 4, "passed": True},
+        gap_report={"built_count": 0, "skipped_count": 0, "curriculum_distribution": {}},
+        enqueue_report={"enqueued_count": 0, "queue_pending": 0, "passed": True},
+        collection_targets=payload,
+        accepted_rows=[],
+        gap_rows=[],
+        min_accepted_count=1,
+        min_gap_build_coverage=0.0,
+        input_paths={"collection_targets": workspace_path("autobot", "dummy_targets.json")},
+    )
+    assert report["fixture_execution_policy"]["clearable_blocked_request_ids"] == [
+        "fixture_counterexample_gap"
+    ]
+    blocked_action = report["fixture_repair_actions"][0]
+    assert blocked_action["blocked_by_isolation_review"] is True
+    assert blocked_action["clearable_after_review"] is True
+    assert "--clear-blocked-request-id" in blocked_action["command"]

@@ -117,6 +117,7 @@ def _phase6_internal_maintenance_actions(
                 "category": "missing_internal_maintenance_reference",
                 "priority": "medium",
                 "task": "phase6_maintenance_efficiency",
+                "return_phase": "phase6",
                 "command": "python scripts/sara_cli.py eval-internal-maintenance-efficiency",
             }
         ]
@@ -129,6 +130,7 @@ def _phase6_internal_maintenance_actions(
                 "category": "weak_internal_maintenance_efficiency",
                 "priority": "medium",
                 "task": "phase6_maintenance_efficiency",
+                "return_phase": "phase6",
                 "command": "python scripts/sara_cli.py eval-internal-maintenance-efficiency",
             }
         )
@@ -139,6 +141,7 @@ def _phase6_internal_maintenance_actions(
                 "category": "weak_internal_self_state_continuity",
                 "priority": "medium",
                 "task": "phase6_maintenance_efficiency",
+                "return_phase": "phase6",
                 "command": "python scripts/sara_cli.py eval-persistent-self-state",
             }
         )
@@ -162,6 +165,7 @@ def _phase6_maintenance_alignment_actions(
             "category": "maintenance_alignment_drift",
             "priority": priority,
             "task": "phase6_maintenance_alignment",
+            "return_phase": "phase6",
             "ratio": ratio,
             "severity": severity,
             "command": "Inspect physical pair maintenance traces and rerun python scripts/sara_cli.py eval-internal-maintenance-efficiency before claiming stable self-state efficiency.",
@@ -180,6 +184,7 @@ def _phase6_event_memory_maintenance_coupling_actions(
                 "category": "missing_event_memory_maintenance_coupling_reference",
                 "priority": "medium",
                 "task": "phase6_compression_maintenance_coupling",
+                "return_phase": "phase6",
                 "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
             }
         ]
@@ -193,7 +198,29 @@ def _phase6_event_memory_maintenance_coupling_actions(
                 "category": "weak_event_memory_maintenance_coupling_reference",
                 "priority": "medium",
                 "task": "phase6_compression_maintenance_coupling",
+                "return_phase": "phase6",
                 "command": "python scripts/sara_cli.py eval-event-memory-maintenance-coupling",
+            }
+        ]
+    bundle_contribution = _float(
+        coupling,
+        "best_profile_multimodal_bundle_compression_contribution",
+    )
+    if bundle_contribution < 0.5:
+        return [
+            {
+                "source": "event_memory_maintenance_coupling_reference",
+                "category": "weak_bundle_compression_contribution",
+                "priority": "medium",
+                "task": "phase6_compression_maintenance_coupling",
+                "return_phase": "phase7",
+                "return_lane": "phase7_source_aware_bundle_fixtures",
+                "bundle_contribution": bundle_contribution,
+                "command": (
+                    "Expand multimodal bundle-bearing Event Memory coupling fixtures and rerun "
+                    "python scripts/sara_cli.py eval-event-memory-maintenance-coupling so compression "
+                    "wins remain attributable to verified cross-modal binding rather than untyped collapse."
+                ),
             }
         ]
     return []
@@ -261,6 +288,7 @@ def _phase8_reference_actions(external_validity_report: Mapping[str, Any] | None
                 "category": category,
                 "priority": priority,
                 "task": "phase8_reference_strength",
+                "return_phase": "phase8",
                 "baseline_id": reference_id,
                 "reason": reason,
                 "command": command,
@@ -299,6 +327,7 @@ def _build_next_evidence_actions(
                 "category": "invalid_measurement_rows",
                 "priority": "high",
                 "task": "phase6_measurement_data_hygiene",
+                "return_phase": "phase6",
                 "invalid_measurement_row_count": invalid_measurement_row_count,
                 "command": (
                     "Inspect data/raw/energy_measurements.jsonl for malformed or incomplete rows "
@@ -348,6 +377,7 @@ def _build_next_evidence_actions(
                     "category": action_category,
                     "priority": action_priority,
                     "task": str(item.get("task", "") or ""),
+                    "return_phase": "phase6",
                     "pair_id": str(item.get("pair_id", "") or ""),
                     "replicate_index": int(item.get("replicate_index", 0) or 0),
                     "invalid_reason_category": str(item.get("invalid_reason_category", "") or ""),
@@ -369,6 +399,7 @@ def _build_next_evidence_actions(
                     "category": "orphan_pair",
                     "priority": "medium",
                     "task": str(item.get("task", "") or ""),
+                    "return_phase": "phase6",
                     "pair_id": str(item.get("pair_id", "") or ""),
                     "replicate_index": int(item.get("replicate_index", 0) or 0),
                     "command": (
@@ -403,6 +434,7 @@ def _build_next_evidence_actions(
                     "category": str(item.get("category", "pending_joule_pair") or "pending_joule_pair"),
                     "priority": str(item.get("priority", "high") or "high"),
                     "task": str(item.get("task", "") or ""),
+                    "return_phase": "phase6",
                     "system": str(item.get("system", "") or ""),
                     "run_id_template": str(item.get("run_id_template", "") or ""),
                     "command": str(item.get("command_template", "") or ""),
@@ -428,6 +460,7 @@ def _build_next_evidence_actions(
                 "category": "pending_joule_pair",
                 "priority": str(item.get("priority", "high") or "high"),
                 "task": str(item.get("task", "") or ""),
+                "return_phase": "phase6",
                 "system": str(item.get("missing_system", "") or ""),
                 "command": str(item.get("command_template", "") or ""),
             }
@@ -442,6 +475,7 @@ def _build_next_evidence_actions(
                 "category": "weak_joule_pair",
                 "priority": str(item.get("priority", "medium") or "medium"),
                 "task": str(item.get("task", "") or ""),
+                "return_phase": "phase6",
                 "ratio": _float(item, "ann_to_sara_joule_efficiency_ratio"),
                 "required_min": _float(item, "required_min"),
                 "relative_ratio": _float(item, "relative_ratio"),
@@ -847,6 +881,10 @@ def build_ann_efficiency_roadmap_report(
                     event_memory_maintenance_coupling_reference,
                     "best_profile_compression_efficiency_per_maintenance",
                 ),
+                "event_memory_maintenance_best_bundle_compression_contribution": _float(
+                    event_memory_maintenance_coupling_reference,
+                    "best_profile_multimodal_bundle_compression_contribution",
+                ),
                 "event_memory_maintenance_best_continuity": _float(
                     event_memory_maintenance_coupling_reference,
                     "best_profile_self_state_continuity",
@@ -960,6 +998,7 @@ def format_ann_efficiency_roadmap_summary(report: Mapping[str, Any]) -> str:
                 f"{action.get('category', '')}: "
                 f"priority={action.get('priority', '')}, "
                 f"task={action.get('task', '')}, "
+                f"return_phase={action.get('return_phase', '')}, "
                 f"{detail}"
             )
     return "\n".join(lines) + "\n"

@@ -203,6 +203,11 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                 "baseline_fixture_material_coverage_gap_count": 4,
                 "augmented_fixture_material_coverage_gap_count": 0,
                 "coverage_gap_reduction": 4,
+                "bundle_relevant_request_coverage": 1.0,
+                "bundle_relevant_built_request_ids": [
+                    "fixture_counterexample_gap",
+                    "fixture_source_diversity_gap",
+                ],
             }
         if str(path).endswith("autobot_gap_loop_readiness.json"):
             return {
@@ -210,11 +215,63 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                 "metrics": {
                     "requested_slot_count": 2,
                     "gap_build_coverage": 1.0,
+                    "fixture_request_count": 2,
+                    "fixture_requested_slot_count": 2,
+                    "fixture_gap_material_built_count": 2,
+                    "fixture_gap_build_coverage": 1.0,
+                    "fixture_source_domain_count": 2,
+                    "fixture_source_lineage_coverage": 1.0,
+                    "fixture_candidate_source_domain_count": 2,
+                    "fixture_accepted_source_domain_count": 2,
+                    "fixture_collection_time_coverage": 1.0,
                     "gap_enqueue_coverage": 1.0,
                     "gap_skip_ratio": 0.0,
                     "repair_curriculum_share": 0.75,
                     "replay_curriculum_share": 0.25,
                 },
+                "checks": {
+                    "fixture_source_isolation_ready": {"passed": True},
+                    "fixture_source_lineage_ready": {"passed": True},
+                    "fixture_collection_time_ready": {"passed": True},
+                },
+                "fixture_isolation_audit": {
+                    "missing_axes": [],
+                },
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": [],
+                        "row_count": 1,
+                        "lineage_coverage": 1.0,
+                        "collection_time_coverage": 1.0,
+                    },
+                    "fixture_source_diversity_gap": {
+                        "missing_axes": [],
+                        "row_count": 1,
+                        "lineage_coverage": 1.0,
+                        "collection_time_coverage": 1.0,
+                    },
+                },
+                "fixture_lane": {
+                    "requested_slots_by_request": {
+                        "fixture_counterexample_gap": 1,
+                        "fixture_source_diversity_gap": 1,
+                    },
+                    "built_by_request": {
+                        "fixture_counterexample_gap": 1,
+                        "fixture_source_diversity_gap": 1,
+                    },
+                    "skipped_by_request": {
+                        "fixture_counterexample_gap": 0,
+                        "fixture_source_diversity_gap": 0,
+                    },
+                },
+                "fixture_repair_actions": [
+                    {
+                        "request_id": "fixture_counterexample_gap",
+                        "priority": "high",
+                        "command": "python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                    }
+                ],
             }
         if str(path).endswith("sara_ann_comparison_report.json"):
             return {
@@ -273,6 +330,8 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                     "relation_verification_yield": 1.0,
                     "self_state_continuity": 0.285714,
                     "multimodal_bundle_promotion_rate": 1.0,
+                    "multimodal_bundle_relation_verification_yield": 1.0,
+                    "multimodal_bundle_compression_contribution": 5.0,
                 },
                 "traces": {
                     "multimodal_bundle_admission": {
@@ -291,6 +350,7 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                     "best_profile_compression_efficiency_per_maintenance": 1.75,
                     "best_profile_self_state_continuity": 0.9,
                     "best_profile_episode_compression_ratio": 4.0,
+                    "best_profile_multimodal_bundle_compression_contribution": 1.5,
                 },
             }
         if str(path).endswith("adaptive_credit_field_benchmark.json"):
@@ -333,6 +393,51 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
                 ],
                 "failure_focus": {
                     "primary_category": "adaptive_credit_field_validation",
+                },
+                "bundle_repair_log_summary": {
+                    "entry_count": 3,
+                    "recovered_count": 1,
+                    "max_gap_reduction": 4,
+                    "isolation_clear_release_success_count": 1,
+                    "isolation_clear_release_request_ids": [
+                        "fixture_source_diversity_gap"
+                    ],
+                },
+                "bundle_isolation_blocked_request_count": 1,
+                "bundle_isolation_blocked_request_ids": ["fixture_counterexample_gap"],
+                "bundle_isolation_blocked_missing_axes": ["source_lineage"],
+                "runbook_actions": [
+                    {
+                        "source": "autobot_bundle_fixture_repair",
+                        "return_phase": "phase7",
+                        "reason": "bundle_gap_followup; return_phase=phase7",
+                    }
+                ],
+                "repair_retry_queue": [
+                    {
+                        "source": "runbook_action:autobot_bundle_fixture_repair",
+                        "bundle_closed_loop_overlap": True,
+                        "bundle_recovered_before": False,
+                        "request_id": "fixture_source_diversity_gap",
+                        "isolation_review_churn_without_resolution": True,
+                        "return_phase": "phase7",
+                    },
+                    {
+                        "source": "runbook_action:autobot_bundle_fixture_repair",
+                        "bundle_closed_loop_overlap": True,
+                        "bundle_recovered_before": True,
+                        "request_id": "fixture_counterexample_gap",
+                        "isolation_reblocked_after_resolution": True,
+                    },
+                ],
+                "bundle_retry_queue_summary": {
+                    "entry_count": 2,
+                    "fresh_count": 1,
+                    "recovered_before_count": 1,
+                    "isolation_review_churn_count": 1,
+                    "isolation_review_churn_request_ids": ["fixture_source_diversity_gap"],
+                    "isolation_reblocked_count": 1,
+                    "isolation_reblocked_request_ids": ["fixture_counterexample_gap"],
                 },
             }
         return original_loader(path)
@@ -388,6 +493,25 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
     assert evidence["autobot_gap_loop_readiness_passed"] is True
     assert evidence["autobot_gap_loop_requested_slot_count"] == 2
     assert evidence["autobot_gap_loop_build_coverage"] == 1.0
+    assert evidence["autobot_gap_loop_fixture_request_count"] == 2
+    assert evidence["autobot_gap_loop_fixture_requested_slot_count"] == 2
+    assert evidence["autobot_gap_loop_fixture_gap_material_built_count"] == 2
+    assert evidence["autobot_gap_loop_fixture_build_coverage"] == 1.0
+    assert evidence["autobot_gap_loop_fixture_source_domain_count"] == 2
+    assert evidence["autobot_gap_loop_fixture_source_lineage_coverage"] == 1.0
+    assert evidence["autobot_gap_loop_fixture_candidate_source_domain_count"] == 2
+    assert evidence["autobot_gap_loop_fixture_accepted_source_domain_count"] == 2
+    assert evidence["autobot_gap_loop_fixture_collection_time_coverage"] == 1.0
+    assert evidence["autobot_gap_loop_fixture_source_isolation_ready"] is True
+    assert evidence["autobot_gap_loop_fixture_source_lineage_ready"] is True
+    assert evidence["autobot_gap_loop_fixture_collection_time_ready"] is True
+    assert evidence["autobot_gap_loop_fixture_missing_isolation_axes"] == []
+    assert evidence["autobot_gap_loop_fixture_request_isolation_audit"]["fixture_counterexample_gap"]["missing_axes"] == []
+    assert evidence["autobot_gap_loop_fixture_requested_slots_by_request"]["fixture_counterexample_gap"] == 1
+    assert evidence["autobot_gap_loop_fixture_built_by_request"]["fixture_source_diversity_gap"] == 1
+    assert evidence["autobot_gap_loop_fixture_skipped_by_request"]["fixture_counterexample_gap"] == 0
+    assert evidence["autobot_gap_loop_fixture_repair_action_count"] == 1
+    assert evidence["autobot_gap_loop_fixture_repair_request_ids"] == ["fixture_counterexample_gap"]
     assert evidence["autobot_gap_loop_enqueue_coverage"] == 1.0
     assert evidence["autobot_gap_loop_skip_ratio"] == 0.0
     assert evidence["autobot_gap_loop_repair_curriculum_share"] == 0.75
@@ -411,9 +535,27 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
     assert evidence["event_memory_ingest_pipeline_passed"] is True
     assert evidence["event_memory_episode_compression_ratio"] == 5.0
     assert evidence["event_memory_relation_verification_yield"] == 1.0
+    assert evidence["event_memory_multimodal_bundle_relation_verification_yield"] == 1.0
+    assert evidence["event_memory_multimodal_bundle_compression_contribution"] == 5.0
     assert evidence["event_memory_maintenance_coupling_passed"] is True
     assert evidence["event_memory_maintenance_best_profile"] == "balanced"
     assert evidence["event_memory_maintenance_best_efficiency"] == 1.75
+    assert evidence["event_memory_maintenance_best_bundle_compression_contribution"] == 1.5
+    assert evidence["event_memory_bundle_support_gap_present"] is False
+    assert evidence["event_memory_bundle_support_gap_trigger"] == ""
+    assert evidence["event_memory_bundle_support_repair_target"] is None
+    assert evidence["event_memory_bundle_support_fixture_repair_action_count"] == 0
+    assert evidence["event_memory_bundle_support_fixture_request_ids"] == []
+    assert evidence["event_memory_bundle_support_fixture_coverage_ready"] is True
+    assert evidence["event_memory_bundle_support_closed_loop_overlap_count"] == 0
+    assert evidence["event_memory_bundle_support_closed_loop_overlap_ids"] == []
+    assert evidence["event_memory_bundle_support_closed_loop_gap_reduction"] == 0
+    assert evidence["event_memory_bundle_support_closed_loop_coverage_ready"] is True
+    assert evidence["event_memory_bundle_support_overlap_request_isolation_audit"] == {}
+    assert evidence["event_memory_bundle_support_overlap_missing_isolation_axes"] == []
+    assert evidence["event_memory_bundle_support_overlap_isolation_risk_count"] == 0
+    assert evidence["event_memory_bundle_support_overlap_highest_risk_axis"] == ""
+    assert evidence["event_memory_bundle_support_overlap_risk_priority"] == "none"
     assert evidence["event_memory_maintenance_best_continuity"] == 0.9
     assert evidence["adaptive_credit_field_passed"] is True
     assert evidence["adaptive_credit_field_sparse_active_fraction"] == 0.333333
@@ -432,5 +574,239 @@ def test_research_benchmark_suite_exposes_concept_revalidation_evidence(monkeypa
     assert evidence["adaptive_credit_repair_log_failure_count"] == 0
     assert evidence["adaptive_credit_repair_log_recovered"] is True
     assert evidence["adaptive_credit_repair_log_chronic"] is False
+    assert evidence["operational_bundle_repair_log_entry_count"] == 3
+    assert evidence["operational_bundle_repair_log_recovered_count"] == 1
+    assert evidence["operational_bundle_repair_log_max_gap_reduction"] == 4
+    assert evidence["operational_bundle_isolation_clear_release_success_count"] == 1
+    assert evidence["operational_bundle_isolation_clear_release_request_ids"] == [
+        "fixture_source_diversity_gap"
+    ]
+    assert evidence["operational_bundle_isolation_resolved_request_ids"] == [
+        "fixture_source_diversity_gap"
+    ]
+    assert evidence["operational_bundle_retry_queue_fresh_count"] == 1
+    assert evidence["operational_bundle_retry_queue_recovered_before_count"] == 1
+    assert evidence["operational_bundle_retry_queue_isolation_review_churn_count"] == 1
+    assert evidence["operational_bundle_retry_queue_isolation_review_churn_request_ids"] == [
+        "fixture_source_diversity_gap"
+    ]
+    assert evidence["operational_bundle_retry_queue_isolation_reblocked_count"] == 1
+    assert evidence["operational_bundle_retry_queue_isolation_reblocked_request_ids"] == [
+        "fixture_counterexample_gap"
+    ]
+    assert evidence["operational_bundle_phase7_routed_action_count"] == 1
+    assert evidence["operational_bundle_phase7_routed_retry_count"] == 1
+    assert evidence["operational_bundle_phase7_isolation_ready"] is True
+    assert evidence["operational_bundle_phase7_lineage_ready"] is True
+    assert evidence["operational_bundle_phase7_collection_time_ready"] is True
+    assert evidence["operational_bundle_phase7_missing_isolation_axes"] == []
+    assert evidence["operational_bundle_phase7_request_isolation_audit"]["fixture_counterexample_gap"]["missing_axes"] == []
+    assert evidence["operational_bundle_isolation_blocked_request_count"] == 1
+    assert evidence["operational_bundle_isolation_blocked_request_ids"] == ["fixture_counterexample_gap"]
+    assert evidence["operational_bundle_isolation_blocked_missing_axes"] == ["source_lineage"]
+    assert evidence["operational_bundle_overlap_blocked_request_ids"] == []
     assert evidence["sara_ann_comparison_status"] == "proxy_only_or_partial_reference_surface"
     assert evidence["sara_ann_best_offline_reference"] == "BM25 Offline Baseline"
+
+
+def test_research_benchmark_suite_marks_bundle_support_gap_and_phase7_repair_target(monkeypatch, tmp_path):
+    suite = _load_suite_module()
+    original_loader = suite._load_json_if_present
+    original_list_loader = suite._load_json_list_if_present
+
+    def _stub_loader(path):
+        payload = original_loader(path)
+        if str(path).endswith("event_memory_maintenance_coupling_benchmark.json"):
+            return {
+                "passed": True,
+                "best_profile": {"profile_id": "balanced"},
+                "metrics": {
+                    "compression_to_maintenance_correlation": -0.25,
+                    "best_profile_compression_efficiency_per_maintenance": 1.75,
+                    "best_profile_self_state_continuity": 0.9,
+                    "best_profile_episode_compression_ratio": 4.0,
+                    "best_profile_multimodal_bundle_compression_contribution": 0.1,
+                },
+            }
+        if str(path).endswith("autobot_gap_loop_readiness.json"):
+            return {
+                "passed": True,
+                "checks": {
+                    "fixture_source_isolation_ready": {"passed": True},
+                    "fixture_source_lineage_ready": {"passed": True},
+                    "fixture_collection_time_ready": {"passed": True},
+                },
+                "fixture_isolation_audit": {
+                    "missing_axes": [],
+                },
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": [],
+                        "row_count": 0,
+                        "lineage_coverage": 1.0,
+                        "collection_time_coverage": 1.0,
+                    }
+                },
+                "fixture_repair_actions": [
+                    {
+                        "request_id": "fixture_counterexample_gap",
+                        "priority": "high",
+                        "command": "Review fixture request fixture_counterexample_gap (missing_types=counterexample) and rerun python bot/gap_materials_builder.py --targets-path \"/tmp/targets.json\"",
+                    }
+                ],
+            }
+        if str(path).endswith("gap_materials_closed_loop_benchmark.json"):
+            return {
+                "passed": True,
+                "baseline_fixture_material_coverage_gap_count": 4,
+                "augmented_fixture_material_coverage_gap_count": 0,
+                "coverage_gap_reduction": 4,
+                "bundle_relevant_request_coverage": 1.0,
+                "bundle_relevant_built_request_ids": [
+                    "fixture_counterexample_gap",
+                ],
+            }
+        return payload
+
+    monkeypatch.setattr(suite, "_load_json_if_present", _stub_loader)
+    monkeypatch.setattr(suite, "_load_json_list_if_present", original_list_loader)
+
+    manifest = suite.build_manifest(
+        command_results=[{"command_id": "dummy", "status": "passed"}],
+        dry_run=True,
+        rust_iterations=1,
+    )
+    evidence = manifest["evidence"]
+    assert evidence["event_memory_bundle_support_gap_present"] is True
+    assert evidence["event_memory_bundle_support_gap_trigger"] == "maintenance_coupling"
+    assert evidence["event_memory_bundle_support_repair_target"] == "phase7_source_aware_bundle_fixtures"
+    assert evidence["event_memory_bundle_support_fixture_repair_action_count"] == 1
+    assert evidence["event_memory_bundle_support_fixture_request_ids"] == ["fixture_counterexample_gap"]
+    assert evidence["event_memory_bundle_support_fixture_coverage_ready"] is True
+    assert evidence["event_memory_bundle_support_closed_loop_overlap_count"] == 1
+    assert evidence["event_memory_bundle_support_closed_loop_overlap_ids"] == ["fixture_counterexample_gap"]
+    assert evidence["event_memory_bundle_support_closed_loop_gap_reduction"] == 4
+    assert evidence["event_memory_bundle_support_closed_loop_coverage_ready"] is True
+    assert evidence["event_memory_bundle_support_overlap_request_isolation_audit"]["fixture_counterexample_gap"]["missing_axes"] == []
+    assert evidence["event_memory_bundle_support_overlap_missing_isolation_axes"] == []
+    assert evidence["event_memory_bundle_support_overlap_isolation_risk_count"] == 0
+    assert evidence["event_memory_bundle_support_overlap_highest_risk_axis"] == ""
+    assert evidence["event_memory_bundle_support_overlap_risk_priority"] == "none"
+    assert any(
+        "Phase 7 source-aware bundle-fixture strengthening" in item
+        for item in manifest["what_is_not_proven"]
+    )
+
+    manifest_path = suite.workspace_path("evaluation", "test_research_benchmark_bundle_gap_manifest.json")
+    summary_path = suite.workspace_path("evaluation", "test_research_benchmark_bundle_gap_summary.txt")
+    suite.write_outputs(manifest, manifest_path, summary_path)
+    try:
+        with open(summary_path, "r", encoding="utf-8") as handle:
+            summary = handle.read()
+        assert "bundle_gap=True" in summary
+        assert "bundle_gap_trigger=maintenance_coupling" in summary
+        assert "bundle_repair_target=phase7_source_aware_bundle_fixtures" in summary
+        assert "bundle_fixture_repairs=1" in summary
+        assert "bundle_closed_loop_overlap=1" in summary
+        assert "bundle_closed_loop_gap_reduction=4" in summary
+        assert "bundle_overlap_isolation_risk=0" in summary
+        assert "bundle_overlap_missing_axes=none" in summary
+        assert "bundle_overlap_highest_risk_axis=" in summary
+        assert "bundle_overlap_risk_priority=none" in summary
+        assert "Operational bundle repair:" in summary
+        assert "phase7_isolation_ready=True" in summary
+        assert "phase7_lineage_ready=True" in summary
+        assert "phase7_collection_time_ready=True" in summary
+        assert "phase7_missing_axes=none" in summary
+        assert "churn_retry=1" in summary
+        assert "churn_request_ids=fixture_source_diversity_gap" in summary
+        assert "reblocked_retry=1" in summary
+        assert "reblocked_request_ids=fixture_counterexample_gap" in summary
+        assert "blocked_request_count=1" in summary
+        assert "blocked_request_ids=fixture_counterexample_gap" in summary
+        assert "blocked_missing_axes=source_lineage" in summary
+        assert "overlap_blocked_request_ids=fixture_counterexample_gap" in summary
+        assert "clear_release_success_count=1" in summary
+        assert "clear_release_request_ids=fixture_source_diversity_gap" in summary
+        assert "resolved_request_ids=fixture_source_diversity_gap" in summary
+        assert "phase7_routed_actions=missing_artifact" not in summary
+    finally:
+        for path in (manifest_path, summary_path):
+            if os.path.exists(path):
+                os.remove(path)
+
+
+def test_research_benchmark_suite_marks_bundle_overlap_isolation_risk_as_not_proven(monkeypatch):
+    suite = _load_suite_module()
+    original_loader = suite._load_json_if_present
+    original_list_loader = suite._load_json_list_if_present
+
+    def _stub_loader(path):
+        payload = original_loader(path)
+        if str(path).endswith("event_memory_maintenance_coupling_benchmark.json"):
+            return {
+                "passed": True,
+                "best_profile": {"profile_id": "balanced"},
+                "metrics": {
+                    "compression_to_maintenance_correlation": -0.25,
+                    "best_profile_compression_efficiency_per_maintenance": 1.75,
+                    "best_profile_self_state_continuity": 0.9,
+                    "best_profile_episode_compression_ratio": 4.0,
+                    "best_profile_multimodal_bundle_compression_contribution": 0.1,
+                },
+            }
+        if str(path).endswith("autobot_gap_loop_readiness.json"):
+            return {
+                "passed": True,
+                "fixture_isolation_audit": {"missing_axes": ["collection_time"]},
+                "fixture_request_isolation_audit": {
+                    "fixture_counterexample_gap": {
+                        "missing_axes": ["collection_time"],
+                        "row_count": 1,
+                        "lineage_coverage": 1.0,
+                        "collection_time_coverage": 0.0,
+                    }
+                },
+                "fixture_repair_actions": [
+                    {"request_id": "fixture_counterexample_gap", "priority": "high", "command": "python bot/gap_materials_builder.py"}
+                ],
+            }
+        if str(path).endswith("gap_materials_closed_loop_benchmark.json"):
+            return {
+                "passed": True,
+                "baseline_fixture_material_coverage_gap_count": 4,
+                "augmented_fixture_material_coverage_gap_count": 0,
+                "coverage_gap_reduction": 4,
+                "bundle_relevant_request_coverage": 1.0,
+                "bundle_relevant_built_request_ids": ["fixture_counterexample_gap"],
+            }
+        return payload
+
+    monkeypatch.setattr(suite, "_load_json_if_present", _stub_loader)
+    monkeypatch.setattr(suite, "_load_json_list_if_present", original_list_loader)
+
+    manifest = suite.build_manifest(
+        command_results=[{"command_id": "dummy", "status": "passed"}],
+        dry_run=True,
+        rust_iterations=1,
+    )
+
+    assert manifest["evidence"]["event_memory_bundle_support_overlap_isolation_risk_count"] == 1
+    assert manifest["evidence"]["event_memory_bundle_support_overlap_missing_isolation_axes"] == [
+        "collection_time"
+    ]
+    assert manifest["evidence"]["event_memory_bundle_support_overlap_highest_risk_axis"] == "collection_time"
+    assert manifest["evidence"]["event_memory_bundle_support_overlap_risk_priority"] == "medium"
+    assert manifest["evidence"]["operational_bundle_overlap_blocked_request_ids"] == []
+    assert any(
+        "incomplete Phase 7 isolation audit axes (collection_time)" in item
+        for item in manifest["what_is_not_proven"]
+    )
+    assert any(
+        "prioritized as medium due to collection_time gaps" in item
+        for item in manifest["what_is_not_proven"]
+    )
+    assert any(
+        "blocked overlap repair requests are fixture_counterexample_gap" in item
+        for item in manifest["what_is_not_proven"]
+    )

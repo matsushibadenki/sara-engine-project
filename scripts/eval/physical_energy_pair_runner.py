@@ -62,6 +62,26 @@ def _load_optional_json(path: str) -> Optional[Dict[str, Any]]:
     return payload if isinstance(payload, dict) else None
 
 
+def _bundle_contribution_warning(reference: Mapping[str, Any] | None) -> str:
+    payload = reference if isinstance(reference, Mapping) else {}
+    if not bool(payload.get("available", False)):
+        return ""
+    try:
+        contribution = float(
+            payload.get("best_profile_multimodal_bundle_compression_contribution", 0.0)
+            or 0.0
+        )
+    except (TypeError, ValueError):
+        contribution = 0.0
+    if contribution >= 0.5:
+        return ""
+    return (
+        "Bundle-backed compression contribution is weak; rerun the Event Memory maintenance coupling "
+        "benchmark with stronger verified multimodal bundle fixtures before treating physical compression "
+        "wins as SARA-native binding gains."
+    )
+
+
 def _load_energy_module():
     path = os.path.join(PROJECT_ROOT, "scripts", "eval", "energy_measurement_readiness.py")
     spec = importlib.util.spec_from_file_location("physical_pair_energy_readiness", path)
@@ -656,7 +676,14 @@ def build_pair_report(
             "best_profile_episode_compression_ratio": float(
                 metrics.get("best_profile_episode_compression_ratio", 0.0) or 0.0
             ),
+            "best_profile_multimodal_bundle_compression_contribution": float(
+                metrics.get("best_profile_multimodal_bundle_compression_contribution", 0.0)
+                or 0.0
+            ),
         }
+    bundle_contribution_warning = _bundle_contribution_warning(
+        event_memory_maintenance_coupling_reference
+    )
     pending_measurement = bool(dry_run or len(recorded_rows) == 0)
     resume_command = _resume_append_command(
         manifest,
@@ -690,6 +717,7 @@ def build_pair_report(
         "maintenance_by_system": maintenance_by_system,
         "internal_maintenance_reference": internal_reference,
         "event_memory_maintenance_coupling_reference": event_memory_maintenance_coupling_reference,
+        "bundle_contribution_warning": bundle_contribution_warning,
         "maintenance_alignment": maintenance_alignment,
         "workload_results": {key: dict(value) for key, value in workload_results.items()},
         "resume_append_command_template": resume_command,
@@ -698,7 +726,8 @@ def build_pair_report(
             "Fill the generated meter template with exact SARA and ANN joules, then rerun the pair command with --meter-reading-path or both joule values, or execute the per-system record-energy-measurement commands."
             if pending_measurement
             else "Rows already recorded. Refresh energy_measurement_readiness for updated pair evidence."
-        ),
+        )
+        + (f" {bundle_contribution_warning}" if bundle_contribution_warning else ""),
     }
 
 
@@ -754,6 +783,7 @@ def format_pair_summary(report: Mapping[str, Any]) -> str:
         if isinstance(report.get("event_memory_maintenance_coupling_reference", {}), Mapping)
         else {}
     )
+    bundle_contribution_warning = str(report.get("bundle_contribution_warning", "") or "")
     lines.append("Internal Maintenance Reference:")
     if internal_reference:
         lines.append(
@@ -777,9 +807,12 @@ def format_pair_summary(report: Mapping[str, Any]) -> str:
             f"passed={bool(event_memory_maintenance_coupling_reference.get('passed', False))}, "
             f"best_profile={event_memory_maintenance_coupling_reference.get('best_profile_id', '')}, "
             f"best_efficiency={float(event_memory_maintenance_coupling_reference.get('best_profile_compression_efficiency_per_maintenance', 0.0) or 0.0):.3f}, "
+            f"best_bundle_contribution={float(event_memory_maintenance_coupling_reference.get('best_profile_multimodal_bundle_compression_contribution', 0.0) or 0.0):.3f}, "
             f"best_continuity={float(event_memory_maintenance_coupling_reference.get('best_profile_self_state_continuity', 0.0) or 0.0):.3f}, "
             f"correlation={float(event_memory_maintenance_coupling_reference.get('compression_to_maintenance_correlation', 0.0) or 0.0):.3f}"
         )
+    if bundle_contribution_warning:
+        lines.append(f"Bundle Contribution Warning: {bundle_contribution_warning}")
     else:
         lines.append("- none")
     alignment = (

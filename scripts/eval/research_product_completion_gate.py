@@ -214,6 +214,11 @@ def _check_operational_readiness(operational_report: Mapping[str, Any]) -> Dict[
 def _check_ann_efficiency_roadmap(roadmap_report: Mapping[str, Any]) -> Dict[str, Any]:
     stages = roadmap_report.get("stages", [])
     stages = stages if isinstance(stages, list) else []
+    next_evidence_actions = (
+        roadmap_report.get("next_evidence_actions", [])
+        if isinstance(roadmap_report.get("next_evidence_actions"), list)
+        else []
+    )
     errors: List[str] = []
     if not bool(roadmap_report.get("passed", False)):
         errors.append("ANN efficiency roadmap gate did not pass.")
@@ -238,6 +243,16 @@ def _check_ann_efficiency_roadmap(roadmap_report: Mapping[str, Any]) -> Dict[str
     missing_stages = sorted(required_stages - stage_names)
     if missing_stages:
         errors.append("ANN efficiency roadmap is missing stages: " + ", ".join(missing_stages))
+    bundle_gap_actions = [
+        dict(item)
+        for item in next_evidence_actions
+        if isinstance(item, Mapping)
+        and str(item.get("category", "") or "").strip() == "weak_bundle_compression_contribution"
+    ]
+    if bundle_gap_actions:
+        errors.append(
+            "ANN efficiency roadmap still reports a bundle-support gap; return to Phase 7 source-aware bundle-fixture strengthening before calling the research product complete."
+        )
     if errors:
         return _failed_check(errors, dict(roadmap_report))
     return _passed_check(
@@ -245,6 +260,7 @@ def _check_ann_efficiency_roadmap(roadmap_report: Mapping[str, Any]) -> Dict[str
             "completion_score": float(roadmap_report.get("completion_score", 0.0) or 0.0),
             "stage_count": int(roadmap_report.get("stage_count", len(stages)) or 0),
             "passed_stage_count": int(roadmap_report.get("passed_stage_count", 0) or 0),
+            "bundle_gap_action_count": len(bundle_gap_actions),
         }
     )
 
@@ -783,6 +799,7 @@ def format_research_product_completion_summary(report: Mapping[str, Any]) -> str
             "- phase8_baseline_metrics: "
             f"roadmap_completion={float(ann_details.get('completion_score', 0.0) or 0.0):.3f}, "
             f"passed_stages={int(ann_details.get('passed_stage_count', 0) or 0)}/{int(ann_details.get('stage_count', 0) or 0)}, "
+            f"bundle_gap_actions={int(ann_details.get('bundle_gap_action_count', 0) or 0)}, "
             f"fixture_cases={int(fixture_details.get('case_count', 0) or 0)}, "
             f"fixture_task_types={int(fixture_details.get('task_type_count', 0) or 0)}"
         ),

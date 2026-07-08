@@ -281,6 +281,7 @@ def test_build_pair_report_surfaces_maintenance_summary():
                 "best_profile_compression_efficiency_per_maintenance": 0.19,
                 "best_profile_self_state_continuity": 0.83,
                 "best_profile_episode_compression_ratio": 3.67,
+                "best_profile_multimodal_bundle_compression_contribution": 1.83,
             },
         },
     )
@@ -303,7 +304,79 @@ def test_build_pair_report_surfaces_maintenance_summary():
     assert "event_cost_per_selected_delta=-0.060" in summary
     assert "Event Memory Maintenance Coupling Reference:" in summary
     assert "best_profile=wide" in summary
+    assert "best_bundle_contribution=1.830" in summary
     assert "record-energy-measurement" in summary
+
+
+def test_build_pair_report_warns_when_bundle_contribution_is_weak():
+    module = _load_module()
+
+    report = module.build_pair_report(
+        {
+            "pair_id": "pilot-weak-bundle",
+            "replicate_index": 1,
+            "task": "paired_retrieval",
+            "run_order": ["sara", "ann"],
+            "measurement_tool": "powermetrics-v1",
+        },
+        [
+            {
+                "system": "sara",
+                "status": "passed",
+                "workload_result": {
+                    "maintenance_selected_count": 5,
+                    "maintenance_phase_count": 2,
+                    "maintenance_refresh_count": 1,
+                    "maintenance_event_cost": 0.7,
+                    "maintenance_idle_self_state_ok_count": 1,
+                    "maintenance_spontaneous_event_count": 2,
+                    "maintenance_predicted_event_count": 3,
+                },
+            },
+            {
+                "system": "ann",
+                "status": "passed",
+                "workload_result": {
+                    "maintenance_selected_count": 0,
+                    "maintenance_phase_count": 0,
+                    "maintenance_refresh_count": 0,
+                    "maintenance_event_cost": 0.0,
+                    "maintenance_idle_self_state_ok_count": 0,
+                    "maintenance_spontaneous_event_count": 0,
+                    "maintenance_predicted_event_count": 0,
+                },
+            },
+        ],
+        dry_run=False,
+        measurement_path="data/raw/energy_measurements.jsonl",
+        meter_reading_path="",
+        meter_template_path="workspace/evaluation/template.json",
+        recorded_rows=[],
+        manifest_path="workspace/evaluation/a.json",
+        trace_path="workspace/evaluation/b.jsonl",
+        report_path="workspace/evaluation/c.json",
+        summary_path="workspace/evaluation/d.txt",
+        event_memory_maintenance_coupling_report={
+            "passed": True,
+            "observed_only": True,
+            "profile_count": 3,
+            "best_profile": {
+                "profile_id": "wide",
+            },
+            "metrics": {
+                "compression_to_maintenance_correlation": 0.51,
+                "best_profile_compression_efficiency_per_maintenance": 0.19,
+                "best_profile_self_state_continuity": 0.83,
+                "best_profile_episode_compression_ratio": 3.67,
+                "best_profile_multimodal_bundle_compression_contribution": 0.1,
+            },
+        },
+    )
+
+    assert "Bundle-backed compression contribution is weak" in report["bundle_contribution_warning"]
+    assert "Bundle-backed compression contribution is weak" in report["next_step"]
+    summary = module.format_pair_summary(report)
+    assert "Bundle Contribution Warning:" in summary
 
 
 def test_parse_args_accepts_internal_maintenance_report_path():

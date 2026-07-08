@@ -48,9 +48,65 @@ def summarize_report(report: Dict[str, Any]) -> str:
         f"Collection targets: {report.get('collection_target_count')}",
         f"Gap materials built: {report.get('gap_material_built_count')}",
         f"Gap curriculum enqueued: {report.get('gap_curriculum_enqueued_count')}",
+        f"Blocked requests: {','.join(report.get('blocked_request_ids', [])) or 'none'}",
         f"Queue pending: {report.get('queue_pending')}",
     ]
     return "\n".join(lines) + "\n"
+
+
+def read_json(path: str) -> Optional[Dict[str, Any]]:
+    if not path or not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _merge_blocked_requests_into_targets(
+    *,
+    collection_targets_path: str,
+    blocked_request_ids: Sequence[str],
+    clear_blocked_request_ids: Sequence[str],
+    blocked_request_missing_axes: Optional[Dict[str, Sequence[str]]] = None,
+) -> Dict[str, Any]:
+    payload = read_json(collection_targets_path) or {}
+    payload = dict(payload)
+    clear_id_set = {str(item) for item in clear_blocked_request_ids if str(item)}
+    merged_ids = sorted(
+        {
+            str(item)
+            for item in list(payload.get("blocked_request_ids", []) if isinstance(payload.get("blocked_request_ids"), list) else [])
+            + list(blocked_request_ids)
+            if str(item)
+        }
+        - clear_id_set
+    )
+    payload["blocked_request_ids"] = merged_ids
+    merged_axes: Dict[str, list[str]] = {}
+    existing_axes = payload.get("blocked_request_missing_axes", {})
+    if isinstance(existing_axes, dict):
+        for request_id, axes in existing_axes.items():
+            key = str(request_id or "")
+            if not key or not isinstance(axes, list):
+                continue
+            merged_axes[key] = sorted({str(axis) for axis in axes if str(axis)})
+    if isinstance(blocked_request_missing_axes, dict):
+        for request_id, axes in blocked_request_missing_axes.items():
+            key = str(request_id or "")
+            if not key:
+                continue
+            merged_axes[key] = sorted(
+                set(merged_axes.get(key, []))
+                | {str(axis) for axis in axes if str(axis)}
+            )
+    for request_id in clear_id_set:
+        merged_axes.pop(request_id, None)
+    payload["blocked_request_missing_axes"] = dict(sorted(merged_axes.items()))
+    write_json(collection_targets_path, payload)
+    return payload
 
 
 def run_gap_loop(
@@ -68,6 +124,9 @@ def run_gap_loop(
     report_path: str = DEFAULT_REPORT_PATH,
     summary_path: str = DEFAULT_SUMMARY_PATH,
     evaluation_gaps: Sequence[str] = (),
+    blocked_request_ids: Sequence[str] = (),
+    clear_blocked_request_ids: Sequence[str] = (),
+    blocked_request_missing_axes: Optional[Dict[str, Sequence[str]]] = None,
 ) -> Dict[str, Any]:
     dataset_report = run_dataset_builder(
         records_path=records_path,
@@ -81,6 +140,12 @@ def run_gap_loop(
         collection_targets_path=collection_targets_path,
         evaluation_gaps=evaluation_gaps,
     )
+    merged_targets_payload = _merge_blocked_requests_into_targets(
+        collection_targets_path=collection_targets_path,
+        blocked_request_ids=blocked_request_ids,
+        clear_blocked_request_ids=clear_blocked_request_ids,
+        blocked_request_missing_axes=blocked_request_missing_axes,
+    )
     gap_report = run_gap_materials_builder(
         accepted_path=accepted_path,
         targets_path=collection_targets_path,
@@ -88,6 +153,8 @@ def run_gap_loop(
         curriculum_path=gap_curriculum_path,
         report_path=workspace_path("autobot", "gap_loop_gap_materials_report.json"),
         summary_path=workspace_path("autobot", "gap_loop_gap_materials_summary.txt"),
+        blocked_request_ids=blocked_request_ids,
+        clear_blocked_request_ids=clear_blocked_request_ids,
     )
     enqueue_report = run_enqueue(
         curriculum_path=gap_curriculum_path,
@@ -104,6 +171,19 @@ def run_gap_loop(
         "gap_curriculum_enqueued_count": int(enqueue_report.get("enqueued_count", 0) or 0),
         "queue_pending": int(enqueue_report.get("queue_pending", 0) or 0),
         "evaluation_gaps": list(evaluation_gaps),
+        "blocked_request_ids": [str(item) for item in blocked_request_ids if str(item)],
+        "clear_blocked_request_ids": [str(item) for item in clear_blocked_request_ids if str(item)],
+        "blocked_request_missing_axes": (
+            {
+                str(request_id): [str(axis) for axis in axes if str(axis)]
+                for request_id, axes in (
+                    blocked_request_missing_axes.items()
+                    if isinstance(blocked_request_missing_axes, dict)
+                    else []
+                )
+                if str(request_id)
+            }
+        ),
         "outputs": {
             "accepted_materials": accepted_path,
             "collection_targets": collection_targets_path,
@@ -113,6 +193,10 @@ def run_gap_loop(
             "dataset_report": dataset_report.get("outputs", {}).get("report", ""),
             "gap_report": gap_report.get("report_path", ""),
             "enqueue_report": enqueue_report.get("report_path", ""),
+        },
+        "collection_targets_block_policy": {
+            "blocked_request_ids": merged_targets_payload.get("blocked_request_ids", []),
+            "blocked_request_missing_axes": merged_targets_payload.get("blocked_request_missing_axes", {}),
         },
     }
     report["report_path"] = write_json(report_path, report)
@@ -138,6 +222,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--report-path", default=DEFAULT_REPORT_PATH)
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--evaluation-gap", action="append", default=None)
+    parser.add_argument("--blocked-request-id", action="append", default=None)
+    parser.add_argument("--clear-blocked-request-id", action="append", default=None)
     return parser.parse_args(argv)
 
 
@@ -157,6 +243,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         report_path=args.report_path,
         summary_path=args.summary_path,
         evaluation_gaps=args.evaluation_gap or (),
+        blocked_request_ids=args.blocked_request_id or (),
+        clear_blocked_request_ids=args.clear_blocked_request_id or (),
     )
     print(
         json.dumps(

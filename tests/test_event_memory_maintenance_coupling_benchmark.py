@@ -41,7 +41,11 @@ def test_event_memory_maintenance_coupling_exposes_profile_tradeoffs():
     )
     assert report["metrics"]["best_profile_episode_compression_ratio"] >= 1.0
     assert report["metrics"]["best_profile_self_state_continuity"] >= 0.0
-    assert report["metrics"]["best_profile_multimodal_bundle_compression_contribution"] >= 0.0
+    assert report["metrics"]["best_profile_multimodal_bundle_compression_contribution"] > 0.0
+    assert all(
+        float(profile["metrics"]["avg_multimodal_bundle_promotion_rate"]) > 0.0
+        for profile in report["profiles"]
+    )
     summary = module.build_summary(report)
     assert "compression_to_maintenance_correlation:" in summary
     assert "best_profile_compression_efficiency_per_maintenance:" in summary

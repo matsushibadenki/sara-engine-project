@@ -144,3 +144,60 @@ def test_gap_loop_runner_builds_and_enqueues_gap_cycle():
     with open(summary_path, "r", encoding="utf-8") as handle:
         summary = handle.read()
     assert "Gap loop: PASS" in summary
+
+
+def test_gap_loop_runner_persists_blocked_requests_into_targets_and_builder():
+    module = _load_module()
+    records_path = processed_data_path("autobot", "test_gap_loop_blocked_records.jsonl")
+    fixture_request_plan_path = workspace_path("autobot", "test_gap_loop_blocked_fixture_request_plan.json")
+    accepted_path = processed_data_path("autobot", "test_gap_loop_blocked_learning_materials.jsonl")
+    curriculum_path = processed_data_path("autobot", "test_gap_loop_blocked_curriculum_manifest.jsonl")
+    collection_targets_path = workspace_path("autobot", "test_gap_loop_blocked_collection_targets.json")
+    gap_output_path = processed_data_path("autobot", "test_gap_loop_blocked_gap_materials.jsonl")
+    gap_curriculum_path = processed_data_path("autobot", "test_gap_loop_blocked_gap_curriculum.jsonl")
+    queue_path = workspace_path("autobot", "test_gap_loop_blocked_train_queue.json")
+    report_path = workspace_path("autobot", "test_gap_loop_blocked_report.json")
+    summary_path = workspace_path("autobot", "test_gap_loop_blocked_summary.txt")
+    _write_records(records_path)
+    _write_fixture_request_plan(fixture_request_plan_path)
+
+    exit_code = module.main(
+        [
+            "--records-path",
+            records_path,
+            "--accepted-path",
+            accepted_path,
+            "--curriculum-path",
+            curriculum_path,
+            "--fixture-request-plan-path",
+            fixture_request_plan_path,
+            "--collection-targets-path",
+            collection_targets_path,
+            "--gap-output-path",
+            gap_output_path,
+            "--gap-curriculum-path",
+            gap_curriculum_path,
+            "--queue-path",
+            queue_path,
+            "--report-path",
+            report_path,
+            "--summary-path",
+            summary_path,
+            "--blocked-request-id",
+            "fixture_counterexample_gap",
+        ]
+    )
+
+    assert exit_code == 0
+    with open(report_path, "r", encoding="utf-8") as handle:
+        report = json.load(handle)
+    assert report["blocked_request_ids"] == ["fixture_counterexample_gap"]
+    assert report["gap_material_built_count"] >= 1
+    with open(collection_targets_path, "r", encoding="utf-8") as handle:
+        targets = json.load(handle)
+    assert targets["blocked_request_ids"] == ["fixture_counterexample_gap"]
+    with open(gap_output_path, "r", encoding="utf-8") as handle:
+        gap_rows = [json.loads(line) for line in handle if line.strip()]
+    assert "fixture_counterexample_gap" not in {
+        row.get("request_id", "") for row in gap_rows
+    }

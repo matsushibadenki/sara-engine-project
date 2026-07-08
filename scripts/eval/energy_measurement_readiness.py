@@ -202,7 +202,25 @@ def _event_memory_maintenance_coupling_reference_summary(
         "best_profile_episode_compression_ratio": _safe_float(
             metrics.get("best_profile_episode_compression_ratio")
         ),
+        "best_profile_multimodal_bundle_compression_contribution": _safe_float(
+            metrics.get("best_profile_multimodal_bundle_compression_contribution")
+        ),
     }
+
+
+def _bundle_contribution_warning(reference: Mapping[str, Any] | None) -> str:
+    payload = reference if isinstance(reference, Mapping) else {}
+    if not bool(payload.get("available", False)):
+        return ""
+    contribution = _safe_float(
+        payload.get("best_profile_multimodal_bundle_compression_contribution")
+    )
+    if contribution >= 0.5:
+        return ""
+    return (
+        "Bundle-backed compression contribution is weak; expand verified multimodal bundle fixtures "
+        "before treating this compression win as a strong SARA-native advantage."
+    )
 
 
 def default_environment_fingerprint(
@@ -1604,6 +1622,9 @@ def build_energy_measurement_readiness_report(
     measurement_session_progress["event_memory_maintenance_coupling_reference"] = (
         event_memory_maintenance_coupling_reference
     )
+    bundle_contribution_warning = _bundle_contribution_warning(
+        event_memory_maintenance_coupling_reference
+    )
     maintenance_alignment = _maintenance_alignment_summary(
         aggregate,
         internal_maintenance_reference,
@@ -1628,6 +1649,7 @@ def build_energy_measurement_readiness_report(
         "measurement_session_progress": measurement_session_progress,
         "internal_maintenance_reference": internal_maintenance_reference,
         "event_memory_maintenance_coupling_reference": event_memory_maintenance_coupling_reference,
+        "bundle_contribution_warning": bundle_contribution_warning,
         "maintenance_alignment": maintenance_alignment,
         "measurement_protocol": {
             "required_fields": sorted(REQUIRED_FIELDS | FAIRNESS_FIELDS),
@@ -1676,6 +1698,7 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
         if isinstance(report.get("event_memory_maintenance_coupling_reference"), Mapping)
         else {}
     )
+    bundle_contribution_warning = str(report.get("bundle_contribution_warning", "") or "")
     lines = [
         "# SARA Energy Measurement Readiness",
         f"- passed: {bool(report.get('passed', False))}",
@@ -1704,6 +1727,7 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
         f"- event_memory_maintenance_coupling_reference_available: {bool(event_memory_maintenance_coupling_reference.get('available', False))}",
         f"- event_memory_maintenance_best_profile: {event_memory_maintenance_coupling_reference.get('best_profile_id', '')}",
         f"- event_memory_maintenance_best_efficiency: {_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_compression_efficiency_per_maintenance')):.3f}",
+        f"- event_memory_maintenance_best_bundle_contribution: {_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_multimodal_bundle_compression_contribution')):.3f}",
         f"- maintenance_alignment_available: {bool(maintenance_alignment.get('available', False))}",
         f"- physical_internal_maintenance_event_cost_per_selected: {_safe_float(maintenance_alignment.get('sara_physical_maintenance_event_cost_per_selected')):.3f}",
         f"- maintenance_event_cost_per_selected_alignment_ratio: {_safe_float(maintenance_alignment.get('maintenance_event_cost_per_selected_ratio')):.3f}",
@@ -1802,8 +1826,11 @@ def format_energy_measurement_summary(report: Mapping[str, Any]) -> str:
             f"passed={bool(event_memory_maintenance_coupling_reference.get('passed', False))}, "
             f"best_profile={event_memory_maintenance_coupling_reference.get('best_profile_id', '')}, "
             f"best_efficiency={_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_compression_efficiency_per_maintenance')):.3f}, "
+            f"best_bundle_contribution={_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_multimodal_bundle_compression_contribution')):.3f}, "
             f"best_continuity={_safe_float(event_memory_maintenance_coupling_reference.get('best_profile_self_state_continuity')):.3f}"
         )
+    if bundle_contribution_warning:
+        lines.append(f"Bundle Contribution Warning: {bundle_contribution_warning}")
     if maintenance_alignment:
         lines.append("Maintenance Alignment:")
         lines.append(
@@ -1981,8 +2008,12 @@ def format_measurement_session_progress_summary(
             f"passed={bool(coupling_reference.get('passed', False))}, "
             f"best_profile={coupling_reference.get('best_profile_id', '')}, "
             f"best_efficiency={_safe_float(coupling_reference.get('best_profile_compression_efficiency_per_maintenance')):.3f}, "
+            f"best_bundle_contribution={_safe_float(coupling_reference.get('best_profile_multimodal_bundle_compression_contribution')):.3f}, "
             f"best_continuity={_safe_float(coupling_reference.get('best_profile_self_state_continuity')):.3f}"
         )
+        warning = _bundle_contribution_warning(coupling_reference)
+        if warning:
+            lines.append(f"Bundle Contribution Warning: {warning}")
     return "\n".join(lines) + "\n"
 
 
