@@ -9,6 +9,7 @@ from sara_engine.dynamics import (
 )
 from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
 from sara_engine.memory.multimodal_event_bundle_admission import (
+    MultimodalBundleAdmissionResult,
     build_multimodal_event_state_candidate,
 )
 from sara_engine.multimodal.synesthetic_binding import SparseEventBundle
@@ -44,6 +45,7 @@ class EventMemoryIngestResult:
     lineage_ledger: Tuple[ProposalLineageLedgerEntry, ...]
     candidate_event_verifications: Tuple[ProposalVerificationResult, ...]
     relation_verifications: Tuple[ProposalVerificationResult, ...]
+    multimodal_bundle_admissions: Tuple[MultimodalBundleAdmissionResult, ...]
     traces: Dict[str, Any]
     schema: str = "sara-event-memory-ingest-result-v1"
 
@@ -61,6 +63,9 @@ class EventMemoryIngestResult:
             "lineage_ledger": [item.to_dict() for item in self.lineage_ledger],
             "candidate_event_verifications": [item.to_dict() for item in self.candidate_event_verifications],
             "relation_verifications": [item.to_dict() for item in self.relation_verifications],
+            "multimodal_bundle_admissions": [
+                item.to_dict() for item in self.multimodal_bundle_admissions
+            ],
             "traces": dict(self.traces),
         }
 
@@ -258,6 +263,7 @@ class EventMemoryIngestPipeline:
             lineage_ledger=ledger,
             candidate_event_verifications=candidate_verifications,
             relation_verifications=relation_verifications,
+            multimodal_bundle_admissions=bundle_admission_results,
             traces=traces,
         )
 

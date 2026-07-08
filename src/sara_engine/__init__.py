@@ -71,6 +71,10 @@ _LAZY_EXPORTS: Dict[str, Tuple[str, str]] = {
     "AudioSpikeEncoder": ("sara_engine.encoders.audio", "AudioSpikeEncoder"),
     "ImageSpikeEncoder": ("sara_engine.encoders.vision", "ImageSpikeEncoder"),
     "FluidFieldDynamics": ("sara_engine.dynamics", "FluidFieldDynamics"),
+    "SARAAlignedRisaKernel": ("sara_engine.risa", "SARAAlignedRisaKernel"),
+    "RisaObservation": ("sara_engine.risa", "RisaObservation"),
+    "RisaPredictionQuery": ("sara_engine.risa", "RisaPredictionQuery"),
+    "RisaPredictionResult": ("sara_engine.risa", "RisaPredictionResult"),
     # Legacy & utils
     "SaraGPT": ("sara_engine.models.gpt", "SaraGPT"),
     "StatefulRLMAgent": ("sara_engine.models.rlm", "StatefulRLMAgent"),
@@ -90,4 +94,3 @@ def __getattr__(name: str):
     value = getattr(module, attr_name)
     globals()[name] = value
     return value
-
