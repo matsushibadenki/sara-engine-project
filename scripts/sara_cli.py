@@ -766,6 +766,21 @@ def main():
         default=workspace_path("evaluation", "adaptive_credit_field_benchmark_summary.txt"),
     )
 
+    parser_risa_structural = subparsers.add_parser(
+        "eval-risa-structural-plasticity",
+        help="Compare generic and relation-class-aware RISA structural plasticity.",
+    )
+    parser_risa_structural.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "risa_structural_plasticity_benchmark.json"),
+    )
+    parser_risa_structural.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation", "risa_structural_plasticity_benchmark_summary.txt"
+        ),
+    )
+
     parser_adaptive_credit_event_memory = subparsers.add_parser(
         "eval-adaptive-credit-event-memory",
         help="Run the observed-only adaptive credit/Event Memory integration benchmark.",
@@ -900,6 +915,21 @@ def main():
         default=workspace_path(
             "evaluation",
             "event_state_cache_integration_benchmark_summary.txt",
+        ),
+    )
+
+    parser_architecture_migration = subparsers.add_parser(
+        "eval-architecture-migration",
+        help="Run the frozen source-isolated Event Memory architecture-migration benchmark.",
+    )
+    parser_architecture_migration.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "architecture_migration_benchmark.json"),
+    )
+    parser_architecture_migration.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation", "architecture_migration_benchmark_summary.txt"
         ),
     )
 
@@ -1951,6 +1981,18 @@ def main():
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
+    elif args.command == "eval-risa-structural-plasticity":
+        command = [
+            sys.executable,
+            "scripts/eval/risa_structural_plasticity_benchmark.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
     elif args.command == "eval-adaptive-credit-event-memory":
         command = [
             sys.executable,
@@ -2013,6 +2055,18 @@ def main():
             str(args.trace_path),
             "--round-trip-state-path",
             str(args.round_trip_state_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-architecture-migration":
+        command = [
+            sys.executable,
+            "scripts/eval/architecture_migration_benchmark.py",
             "--report-path",
             str(args.report_path),
             "--summary-path",

@@ -5,13 +5,9 @@ import hashlib
 from typing import Any, Dict, List, Sequence, Tuple
 
 from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
-from sara_engine.ingest import (
-    CandidateRelation,
-    ConceptAuditResult,
-    ConceptCrystallizationGuard,
-    ConceptCrystalCandidate,
-    FrequentSequence,
-)
+from sara_engine.ingest.candidate_proposals import CandidateRelation, ConceptCrystalCandidate
+from sara_engine.ingest.concept_crystallization_guard import ConceptAuditResult, ConceptCrystallizationGuard
+from sara_engine.ingest.frequent_sequence import FrequentSequence
 from sara_engine.memory.event_state_cache import EventStateCandidate
 
 
@@ -49,6 +45,8 @@ class ConceptRevalidationEntry:
     blocked_at_segment: int = 0
     last_review_segment: int = 0
     retry_after_segment: int = 0
+    architecture_version: str = "sara-architecture-v1"
+    migration_source_architecture_version: str = ""
     schema: str = "sara-concept-revalidation-entry-v1"
 
     def to_dict(self) -> Dict[str, Any]:
@@ -66,6 +64,8 @@ class ConceptRevalidationEntry:
             "blocked_at_segment": int(self.blocked_at_segment),
             "last_review_segment": int(self.last_review_segment),
             "retry_after_segment": int(self.retry_after_segment),
+            "architecture_version": self.architecture_version,
+            "migration_source_architecture_version": self.migration_source_architecture_version,
         }
 
 

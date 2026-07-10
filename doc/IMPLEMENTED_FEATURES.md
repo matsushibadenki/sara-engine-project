@@ -49,6 +49,15 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Stage D continual consolidation minimums are implemented and release-gated.
 - Nested-memory readiness is tracked as an observed-only memory scheduling signal.
 
+## Architecture Migration Foundation
+
+- Verified Event Memory candidates and entries carry `architecture_version` plus optional source-version lineage.
+- `ArchitectureMigrationCoordinator` keeps legacy Event Memory read-only and replays only verified canonical event records into an explicit target cache.
+- Incompatible architecture versions, non-canonical concept keys, low-utility records, and replay-budget overflow remain explicit holds for later review.
+- `IdleConsolidationLoop` can include the migration plan or target-cache admission results in its managed maintenance trace.
+- `python scripts/sara_cli.py eval-architecture-migration` runs a frozen source-isolated baseline that checks legacy-reference recall, target replay recall, Concept Review recovery, RISA reconstruction, holds, and migration cost.
+- See `doc/ARCHITECTURE_MIGRATION.md` for the compatibility boundary and promotion rule.
+
 ## Dialogue, Inference, And Agent Runtime
 
 - `SaraInference`, `SpikingLLM`, and `SaraAgent` paths have lightweight benchmark coverage.
@@ -80,6 +89,14 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Phase 4 operational cycle runner is implemented.
 - Scheduled/manual GitHub Actions workflow support exists for Phase 4 operational-cycle validation.
 - CI dependency files are separated for release and Phase 4 operational workflows.
+
+## RISA Structural Plasticity Evidence Coupling
+
+- RISA graph edges, verified Concept Review outcomes, and Event Memory replay now share one bounded structural-plasticity lane inside idle consolidation.
+- Relation classes retain separate stabilization, regrowth, active-route, and pruning signals rather than using one generic rewiring rule.
+- Per-class feedback combines repeated review evidence, controller-held contradiction history, replay score and event cost, and memory-phase maturity, plasticity, and retention.
+- Route-specific contradiction pressure prevents a contradictory relation class from uniformly degrading unrelated sparse routes; all resulting decisions remain in the structural-plasticity trace.
+- `python scripts/sara_cli.py eval-risa-structural-plasticity` runs a frozen observed-only comparison with equal replay and rewrite budgets; it verifies predictive-route retention, contradictory-route recovery, bounded rewrites/state, and equal maintenance event cost.
 
 ## Phase 5 Completion Surface
 

@@ -21,12 +21,18 @@ from sara_engine.learning.sleep_consolidation import (
     SleepConsolidationConfig,
     evaluate_sleep_consolidation,
 )
+from sara_engine.learning.structural_plasticity import BoundedStructuralPlasticityController
 from sara_engine.memory.concept_admission import ConceptRevalidationEntry
+from sara_engine.memory.architecture_migration import ArchitectureMigrationCoordinator
 from sara_engine.memory.concept_review_loop import (
     ConceptReviewLoop,
     ConceptReviewLoopResult,
 )
 from sara_engine.memory.event_state_cache import VerifiedHierarchicalEventStateCache
+from sara_engine.memory.concept_queue_store import save_review_report, save_revalidation_queue
+from sara_engine.risa.feedback import build_feedback_package, merge_revalidation_entries
+from sara_engine.risa.kernel import SARAAlignedRisaKernel
+from sara_engine.risa.structural_feedback import run_risa_structural_plasticity_cycle
 
 
 def _clamp01(value: float) -> float:
@@ -47,6 +53,11 @@ class IdleConsolidationLoopResult:
     concept_review_result: ConceptReviewLoopResult
     prioritized_concept_keys: Tuple[str, ...]
     cache_refresh: Tuple[Dict[str, Any], ...]
+    risa_feedback: Dict[str, Any] | None = None
+    risa_queue_path: str | None = None
+    risa_report_path: str | None = None
+    risa_structural_plasticity: Dict[str, Any] | None = None
+    architecture_migration: Dict[str, Any] | None = None
     schema: str = "sara-idle-consolidation-loop-result-v1"
 
     def to_dict(self) -> Dict[str, Any]:
@@ -63,6 +74,19 @@ class IdleConsolidationLoopResult:
             ),
             "prioritized_concept_keys": list(self.prioritized_concept_keys),
             "cache_refresh": [dict(item) for item in self.cache_refresh],
+            "risa_feedback": dict(self.risa_feedback) if self.risa_feedback is not None else None,
+            "risa_queue_path": self.risa_queue_path,
+            "risa_report_path": self.risa_report_path,
+            "risa_structural_plasticity": (
+                dict(self.risa_structural_plasticity)
+                if self.risa_structural_plasticity is not None
+                else None
+            ),
+            "architecture_migration": (
+                dict(self.architecture_migration)
+                if self.architecture_migration is not None
+                else None
+            ),
         }
 
 
@@ -92,7 +116,29 @@ class IdleConsolidationLoop:
         memory_phase_config: MemoryPhaseConfig | None = None,
         delta_retention_config: DeltaRetentionPolicyConfig | None = None,
         apply_cache_refresh: bool = True,
+        risa_kernel: SARAAlignedRisaKernel | None = None,
+        risa_queue_path: str | None = None,
+        risa_report_path: str | None = None,
+        risa_min_support: int = 2,
+        risa_skip_dormant: bool = True,
+        structural_plasticity_controller: BoundedStructuralPlasticityController | None = None,
+        structural_frozen_evaluation: bool = False,
+        architecture_migration_coordinator: ArchitectureMigrationCoordinator | None = None,
+        architecture_migration_target_cache: VerifiedHierarchicalEventStateCache | None = None,
     ) -> IdleConsolidationLoopResult:
+        architecture_migration_payload: Dict[str, Any] | None = None
+        if architecture_migration_coordinator is not None:
+            if architecture_migration_target_cache is None:
+                architecture_migration_payload = {
+                    "plan": architecture_migration_coordinator.build_plan(cache).to_dict(),
+                    "legacy_cache_mutated": False,
+                    "target_cache_provided": False,
+                }
+            else:
+                architecture_migration_payload = architecture_migration_coordinator.migrate(
+                    cache,
+                    architecture_migration_target_cache,
+                ).to_dict()
         idle_replay_report = plan_idle_replay(
             cache,
             persistent_self_state=persistent_self_state,
@@ -106,14 +152,53 @@ class IdleConsolidationLoop:
             for item in idle_replay_report.get("selected", ())
             if _is_concept_key(str(item.get("own_latent_id", "")))
         )
-        ordered_queue = self._prioritize_queue(queue_entries, prioritized_concept_keys)
+        review_relations = tuple(relations)
+        review_queue_entries = tuple(queue_entries)
+        risa_feedback_payload: Dict[str, Any] | None = None
+        resolved_risa_queue_path: str | None = None
+        resolved_risa_report_path: str | None = None
+        risa_structural_payload: Dict[str, Any] | None = None
+        risa_feedback_package = None
+        if risa_kernel is not None:
+            feedback = build_feedback_package(
+                risa_kernel,
+                current_segment=int(current_segment),
+                min_support=int(risa_min_support),
+                skip_dormant=bool(risa_skip_dormant),
+            )
+            risa_feedback_package = feedback
+            review_queue_entries = merge_revalidation_entries(
+                review_queue_entries,
+                feedback.revalidation_entries,
+            )
+            review_relations = review_relations + tuple(feedback.candidate_relations)
+            if risa_queue_path:
+                resolved_risa_queue_path = save_revalidation_queue(
+                    review_queue_entries,
+                    risa_queue_path,
+                )
+            risa_feedback_payload = feedback.to_dict()
+
+        ordered_queue = self._prioritize_queue(review_queue_entries, prioritized_concept_keys)
         concept_review_result = self.concept_review_loop.run(
             ordered_queue,
-            relations,
+            review_relations,
             current_segment=current_segment,
             frequent_sequences=frequent_sequences,
             persistent_self_state=persistent_self_state,
         )
+        if risa_kernel is not None and resolved_risa_queue_path is not None:
+            save_revalidation_queue(
+                concept_review_result.next_revalidation_queue,
+                resolved_risa_queue_path,
+            )
+            if risa_report_path:
+                resolved_risa_report_path = save_review_report(
+                    concept_review_result,
+                    queue_path=resolved_risa_queue_path,
+                    report_path=risa_report_path,
+                    current_segment=int(current_segment),
+                )
         sleep_events = self._sleep_events_from_idle_replay(
             idle_replay_report.get("selected", ()),
             concept_review_result=concept_review_result,
@@ -149,6 +234,18 @@ class IdleConsolidationLoop:
             ),
             config=delta_retention_config,
         )
+        if risa_kernel is not None and structural_plasticity_controller is not None:
+            structural_cycle = run_risa_structural_plasticity_cycle(
+                structural_plasticity_controller,
+                risa_kernel,
+                review_result=concept_review_result,
+                feedback_package=risa_feedback_package,
+                current_segment=int(current_segment),
+                idle_replay_report=idle_replay_report,
+                memory_phase_report=memory_phase_report,
+                frozen_evaluation=bool(structural_frozen_evaluation),
+            )
+            risa_structural_payload = structural_cycle.to_dict()
         cache_refresh = (
             tuple(
                 item.to_dict()
@@ -165,6 +262,11 @@ class IdleConsolidationLoop:
             concept_review_result=concept_review_result,
             prioritized_concept_keys=prioritized_concept_keys,
             cache_refresh=cache_refresh,
+            risa_feedback=risa_feedback_payload,
+            risa_queue_path=resolved_risa_queue_path,
+            risa_report_path=resolved_risa_report_path,
+            risa_structural_plasticity=risa_structural_payload,
+            architecture_migration=architecture_migration_payload,
         )
 
     def _prioritize_queue(

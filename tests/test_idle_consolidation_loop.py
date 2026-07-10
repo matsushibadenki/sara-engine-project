@@ -1,14 +1,24 @@
+import os
+
 from sara_engine.dynamics import PersistentSelfStateController, stable_self_state_id
 from sara_engine.ingest import FrequentSequence, make_candidate_relation
 from sara_engine.learning.astro_modulator import AstroReplayModulator
 from sara_engine.learning.idle_replay import IdleReplayConfig
 from sara_engine.learning.sleep_consolidation import SleepConsolidationConfig
+from sara_engine.learning.structural_plasticity import BoundedStructuralPlasticityController
+from sara_engine.memory.architecture_migration import (
+    ArchitectureMigrationCoordinator,
+    ArchitectureMigrationPolicy,
+)
 from sara_engine.memory.concept_admission import ConceptRevalidationEntry
+from sara_engine.memory.concept_queue_store import load_revalidation_queue
 from sara_engine.memory.event_state_cache import (
     EventStateCandidate,
     VerifiedHierarchicalEventStateCache,
 )
 from sara_engine.memory.idle_consolidation_loop import IdleConsolidationLoop
+from sara_engine.risa import RisaObservation, SARAAlignedRisaKernel
+from sara_engine.utils.project_paths import workspace_path
 
 
 def _relation(
@@ -232,3 +242,149 @@ def test_idle_consolidation_loop_can_skip_cache_refresh():
     assert result.cache_refresh == ()
     assert cache.entries["memory"].utility == original_utility
     assert result.delta_retention_policy_report["observed_only"] is True
+
+
+def test_idle_consolidation_loop_can_merge_risa_feedback_into_review_flow():
+    cache = VerifiedHierarchicalEventStateCache()
+    cache.admit(
+        _candidate(
+            "concept-memory",
+            signature=(41, 43, 47),
+            own_latent_id="predicts:process:run->state:fatigue_up",
+            source_ref="concept:risa",
+            sequence_support_score=0.4,
+            sequence_support_count=2,
+        )
+    )
+    kernel = SARAAlignedRisaKernel(min_support=2, min_distinct_actors=2)
+    kernel.ingest_observations(
+        (
+            RisaObservation(
+                timestamp=1,
+                event_id="e1",
+                actor="dog",
+                action="run",
+                observed_effects=["fatigue_up"],
+                verified=True,
+                resonance_score=0.7,
+            ),
+            RisaObservation(
+                timestamp=2,
+                event_id="e2",
+                actor="human",
+                action="run",
+                observed_effects=["fatigue_up"],
+                verified=True,
+                resonance_score=0.7,
+            ),
+            RisaObservation(
+                timestamp=3,
+                event_id="e3",
+                actor="horse",
+                action="run",
+                observed_effects=["fatigue_up"],
+                verified=True,
+                resonance_score=0.8,
+            ),
+        )
+    )
+    queue_path = workspace_path("memory", f"test_idle_risa_queue_{os.getpid()}.json")
+    report_path = workspace_path("memory", f"test_idle_risa_report_{os.getpid()}.json")
+
+    result = IdleConsolidationLoop().run(
+        cache,
+        [],
+        [],
+        current_segment=6,
+        risa_kernel=kernel,
+        risa_queue_path=queue_path,
+        risa_report_path=report_path,
+        replay_config=IdleReplayConfig(max_candidates=2, event_budget=12, min_replay_score=0.2),
+        sleep_config=SleepConsolidationConfig(event_budget=12.0),
+    )
+
+    assert result.risa_feedback is not None
+    assert result.risa_feedback["trace"]["exported_queue_entry_count"] >= 1
+    assert result.risa_feedback["trace"]["exported_relation_count"] >= 3
+    assert result.risa_queue_path == queue_path
+    assert result.risa_report_path == report_path
+    assert len(result.concept_review_result.admission_plan.admitted_candidates) == 1
+    persisted_queue = load_revalidation_queue(queue_path)
+    assert persisted_queue == result.concept_review_result.next_revalidation_queue
+
+
+def test_idle_consolidation_loop_can_run_risa_structural_plasticity() -> None:
+    cache = VerifiedHierarchicalEventStateCache()
+    cache.admit(
+        _candidate(
+            "concept-memory",
+            signature=(53, 59, 61),
+            own_latent_id="predicts:process:run->state:fatigue_up",
+            source_ref="concept:risa-structural",
+            sequence_support_score=0.4,
+            sequence_support_count=2,
+        )
+    )
+    kernel = SARAAlignedRisaKernel(min_support=2, min_distinct_actors=2)
+    kernel.ingest_observations(
+        (
+            RisaObservation(timestamp=1, event_id="e1", actor="dog", action="run", observed_effects=["fatigue_up"], verified=True, resonance_score=0.7),
+            RisaObservation(timestamp=2, event_id="e2", actor="human", action="run", observed_effects=["fatigue_up"], verified=True, resonance_score=0.7),
+            RisaObservation(timestamp=3, event_id="e3", actor="horse", action="run", observed_effects=["fatigue_up"], verified=True, resonance_score=0.8),
+        )
+    )
+    controller = BoundedStructuralPlasticityController(
+        min_stable_verified_support=2,
+        min_stable_prediction_gain=0.6,
+        max_rewrites_per_event=4,
+    )
+
+    result = IdleConsolidationLoop().run(
+        cache,
+        [],
+        [],
+        current_segment=6,
+        risa_kernel=kernel,
+        structural_plasticity_controller=controller,
+        replay_config=IdleReplayConfig(max_candidates=2, event_budget=12, min_replay_score=0.2),
+        sleep_config=SleepConsolidationConfig(event_budget=12.0),
+    )
+
+    assert result.risa_structural_plasticity is not None
+    assert result.risa_structural_plasticity["support_route_count"] >= 1
+    assert result.risa_structural_plasticity["structural_result"]["update_allowed"] is True
+    assert result.risa_structural_plasticity["signals"]["relation_class_feedback"]["predicts"]["phase_maturity_mean"] >= 0.5
+    assert controller.routes
+
+
+def test_idle_consolidation_loop_can_emit_architecture_migration_trace() -> None:
+    legacy_cache = VerifiedHierarchicalEventStateCache()
+    legacy_cache.admit(
+        _candidate(
+            "migration-memory",
+            own_latent_id="predicts:vision:visual_cluster_018->audio:audio_cluster_044",
+        )
+    )
+    target_cache = VerifiedHierarchicalEventStateCache()
+    coordinator = ArchitectureMigrationCoordinator(
+        ArchitectureMigrationPolicy(
+            source_architecture_version="sara-architecture-v1",
+            target_architecture_version="sara-architecture-v2",
+        )
+    )
+
+    result = IdleConsolidationLoop().run(
+        legacy_cache,
+        [],
+        [],
+        current_segment=6,
+        replay_config=IdleReplayConfig(max_candidates=1, event_budget=8, min_replay_score=0.2),
+        sleep_config=SleepConsolidationConfig(event_budget=8.0),
+        architecture_migration_coordinator=coordinator,
+        architecture_migration_target_cache=target_cache,
+    )
+
+    assert result.architecture_migration is not None
+    assert result.architecture_migration["legacy_cache_mutated"] is False
+    assert result.architecture_migration["admitted_count"] == 1
+    assert "migration:sara-architecture-v2:migration-memory" in target_cache.entries

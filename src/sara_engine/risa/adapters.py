@@ -104,6 +104,31 @@ def observation_from_bundle_admission(
     )
 
 
+def observation_from_reactivation_hint(
+    hint: Mapping[str, object],
+    *,
+    time_segment: int = 0,
+) -> RisaObservation:
+    entry_id = str(hint.get("entry_id", "") or "")
+    source_ref = str(hint.get("source_ref", "") or "")
+    route = str(hint.get("route", "") or "verified_event_state_reactivation")
+    activation = float(hint.get("activation", 0.0) or 0.0)
+    actor = _normalize_token(source_ref or entry_id, "memory")
+    return RisaObservation(
+        timestamp=int(time_segment),
+        event_id=f"reactivation:{entry_id or actor}",
+        actor=actor,
+        action="reactivate",
+        observed_effects=[_normalize_token(entry_id or route, "memory_trace")],
+        context_tags=[f"route:{route}", f"activation:{round(activation, 3)}"],
+        source_ref=source_ref,
+        verified=True,
+        resonance_score=min(1.0, activation),
+        credit_longevity=min(1.0, activation),
+        event_energy=min(1.0, activation),
+    )
+
+
 def ingest_verified_surface_into_risa(
     kernel: SARAAlignedRisaKernel,
     *,
@@ -124,6 +149,97 @@ def ingest_verified_surface_into_risa(
         if item.promotion_allowed
     )
     kernel.ingest_observations(observations)
+    return observations
+
+
+def event_state_candidate_from_entry(entry: Any) -> EventStateCandidate:
+    return EventStateCandidate(
+        entry_id=str(getattr(entry, "entry_id", "")),
+        signature=tuple(int(value) for value in getattr(entry, "signature", ()) or ()),
+        source_ref=str(getattr(entry, "source_ref", "")),
+        source_revision=str(getattr(entry, "source_revision", "")),
+        time_segment=int(getattr(entry, "time_segment", 0) or 0),
+        own_latent_id=str(getattr(entry, "own_latent_id", "")),
+        causal_predecessors=tuple(
+            str(value) for value in getattr(entry, "causal_predecessors", ()) or ()
+        ),
+        confidence=float(getattr(entry, "confidence", 0.0) or 0.0),
+        uncertainty=float(getattr(entry, "uncertainty", 0.0) or 0.0),
+        source_reliability=float(getattr(entry, "source_reliability", 0.0) or 0.0),
+        resonance_score=float(getattr(entry, "resonance_score", 0.0) or 0.0),
+        sequence_support_score=float(getattr(entry, "sequence_support_score", 0.0) or 0.0),
+        sequence_support_count=int(getattr(entry, "sequence_support_count", 0) or 0),
+        credit_score=float(getattr(entry, "credit_score", 0.0) or 0.0),
+        credit_responsibility=float(getattr(entry, "credit_responsibility", 0.0) or 0.0),
+        credit_confidence=float(getattr(entry, "credit_confidence", 0.0) or 0.0),
+        credit_longevity=float(getattr(entry, "credit_longevity", 0.0) or 0.0),
+        metabolic_headroom=1.0,
+        observed=bool(getattr(entry, "observed", False)),
+        source_backed=True,
+        verified=bool(getattr(entry, "verified", False)),
+        contradicted=False,
+        abstained=False,
+        event_cost=int(getattr(entry, "event_cost", 0) or 0),
+        expires_at=getattr(entry, "expires_at", None),
+        architecture_version=str(
+            getattr(entry, "architecture_version", "sara-architecture-v1")
+            or "sara-architecture-v1"
+        ),
+        migration_source_architecture_version=str(
+            getattr(entry, "migration_source_architecture_version", "") or ""
+        ),
+    )
+
+
+def ingest_event_memory_cycle_into_risa(
+    kernel: SARAAlignedRisaKernel,
+    *,
+    ingest_result: Any,
+    cache: Any | None = None,
+    retrieval_result: Any | None = None,
+    now_segment: int | None = None,
+) -> List[RisaObservation]:
+    observations: List[RisaObservation] = []
+    verified_relations = tuple(getattr(ingest_result, "verified_relations", ()) or ())
+    bundle_admissions = tuple(
+        getattr(ingest_result, "multimodal_bundle_admissions", ()) or ()
+    )
+    observations.extend(
+        ingest_verified_surface_into_risa(
+            kernel,
+            verified_relations=verified_relations,
+            bundle_admissions=bundle_admissions,
+        )
+    )
+
+    if cache is not None and retrieval_result is not None:
+        matched_entry_ids = [
+            str(match.get("entry_id", "") or "")
+            for match in getattr(retrieval_result, "matches", ()) or ()
+            if isinstance(match, Mapping)
+        ]
+        matched_candidates = [
+            event_state_candidate_from_entry(cache.entries[entry_id])
+            for entry_id in matched_entry_ids
+            if getattr(cache, "entries", None) is not None and entry_id in cache.entries
+        ]
+        if matched_candidates:
+            observations.extend(
+                ingest_verified_surface_into_risa(
+                    kernel,
+                    event_state_candidates=matched_candidates,
+                )
+            )
+        hint_time = int(now_segment if now_segment is not None else 0)
+        hint_observations = [
+            observation_from_reactivation_hint(hint, time_segment=hint_time)
+            for hint in getattr(retrieval_result, "reactivation_hints", ()) or ()
+            if isinstance(hint, Mapping)
+        ]
+        if hint_observations:
+            kernel.ingest_observations(hint_observations)
+            observations.extend(hint_observations)
+
     return observations
 
 
@@ -160,6 +276,13 @@ def extract_verified_event_state_candidates(
                 contradicted=bool(raw.get("contradicted", False)),
                 abstained=bool(raw.get("abstained", False)),
                 event_cost=int(raw.get("event_cost", 0) or 0),
+                architecture_version=str(
+                    raw.get("architecture_version", "sara-architecture-v1")
+                    or "sara-architecture-v1"
+                ),
+                migration_source_architecture_version=str(
+                    raw.get("migration_source_architecture_version", "") or ""
+                ),
             )
         )
     return candidates

@@ -65,6 +65,8 @@ class EventStateCandidate:
     abstained: bool = False
     event_cost: int = 0
     expires_at: Optional[int] = None
+    architecture_version: str = "sara-architecture-v1"
+    migration_source_architecture_version: str = ""
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,8 @@ class EventStateEntry:
     event_cost: int
     tier: str
     utility: float
+    architecture_version: str = "sara-architecture-v1"
+    migration_source_architecture_version: str = ""
     access_count: int = 0
     expires_at: Optional[int] = None
 
@@ -118,6 +122,8 @@ class EventStateEntry:
             "event_cost": self.event_cost,
             "tier": self.tier,
             "utility": self.utility,
+            "architecture_version": self.architecture_version,
+            "migration_source_architecture_version": self.migration_source_architecture_version,
             "access_count": self.access_count,
             "expires_at": self.expires_at,
         }
@@ -336,6 +342,10 @@ class VerifiedHierarchicalEventStateCache:
             event_cost=max(0, int(candidate.event_cost)),
             tier=tier,
             utility=utility,
+            architecture_version=str(candidate.architecture_version or "sara-architecture-v1"),
+            migration_source_architecture_version=str(
+                candidate.migration_source_architecture_version
+            ),
             expires_at=candidate.expires_at,
         )
         self.entries[entry.entry_id] = entry
@@ -648,6 +658,13 @@ class VerifiedHierarchicalEventStateCache:
                 event_cost=max(0, int(raw.get("event_cost", 0))),
                 tier=tier,
                 utility=_clamp01(raw.get("utility", 0.0)),
+                architecture_version=str(
+                    raw.get("architecture_version", "sara-architecture-v1")
+                    or "sara-architecture-v1"
+                ),
+                migration_source_architecture_version=str(
+                    raw.get("migration_source_architecture_version", "") or ""
+                ),
                 access_count=max(0, int(raw.get("access_count", 0))),
                 expires_at=(
                     None
@@ -697,6 +714,10 @@ class VerifiedHierarchicalEventStateCache:
             "observed": bool(candidate.observed),
             "source_backed": bool(candidate.source_backed),
             "source_revision": str(candidate.source_revision),
+            "architecture_version": str(candidate.architecture_version),
+            "migration_source_architecture_version": str(
+                candidate.migration_source_architecture_version
+            ),
             "verified": bool(candidate.verified),
             "contradicted": bool(candidate.contradicted),
             "abstained": bool(candidate.abstained),

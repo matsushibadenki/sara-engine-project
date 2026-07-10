@@ -5,7 +5,7 @@ from typing import Any, Dict, Mapping, Sequence, Tuple
 
 from sara_engine.memory.concept_admission import ConceptRevalidationEntry
 from sara_engine.memory.concept_review_loop import ConceptReviewLoop, ConceptReviewLoopResult
-from sara_engine.ingest import CandidateRelation
+from sara_engine.ingest.candidate_proposals import CandidateRelation
 from sara_engine.utils.project_paths import ensure_parent_directory, workspace_path
 
 
@@ -155,4 +155,11 @@ def _entry_from_dict(payload: Mapping[str, Any]) -> ConceptRevalidationEntry:
         blocked_at_segment=int(payload.get("blocked_at_segment", 0) or 0),
         last_review_segment=int(payload.get("last_review_segment", 0) or 0),
         retry_after_segment=int(payload.get("retry_after_segment", 0) or 0),
+        architecture_version=str(
+            payload.get("architecture_version", "sara-architecture-v1")
+            or "sara-architecture-v1"
+        ),
+        migration_source_architecture_version=str(
+            payload.get("migration_source_architecture_version", "") or ""
+        ),
     )

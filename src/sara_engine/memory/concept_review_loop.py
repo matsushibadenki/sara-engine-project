@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Sequence, Tuple
 from sara_engine.dynamics import PersistentSelfStateController
 
-from sara_engine.ingest import CandidateRelation, FrequentSequence, RelationStabilityAssessor
+from sara_engine.ingest.candidate_proposals import CandidateRelation
+from sara_engine.ingest.frequent_sequence import FrequentSequence
+from sara_engine.ingest.relation_stability import RelationStabilityAssessor
 from sara_engine.memory.concept_admission import (
     ConceptAdmissionPlan,
     ConceptAdmissionPlanner,

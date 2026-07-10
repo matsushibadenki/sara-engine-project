@@ -190,11 +190,13 @@ class BoundedStructuralPlasticityController:
         signals: Mapping[str, Any],
         event_memory_support: Optional[Mapping[RouteKey, Mapping[str, Any]]] = None,
         candidate_routes: Optional[Mapping[RouteKey, Mapping[str, Any]]] = None,
+        route_contradiction_pressure: Optional[Mapping[RouteKey, float]] = None,
         frozen_evaluation: bool = False,
     ) -> StructuralPlasticityResult:
         self.step += 1
         support_map = event_memory_support or {}
         candidate_map = candidate_routes or {}
+        contradiction_map = route_contradiction_pressure or {}
 
         prediction_error = _clamp01(signals.get("prediction_error", 0.0))
         novelty = _clamp01(signals.get("novelty", 0.0))
@@ -234,7 +236,12 @@ class BoundedStructuralPlasticityController:
             )
             verified_increment = int(bool(route_support.get("verified", False) and source_backed))
             support_increment = int(active_value > 0.0 or bool(route_support))
-            contradiction_count = state.contradiction_count + int(contradiction >= self.contradiction_growth_block)
+            route_contradiction = _clamp01(
+                contradiction_map.get(route_key, contradiction)
+            )
+            contradiction_count = state.contradiction_count + int(
+                route_contradiction >= self.contradiction_growth_block
+            )
             responsibility = _clamp01(
                 state.responsibility * self.responsibility_decay
                 + (active_value * self.activity_increment)
@@ -263,7 +270,7 @@ class BoundedStructuralPlasticityController:
                 next_state.route_state == "provisional"
                 and next_state.verified_support_count >= self.min_stable_verified_support
                 and next_state.prediction_gain_support >= self.min_stable_prediction_gain
-                and contradiction < self.contradiction_growth_block
+                and route_contradiction < self.contradiction_growth_block
                 and update_allowed
                 and actions_taken < self.max_rewrites_per_event
             ):
@@ -325,7 +332,6 @@ class BoundedStructuralPlasticityController:
 
         allow_growth = (
             update_allowed
-            and contradiction < self.contradiction_growth_block
             and actions_taken < self.max_rewrites_per_event
         )
         if allow_growth:
@@ -344,7 +350,13 @@ class BoundedStructuralPlasticityController:
                     _clamp01(evidence.get("coactivation", 0.0)),
                     _clamp01(evidence.get("prediction_gain_support", 0.0)),
                 )
-                if growth_score < self.provisional_growth_threshold:
+                candidate_contradiction = _clamp01(
+                    evidence.get("contradiction_pressure", contradiction)
+                )
+                if (
+                    growth_score < self.provisional_growth_threshold
+                    or candidate_contradiction >= self.contradiction_growth_block
+                ):
                     continue
                 if not bool(evidence.get("verified", False)):
                     continue

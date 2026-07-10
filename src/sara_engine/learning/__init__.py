@@ -1,58 +1,81 @@
-# Directory Path: src/sara_engine/learning/__init__.py
-# English Title: Learning Module Initialization
-# Purpose/Content: Exports public learning-module APIs.
+"""Exports public learning-module APIs lazily.
 
-from .force import ForceReadout as ForceReadout
-from .force_io import export_force_artifact as export_force_artifact
-from .force_io import load_force_artifact as load_force_artifact
-from .force_workflow import build_sine_series as build_sine_series
-from .force_workflow import evaluate_force_sequence as evaluate_force_sequence
-from .force_workflow import load_series as load_series
-from .force_workflow import split_series as split_series
-from .force_workflow import train_force_sequence as train_force_sequence
-from .astro_structural_gate import AstroStructuralGateConfig as AstroStructuralGateConfig
-from .astro_structural_gate import evaluate_astro_structural_gate as evaluate_astro_structural_gate
-from .delta_retention_policy import DeltaRetentionPolicyConfig as DeltaRetentionPolicyConfig
-from .delta_retention_policy import build_delta_retention_events as build_delta_retention_events
-from .delta_retention_policy import evaluate_delta_erase_write_decoupling as evaluate_delta_erase_write_decoupling
-from .delta_retention_policy import evaluate_delta_retention_policy as evaluate_delta_retention_policy
-from .delta_retention_policy import evaluate_delta_retention_policy_stress as evaluate_delta_retention_policy_stress
-from .dendritic_feedback import DendriticGateResult as DendriticGateResult
-from .dendritic_feedback import SparseDendriticFeedbackGate as SparseDendriticFeedbackGate
-from .dendritic_feedback import precision_at_expected as precision_at_expected
-from .reward_modulated_stdp import DopamineSignalModel as DopamineSignalModel
-from .reward_modulated_stdp import EligibilityTraceManager as EligibilityTraceManager
-from .reward_modulated_stdp import RewardModulatedSTDPManager as RewardModulatedSTDPManager
-from .three_factor_learning import ThreeFactorLearningManager as ThreeFactorLearningManager
-from .greedy_layerwise import GreedyLayerWiseTrainer as GreedyLayerWiseTrainer
-from .greedy_layerwise import LayerTrainingMetrics as LayerTrainingMetrics
-from .metabolic_budget import MetabolicBudgetConfig as MetabolicBudgetConfig
-from .metabolic_budget import evaluate_structural_metabolic_budget as evaluate_structural_metabolic_budget
-from .memory_phase import MemoryPhaseConfig as MemoryPhaseConfig
-from .memory_phase import build_memory_phase_observations as build_memory_phase_observations
-from .memory_phase import evaluate_memory_phase_transitions as evaluate_memory_phase_transitions
-from .sleep_consolidation import SleepConsolidationConfig as SleepConsolidationConfig
-from .sleep_consolidation import evaluate_sleep_consolidation as evaluate_sleep_consolidation
-from .idle_replay import IdleReplayConfig as IdleReplayConfig
-from .idle_replay import plan_idle_replay as plan_idle_replay
-from .synaptic_tag import SynapticTagConfig as SynapticTagConfig
-from .synaptic_tag import evaluate_synaptic_tags as evaluate_synaptic_tags
-from .own_latent import OwnLatentPrediction as OwnLatentPrediction
-from .own_latent import SparseOwnLatentPredictor as SparseOwnLatentPredictor
-from .own_latent import TokenOverlapBaseline as TokenOverlapBaseline
-from .own_latent import build_sparse_signature as build_sparse_signature
-from .own_latent import jaccard_overlap as jaccard_overlap
-from .own_latent import stable_event_id as stable_event_id
-from .own_latent import train_predictor_from_cases as train_predictor_from_cases
-from .resonance_credit import ResonanceCreditResult as ResonanceCreditResult
-from .resonance_credit import SparseResonanceCreditAssigner as SparseResonanceCreditAssigner
-from .resonance_evidence import ResonanceEvidenceBundle as ResonanceEvidenceBundle
-from .resonance_evidence import build_resonance_evidence as build_resonance_evidence
-from .adaptive_credit import AdaptiveCreditField as AdaptiveCreditField
-from .adaptive_credit import AdaptiveCreditResult as AdaptiveCreditResult
-from .adaptive_credit import AdaptiveCreditRouteState as AdaptiveCreditRouteState
-from .adaptive_credit import summarize_event_memory_credit as summarize_event_memory_credit
-from .structural_plasticity import BoundedStructuralPlasticityController as BoundedStructuralPlasticityController
-from .structural_plasticity import StructuralPlasticityManager as StructuralPlasticityManager
-from .structural_plasticity import StructuralPlasticityResult as StructuralPlasticityResult
-from .structural_plasticity import StructuralRouteState as StructuralRouteState
+The learning package includes some optional or heavier submodules; lazy exports
+keep lightweight callers from importing unrelated dependencies.
+"""
+
+from __future__ import annotations
+
+import importlib
+from typing import Dict, Tuple
+
+
+_LAZY_EXPORTS: Dict[str, Tuple[str, str]] = {
+    "ForceReadout": ("sara_engine.learning.force", "ForceReadout"),
+    "export_force_artifact": ("sara_engine.learning.force_io", "export_force_artifact"),
+    "load_force_artifact": ("sara_engine.learning.force_io", "load_force_artifact"),
+    "build_sine_series": ("sara_engine.learning.force_workflow", "build_sine_series"),
+    "evaluate_force_sequence": ("sara_engine.learning.force_workflow", "evaluate_force_sequence"),
+    "load_series": ("sara_engine.learning.force_workflow", "load_series"),
+    "split_series": ("sara_engine.learning.force_workflow", "split_series"),
+    "train_force_sequence": ("sara_engine.learning.force_workflow", "train_force_sequence"),
+    "AstroStructuralGateConfig": ("sara_engine.learning.astro_structural_gate", "AstroStructuralGateConfig"),
+    "evaluate_astro_structural_gate": ("sara_engine.learning.astro_structural_gate", "evaluate_astro_structural_gate"),
+    "DeltaRetentionPolicyConfig": ("sara_engine.learning.delta_retention_policy", "DeltaRetentionPolicyConfig"),
+    "build_delta_retention_events": ("sara_engine.learning.delta_retention_policy", "build_delta_retention_events"),
+    "evaluate_delta_erase_write_decoupling": ("sara_engine.learning.delta_retention_policy", "evaluate_delta_erase_write_decoupling"),
+    "evaluate_delta_retention_policy": ("sara_engine.learning.delta_retention_policy", "evaluate_delta_retention_policy"),
+    "evaluate_delta_retention_policy_stress": ("sara_engine.learning.delta_retention_policy", "evaluate_delta_retention_policy_stress"),
+    "DendriticGateResult": ("sara_engine.learning.dendritic_feedback", "DendriticGateResult"),
+    "SparseDendriticFeedbackGate": ("sara_engine.learning.dendritic_feedback", "SparseDendriticFeedbackGate"),
+    "precision_at_expected": ("sara_engine.learning.dendritic_feedback", "precision_at_expected"),
+    "DopamineSignalModel": ("sara_engine.learning.reward_modulated_stdp", "DopamineSignalModel"),
+    "EligibilityTraceManager": ("sara_engine.learning.reward_modulated_stdp", "EligibilityTraceManager"),
+    "RewardModulatedSTDPManager": ("sara_engine.learning.reward_modulated_stdp", "RewardModulatedSTDPManager"),
+    "ThreeFactorLearningManager": ("sara_engine.learning.three_factor_learning", "ThreeFactorLearningManager"),
+    "GreedyLayerWiseTrainer": ("sara_engine.learning.greedy_layerwise", "GreedyLayerWiseTrainer"),
+    "LayerTrainingMetrics": ("sara_engine.learning.greedy_layerwise", "LayerTrainingMetrics"),
+    "MetabolicBudgetConfig": ("sara_engine.learning.metabolic_budget", "MetabolicBudgetConfig"),
+    "evaluate_structural_metabolic_budget": ("sara_engine.learning.metabolic_budget", "evaluate_structural_metabolic_budget"),
+    "MemoryPhaseConfig": ("sara_engine.learning.memory_phase", "MemoryPhaseConfig"),
+    "build_memory_phase_observations": ("sara_engine.learning.memory_phase", "build_memory_phase_observations"),
+    "evaluate_memory_phase_transitions": ("sara_engine.learning.memory_phase", "evaluate_memory_phase_transitions"),
+    "SleepConsolidationConfig": ("sara_engine.learning.sleep_consolidation", "SleepConsolidationConfig"),
+    "evaluate_sleep_consolidation": ("sara_engine.learning.sleep_consolidation", "evaluate_sleep_consolidation"),
+    "IdleReplayConfig": ("sara_engine.learning.idle_replay", "IdleReplayConfig"),
+    "plan_idle_replay": ("sara_engine.learning.idle_replay", "plan_idle_replay"),
+    "SynapticTagConfig": ("sara_engine.learning.synaptic_tag", "SynapticTagConfig"),
+    "evaluate_synaptic_tags": ("sara_engine.learning.synaptic_tag", "evaluate_synaptic_tags"),
+    "OwnLatentPrediction": ("sara_engine.learning.own_latent", "OwnLatentPrediction"),
+    "SparseOwnLatentPredictor": ("sara_engine.learning.own_latent", "SparseOwnLatentPredictor"),
+    "TokenOverlapBaseline": ("sara_engine.learning.own_latent", "TokenOverlapBaseline"),
+    "build_sparse_signature": ("sara_engine.learning.own_latent", "build_sparse_signature"),
+    "jaccard_overlap": ("sara_engine.learning.own_latent", "jaccard_overlap"),
+    "stable_event_id": ("sara_engine.learning.own_latent", "stable_event_id"),
+    "train_predictor_from_cases": ("sara_engine.learning.own_latent", "train_predictor_from_cases"),
+    "ResonanceCreditResult": ("sara_engine.learning.resonance_credit", "ResonanceCreditResult"),
+    "SparseResonanceCreditAssigner": ("sara_engine.learning.resonance_credit", "SparseResonanceCreditAssigner"),
+    "ResonanceEvidenceBundle": ("sara_engine.learning.resonance_evidence", "ResonanceEvidenceBundle"),
+    "build_resonance_evidence": ("sara_engine.learning.resonance_evidence", "build_resonance_evidence"),
+    "AdaptiveCreditField": ("sara_engine.learning.adaptive_credit", "AdaptiveCreditField"),
+    "AdaptiveCreditResult": ("sara_engine.learning.adaptive_credit", "AdaptiveCreditResult"),
+    "AdaptiveCreditRouteState": ("sara_engine.learning.adaptive_credit", "AdaptiveCreditRouteState"),
+    "summarize_event_memory_credit": ("sara_engine.learning.adaptive_credit", "summarize_event_memory_credit"),
+    "BoundedStructuralPlasticityController": ("sara_engine.learning.structural_plasticity", "BoundedStructuralPlasticityController"),
+    "StructuralPlasticityManager": ("sara_engine.learning.structural_plasticity", "StructuralPlasticityManager"),
+    "StructuralPlasticityResult": ("sara_engine.learning.structural_plasticity", "StructuralPlasticityResult"),
+    "StructuralRouteState": ("sara_engine.learning.structural_plasticity", "StructuralRouteState"),
+}
+
+__all__ = list(_LAZY_EXPORTS.keys())
+
+
+def __getattr__(name: str):
+    target = _LAZY_EXPORTS.get(name)
+    if target is None:
+        raise AttributeError(f"module 'sara_engine.learning' has no attribute '{name}'")
+    module_name, attr_name = target
+    module = importlib.import_module(module_name)
+    value = getattr(module, attr_name)
+    globals()[name] = value
+    return value

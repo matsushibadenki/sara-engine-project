@@ -5,7 +5,10 @@ from typing import Any, Dict, List, Mapping, Sequence, Tuple
 
 from sara_engine.dynamics import concept_self_state_alignment
 from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
-from sara_engine.ingest import CandidateRelation, ConceptCrystallizationGuard, FrequentSequence, summarize_sequence_relation_support
+from sara_engine.ingest.candidate_proposals import CandidateRelation
+from sara_engine.ingest.concept_crystallization_guard import ConceptCrystallizationGuard
+from sara_engine.ingest.frequent_sequence import FrequentSequence
+from sara_engine.ingest.sequence_relation_support import summarize_sequence_relation_support
 from sara_engine.memory.concept_admission import ConceptRevalidationEntry
 
 
@@ -139,6 +142,8 @@ class ConceptRevalidationScheduler:
             blocked_at_segment=entry.blocked_at_segment,
             last_review_segment=int(current_segment),
             retry_after_segment=int(current_segment) + self.min_cooldown_segments,
+            architecture_version=entry.architecture_version,
+            migration_source_architecture_version=entry.migration_source_architecture_version,
         )
 
     def _decision_for_entry(
