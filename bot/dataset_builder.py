@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -107,6 +108,27 @@ def _language(text: str, meta: Dict[str, Any]) -> str:
     return "unknown"
 
 
+def _source_hash(text: str) -> str:
+    return hashlib.sha256(normalize_text(text).encode("utf-8")).hexdigest()
+
+
+def _near_duplicate_signature(text: str) -> str:
+    """Build a bounded SimHash-style signature without dense vector operations."""
+    tokens = re.findall(r"[\w-]+", normalize_text(text).lower())[:256]
+    if not tokens:
+        return ""
+    weights = [0] * 64
+    for token in tokens:
+        token_hash = int.from_bytes(hashlib.sha256(token.encode("utf-8")).digest()[:8], "big")
+        for bit in range(64):
+            weights[bit] += 1 if token_hash & (1 << bit) else -1
+    signature = 0
+    for bit, weight in enumerate(weights):
+        if weight >= 0:
+            signature |= 1 << bit
+    return f"{signature:016x}"
+
+
 def _record_metadata(record: Dict[str, Any]) -> Dict[str, Any]:
     meta = record.get("meta", {})
     if not isinstance(meta, dict):
@@ -116,6 +138,13 @@ def _record_metadata(record: Dict[str, Any]) -> Dict[str, Any]:
     source_path = str(meta.get("path", meta.get("source_path", "")) or "")
     source_type = str(meta.get("source_type", source) or source)
     domain = urlparse(source_url).netloc.lower() if source_url else ""
+    source_text = normalize_text(str(record.get("record_text", record.get("text", "")) or ""))
+    source_hash = str(meta.get("source_hash", record.get("source_hash", "")) or "")
+    if not source_hash:
+        source_hash = _source_hash(source_text)
+    source_revision = str(
+        meta.get("source_revision", meta.get("revision", record.get("source_revision", ""))) or ""
+    )
     return {
         "source": source,
         "source_url": source_url,
@@ -123,6 +152,12 @@ def _record_metadata(record: Dict[str, Any]) -> Dict[str, Any]:
         "source_type": source_type,
         "source_domain": domain,
         "collection_time": str(record.get("ts", meta.get("collection_time", "")) or ""),
+        "source_hash": source_hash,
+        "source_revision": source_revision or source_hash,
+        "near_duplicate_signature": str(
+            meta.get("near_duplicate_signature", record.get("near_duplicate_signature", ""))
+            or _near_duplicate_signature(source_text)
+        ),
         "quality_score": float(meta.get("quality", meta.get("quality_score", 0.5)) or 0.5),
         "license_hint": str(meta.get("license_hint", meta.get("license", "")) or ""),
         "compliance_level": str(meta.get("compliance_level", meta.get("compliance", "unknown")) or "unknown"),
@@ -148,6 +183,9 @@ def _base_material(record: Dict[str, Any], material_type: str) -> Dict[str, Any]
         "source_type": record.get("source_type", ""),
         "source_domain": record.get("source_domain", ""),
         "collection_time": record.get("collection_time", ""),
+        "source_hash": record.get("source_hash", ""),
+        "source_revision": record.get("source_revision", ""),
+        "near_duplicate_signature": record.get("near_duplicate_signature", ""),
         "quality_score": record.get("quality_score", 0.5),
         "language": record.get("language", "unknown"),
         "license_hint": record.get("license_hint", ""),

@@ -36,6 +36,16 @@ route-weight layout as automatically compatible with a new circuit.
   target cache.
 - `eval-architecture-migration` provides a frozen source-isolated baseline for recall,
   revalidation, RISA reconstruction, hold handling, and migration-cost checks.
+- `eval-architecture-migration-external` is the promotion gate for provenance-qualified
+  external records; it requires at least two independent source sites and three records per
+  site, and
+  source-isolated fixture results alone cannot satisfy it.
+- `build-architecture-migration-collection-request` converts a blocked gate into managed
+  collection requirements without collecting network data automatically.
+- `build-architecture-migration-manifest` normalizes accepted external latent records into
+  a frozen provenance-qualified manifest before the external promotion gate runs.
+- `eval-architecture-migration-evidence-cycle` composes qualification, gate evaluation,
+  and collection-target handoff into one managed observed-only report.
 - Older Event Memory snapshots remain readable and default to `sara-architecture-v1`.
 
 ## Promotion Rule

@@ -354,6 +354,49 @@ def main():
     parser_autobot_gap_loop_readiness.add_argument("--min-accepted-count", type=int, default=4)
     parser_autobot_gap_loop_readiness.add_argument("--min-gap-build-coverage", type=float, default=0.5)
 
+    parser_phase7_isolation = subparsers.add_parser(
+        "eval-phase7-isolation",
+        help="Audit source-aware train/evaluation isolation for Phase 7 materials.",
+    )
+    parser_phase7_isolation.add_argument(
+        "--train-path",
+        default=workspace_path("autobot", "phase7_train_materials.jsonl"),
+    )
+    parser_phase7_isolation.add_argument(
+        "--evaluation-path",
+        default=workspace_path("autobot", "phase7_evaluation_materials.jsonl"),
+    )
+    parser_phase7_isolation.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase7_isolation_audit.json"),
+    )
+    parser_phase7_isolation.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase7_isolation_audit_summary.txt"),
+    )
+    parser_phase7_isolation.add_argument("--max-signature-hamming-distance", type=int, default=3)
+
+    parser_phase7_completion = subparsers.add_parser(
+        "eval-phase7-completion",
+        help="Separate Phase 7 implementation readiness from isolated-evidence completion.",
+    )
+    parser_phase7_completion.add_argument(
+        "--readiness-path",
+        default=workspace_path("evaluation", "autobot_gap_loop_readiness.json"),
+    )
+    parser_phase7_completion.add_argument(
+        "--isolation-path",
+        default=workspace_path("evaluation", "phase7_isolation_audit.json"),
+    )
+    parser_phase7_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase7_completion_gate.json"),
+    )
+    parser_phase7_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase7_completion_gate_summary.txt"),
+    )
+
     parser_eval_external = subparsers.add_parser(
         "eval-external-validity",
         help="実データでSARA疎イベント検索とANN風密スキャン近似を比較します。",
@@ -933,6 +976,39 @@ def main():
         ),
     )
 
+    parser_architecture_migration_external = subparsers.add_parser(
+        "eval-architecture-migration-external",
+        help="Gate architecture migration on provenance-qualified independent external sources.",
+    )
+    parser_architecture_migration_external.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "latent_manifest.jsonl"),
+    )
+    parser_architecture_migration_external.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "architecture_migration_external_gate.json"),
+    )
+    parser_architecture_migration_external.add_argument(
+        "--summary-path",
+        default=workspace_path(
+            "evaluation", "architecture_migration_external_gate_summary.txt"
+        ),
+    )
+    parser_architecture_migration_request = subparsers.add_parser(
+        "build-architecture-migration-collection-request",
+        help="Convert blocked architecture-migration evidence into collection targets.",
+    )
+    parser_architecture_migration_request.add_argument("--gate-path", default=workspace_path("evaluation", "architecture_migration_external_gate.json"))
+    parser_architecture_migration_request.add_argument("--targets-path", default=workspace_path("autobot", "architecture_migration_collection_targets.json"))
+    parser_architecture_migration_request.add_argument("--report-path", default=workspace_path("evaluation", "architecture_migration_collection_request.json"))
+    parser_architecture_migration_manifest = subparsers.add_parser("build-architecture-migration-manifest", help="Qualify external latent records for architecture-migration evaluation.")
+    parser_architecture_migration_manifest.add_argument("--input-path", default=processed_data_path("autobot", "latent_manifest.jsonl"))
+    parser_architecture_migration_manifest.add_argument("--output-path", default=processed_data_path("autobot", "architecture_migration_external_manifest.jsonl"))
+    parser_architecture_migration_manifest.add_argument("--report-path", default=workspace_path("evaluation", "architecture_migration_manifest_builder.json"))
+    parser_architecture_migration_cycle = subparsers.add_parser("eval-architecture-migration-evidence-cycle", help="Run architecture-migration qualification, gate, and collection handoff.")
+    parser_architecture_migration_cycle.add_argument("--input-path", default=processed_data_path("autobot", "latent_manifest.jsonl"))
+    parser_architecture_migration_cycle.add_argument("--report-path", default=workspace_path("evaluation", "architecture_migration_evidence_cycle.json"))
+
     parser_event_memory_ingest = subparsers.add_parser(
         "eval-event-memory-ingest-pipeline",
         help="Run the bounded Event Memory ingest loop smoke benchmark.",
@@ -1102,6 +1178,23 @@ def main():
     parser_record_energy.add_argument(
         "--session-plan-summary-path",
         default=workspace_path("evaluation", "energy_measurement_session_plan.txt"),
+    )
+
+    parser_phase6_completion = subparsers.add_parser(
+        "eval-phase6-completion",
+        help="Classify Phase 6 implementation readiness and physical-evidence completion.",
+    )
+    parser_phase6_completion.add_argument(
+        "--readiness-path",
+        default=workspace_path("evaluation", "energy_measurement_readiness.json"),
+    )
+    parser_phase6_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase6_completion_gate.json"),
+    )
+    parser_phase6_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase6_completion_gate_summary.txt"),
     )
 
     parser_physical_pair = subparsers.add_parser(
@@ -1639,6 +1732,40 @@ def main():
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
+    elif args.command == "eval-phase7-isolation":
+        command = [
+            sys.executable,
+            "scripts/eval/phase7_isolation_audit.py",
+            "--train-path",
+            str(args.train_path),
+            "--evaluation-path",
+            str(args.evaluation_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+            "--max-signature-hamming-distance",
+            str(args.max_signature_hamming_distance),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase7-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase7_completion_gate.py",
+            "--readiness-path",
+            str(args.readiness_path),
+            "--isolation-path",
+            str(args.isolation_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
     elif args.command == "eval-external-validity":
         command = [
             sys.executable,
@@ -2075,6 +2202,40 @@ def main():
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
+    elif args.command == "eval-architecture-migration-external":
+        command = [
+            sys.executable,
+            "scripts/eval/architecture_migration_external_gate.py",
+            "--manifest-path",
+            str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-architecture-migration-collection-request":
+        result = subprocess.run([
+            sys.executable, "scripts/eval/architecture_migration_collection_request.py",
+            "--gate-path", str(args.gate_path), "--targets-path", str(args.targets_path),
+            "--report-path", str(args.report_path),
+        ])
+        sys.exit(result.returncode)
+
+    elif args.command == "build-architecture-migration-manifest":
+        result = subprocess.run([
+            sys.executable, "scripts/eval/architecture_migration_manifest_builder.py",
+            "--input-path", str(args.input_path), "--output-path", str(args.output_path),
+            "--report-path", str(args.report_path),
+        ])
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-architecture-migration-evidence-cycle":
+        result = subprocess.run([sys.executable, "scripts/eval/architecture_migration_evidence_cycle.py", "--input-path", str(args.input_path), "--report-path", str(args.report_path)])
+        sys.exit(result.returncode)
+
     elif args.command == "eval-event-memory-ingest-pipeline":
         command = [
             sys.executable,
@@ -2147,6 +2308,19 @@ def main():
         if args.enabled:
             command.append("--enabled")
         result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase6-completion":
+        result = subprocess.run([
+            sys.executable,
+            "scripts/eval/phase6_completion_gate.py",
+            "--readiness-path",
+            str(args.readiness_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ])
         sys.exit(result.returncode)
 
     elif args.command == "record-energy-measurement":

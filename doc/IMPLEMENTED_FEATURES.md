@@ -38,6 +38,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Legacy distilled chat and training paths remain available for compatibility, but are not the preferred production path.
 - Memory inspection, upgrade, pruning, replay-data generation, direct-memory repair, cleanup, and DB maintenance commands are implemented.
 - Real-energy measurement rows can be appended through `record-energy-measurement`.
+- `eval-phase6-completion` separates completed Phase 6 instrumentation from the still-required physical joule evidence.
 
 ## Memory And Continual Learning
 
@@ -56,6 +57,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Incompatible architecture versions, non-canonical concept keys, low-utility records, and replay-budget overflow remain explicit holds for later review.
 - `IdleConsolidationLoop` can include the migration plan or target-cache admission results in its managed maintenance trace.
 - `python scripts/sara_cli.py eval-architecture-migration` runs a frozen source-isolated baseline that checks legacy-reference recall, target replay recall, Concept Review recovery, RISA reconstruction, holds, and migration cost.
+- `python scripts/sara_cli.py eval-architecture-migration-external` is a provenance gate: it requires at least two distinct non-placeholder HTTPS source sites with three long-horizon records each and blocks promotion on source-isolation or replay-recall failure.
 - See `doc/ARCHITECTURE_MIGRATION.md` for the compatibility boundary and promotion rule.
 
 ## Dialogue, Inference, And Agent Runtime
@@ -244,6 +246,8 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Fixture-feedback gaps are now converted into managed `workspace/autobot` material request plans, so dataset collection and curriculum prioritization can consume the same source-diversity, counterexample, repair-support, and revision-conflict requests that surfaced in Event Memory evaluation.
 - The autobot gap loop is now runnable as one managed end-to-end path through `python scripts/sara_cli.py run-autobot-gap-loop`, which builds source-backed materials, emits collection targets, synthesizes deterministic gap materials, and enqueues the resulting repair curriculum without leaving managed directories.
 - `python scripts/sara_cli.py eval-autobot-gap-loop-readiness` now converts the latest managed gap-loop artifacts into an auditable Phase 7 readiness report, including requested-slot coverage, enqueue coverage, skip ratio, and repair/replay curriculum share.
+- `python scripts/sara_cli.py eval-phase7-isolation` audits independent train/evaluation manifests for source hash, revision, domain, collection-time split, and bounded near-duplicate signatures; incomplete provenance or any overlap blocks promotion.
+- `python scripts/sara_cli.py eval-phase7-completion` separates implemented gap-loop infrastructure from completed isolated-evidence collection, so fixture-only readiness is not represented as a Phase 7 completion claim.
 
 ## Neuromorphic Capability Matrix
 

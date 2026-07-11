@@ -101,6 +101,9 @@ def test_dataset_builder_generates_gated_materials():
         "source_claim",
     }
     assert all(item["accepted"] is True for item in split["accepted"])
+    assert all(item["source_hash"] for item in split["accepted"])
+    assert all(item["source_revision"] for item in split["accepted"])
+    assert all(item["near_duplicate_signature"] for item in split["accepted"])
 
 
 def test_run_dataset_builder_writes_managed_outputs():

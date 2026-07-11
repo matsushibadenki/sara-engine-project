@@ -474,14 +474,11 @@ def build_report(
     clearable_blocked_request_ids = sorted(
         request_id
         for request_id in blocked_request_ids
-        if not (
-            fixture_request_isolation_audit.get(request_id, {}).get("missing_axes", [])
-            if isinstance(fixture_request_isolation_audit.get(request_id, {}), dict)
-            and isinstance(
-                fixture_request_isolation_audit.get(request_id, {}).get("missing_axes", []),
-                list,
-            )
-            else []
+        if not [str(axis) for axis in blocked_request_missing_axes.get(request_id, []) if str(axis)]
+        or (
+            isinstance(fixture_request_isolation_audit.get(request_id, {}), dict)
+            and int(fixture_request_isolation_audit.get(request_id, {}).get("row_count", 0) or 0) > 0
+            and not fixture_request_isolation_audit.get(request_id, {}).get("missing_axes", [])
         )
     )
     checks = {
