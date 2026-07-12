@@ -376,6 +376,23 @@ def main():
     )
     parser_phase7_isolation.add_argument("--max-signature-hamming-distance", type=int, default=3)
 
+    parser_phase7_block_policy = subparsers.add_parser(
+        "apply-phase7-isolation-block-policy",
+        help="Apply Phase 7 isolation-audit blocks to fixture collection requests.",
+    )
+    parser_phase7_block_policy.add_argument(
+        "--audit-path",
+        default=workspace_path("evaluation", "phase7_isolation_audit.json"),
+    )
+    parser_phase7_block_policy.add_argument(
+        "--targets-path",
+        default=workspace_path("autobot", "dataset_builder_collection_targets.json"),
+    )
+    parser_phase7_block_policy.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase7_isolation_block_policy.json"),
+    )
+
     parser_phase7_completion = subparsers.add_parser(
         "eval-phase7-completion",
         help="Separate Phase 7 implementation readiness from isolated-evidence completion.",
@@ -1762,6 +1779,20 @@ def main():
             str(args.report_path),
             "--summary-path",
             str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "apply-phase7-isolation-block-policy":
+        command = [
+            sys.executable,
+            "scripts/eval/phase7_isolation_block_policy.py",
+            "--audit-path",
+            str(args.audit_path),
+            "--targets-path",
+            str(args.targets_path),
+            "--report-path",
+            str(args.report_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
