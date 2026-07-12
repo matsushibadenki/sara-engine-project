@@ -431,6 +431,7 @@ Goal: make the ANN comparison harder and more credible without importing ANN ass
   - DONE: `real_data_external_validity.py` now exposes `reference_readiness`, separating `not_configured`, `missing_directory`, and dependency/runtime failures for optional local embedding, FAISS, and cross-encoder references.
 - Add one comparison artifact that separates proxy baselines, offline reference baselines, and physical energy evidence in one place.
   - DONE: `python scripts/sara_cli.py eval-sara-ann-comparison` now writes a managed report that labels `proxy`, `offline_reference`, and `physical` evidence tiers separately, highlights the strongest currently available baseline, and surfaces the next missing comparison actions.
+  - DONE for implementation closure: `eval-phase8-completion` distinguishes the implemented comparison surface from a completed stronger-baseline result, without allowing absent Phase 6 joule rows to obscure Phase 8 baseline readiness.
 - Record model/index identity, parameter count, embedding dimension, quantization, thread count, index build policy, retrieval latency, peak RSS, success/quality, and measured joules when Phase 6 instrumentation is available.
 - Compare cold-start, warm-index, and repeated-query conditions separately.
 - Keep ANN model download/training and dense index construction outside SARA's production runtime, but include their cost when the compared use case requires them.

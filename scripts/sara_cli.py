@@ -414,6 +414,23 @@ def main():
         default=workspace_path("evaluation", "phase7_completion_gate_summary.txt"),
     )
 
+    parser_phase8_completion = subparsers.add_parser(
+        "eval-phase8-completion",
+        help="Separate Phase 8 implementation readiness from stronger-baseline evidence.",
+    )
+    parser_phase8_completion.add_argument(
+        "--comparison-path",
+        default=workspace_path("evaluation", "sara_ann_comparison_report.json"),
+    )
+    parser_phase8_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase8_completion_gate.json"),
+    )
+    parser_phase8_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase8_completion_gate_summary.txt"),
+    )
+
     parser_eval_external = subparsers.add_parser(
         "eval-external-validity",
         help="実データでSARA疎イベント検索とANN風密スキャン近似を比較します。",
@@ -1793,6 +1810,20 @@ def main():
             str(args.targets_path),
             "--report-path",
             str(args.report_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase8-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase8_completion_gate.py",
+            "--comparison-path",
+            str(args.comparison_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)

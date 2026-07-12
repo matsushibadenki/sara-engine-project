@@ -249,6 +249,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - `python scripts/sara_cli.py eval-phase7-isolation` audits independent train/evaluation manifests for source hash, revision, domain, collection-time split, and bounded near-duplicate signatures; incomplete provenance or any overlap blocks promotion.
 - `python scripts/sara_cli.py eval-phase7-completion` separates implemented gap-loop infrastructure from completed isolated-evidence collection, so fixture-only readiness is not represented as a Phase 7 completion claim.
 - `python scripts/sara_cli.py apply-phase7-isolation-block-policy` feeds failed isolation axes into managed fixture-request blocks and removes only Phase 7-owned blocks once an audit passes.
+- `python scripts/sara_cli.py eval-phase8-completion` keeps Phase 8 stronger offline baseline evidence independent from Phase 6 physical-energy evidence.
 
 ## Neuromorphic Capability Matrix
 
