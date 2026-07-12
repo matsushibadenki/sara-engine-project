@@ -253,6 +253,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - `python scripts/sara_cli.py eval-phase8-evidence-cycle` reproducibly runs real-data validity, the small/medium/large ladder, the labeled SARA-vs-ANN comparison, and the Phase 8 completion gate as one managed cycle.
 - `python scripts/sara_cli.py build-phase8-reference-request` converts a blocked Phase 8 gate into a local-only reference request with required fairness fields and a rerun command, without downloading or fabricating a model.
 - The optional local embedding reference accepts both Transformers model directories and CPU ONNX directories containing `model.onnx` and `tokenizer.json`; ONNX runtime availability remains explicitly reported as a dependency check.
+- The Phase 8 required baseline is now verified with the cached `sentence-transformers/all-MiniLM-L6-v2` ONNX model: real-data validity, all ladder profiles, labeled comparison, and `phase8_complete` promotion pass on CPU.
 
 ## Neuromorphic Capability Matrix
 

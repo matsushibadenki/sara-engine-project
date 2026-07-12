@@ -440,6 +440,8 @@ def run_real_data_external_validity_ladder(
     profiles: Optional[Sequence[Dict[str, Any]]] = None,
     regression_tolerance: float = 0.05,
     update_history: bool = True,
+    pretrained_embedding_model_path: str = "",
+    cross_encoder_model_path: str = "",
 ) -> Dict[str, Any]:
     selected_profiles = [dict(item) for item in (profiles or DEFAULT_PROFILE_SPECS)]
     profile_reports: List[Dict[str, Any]] = []
@@ -453,6 +455,8 @@ def run_real_data_external_validity_ladder(
             max_cases=int(profile.get("max_cases", 1) or 1),
             history=history,
             regression_tolerance=max(float(regression_tolerance), 0.0),
+            pretrained_embedding_model_path=str(pretrained_embedding_model_path or ""),
+            cross_encoder_model_path=str(cross_encoder_model_path or ""),
         )
         report["profile"] = profile_name
         report_path = ensure_parent_directory(_profile_artifact_path(profile_name, ".json"))
@@ -559,6 +563,8 @@ def main() -> int:
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--regression-tolerance", type=float, default=0.05)
     parser.add_argument("--no-history-update", action="store_true")
+    parser.add_argument("--pretrained-embedding-model", default="")
+    parser.add_argument("--cross-encoder-model", default="")
     args = parser.parse_args()
 
     profiles = parse_profile_specs(args.profile)
@@ -567,6 +573,8 @@ def main() -> int:
         profiles=profiles,
         regression_tolerance=max(float(args.regression_tolerance), 0.0),
         update_history=not bool(args.no_history_update),
+        pretrained_embedding_model_path=str(args.pretrained_embedding_model),
+        cross_encoder_model_path=str(args.cross_encoder_model),
     )
     report_path = ensure_parent_directory(str(args.report_path))
     summary_path = ensure_parent_directory(str(args.summary_path))

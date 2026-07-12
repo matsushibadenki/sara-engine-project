@@ -103,6 +103,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     return_codes = {"external_validity": _run(base)}
 
     ladder = [sys.executable, "scripts/eval/real_data_external_validity_ladder.py", "--corpus", args.corpus, "--report-path", args.ladder_report_path, "--summary-path", args.ladder_summary_path]
+    if args.pretrained_embedding_model:
+        ladder.extend(["--pretrained-embedding-model", args.pretrained_embedding_model])
+    if args.cross_encoder_model:
+        ladder.extend(["--cross-encoder-model", args.cross_encoder_model])
     if args.no_history_update:
         ladder.append("--no-history-update")
     return_codes["ladder"] = _run(ladder)
