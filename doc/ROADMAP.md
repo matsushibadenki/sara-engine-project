@@ -432,6 +432,9 @@ Goal: make the ANN comparison harder and more credible without importing ANN ass
 - Add one comparison artifact that separates proxy baselines, offline reference baselines, and physical energy evidence in one place.
   - DONE: `python scripts/sara_cli.py eval-sara-ann-comparison` now writes a managed report that labels `proxy`, `offline_reference`, and `physical` evidence tiers separately, highlights the strongest currently available baseline, and surfaces the next missing comparison actions.
   - DONE for implementation closure: `eval-phase8-completion` distinguishes the implemented comparison surface from a completed stronger-baseline result, without allowing absent Phase 6 joule rows to obscure Phase 8 baseline readiness.
+  - DONE for reproducibility closure: `eval-phase8-evidence-cycle` runs external validity, the profile ladder, comparison report, and completion gate against one corpus and preserves partial evidence without promoting it.
+  - DONE for blocked-evidence handoff: `build-phase8-reference-request` turns a missing stronger reference into a managed local-only request, preserving same-corpus, same-query, CPU, model-identity, latency, memory, and quality requirements.
+  - DONE for local-runtime coverage: the optional embedding evaluator supports CPU ONNX model directories (`model.onnx` plus `tokenizer.json`) in addition to Transformers directories, while preserving dependency-gated readiness when `onnxruntime` is unavailable.
 - Record model/index identity, parameter count, embedding dimension, quantization, thread count, index build policy, retrieval latency, peak RSS, success/quality, and measured joules when Phase 6 instrumentation is available.
 - Compare cold-start, warm-index, and repeated-query conditions separately.
 - Keep ANN model download/training and dense index construction outside SARA's production runtime, but include their cost when the compared use case requires them.

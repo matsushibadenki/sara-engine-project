@@ -103,6 +103,16 @@ def _load_faiss_runtime() -> Any:
     return faiss
 
 
+def _load_onnx_runtime() -> Tuple[Any, Any, Any]:
+    try:
+        import numpy as np
+        import onnxruntime
+        from tokenizers import Tokenizer
+    except ImportError as exc:
+        raise RuntimeError("onnxruntime, tokenizers, and numpy are required for the optional ONNX embedding baseline.") from exc
+    return onnxruntime, Tokenizer, np
+
+
 def _tokenize(text: str) -> List[str]:
     tokens = re.findall(r"[A-Za-z0-9_]+|[ぁ-んァ-ン一-龥]{2,}", text.lower())
     return [token for token in tokens if len(token) >= 2]
@@ -420,16 +430,57 @@ class LocalPretrainedEmbeddingRetriever:
         normalized_model_path = str(model_path or "").strip()
         if not normalized_model_path:
             raise ValueError("model_path is required for the local pretrained embedding retriever.")
-        AutoTokenizer, AutoModel = _load_transformers_embedding_runtime()
         self.docs = list(docs)
         self.model_path = normalized_model_path
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, local_files_only=True)
-        self.model = AutoModel.from_pretrained(self.model_path, local_files_only=True)
-        if hasattr(self.model, "eval"):
-            self.model.eval()
+        self.runtime = "transformers"
+        self.tokenizer = None
+        self.model = None
+        self.onnx_session = None
+        self.onnx_tokenizer = None
+        self.onnx_np = None
+        onnx_model_path = os.path.join(self.model_path, "model.onnx")
+        if os.path.isfile(onnx_model_path):
+            onnxruntime, Tokenizer, np = _load_onnx_runtime()
+            tokenizer_path = os.path.join(self.model_path, "tokenizer.json")
+            if not os.path.isfile(tokenizer_path):
+                raise RuntimeError("ONNX embedding directory is missing tokenizer.json.")
+            self.runtime = "onnx"
+            self.onnx_session = onnxruntime.InferenceSession(
+                onnx_model_path,
+                providers=["CPUExecutionProvider"],
+            )
+            self.onnx_tokenizer = Tokenizer.from_file(tokenizer_path)
+            self.onnx_tokenizer.enable_truncation(max_length=256)
+            self.onnx_np = np
+        else:
+            AutoTokenizer, AutoModel = _load_transformers_embedding_runtime()
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, local_files_only=True)
+            self.model = AutoModel.from_pretrained(self.model_path, local_files_only=True)
+            if hasattr(self.model, "eval"):
+                self.model.eval()
         self.doc_vectors = [self._embed(doc) for doc in self.docs]
 
     def _embed(self, text: str) -> List[float]:
+        if self.runtime == "onnx":
+            encoding = self.onnx_tokenizer.encode(str(text))
+            np = self.onnx_np
+            input_names = {item.name for item in self.onnx_session.get_inputs()}
+            inputs = {
+                "input_ids": np.asarray([encoding.ids], dtype="int64"),
+                "attention_mask": np.asarray([encoding.attention_mask], dtype="int64"),
+            }
+            if "token_type_ids" in input_names:
+                inputs["token_type_ids"] = np.asarray([encoding.type_ids], dtype="int64")
+            output = self.onnx_session.run(None, inputs)[0]
+            hidden = output[0]
+            mask = np.asarray(encoding.attention_mask, dtype="float32")
+            if getattr(hidden, "ndim", 0) == 1:
+                vector = hidden.tolist()
+            else:
+                vector = (hidden * mask[: hidden.shape[0], None]).sum(axis=0) / max(float(mask[: hidden.shape[0]].sum()), 1.0)
+                vector = vector.tolist()
+            norm = sum(value * value for value in vector) ** 0.5
+            return [float(value / norm) for value in vector] if norm > 0.0 else [float(value) for value in vector]
         try:
             import torch
         except ImportError as exc:
@@ -707,11 +758,9 @@ def _score_optional_local_pretrained_embedding(
             "reason": "missing_directory",
         }
     try:
-        score = _score_retriever(
-            LocalPretrainedEmbeddingRetriever(docs, normalized_model_path),
-            tasks,
-            docs,
-        )
+        retriever = LocalPretrainedEmbeddingRetriever(docs, normalized_model_path)
+        score = _score_retriever(retriever, tasks, docs)
+        score["runtime"] = str(getattr(retriever, "runtime", "transformers"))
     except Exception as exc:
         return {
             "available": False,
@@ -808,6 +857,12 @@ def build_reference_readiness(
     pretrained_embedding_faiss_score: Mapping[str, Any],
     cross_encoder_score: Mapping[str, Any],
 ) -> Dict[str, Any]:
+    embedding_runtime = (
+        "onnxruntime+tokenizers+numpy"
+        if str(pretrained_embedding_score.get("runtime", "")) == "onnx"
+        or os.path.isfile(os.path.join(str(pretrained_embedding_model_path or ""), "model.onnx"))
+        else "transformers+torch"
+    )
     references = [
         {
             "reference_id": "ann_pretrained_embedding_reference",
@@ -815,7 +870,7 @@ def build_reference_readiness(
             "configured_path": str(pretrained_embedding_model_path or ""),
             "available": bool(pretrained_embedding_score.get("available", False)),
             "reason": str(pretrained_embedding_score.get("reason", "") or ""),
-            "expected_runtime": "transformers+torch",
+            "expected_runtime": embedding_runtime,
         },
         {
             "reference_id": "ann_pretrained_embedding_faiss_reference",
@@ -823,7 +878,7 @@ def build_reference_readiness(
             "configured_path": str(pretrained_embedding_model_path or ""),
             "available": bool(pretrained_embedding_faiss_score.get("available", False)),
             "reason": str(pretrained_embedding_faiss_score.get("reason", "") or ""),
-            "expected_runtime": "transformers+torch+faiss+numpy",
+            "expected_runtime": embedding_runtime + "+faiss" if embedding_runtime.startswith("onnx") else "transformers+torch+faiss+numpy",
         },
         {
             "reference_id": "ann_cross_encoder_reference",

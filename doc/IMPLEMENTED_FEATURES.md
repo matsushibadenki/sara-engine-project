@@ -250,6 +250,9 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - `python scripts/sara_cli.py eval-phase7-completion` separates implemented gap-loop infrastructure from completed isolated-evidence collection, so fixture-only readiness is not represented as a Phase 7 completion claim.
 - `python scripts/sara_cli.py apply-phase7-isolation-block-policy` feeds failed isolation axes into managed fixture-request blocks and removes only Phase 7-owned blocks once an audit passes.
 - `python scripts/sara_cli.py eval-phase8-completion` keeps Phase 8 stronger offline baseline evidence independent from Phase 6 physical-energy evidence.
+- `python scripts/sara_cli.py eval-phase8-evidence-cycle` reproducibly runs real-data validity, the small/medium/large ladder, the labeled SARA-vs-ANN comparison, and the Phase 8 completion gate as one managed cycle.
+- `python scripts/sara_cli.py build-phase8-reference-request` converts a blocked Phase 8 gate into a local-only reference request with required fairness fields and a rerun command, without downloading or fabricating a model.
+- The optional local embedding reference accepts both Transformers model directories and CPU ONNX directories containing `model.onnx` and `tokenizer.json`; ONNX runtime availability remains explicitly reported as a dependency check.
 
 ## Neuromorphic Capability Matrix
 

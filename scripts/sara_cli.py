@@ -430,6 +430,24 @@ def main():
         "--summary-path",
         default=workspace_path("evaluation", "phase8_completion_gate_summary.txt"),
     )
+    parser_phase8_cycle = subparsers.add_parser(
+        "eval-phase8-evidence-cycle",
+        help="Run the managed Phase 8 validity, ladder, comparison, and completion cycle.",
+    )
+    parser_phase8_cycle.add_argument("--corpus", default=processed_data_path("corpus.txt"))
+    parser_phase8_cycle.add_argument("--pretrained-embedding-model", default="")
+    parser_phase8_cycle.add_argument("--cross-encoder-model", default="")
+    parser_phase8_cycle.add_argument("--max-docs", type=int, default=256)
+    parser_phase8_cycle.add_argument("--max-cases", type=int, default=24)
+    parser_phase8_cycle.add_argument("--no-history-update", action="store_true")
+    parser_phase8_cycle.add_argument("--report-path", default=workspace_path("evaluation", "phase8_evidence_cycle.json"))
+    parser_phase8_request = subparsers.add_parser(
+        "build-phase8-reference-request",
+        help="Create a managed request for a missing local Phase 8 ANN reference.",
+    )
+    parser_phase8_request.add_argument("--gate-path", default=workspace_path("evaluation", "phase8_completion_gate.json"))
+    parser_phase8_request.add_argument("--request-path", default=workspace_path("autobot", "phase8_reference_collection_request.json"))
+    parser_phase8_request.add_argument("--report-path", default=workspace_path("evaluation", "phase8_reference_collection_request.json"))
 
     parser_eval_external = subparsers.add_parser(
         "eval-external-validity",
@@ -1824,6 +1842,42 @@ def main():
             str(args.report_path),
             "--summary-path",
             str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase8-evidence-cycle":
+        command = [
+            sys.executable,
+            "scripts/eval/phase8_evidence_cycle.py",
+            "--corpus",
+            str(args.corpus),
+            "--max-docs",
+            str(args.max_docs),
+            "--max-cases",
+            str(args.max_cases),
+            "--report-path",
+            str(args.report_path),
+        ]
+        if args.pretrained_embedding_model:
+            command.extend(["--pretrained-embedding-model", str(args.pretrained_embedding_model)])
+        if args.cross_encoder_model:
+            command.extend(["--cross-encoder-model", str(args.cross_encoder_model)])
+        if args.no_history_update:
+            command.append("--no-history-update")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase8-reference-request":
+        command = [
+            sys.executable,
+            "scripts/eval/phase8_reference_collection_request.py",
+            "--gate-path",
+            str(args.gate_path),
+            "--request-path",
+            str(args.request_path),
+            "--report-path",
+            str(args.report_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
