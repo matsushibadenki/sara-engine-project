@@ -624,6 +624,31 @@ def main():
         default=workspace_path("evaluation", "research_benchmark_summary.txt"),
     )
 
+    parser_phase9_completion = subparsers.add_parser(
+        "eval-phase9-completion",
+        help="Validate the executed, managed Phase 9 research benchmark package.",
+    )
+    parser_phase9_completion.add_argument(
+        "--manifest-path",
+        default=workspace_path("evaluation", "research_benchmark_manifest.json"),
+    )
+    parser_phase9_completion.add_argument(
+        "--protocol-path",
+        default=os.path.join(project_root, "doc", "BENCHMARK_PROTOCOL.md"),
+    )
+    parser_phase9_completion.add_argument(
+        "--fixture-path",
+        default=os.path.join(project_root, "data", "processed", "benchmark_fixtures", "external_validity_cases.jsonl"),
+    )
+    parser_phase9_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase9_completion_gate.json"),
+    )
+    parser_phase9_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase9_completion_gate_summary.txt"),
+    )
+
     parser_research_fixture = subparsers.add_parser(
         "eval-research-fixture-readiness",
         help="Validate repository-safe research benchmark fixtures.",
@@ -2035,6 +2060,24 @@ def main():
         ]
         if args.dry_run:
             command.append("--dry-run")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase9-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase9_completion_gate.py",
+            "--manifest-path",
+            str(args.manifest_path),
+            "--protocol-path",
+            str(args.protocol_path),
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
 

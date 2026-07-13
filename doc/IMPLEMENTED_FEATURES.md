@@ -124,6 +124,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 ## Research Benchmark Package
 
 - Compact research benchmark suite is implemented through `python scripts/sara_cli.py eval-research-benchmark-suite`.
+- Phase 9 completion is independently validated by `python scripts/sara_cli.py eval-phase9-completion`, covering executed suite status, managed output presence, repository-safe fixture coverage, benchmark protocol sections, and explicit proven/not-proven labeling.
 - Benchmark protocol is documented in `doc/BENCHMARK_PROTOCOL.md`.
 - Repository-safe benchmark fixtures live under `data/processed/benchmark_fixtures/`.
 - The suite writes a managed manifest under `workspace/evaluation/research_benchmark_manifest.json`.

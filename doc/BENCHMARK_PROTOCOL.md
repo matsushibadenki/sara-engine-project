@@ -21,6 +21,17 @@ The command writes:
 - `workspace/evaluation/research_benchmark_manifest.json`
 - `workspace/evaluation/research_benchmark_summary.txt`
 
+After the suite completes, validate the Phase 9 package:
+
+```bash
+python scripts/sara_cli.py eval-phase9-completion
+```
+
+The completion gate writes `workspace/evaluation/phase9_completion_gate.json` and
+`workspace/evaluation/phase9_completion_gate_summary.txt`. It rejects dry-run
+manifests, failed commands, missing managed outputs, incomplete fixtures, and
+protocols without explicit proven and not-proven sections.
+
 The repository-safe fixture file is:
 
 - `data/processed/benchmark_fixtures/external_validity_cases.jsonl`

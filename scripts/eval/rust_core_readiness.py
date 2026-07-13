@@ -124,9 +124,14 @@ def collect_build_backend() -> Dict[str, Any]:
 
 
 def run_command(command: Sequence[str], cwd: Path) -> Dict[str, Any]:
+    environment = os.environ.copy()
+    # PyO3 0.20 supports the stable ABI when the host Python is newer than its checked versions.
+    if command and command[0] == "cargo":
+        environment.setdefault("PYO3_USE_ABI3_FORWARD_COMPATIBILITY", "1")
     completed = subprocess.run(
         list(command),
         cwd=str(cwd),
+        env=environment,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

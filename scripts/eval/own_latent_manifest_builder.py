@@ -90,16 +90,26 @@ def write_jsonl(path: str, rows: Iterable[Dict[str, Any]]) -> str:
 
 def load_materials_with_fallback(materials_path: str) -> Dict[str, Any]:
     primary_rows = read_jsonl(materials_path)
-    if primary_rows:
+    primary_source_refs = {
+        str(row.get("source_ref", "") or row.get("source_path", ""))
+        for row in primary_rows
+        if str(row.get("source_ref", "") or row.get("source_path", ""))
+    }
+    if primary_rows and (
+        len(primary_source_refs) >= 3 or os.path.abspath(materials_path) != os.path.abspath(DEFAULT_MATERIALS_PATH)
+    ):
         return {
             "rows": primary_rows,
             "source_paths": [materials_path],
             "fallback_used": False,
         }
 
-    rows: List[Dict[str, Any]] = []
-    used_paths: List[str] = []
+    rows: List[Dict[str, Any]] = list(primary_rows)
+    used_paths: List[str] = [materials_path] if primary_rows else []
     seen_hashes = set()
+    for row in rows:
+        material_hash = str(row.get("material_hash", "") or "")
+        seen_hashes.add(material_hash or json.dumps(row, sort_keys=True, ensure_ascii=False))
     for path in DEFAULT_TYPE_MATERIAL_PATHS:
         path_rows = read_jsonl(path)
         if not path_rows:
@@ -115,7 +125,7 @@ def load_materials_with_fallback(materials_path: str) -> Dict[str, Any]:
     return {
         "rows": rows,
         "source_paths": used_paths or [materials_path],
-        "fallback_used": bool(rows),
+        "fallback_used": bool(rows) and (not primary_rows or len(primary_source_refs) < 3),
     }
 
 

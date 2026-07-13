@@ -519,12 +519,12 @@ def _bundle_support_gap(
     )
     gap_present = ingest_weak or coupling_weak or comparison_weak
     trigger = ""
-    if comparison_weak:
-        trigger = "comparison_surface"
-    elif coupling_weak:
+    if coupling_weak:
         trigger = "maintenance_coupling"
     elif ingest_weak:
         trigger = "ingest_pipeline"
+    elif comparison_weak:
+        trigger = "comparison_surface"
     return {
         "present": gap_present,
         "trigger": trigger,

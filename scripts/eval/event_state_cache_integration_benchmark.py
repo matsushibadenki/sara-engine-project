@@ -351,7 +351,10 @@ def _load_or_build_concept_revalidation_fixture(
             case = _parse_concept_fixture_case(row)
             if case is not None:
                 cases.append(case)
-        if cases:
+        if cases and (
+            len(cases) >= 4
+            or os.path.abspath(fixture_path) != os.path.abspath(DEFAULT_CONCEPT_FIXTURE_PATH)
+        ):
             return {
                 "cases": tuple(cases),
                 "queue_entries": tuple(item["queue_entry"] for item in cases),
@@ -811,6 +814,35 @@ def build_report(
             handle.write(
                 json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n"
             )
+
+    # Keep an aggregate handoff alongside the per-case persisted review files.
+    resolved_queue = ensure_parent_directory(concept_queue_path)
+    with open(resolved_queue, "w", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "schema": "sara-concept-revalidation-queue-bundle-v1",
+                "case_count": concept_case_count,
+                "entries": [item["review"].to_dict() for item in concept_evaluations],
+            },
+            handle,
+            ensure_ascii=False,
+            indent=2,
+        )
+        handle.write("\n")
+    resolved_review_report = ensure_parent_directory(concept_review_report_path)
+    with open(resolved_review_report, "w", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "schema": "sara-concept-revalidation-review-bundle-v1",
+                "case_count": concept_case_count,
+                "case_results": traces[-1]["case_results"],
+                "next_actions": concept_followup_actions,
+            },
+            handle,
+            ensure_ascii=False,
+            indent=2,
+        )
+        handle.write("\n")
 
     target_count = max(1, int(logarithmic["target_count"]))
     logarithmic_recall = float(logarithmic["recall_success"]) / target_count

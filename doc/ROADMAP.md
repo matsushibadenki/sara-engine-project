@@ -471,12 +471,15 @@ Goal: make SARA easier for other researchers to evaluate and reproduce.
   - DONE: `data/processed/benchmark_fixtures/external_validity_cases.jsonl` covers QA, abstention, contrastive, noisy, adversarial, and delayed-recall examples.
 - Add clear "what is proven" and "what is not proven" sections to release notes or benchmark docs.
   - DONE: the benchmark protocol and manifest include explicit proven and not-proven sections.
+- Add an explicit Phase 9 completion gate that validates an executed (not dry-run) suite, every declared managed output, repository-safe fixtures, and protocol claim labeling.
+  - DONE: `python scripts/sara_cli.py eval-phase9-completion` writes `workspace/evaluation/phase9_completion_gate.json` and promotes Phase 9 only when all package checks pass.
 
 ### Acceptance Criteria
 
 - A new researcher can reproduce the v1.1 gate surface and ANN-efficiency proxy evidence from documented commands.
 - Physical energy experiments have a clear optional path when meters or target hardware are available.
 - The benchmark suite avoids hidden root outputs and follows managed path policy.
+- `phase9_complete` is promoted only from a completed suite manifest; physical energy and other unavailable evidence remain explicitly not-proven instead of being fabricated.
 
 ## Phase 10: Rust Sparse Runtime Hardening
 
