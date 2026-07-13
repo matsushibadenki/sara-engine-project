@@ -36,6 +36,10 @@ def build_report(readiness: Mapping[str, Any]) -> Dict[str, Any]:
     checks = readiness.get("checks", {}) if isinstance(readiness.get("checks"), Mapping) else {}
     progress = readiness.get("measurement_session_progress", {})
     progress = progress if isinstance(progress, Mapping) else {}
+    measurement_plan = readiness.get("measurement_plan", {})
+    measurement_plan = measurement_plan if isinstance(measurement_plan, Mapping) else {}
+    session_plan = readiness.get("measurement_session_plan", {})
+    session_plan = session_plan if isinstance(session_plan, Mapping) else {}
     protocol_ready = bool(
         readiness.get("protocol_ready", False)
         or readiness.get("status") in {
@@ -81,7 +85,16 @@ def build_report(readiness: Mapping[str, Any]) -> Dict[str, Any]:
         "real_measurement_row_count": int(readiness.get("measurement_count", 0) or 0),
         "session_progress": {
             "status": str(progress.get("status", "")),
-            "planned_pair_count": int(progress.get("planned_pair_count", 0) or 0),
+            "planned_pair_count": int(
+                progress.get(
+                    "planned_pair_count",
+                    measurement_plan.get(
+                        "pending_pair_count",
+                        session_plan.get("planned_pair_count", 0),
+                    ),
+                )
+                or 0
+            ),
             "complete_valid_pair_count": int(progress.get("complete_valid_pair_count", 0) or 0),
             "invalid_pair_count": int(progress.get("invalid_pair_count", 0) or 0),
             "partial_pair_count": int(progress.get("partial_pair_count", 0) or 0),

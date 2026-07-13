@@ -148,6 +148,18 @@ def execute_dry_run_pairs(batch_plan: Mapping[str, Any]) -> List[Dict[str, Any]]
         if not command_text:
             continue
         command = shlex.split(command_text)
+        if command and command[0] in {"python", "python3"}:
+            command[0] = sys.executable
+        # Replace operator-only placeholders so dry-run preparation is executable.
+        command = [
+            {
+                "<tool-id>": "dry_run_meter",
+                "<threads>": "1",
+                "<affinity>": "default",
+                "<mode>": "ac",
+            }.get(value, value)
+            for value in command
+        ]
         if "--dry-run" not in command:
             command.append("--dry-run")
         result = subprocess.run(

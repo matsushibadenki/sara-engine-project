@@ -26,3 +26,18 @@ def test_phase6_gate_accepts_valid_completed_physical_evidence():
     report = module.build_report({"protocol_ready": True, "measurement_session_plan": {"planned_runs": [1]}, "checks": {"protocol": True}, "has_real_measurements": True, "measurement_count": 4, "status": "real_joule_evidence_passed", "passed": True, "measurement_session_progress": {"status": "complete", "planned_pair_count": 2, "complete_valid_pair_count": 2}})
     assert report["phase6_complete"] is True
     assert report["status"] == "phase6_complete"
+
+
+def test_phase6_gate_preserves_pending_pair_count_from_readiness_plan():
+    module = _load_module()
+    report = module.build_report(
+        {
+            "protocol_ready": True,
+            "measurement_session_plan": {"planned_runs": [1, 2]},
+            "measurement_plan": {"pending_pair_count": 6},
+            "checks": {"protocol": True},
+            "status": "protocol_ready_pending_measurements",
+            "measurement_session_progress": {"status": "pending"},
+        }
+    )
+    assert report["session_progress"]["planned_pair_count"] == 6
