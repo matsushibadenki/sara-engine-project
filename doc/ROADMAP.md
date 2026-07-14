@@ -532,6 +532,9 @@ The current Rust crate builds successfully and exposes useful primitives through
    - Add a managed Rust core readiness report under `workspace/evaluation/rust_core_readiness.json`.
    - Include version alignment, exported symbols, smoke results, unit-test status, and benchmark summary.
    - Consider adding this report to research-product completion only after it is stable across several runs.
+   - DONE: `eval-rust-core-readiness --run-cargo-test` records meaningful Cargo test count, PyO3 smoke/export status, and the stable-ABI compatibility environment.
+8. Add a Phase 10 completion gate.
+   - DONE: `python scripts/sara_cli.py eval-phase10-completion` requires executed Cargo tests, all required exports, Python extension smoke, and four Rust/Python primitive comparisons with output equivalence.
 
 ### Acceptance Criteria
 
@@ -541,6 +544,7 @@ The current Rust crate builds successfully and exposes useful primitives through
 - Rust benchmark reports show where Rust is faster and where Python remains the reference.
 - No new Rust path violates the no-backprop, no-dense-runtime, CPU-first policy.
 - Rust comments and logs are in English.
+- `phase10_complete` is promoted only when the managed readiness and benchmark reports pass together.
 
 ## Phase 11: Hardware And Neuromorphic Portability
 
@@ -556,12 +560,15 @@ Goal: make the sparse-event runtime easier to map to hardware-oriented backends.
   - DONE: `workspace/evaluation/neuromorphic_capability_matrix.json` records event headroom, state budget, routing hints, update policies, adapter policy, and unsupported checks per profile.
 - Keep hardware-specific adapters optional.
   - DONE: the matrix records Lava/SpiNNaker/Akida profile readiness without requiring any accelerator runtime.
+- Add an explicit Phase 11 completion gate.
+  - DONE: `python scripts/sara_cli.py eval-phase11-completion` verifies the common spike-event IR, CPU reference, all required backend profiles, budget headroom, visible fallback policies, and accelerator-runtime independence.
 
 ### Acceptance Criteria
 
 - CPU behavior remains the reference path.
 - Hardware profile reports can explain what maps cleanly and what falls back.
 - No release-critical feature requires a specific accelerator.
+- `phase11_complete` is promoted only from a passing managed capability matrix; profile compatibility is portability evidence, not proof of hardware execution performance.
 
 ## Phase 12: Usability And Research Operator Experience
 

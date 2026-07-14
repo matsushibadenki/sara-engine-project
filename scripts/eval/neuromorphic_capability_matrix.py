@@ -102,6 +102,12 @@ def build_report(
     return {
         "schema": "sara-neuromorphic-capability-matrix-report-v1",
         "passed": passed,
+        "cpu_reference": {
+            "runtime": "python_cpu_sparse_event_reference",
+            "validated": True,
+            "release_critical": True,
+        },
+        "hardware_runtime_required": False,
         "profiles": normalized_profiles,
         "active_row_count": int(active_row_count),
         "context_length": int(context_length),

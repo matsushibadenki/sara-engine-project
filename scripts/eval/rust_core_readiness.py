@@ -156,6 +156,9 @@ def build_report(run_cargo_test: bool = False) -> Dict[str, Any]:
         if run_cargo_test
         else {"status": "not_run", "passed": None}
     )
+    cargo_test_output = str(cargo_test.get("stdout_tail", ""))
+    test_count_match = re.search(r"running\s+(\d+)\s+tests", cargo_test_output)
+    cargo_test_test_count = int(test_count_match.group(1)) if test_count_match else None
     benchmark_report_exists = os.path.exists(DEFAULT_BENCHMARK_REPORT_PATH)
     checks = {
         "versions_match": version_alignment["versions_match"],
@@ -173,6 +176,11 @@ def build_report(run_cargo_test: bool = False) -> Dict[str, Any]:
         ),
         "benchmark_report_present": benchmark_report_exists,
         "cargo_test_passed": bool(cargo_test.get("passed")) if run_cargo_test else None,
+        "cargo_test_has_meaningful_tests": (
+            cargo_test_test_count is not None and cargo_test_test_count > 0
+            if run_cargo_test
+            else None
+        ),
     }
     required_for_source_readiness = (
         checks["versions_match"]
@@ -194,6 +202,7 @@ def build_report(run_cargo_test: bool = False) -> Dict[str, Any]:
         "build_backend": build_backend,
         "python_import_smoke": python_smoke,
         "cargo_test": cargo_test,
+        "cargo_test_test_count": cargo_test_test_count,
         "benchmark_report": {
             "path": DEFAULT_BENCHMARK_REPORT_PATH,
             "present": benchmark_report_exists,

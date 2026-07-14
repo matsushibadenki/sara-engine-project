@@ -8,8 +8,6 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 use pyo3::types::{PyDict, PyList, PyTuple};
 use std::collections::{HashMap, HashSet};
-use rand::{Rng, SeedableRng};
-use rand::rngs::StdRng;
 use rayon::prelude::*;
 
 fn value_error(message: &str) -> PyErr {
@@ -651,11 +649,14 @@ fn batch_tokens_to_sdr(
     // Rayon preserves collection order here; each token uses an independent seed.
     let batch_sdrs: Vec<Vec<Vec<usize>>> = batch_tokens.par_iter().map(|seq| {
         seq.par_iter().map(|token| {
-            // Hash-seeded pseudo-random SDR generation keeps tokens stable across runs.
-            let mut seq_rng = StdRng::seed_from_u64(seed ^ (*token as u64));
+            // The explicit LCG keeps Python and Rust fallback SDRs reproducible.
+            let mut state = seed ^ (*token as u64);
             let mut sdr = Vec::with_capacity(sdr_size);
             for _ in 0..sdr_size {
-                sdr.push(seq_rng.gen_range(0..vocab_size));
+                state = state
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(1442695040888963407);
+                sdr.push(((state >> 32) as usize) % vocab_size);
             }
             sdr.sort_unstable();
             sdr.dedup();

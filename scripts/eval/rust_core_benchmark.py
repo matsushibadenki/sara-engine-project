@@ -8,7 +8,6 @@ import importlib
 import json
 import math
 import os
-import random
 import sys
 import time
 from collections import defaultdict
@@ -95,8 +94,14 @@ def python_batch_tokens_to_sdr(
     for sequence in batch_tokens:
         sequence_sdrs: List[List[int]] = []
         for token in sequence:
-            rng = random.Random(seed ^ int(token))
-            sdr = sorted(set(rng.randrange(0, vocab_size) for _ in range(sdr_size)))
+            state = (int(seed) ^ int(token)) & ((1 << 64) - 1)
+            values = []
+            for _ in range(sdr_size):
+                state = (
+                    state * 6364136223846793005 + 1442695040888963407
+                ) & ((1 << 64) - 1)
+                values.append((state >> 32) % vocab_size)
+            sdr = sorted(set(values))
             sequence_sdrs.append(sdr)
         batch_sdrs.append(sequence_sdrs)
     return batch_sdrs

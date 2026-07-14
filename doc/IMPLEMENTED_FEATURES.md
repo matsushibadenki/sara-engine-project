@@ -125,6 +125,8 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 
 - Compact research benchmark suite is implemented through `python scripts/sara_cli.py eval-research-benchmark-suite`.
 - Phase 9 completion is independently validated by `python scripts/sara_cli.py eval-phase9-completion`, covering executed suite status, managed output presence, repository-safe fixture coverage, benchmark protocol sections, and explicit proven/not-proven labeling.
+- Phase 10 Rust runtime hardening is independently validated by `python scripts/sara_cli.py eval-phase10-completion`, including meaningful Cargo unit-test evidence, PyO3 API smoke coverage, Rust/Python output equivalence, and the CPU-first sparse-runtime policy.
+- Phase 11 neuromorphic portability is independently validated by `python scripts/sara_cli.py eval-phase11-completion`, including the common spike-event IR, CPU reference contract, Lava/SpiNNaker/Akida profiles, budget/fallback fields, and accelerator-runtime independence.
 - Benchmark protocol is documented in `doc/BENCHMARK_PROTOCOL.md`.
 - Repository-safe benchmark fixtures live under `data/processed/benchmark_fixtures/`.
 - The suite writes a managed manifest under `workspace/evaluation/research_benchmark_manifest.json`.

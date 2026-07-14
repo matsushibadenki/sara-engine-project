@@ -609,6 +609,27 @@ def main():
         default=workspace_path("evaluation", "rust_core_benchmark_summary.txt"),
     )
 
+    parser_phase10_completion = subparsers.add_parser(
+        "eval-phase10-completion",
+        help="Validate the Phase 10 Rust sparse-runtime hardening evidence.",
+    )
+    parser_phase10_completion.add_argument(
+        "--readiness-path",
+        default=workspace_path("evaluation", "rust_core_readiness.json"),
+    )
+    parser_phase10_completion.add_argument(
+        "--benchmark-path",
+        default=workspace_path("evaluation", "rust_core_benchmark.json"),
+    )
+    parser_phase10_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase10_completion_gate.json"),
+    )
+    parser_phase10_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase10_completion_gate_summary.txt"),
+    )
+
     parser_research_benchmark = subparsers.add_parser(
         "eval-research-benchmark-suite",
         help="Run the compact reproducible research benchmark suite.",
@@ -682,6 +703,23 @@ def main():
     parser_neuromorphic_matrix.add_argument(
         "--summary-path",
         default=workspace_path("evaluation", "neuromorphic_capability_matrix_summary.txt"),
+    )
+
+    parser_phase11_completion = subparsers.add_parser(
+        "eval-phase11-completion",
+        help="Validate the Phase 11 neuromorphic portability evidence.",
+    )
+    parser_phase11_completion.add_argument(
+        "--matrix-path",
+        default=workspace_path("evaluation", "neuromorphic_capability_matrix.json"),
+    )
+    parser_phase11_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase11_completion_gate.json"),
+    )
+    parser_phase11_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase11_completion_gate_summary.txt"),
     )
 
     parser_own_latent = subparsers.add_parser(
@@ -2047,6 +2085,22 @@ def main():
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
+    elif args.command == "eval-phase10-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase10_completion_gate.py",
+            "--readiness-path",
+            str(args.readiness_path),
+            "--benchmark-path",
+            str(args.benchmark_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
     elif args.command == "eval-research-benchmark-suite":
         command = [
             sys.executable,
@@ -2114,6 +2168,20 @@ def main():
         ]
         for profile in args.profile or []:
             command.extend(["--profile", str(profile)])
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase11-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase11_completion_gate.py",
+            "--matrix-path",
+            str(args.matrix_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
