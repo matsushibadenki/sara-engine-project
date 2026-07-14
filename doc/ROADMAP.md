@@ -577,15 +577,22 @@ Goal: make the product usable by researchers without requiring them to read ever
 ### Deliverables
 
 - Consolidate common release and research commands into clearer docs and CLI aliases.
+  - DONE: `eval-operator-dashboard` is the single compact entry point for phase, release, energy, proven, and next-action review.
 - Add a compact operational dashboard or text summary generator for the most important artifacts.
+  - DONE: `scripts/eval/operator_dashboard.py` writes JSON and text summaries under `workspace/evaluation/`.
 - Improve examples for corpus import, curriculum training, memory inspection, energy measurement, and gate review.
+  - DONE: `doc/OPERATOR_GUIDE.md` provides concise reproduction and physical-energy preparation examples.
 - Add troubleshooting notes for Python version, missing optional dependencies, and managed output violations.
+  - DONE: `doc/OPERATOR_GUIDE.md` contains the troubleshooting path and next-action policy.
+- Add an explicit Phase 12 completion gate.
+  - DONE: `python scripts/sara_cli.py eval-phase12-completion` validates the dashboard and operator guide.
 
 ### Acceptance Criteria
 
 - The active docs remain short and role-specific.
 - `doc/old/` keeps historical material out of the main path.
 - A release operator can identify the next action from one summary report or manifest.
+- `phase12_complete` is promoted only when the dashboard exposes artifact states, next actions, proven/not-proven claims, and the short operator guide is present.
 
 ### Optional Candidate: Local LLM Operator Assistant
 
@@ -745,6 +752,12 @@ Each candidate starts as one of:
 
 It can become release-critical only after quality, energy cost, state budget, traceability, and regression behavior remain stable across the managed suite.
 
+### Phase 13 Completion Surface
+
+- DONE: `python scripts/sara_cli.py eval-phase13-completion` aggregates reasoning prior, verifiable planning, equal-modality binding, verified credit, adaptive credit, own-latent, hierarchical cache, and structural-plasticity evidence.
+- DONE: the gate requires all capability reports to be present, passing, observed-only, bounded, sparse, backpropagation-free, and independent of an LLM judge.
+- DONE: the gate preserves the promotion rule and records broad generalization, physical-energy, and release-critical promotion as not-proven until stronger evidence exists.
+
 ## Phase 14: Sparse Own-Latent Learning
 
 Goal: implement a SARA-native version of the "learn from your own latents, not from tokens" direction from arXiv:2605.27734v1, while preserving CPU-first, sparse-event, no-runtime-backprop policy.
@@ -834,6 +847,11 @@ This phase should not port data2vec, JEPA, or the paper's gradient-based SLC exp
 - All generated artifacts follow the managed output policy.
 - The implementation is useful even when no Rust extension or accelerator is available.
 
+### Phase 14 Completion Surface
+
+- DONE: `python scripts/sara_cli.py eval-phase14-completion` validates the observed-only own-latent benchmark, source-backed latent manifest, RHM fixture, sparse CPU policy, event-cost bound, and state budget.
+- DONE: the completion gate is included in `eval-research-benchmark-suite` as `phase14_completion` and remains non-release-critical until repeated quality, abstention, energy, and regression evidence is stable.
+
 ## Phase 15: Sparse Dendritic Feedback Gate
 
 Goal: implement a SARA-optimized, sparse-event version of the dendritic implicit-bias idea from arXiv:2605.30370v2, improving robustness and sample efficiency without importing dense implicit ANN layers.
@@ -920,6 +938,11 @@ This phase should not port IBNN directly. SARA should adopt the biological insig
 - Event cost, state budget, fallback rate, and convergence steps are visible in the report.
 - Default production inference remains unchanged until repeated observed reports justify promotion.
 - Generated artifacts stay under managed `workspace/`, `data/processed/`, or `data/interim/` paths.
+
+### Phase 15 Completion Surface
+
+- DONE: `python scripts/sara_cli.py eval-phase15-completion` validates observed-only dendritic robustness, bounded convergence, traceability, fallback visibility, event cost, state budget, and the unchanged default inference path.
+- DONE: the completion gate is included in `eval-research-benchmark-suite` as `phase15_completion` and remains non-release-critical until repeated robustness, cost, and regression evidence is stable.
 
 ## Phase 16: Sparse Synesthetic Multimodal Binding
 
@@ -1073,6 +1096,11 @@ Design principle: treat modality differences as differences in input statistics,
 - Event cost, state budget, temporal alignment quality, route decisions, and abstention behavior are visible in managed reports.
 - The implementation remains CPU-first, bounded-state, backpropagation-free at runtime, and useful without GPU or external large models.
 - Generated artifacts stay under managed `workspace/`, `data/processed/`, or `data/interim/` paths.
+
+### Phase 16 Completion Surface
+
+- DONE: `python scripts/sara_cli.py eval-phase16-completion` validates equal-modality sparse IR, temporal window evidence, non-language routes, missing-modality prediction and abstention, separable bundle audits, route traceability, event cost, and state budget.
+- DONE: the completion gate is included in `eval-research-benchmark-suite` as `phase16_completion` and remains non-release-critical until repeated multimodal quality, abstention, energy, and regression evidence is stable.
 
 ## Phase 17: Verified Sparse Resonance Credit
 
@@ -1269,6 +1297,11 @@ This slice should not introduce unconstrained growth. The design target is **bud
 - Learning remains sparse, bounded, CPU-first, backpropagation-free, and compatible with existing eligibility traces.
 - Production learning remains unchanged until larger source-aware experiments justify promotion.
 
+### Phase 17 Completion Surface
+
+- DONE: `python scripts/sara_cli.py eval-phase17-completion` validates standalone and integrated resonance credit, multi-signal updates, explicit freeze reasons, harmful-update suppression, source trust, event/state budgets, and the observed-only production boundary.
+- DONE: the completion gate is included in `eval-research-benchmark-suite` as `phase17_completion` and remains non-release-critical until repeated quality, freeze safety, energy, and regression evidence is stable.
+
 ## Phase 18: Verified Hierarchical Event-State Caching
 
 **Priority: HIGH. This is the primary implementation phase after the completed Phase 17 work, except for physical-energy measurements that require external hardware.**
@@ -1387,6 +1420,11 @@ Design role in SARA: this phase is the primary home of **Event Memory**. Recurre
 - The implementation remains CPU-first, backpropagation-free at runtime, dense-matrix-independent, and compatible with existing SNN event traces.
 - All generated artifacts stay under managed `data/`, `workspace/`, or `models/` paths.
 
+### Phase 18 Completion Surface
+
+- DONE: `python scripts/sara_cli.py eval-phase18-completion` validates delayed recall, logarithmic retention growth, negative-query abstention, verified admission, source revision integrity, reactivation hints, persistence round trips, corrupted-state rejection, and bounded retrieval/state budgets.
+- DONE: the completion gate is included in `eval-research-benchmark-suite` as `phase18_completion` and remains non-release-critical until repeated source-aware recall, abstention, energy, growth, and regression evidence is stable.
+
 ### Recurrent Boundary
 
 - Do not try to make recurrent activity itself the durable memory store.
@@ -1479,11 +1517,26 @@ The useful idea is not to replace SARA with a dense ODE network. It is to let se
 - No energy advantage is claimed before paired physical measurement; promotion requires non-regressing or improved `joule_per_success` at the required quality floor.
 - If these criteria fail, retain the fixed-time-constant SNN design and make no production integration.
 
+### Phase 19 Completion Surface
+
+- DONE: `SparseLiquidTimeConstantNeuron` provides one bounded event-driven closed-form update with adaptive tau/threshold, sparse spike conversion, deterministic reset, and traceable operation counts.
+- DONE: `python scripts/sara_cli.py eval-phase19-completion` validates liquid improvement against fixed and multi-timescale controls, replay determinism, abstention, event/update/state/tau budgets, and fixed-SNN production preservation.
+- DONE: the benchmark and completion gate are included in `eval-research-benchmark-suite` as `phase19_liquid_time_constant` and `phase19_completion`; physical energy advantage remains unproven and the liquid route remains observed-only.
+
 ## Phase 20: Semantic Echo Field for Sparse Temporal Language
 
 **Priority: CONDITIONAL / after Phase 6, Phase 8, and Phase 7 evidence work. Phase 19 is optional and not a prerequisite.**
 
 Goal: improve SARA's bounded text understanding by representing language as sparse temporal events and retaining only salient semantic activity as finite multi-timescale echoes. Later language events should bind to compatible echoes through bounded local resonance rather than dense all-token Attention.
+
+### Phase 20 Completion Surface
+
+- DONE: `src/sara_engine/language/semantic_events.py` provides a bounded raw-text sparse event adapter with source and evidence labels.
+- DONE: `src/sara_engine/language/semantic_echo.py` provides finite fast/medium/slow decay, local role binding, contradiction traces, abstention, and hard comparison/occupancy limits.
+- DONE: `scripts/eval/semantic_echo_field_benchmark.py` compares single-decay and fixed multi-timescale controls against the Semantic Echo Field on five deterministic language cases.
+- DONE: `scripts/eval/phase20_completion_gate.py` validates observed-only evidence, control improvement, abstention, bounded execution, CPU/sparse policy, and production-control preservation.
+- DONE: CLI, research suite, operator dashboard, Phase 12 integration, tests, fixtures, and managed reports are connected.
+- OBSERVED-ONLY: independent held-out language evidence, physical joule-per-success, durable crystallization, phonological recoding, and dynamic semantic modes remain unproven or disabled.
 
 Design paper: [Semantic Echo Field v2: Event-Centric World Model Extension for SARA Engine](idea/Semantic_Echo_Field_Sparse_Temporal_Language_Architecture_v2.md).
 

@@ -29,6 +29,22 @@ Run commands from the repository root unless a script says otherwise.
 - `python scripts/sara_cli.py eval-research-benchmark-suite`: run the compact reproducible research benchmark suite and write a manifest.
 - `python scripts/sara_cli.py eval-research-fixture-readiness`: validate repository-safe benchmark fixtures.
 - `python scripts/sara_cli.py eval-neuromorphic-capability-matrix`: generate a backend capability matrix for sparse-event hardware profiles.
+- `python scripts/sara_cli.py eval-operator-dashboard`: generate the compact operator dashboard with artifact states, next actions, proven/not-proven claims, and standard commands.
+- `python scripts/sara_cli.py eval-phase12-completion`: validate the Phase 12 dashboard and `doc/OPERATOR_GUIDE.md`.
+- `python scripts/sara_cli.py eval-phase13-completion`: aggregate and validate Phase 13 sparse capability-expansion evidence.
+  - The same Phase 13 aggregation is included in `eval-research-benchmark-suite` as the `phase13_capability_expansion` managed command.
+- `python scripts/sara_cli.py eval-phase14-completion`: validate observed-only sparse own-latent benchmark, manifest, fixture, and bounded-state evidence.
+  - The same Phase 14 gate is included in `eval-research-benchmark-suite` as the `phase14_completion` managed command.
+- `python scripts/sara_cli.py eval-phase15-completion`: validate observed-only sparse dendritic robustness, traceability, fallback, event cost, and state budget evidence.
+  - The same Phase 15 gate is included in `eval-research-benchmark-suite` as the `phase15_completion` managed command.
+- `python scripts/sara_cli.py eval-phase16-completion`: validate observed-only equal-modality multimodal binding, missing-modality abstention, separable bundles, route traces, and bounded budgets.
+  - The same Phase 16 gate is included in `eval-research-benchmark-suite` as the `phase16_completion` managed command.
+- `python scripts/sara_cli.py eval-phase17-completion`: validate observed-only verified resonance decisions, freeze reasons, harmful-update suppression, source-backed integration, and bounded budgets.
+  - The same Phase 17 gate is included in `eval-research-benchmark-suite` as the `phase17_completion` managed command.
+- `python scripts/sara_cli.py eval-phase18-completion`: validate observed-only hierarchical recall, bounded state growth, source-aware admission, persistence, corruption rejection, and abstention integrity.
+  - The same Phase 18 gate is included in `eval-research-benchmark-suite` as the `phase18_completion` managed command.
+- `python scripts/sara_cli.py eval-phase19-completion`: validate observed-only liquid time-constant improvement, bounded execution, deterministic replay, and preserved fixed-SNN control.
+  - The same Phase 19 benchmark and gate are included in `eval-research-benchmark-suite` as `phase19_liquid_time_constant` and `phase19_completion`.
 - `python scripts/sara_cli.py eval-own-latent-learning`: run the observed-only sparse own-latent sample-efficiency benchmark.
 - `python scripts/sara_cli.py eval-dendritic-feedback-gate`: run the observed-only sparse dendritic feedback gate robustness benchmark.
 - `python scripts/sara_cli.py eval-sparse-plan-trace-verifier`: verify sparse STRIPS-like plan traces and emit managed repair materials.
@@ -393,3 +409,8 @@ Run commands from the repository root unless a script says otherwise.
 - Final model artifacts: `models/`
 
 Do not add generated outputs to the repository root.
+## Phase 20
+
+- `python scripts/sara_cli.py eval-semantic-echo-field` runs the observed-only sparse temporal language benchmark.
+- `python scripts/sara_cli.py eval-phase20-completion` validates bounded echoes, local role binding, abstention, and preserved fixed controls.
+- The research suite includes `phase20_semantic_echo_field` and `phase20_completion`.

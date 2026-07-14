@@ -1,0 +1,5 @@
+{"case_id":"long_distance_role","events":[{"gap":1,"axis":"orthographic","feature":"subject","role":"agent"},{"gap":8,"axis":"orthographic","feature":"modifier","role":""},{"gap":8,"axis":"orthographic","feature":"predicate","role":"agent"}],"expected":"subject->predicate"}
+{"case_id":"negation_scope","events":[{"gap":1,"axis":"orthographic","feature":"not","role":"scope"},{"gap":5,"axis":"orthographic","feature":"claim","role":"scope"}],"expected":"not->claim"}
+{"case_id":"delayed_recall","events":[{"gap":1,"axis":"orthographic","feature":"river","role":"place"},{"gap":12,"axis":"orthographic","feature":"noise","role":""},{"gap":1,"axis":"orthographic","feature":"river","role":"place"}],"expected":"river"}
+{"case_id":"unsupported_query","events":[{"gap":1,"axis":"orthographic","feature":"known","role":""},{"gap":20,"axis":"orthographic","feature":"unknown","role":""}],"expected":"abstain"}
+{"case_id":"contradiction_control","events":[{"gap":1,"axis":"orthographic","feature":"safe","role":"claim"},{"gap":3,"axis":"orthographic","feature":"unsafe","role":"claim"}],"expected":"abstain"}

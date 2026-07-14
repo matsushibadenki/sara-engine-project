@@ -722,6 +722,137 @@ def main():
         default=workspace_path("evaluation", "phase11_completion_gate_summary.txt"),
     )
 
+    parser_operator_dashboard = subparsers.add_parser(
+        "eval-operator-dashboard",
+        help="Build the compact managed research operator dashboard.",
+    )
+    parser_operator_dashboard.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "operator_dashboard.json"),
+    )
+    parser_operator_dashboard.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "operator_dashboard_summary.txt"),
+    )
+
+    parser_phase12_completion = subparsers.add_parser(
+        "eval-phase12-completion",
+        help="Validate the Phase 12 operator experience surface.",
+    )
+    parser_phase12_completion.add_argument(
+        "--dashboard-path",
+        default=workspace_path("evaluation", "operator_dashboard.json"),
+    )
+    parser_phase12_completion.add_argument(
+        "--guide-path",
+        default=os.path.join(project_root, "doc", "OPERATOR_GUIDE.md"),
+    )
+    parser_phase12_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase12_completion_gate.json"),
+    )
+    parser_phase12_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase12_completion_gate_summary.txt"),
+    )
+
+    parser_phase13_completion = subparsers.add_parser(
+        "eval-phase13-completion",
+        help="Aggregate and validate Phase 13 sparse capability-expansion evidence.",
+    )
+    parser_phase13_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase13_capability_expansion.json"),
+    )
+    parser_phase13_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase13_capability_expansion_summary.txt"),
+    )
+
+    parser_phase14_completion = subparsers.add_parser(
+        "eval-phase14-completion",
+        help="Validate the Phase 14 sparse own-latent learning evidence.",
+    )
+    parser_phase14_completion.add_argument(
+        "--benchmark-path",
+        default=workspace_path("evaluation", "own_latent_learning_benchmark.json"),
+    )
+    parser_phase14_completion.add_argument(
+        "--manifest-path",
+        default=workspace_path("evaluation", "own_latent_manifest_builder.json"),
+    )
+    parser_phase14_completion.add_argument(
+        "--fixture-path",
+        default=os.path.join("data", "processed", "benchmark_fixtures", "own_latent_rhm_cases.jsonl"),
+    )
+    parser_phase14_completion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase14_completion_gate.json"),
+    )
+    parser_phase14_completion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase14_completion_gate_summary.txt"),
+    )
+
+    parser_phase15_completion = subparsers.add_parser(
+        "eval-phase15-completion",
+        help="Validate the Phase 15 sparse dendritic feedback evidence.",
+    )
+    parser_phase15_completion.add_argument("--benchmark-path", default=workspace_path("evaluation", "dendritic_feedback_gate_benchmark.json"))
+    parser_phase15_completion.add_argument("--report-path", default=workspace_path("evaluation", "phase15_completion_gate.json"))
+    parser_phase15_completion.add_argument("--summary-path", default=workspace_path("evaluation", "phase15_completion_gate_summary.txt"))
+
+    parser_phase16_completion = subparsers.add_parser(
+        "eval-phase16-completion",
+        help="Validate the Phase 16 sparse synesthetic multimodal binding evidence.",
+    )
+    parser_phase16_completion.add_argument("--benchmark-path", default=workspace_path("evaluation", "synesthetic_multimodal_binding_benchmark.json"))
+    parser_phase16_completion.add_argument("--report-path", default=workspace_path("evaluation", "phase16_completion_gate.json"))
+    parser_phase16_completion.add_argument("--summary-path", default=workspace_path("evaluation", "phase16_completion_gate_summary.txt"))
+
+    parser_phase17_completion = subparsers.add_parser(
+        "eval-phase17-completion",
+        help="Validate the Phase 17 verified sparse resonance credit evidence.",
+    )
+    parser_phase17_completion.add_argument("--credit-path", default=workspace_path("evaluation", "resonance_credit_benchmark.json"))
+    parser_phase17_completion.add_argument("--integration-path", default=workspace_path("evaluation", "resonance_credit_integration_benchmark.json"))
+    parser_phase17_completion.add_argument("--report-path", default=workspace_path("evaluation", "phase17_completion_gate.json"))
+    parser_phase17_completion.add_argument("--summary-path", default=workspace_path("evaluation", "phase17_completion_gate_summary.txt"))
+
+    parser_phase18_completion = subparsers.add_parser(
+        "eval-phase18-completion",
+        help="Validate the Phase 18 verified hierarchical event-state cache evidence.",
+    )
+    parser_phase18_completion.add_argument("--benchmark-path", default=workspace_path("evaluation", "event_state_cache_benchmark.json"))
+    parser_phase18_completion.add_argument("--integration-path", default=workspace_path("evaluation", "event_state_cache_integration_benchmark.json"))
+    parser_phase18_completion.add_argument("--report-path", default=workspace_path("evaluation", "phase18_completion_gate.json"))
+    parser_phase18_completion.add_argument("--summary-path", default=workspace_path("evaluation", "phase18_completion_gate_summary.txt"))
+
+    parser_phase19_completion = subparsers.add_parser(
+        "eval-phase19-completion",
+        help="Validate the Phase 19 sparse liquid time-constant evidence.",
+    )
+    parser_phase19_completion.add_argument("--benchmark-path", default=workspace_path("evaluation", "sparse_liquid_time_constant_benchmark.json"))
+    parser_phase19_completion.add_argument("--report-path", default=workspace_path("evaluation", "phase19_completion_gate.json"))
+    parser_phase19_completion.add_argument("--summary-path", default=workspace_path("evaluation", "phase19_completion_gate_summary.txt"))
+
+    parser_phase20_benchmark = subparsers.add_parser(
+        "eval-semantic-echo-field",
+        help="Run the observed-only Phase 20 Semantic Echo Field benchmark.",
+    )
+    parser_phase20_benchmark.add_argument("--fixture-path", default=processed_data_path("benchmark_fixtures", "semantic_echo_field_cases.jsonl"))
+    parser_phase20_benchmark.add_argument("--report-path", default=workspace_path("evaluation", "semantic_echo_field_benchmark.json"))
+    parser_phase20_benchmark.add_argument("--summary-path", default=workspace_path("evaluation", "semantic_echo_field_benchmark_summary.txt"))
+    parser_phase20_benchmark.add_argument("--trace-path", default=workspace_path("evaluation", "semantic_echo_field_traces.jsonl"))
+
+    parser_phase20_completion = subparsers.add_parser(
+        "eval-phase20-completion",
+        help="Validate the Phase 20 Semantic Echo Field evidence.",
+    )
+    parser_phase20_completion.add_argument("--benchmark-path", default=workspace_path("evaluation", "semantic_echo_field_benchmark.json"))
+    parser_phase20_completion.add_argument("--report-path", default=workspace_path("evaluation", "phase20_completion_gate.json"))
+    parser_phase20_completion.add_argument("--summary-path", default=workspace_path("evaluation", "phase20_completion_gate_summary.txt"))
+
     parser_own_latent = subparsers.add_parser(
         "eval-own-latent-learning",
         help="Run the observed-only sparse own-latent learning benchmark.",
@@ -2181,6 +2312,139 @@ def main():
             str(args.report_path),
             "--summary-path",
             str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-operator-dashboard":
+        command = [
+            sys.executable,
+            "scripts/eval/operator_dashboard.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase12-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase12_completion_gate.py",
+            "--dashboard-path",
+            str(args.dashboard_path),
+            "--guide-path",
+            str(args.guide_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase13-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase13_completion_gate.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase14-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase14_completion_gate.py",
+            "--benchmark-path",
+            str(args.benchmark_path),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase15-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase15_completion_gate.py",
+            "--benchmark-path", str(args.benchmark_path),
+            "--report-path", str(args.report_path),
+            "--summary-path", str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase16-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase16_completion_gate.py",
+            "--benchmark-path", str(args.benchmark_path),
+            "--report-path", str(args.report_path),
+            "--summary-path", str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase17-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase17_completion_gate.py",
+            "--credit-path", str(args.credit_path),
+            "--integration-path", str(args.integration_path),
+            "--report-path", str(args.report_path),
+            "--summary-path", str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase18-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase18_completion_gate.py",
+            "--benchmark-path", str(args.benchmark_path),
+            "--integration-path", str(args.integration_path),
+            "--report-path", str(args.report_path),
+            "--summary-path", str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase19-completion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase19_completion_gate.py",
+            "--benchmark-path", str(args.benchmark_path),
+            "--report-path", str(args.report_path),
+            "--summary-path", str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-semantic-echo-field":
+        command = [
+            sys.executable, "scripts/eval/semantic_echo_field_benchmark.py",
+            "--fixture-path", str(args.fixture_path), "--report-path", str(args.report_path),
+            "--summary-path", str(args.summary_path), "--trace-path", str(args.trace_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase20-completion":
+        command = [
+            sys.executable, "scripts/eval/phase20_completion_gate.py",
+            "--benchmark-path", str(args.benchmark_path), "--report-path", str(args.report_path),
+            "--summary-path", str(args.summary_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)

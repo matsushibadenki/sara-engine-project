@@ -127,6 +127,14 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Phase 9 completion is independently validated by `python scripts/sara_cli.py eval-phase9-completion`, covering executed suite status, managed output presence, repository-safe fixture coverage, benchmark protocol sections, and explicit proven/not-proven labeling.
 - Phase 10 Rust runtime hardening is independently validated by `python scripts/sara_cli.py eval-phase10-completion`, including meaningful Cargo unit-test evidence, PyO3 API smoke coverage, Rust/Python output equivalence, and the CPU-first sparse-runtime policy.
 - Phase 11 neuromorphic portability is independently validated by `python scripts/sara_cli.py eval-phase11-completion`, including the common spike-event IR, CPU reference contract, Lava/SpiNNaker/Akida profiles, budget/fallback fields, and accelerator-runtime independence.
+- Phase 12 operator experience is implemented through `python scripts/sara_cli.py eval-operator-dashboard` and validated by `python scripts/sara_cli.py eval-phase12-completion`; the dashboard consolidates phase/release status, next actions, claims, and troubleshooting guidance.
+- Phase 13 sparse capability expansion is aggregated and validated by `python scripts/sara_cli.py eval-phase13-completion`, covering reasoning, planning, multimodal binding, local credit, own-latent, hierarchical cache, and structural-plasticity observed evidence without promoting candidates to release-critical behavior.
+- Phase 14 sparse own-latent learning has an independent observed-only completion gate through `python scripts/sara_cli.py eval-phase14-completion`, covering the benchmark, source-backed latent manifest, RHM fixture, sparse policy, event cost, and bounded state budget without release-critical promotion.
+- Phase 15 sparse dendritic feedback has an independent observed-only completion gate through `python scripts/sara_cli.py eval-phase15-completion`, covering robustness, bounded updates, traceability, fallback, event cost, and state budget without changing default inference.
+- Phase 16 sparse synesthetic multimodal binding has an independent observed-only completion gate through `python scripts/sara_cli.py eval-phase16-completion`, covering equal-modality IR, temporal windows, non-language routing, missing-modality prediction/abstention, separable bundles, and bounded budgets.
+- Phase 17 verified sparse resonance credit has an independent observed-only completion gate through `python scripts/sara_cli.py eval-phase17-completion`, covering multi-signal decisions, explicit freeze reasons, harmful-update suppression, managed evidence integration, and bounded local state.
+- Phase 18 verified hierarchical Event Memory has an independent observed-only completion gate through `python scripts/sara_cli.py eval-phase18-completion`, covering delayed recall, logarithmic state growth, source-aware admission, persistence, corruption rejection, reactivation, and abstention integrity.
+- Phase 19 has a bounded event-driven `SparseLiquidTimeConstantNeuron` and observed-only fixed/multi-timescale/liquid benchmark, validated by `python scripts/sara_cli.py eval-phase19-completion` without changing the fixed-SNN production control.
 - Benchmark protocol is documented in `doc/BENCHMARK_PROTOCOL.md`.
 - Repository-safe benchmark fixtures live under `data/processed/benchmark_fixtures/`.
 - The suite writes a managed manifest under `workspace/evaluation/research_benchmark_manifest.json`.
@@ -348,3 +356,6 @@ These are not v1.1 blockers, but remain important research/product work:
 - Hardware backend adapters beyond current mock/HAL smoke behavior.
 - Interactive observability dashboard for sparse events, memory, routing, and energy traces.
 - Stronger user-facing documentation and examples for third-party researchers.
+### Phase 20: Semantic Echo Field
+
+Implemented a bounded raw-text sparse language-event adapter and finite fast/medium/slow Semantic Echo Field with local role binding, explicit decay, abstention, contradiction traces, fixed controls, benchmark, CLI, and completion gate. The experiment remains observed-only and does not replace the production fixed SNN path.

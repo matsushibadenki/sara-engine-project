@@ -119,6 +119,15 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             ],
         ),
         BenchmarkCommand(
+            command_id="phase14_completion",
+            purpose="Validate observed-only sparse own-latent learning, manifest, fixture, and bounded-state evidence.",
+            command=[sys.executable, "scripts/eval/phase14_completion_gate.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "phase14_completion_gate.json"),
+                workspace_path("evaluation", "phase14_completion_gate_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
             command_id="gap_materials_closed_loop",
             purpose="Measure whether deterministic gap materials reduce own-latent fixture coverage gaps.",
             command=[
@@ -152,6 +161,15 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             managed_outputs=[
                 workspace_path("evaluation", "dendritic_feedback_gate_benchmark.json"),
                 workspace_path("evaluation", "dendritic_feedback_gate_benchmark_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="phase15_completion",
+            purpose="Validate observed-only dendritic robustness, traceability, fallback, event cost, and state budget evidence.",
+            command=[sys.executable, "scripts/eval/phase15_completion_gate.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "phase15_completion_gate.json"),
+                workspace_path("evaluation", "phase15_completion_gate_summary.txt"),
             ],
         ),
         BenchmarkCommand(
@@ -219,6 +237,15 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             ],
         ),
         BenchmarkCommand(
+            command_id="phase16_completion",
+            purpose="Validate observed-only multimodal binding, missing-modality abstention, separable bundles, route traces, and bounded budgets.",
+            command=[sys.executable, "scripts/eval/phase16_completion_gate.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "phase16_completion_gate.json"),
+                workspace_path("evaluation", "phase16_completion_gate_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
             command_id="resonance_credit_integration",
             purpose="Bridge managed reasoning, planning, multimodal, dendritic, own-latent, and metabolic evidence into verified plasticity decisions.",
             command=[
@@ -235,6 +262,15 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
                 workspace_path(
                     "evaluation", "resonance_credit_integration_traces.jsonl"
                 ),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="phase17_completion",
+            purpose="Validate observed-only resonance decisions, freeze reasons, harmful-update suppression, source-backed integration, and bounded budgets.",
+            command=[sys.executable, "scripts/eval/phase17_completion_gate.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "phase17_completion_gate.json"),
+                workspace_path("evaluation", "phase17_completion_gate_summary.txt"),
             ],
         ),
         BenchmarkCommand(
@@ -342,6 +378,55 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             ],
         ),
         BenchmarkCommand(
+            command_id="phase18_completion",
+            purpose="Validate observed-only hierarchical recall, bounded state growth, source-aware admission, persistence, corruption rejection, and abstention integrity.",
+            command=[sys.executable, "scripts/eval/phase18_completion_gate.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "phase18_completion_gate.json"),
+                workspace_path("evaluation", "phase18_completion_gate_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="phase19_liquid_time_constant",
+            purpose="Record observed-only fixed versus bounded liquid time-constant temporal dynamics evidence.",
+            command=[sys.executable, "scripts/eval/sparse_liquid_time_constant_benchmark.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "sparse_liquid_time_constant_benchmark.json"),
+                workspace_path("evaluation", "sparse_liquid_time_constant_benchmark_summary.txt"),
+                workspace_path("evaluation", "sparse_liquid_time_constant_traces.jsonl"),
+                processed_data_path("benchmark_fixtures", "sparse_liquid_time_constant_cases.jsonl"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="phase19_completion",
+            purpose="Validate observed-only liquid dynamics improvement, bounded execution, deterministic replay, and preserved fixed-SNN production control.",
+            command=[sys.executable, "scripts/eval/phase19_completion_gate.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "phase19_completion_gate.json"),
+                workspace_path("evaluation", "phase19_completion_gate_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="phase20_semantic_echo_field",
+            purpose="Record observed-only sparse temporal language evidence with fixed single-decay and multi-timescale controls.",
+            command=[sys.executable, "scripts/eval/semantic_echo_field_benchmark.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "semantic_echo_field_benchmark.json"),
+                workspace_path("evaluation", "semantic_echo_field_benchmark_summary.txt"),
+                workspace_path("evaluation", "semantic_echo_field_traces.jsonl"),
+                processed_data_path("benchmark_fixtures", "semantic_echo_field_cases.jsonl"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="phase20_completion",
+            purpose="Validate bounded echoes, local role binding, abstention, CPU sparse policy, and preserved fixed controls.",
+            command=[sys.executable, "scripts/eval/phase20_completion_gate.py"],
+            managed_outputs=[
+                workspace_path("evaluation", "phase20_completion_gate.json"),
+                workspace_path("evaluation", "phase20_completion_gate_summary.txt"),
+            ],
+        ),
+        BenchmarkCommand(
             command_id="concept_revalidation_fixture_builder",
             purpose="Generate harder source-aware concept revalidation cases for follow-up Event Memory evaluation.",
             command=[
@@ -439,6 +524,18 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             managed_outputs=[
                 workspace_path("evaluation", "sara_ann_comparison_report.json"),
                 workspace_path("evaluation", "sara_ann_comparison_report.txt"),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="phase13_capability_expansion",
+            purpose="Aggregate observed-only sparse capability expansion evidence without promoting candidates to release-critical runtime behavior.",
+            command=[
+                sys.executable,
+                "scripts/eval/phase13_completion_gate.py",
+            ],
+            managed_outputs=[
+                workspace_path("evaluation", "phase13_capability_expansion.json"),
+                workspace_path("evaluation", "phase13_capability_expansion_summary.txt"),
             ],
         ),
         BenchmarkCommand(

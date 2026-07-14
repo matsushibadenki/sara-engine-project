@@ -54,6 +54,13 @@ The repository-safe fixture file is:
 - Source-aware event-state cache integration with managed resonance evidence, autobot latent materials, read-only reactivation, persistence round trips, and corruption rejection.
 - Research-product completion gate across policy, ROADMAP closure, Rust readiness, managed outputs, and release evidence.
 - Integrated v1.1 release gate.
+- Phase 13 sparse capability-expansion aggregation across reasoning, planning, multimodal binding, local credit, own-latent, hierarchical cache, and structural-plasticity evidence.
+- Phase 14 sparse own-latent completion validation across the local predictor benchmark, source-backed latent manifest, RHM fixture, and bounded-state policy.
+- Phase 15 sparse dendritic feedback completion validation across robustness, bounded convergence, fallback, traceability, event cost, and state-budget evidence.
+- Phase 16 sparse synesthetic multimodal completion validation across equal-modality routing, temporal alignment, bundle separability, missing-modality abstention, and bounded event/state budgets.
+- Phase 17 verified sparse resonance credit completion validation across multi-signal agreement, freeze safety, harmful-update controls, source-backed integration, and bounded local updates.
+- Phase 18 verified hierarchical Event Memory completion validation across delayed recall, bounded retention, source-aware admission, persistence, corruption rejection, and negative-query abstention.
+- Phase 19 sparse liquid-time-constant completion validation across fixed controls, temporal error improvement, event/update/state bounds, replay determinism, and CPU/backpropagation policy.
 
 ## What Is Proven
 
@@ -83,3 +90,6 @@ The repository-safe fixture file is:
 ## Output Policy
 
 Do not redirect benchmark artifacts to the repository root. Use `--manifest-path` and `--summary-path` only with managed locations such as `workspace/evaluation/`.
+### Phase 20 Semantic Echo Field
+
+The Phase 20 benchmark compares single-decay and fixed multi-timescale sparse controls against bounded local Semantic Echo Field dynamics. It records role binding, delayed recall, contradiction and unsupported-query abstention, active echoes, comparisons, updates, and idle spikes. External parser/LLM assistance is disabled; physical energy claims remain out of scope until paired measurement.

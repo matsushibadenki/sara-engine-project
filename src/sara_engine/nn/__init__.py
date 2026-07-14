@@ -41,6 +41,14 @@ _LAZY_EXPORTS: Dict[str, Tuple[str, str]] = {
         "sara_engine.nn.multi_timescale_leak_state",
         "evaluate_multi_timescale_leak_state",
     ),
+    "SparseLiquidTimeConstantNeuron": (
+        "sara_engine.nn.sparse_liquid_time_constant",
+        "SparseLiquidTimeConstantNeuron",
+    ),
+    "SparseLiquidTrace": (
+        "sara_engine.nn.sparse_liquid_time_constant",
+        "SparseLiquidTrace",
+    ),
     "PhaseSynchronizedBindingTrace": (
         "sara_engine.nn.phase_synchronized_binding_trace",
         "PhaseSynchronizedBindingTrace",

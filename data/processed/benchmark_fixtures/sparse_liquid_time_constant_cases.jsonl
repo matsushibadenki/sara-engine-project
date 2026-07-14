@@ -1,0 +1,4 @@
+{"case_id":"irregular_short_burst","events":[{"gap":1,"value":0.0},{"gap":6,"value":1.0}],"expected_spikes":[0.0,1.0]}
+{"case_id":"delayed_response","events":[{"gap":6,"value":0.0},{"gap":1,"value":1.0},{"gap":9,"value":1.0},{"gap":1,"value":0.0}],"expected_spikes":[0.0,0.0,1.0,0.0]}
+{"case_id":"abrupt_context_switch","events":[{"gap":1,"value":1.0},{"gap":8,"value":0.0},{"gap":1,"value":1.0},{"gap":3,"value":1.0}],"expected_spikes":[0.0,0.0,0.0,1.0]}
+{"case_id":"negative_control_fixed_sufficient","events":[{"gap":1,"value":0.0},{"gap":1,"value":1.0},{"gap":1,"value":0.0},{"gap":1,"value":1.0}],"expected_spikes":[0.0,0.0,0.0,0.0]}
