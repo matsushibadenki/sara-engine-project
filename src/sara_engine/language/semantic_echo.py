@@ -52,7 +52,7 @@ class SparseSemanticEchoField:
         self.threshold = float(threshold)
         self.enable_role_binding = bool(enable_role_binding)
         self.time = 0
-        self._echoes: Dict[Tuple[str, str, str], Tuple[float, int]] = {}
+        self._echoes: Dict[Tuple[str, str, str, str], Tuple[float, int]] = {}
         self._recent: List[LanguageEvent] = []
 
     def reset(self) -> None:
@@ -67,11 +67,11 @@ class SparseSemanticEchoField:
         self._decay(gap)
         comparisons = 0
         decisions: List[EchoDecision] = []
-        key = (event.axis, event.feature, event.role)
-        previous = self._echoes.get(key)
+        key_prefix = (event.axis, event.feature, event.role)
+        previous_values = [value[0] for key, value in self._echoes.items() if key[:3] == key_prefix]
         score = 0.0
-        if previous is not None:
-            score = min(1.0, previous[0] + 0.5)
+        if previous_values:
+            score = min(1.0, max(previous_values) + 0.5)
             comparisons += 1
             if score >= self.threshold:
                 decisions.append(EchoDecision(event.feature, event.axis, round(score, 6), "reactivation"))
@@ -80,18 +80,20 @@ class SparseSemanticEchoField:
                 break
             comparisons += 1
             prior_key = (prior.axis, prior.feature, prior.role)
-            if event.role and prior.role == event.role and prior.feature != event.feature and prior_key in self._echoes and self.enable_role_binding:
+            prior_active = any(key[:3] == prior_key for key in self._echoes)
+            if event.role and prior.role == event.role and prior.feature != event.feature and prior_active and self.enable_role_binding:
                 decisions.append(EchoDecision(f"{prior.feature}->{event.feature}", "binding", 1.0, "role_binding"))
-            elif prior.feature == event.feature and prior.axis == event.axis and prior_key in self._echoes:
+            elif prior.feature == event.feature and prior.axis == event.axis and prior_active:
                 decisions.append(EchoDecision(event.feature, event.axis, 1.0, "local_match"))
-        self._echoes[key] = (1.0, self.time)
+        for tier in self.tiers:
+            self._echoes[(*key_prefix, tier)] = (1.0, self.time)
         self._recent.append(event)
         self._recent = self._recent[-self.max_comparisons :]
         self._trim()
         if event.role == "claim" and any(
             prior.role == event.role
             and prior.feature != event.feature
-            and (prior.axis, prior.feature, prior.role) in self._echoes
+            and any(key[:3] == (prior.axis, prior.feature, prior.role) for key in self._echoes)
             for prior in self._recent
         ):
             decisions.append(EchoDecision(event.feature, event.axis, 1.0, "contradiction"))
@@ -109,6 +111,7 @@ class SparseSemanticEchoField:
                 "axis": key[0],
                 "feature": key[1],
                 "role": key[2],
+                "tier": key[3],
                 "strength": round(value[0], 6),
                 "last_time": value[1],
             }
@@ -121,10 +124,9 @@ class SparseSemanticEchoField:
         return len(payload.encode("utf-8"))
 
     def _decay(self, gap: int) -> None:
-        updated: Dict[Tuple[str, str, str], Tuple[float, int]] = {}
+        updated: Dict[Tuple[str, str, str, str], Tuple[float, int]] = {}
         for key, (strength, last_time) in self._echoes.items():
-            stable_slot = sum(ord(char) for char in key[1])
-            tier = self.tiers[stable_slot % len(self.tiers)]
+            tier = key[3]
             value = strength * math.exp(-float(gap) / self.TAU[tier])
             if value >= 0.08:
                 updated[key] = (value, last_time)

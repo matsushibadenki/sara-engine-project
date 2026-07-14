@@ -60,6 +60,7 @@ class SparseOwnLatentPredictor:
         self.label_event_counts: Dict[str, Counter[int]] = defaultdict(Counter)
         self.context_to_label_counts: Dict[int, Counter[str]] = defaultdict(Counter)
         self.label_counts: Counter[str] = Counter()
+        self.label_token_ids: Dict[str, Set[int]] = defaultdict(set)
         self.update_count = 0
 
     def text_signature(self, text: str) -> List[int]:
@@ -86,6 +87,10 @@ class SparseOwnLatentPredictor:
             raise ValueError("context and latent signatures must be non-empty")
 
         self.label_counts[clean_label] += 1
+        self.label_token_ids[clean_label].update(
+            stable_event_id(token, width=self.width)
+            for token in tokenize_sparse_text(clean_label.replace("_", " "))
+        )
         for event_id in target_signature:
             self.label_event_counts[clean_label][int(event_id)] += 1
         for event_id in context_signature:
@@ -111,6 +116,12 @@ class SparseOwnLatentPredictor:
             for label, count in self.label_counts.items():
                 label_scores[label] += count
             event_cost += len(self.label_counts)
+
+        # Give exact sparse label-token evidence priority over generic context words.
+        for label, label_tokens in self.label_token_ids.items():
+            exact_hits = len(set(context_signature).intersection(label_tokens))
+            if exact_hits:
+                label_scores[label] += exact_hits * max(2, len(context_signature))
 
         if not label_scores:
             return OwnLatentPrediction(
@@ -146,7 +157,8 @@ class SparseOwnLatentPredictor:
     def state_budget_units(self) -> int:
         context_edges = sum(len(labels) for labels in self.context_to_label_counts.values())
         latent_events = sum(len(events) for events in self.label_event_counts.values())
-        return int(context_edges + latent_events + len(self.label_counts))
+        label_tokens = sum(len(tokens) for tokens in self.label_token_ids.values())
+        return int(context_edges + latent_events + label_tokens + len(self.label_counts))
 
 
 class TokenOverlapBaseline:

@@ -49,6 +49,24 @@ def test_sparse_own_latent_predictor_uses_local_sparse_state():
     assert jaccard_overlap(prediction.predicted_signature, prediction.predicted_signature) == 1.0
 
 
+def test_sparse_own_latent_prioritizes_exact_label_events():
+    predictor = SparseOwnLatentPredictor(width=128, max_events=8)
+    predictor.update(
+        context_text="avian motion wing sky",
+        latent_terms=["animal_dynamics", "winged_agent"],
+        label="avian_motion",
+    )
+    predictor.update(
+        context_text="aquatic motion fin water",
+        latent_terms=["animal_dynamics", "water_agent"],
+        label="aquatic_motion",
+    )
+    prediction = predictor.predict("aquatic motion context")
+
+    assert prediction.label == "aquatic_motion"
+    assert prediction.trace["candidate_labels"][0]["label"] == "aquatic_motion"
+
+
 def test_own_latent_fixture_generator_writes_repository_safe_cases():
     fixture = _load_fixture_module()
     path = processed_data_path("benchmark_fixtures", "test_own_latent_rhm_cases.jsonl")

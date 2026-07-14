@@ -9,6 +9,15 @@ def test_adapter_emits_bounded_surface_events():
     assert events[0].evidence_type == "observed"
 
 
+def test_adapter_emits_bounded_negation_feature_without_external_parser():
+    events = SparseLanguageEventAdapter(max_events=8).encode("not safe")
+    negation = [event for event in events if event.axis == "semantic"]
+    assert len(negation) == 1
+    assert negation[0].feature == "negation"
+    assert negation[0].evidence_type == "dictionary_assisted"
+    assert negation[0].role == "scope"
+
+
 def test_role_binding_is_local_and_bounded():
     field = SparseSemanticEchoField(max_echoes=2, max_comparisons=2)
     first = field.step(type("Event", (), {"axis": "orthographic", "feature": "subject", "role": "agent"})())
