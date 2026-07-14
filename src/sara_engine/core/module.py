@@ -57,8 +57,15 @@ class SaraModule:
             state[name] = module.state_dict()
         return state
 
-    def load_state_dict(self, state_dict: Dict[str, Any]):
+    def load_state_dict(self, state_dict: Dict[str, Any], strict: bool = False):
         """Loads parameters and child modules' states from a dictionary."""
+        expected = set(self._parameters) | set(self._modules)
+        if strict:
+            received = set(state_dict)
+            missing = sorted(expected - received)
+            unexpected = sorted(received - expected)
+            if missing or unexpected:
+                raise ValueError(f"state_dict mismatch: missing={missing}, unexpected={unexpected}")
         for name in self._parameters.keys():
             if name in state_dict:
                 val = state_dict[name]
@@ -66,7 +73,7 @@ class SaraModule:
                 setattr(self, name, val)
         for name, module in self._modules.items():
             if name in state_dict:
-                module.load_state_dict(state_dict[name])
+                module.load_state_dict(state_dict[name], strict=strict)
 
     def save(self, filepath: str):
         """Saves the module's state to a JSON file."""

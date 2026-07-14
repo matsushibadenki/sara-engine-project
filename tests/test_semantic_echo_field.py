@@ -1,5 +1,5 @@
 from sara_engine.language.semantic_echo import SparseSemanticEchoField
-from sara_engine.language.semantic_events import SparseLanguageEventAdapter
+from sara_engine.language.semantic_events import LanguageEvent, SparseLanguageEventAdapter
 
 
 def test_adapter_emits_bounded_surface_events():
@@ -16,3 +16,10 @@ def test_role_binding_is_local_and_bounded():
     assert first.active_echoes <= 2
     assert any(decision.kind == "role_binding" for decision in second.decisions)
     assert second.comparisons <= 2
+
+
+def test_expired_echo_cannot_bind_from_recent_history():
+    field = SparseSemanticEchoField(tiers=("fast",), threshold=0.35)
+    field.step(LanguageEvent(1, "orthographic", "subject", role="agent"))
+    trace = field.step(LanguageEvent(51, "orthographic", "predicate", role="agent"), gap=50)
+    assert not any(decision.kind == "role_binding" for decision in trace.decisions)

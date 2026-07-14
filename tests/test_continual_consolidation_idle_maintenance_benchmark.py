@@ -35,6 +35,14 @@ def _load_script_with_msgpack_stub(script_name: str):
     transformers_stub.AutoTokenizer = _AutoTokenizer
     original = sys.modules.get("msgpack")
     original_transformers = sys.modules.get("transformers")
+    isolated_modules = (
+        "sara_engine.inference",
+        "scripts.utils.memory_health",
+        "scripts.utils.upgrade_memory",
+    )
+    original_isolated = {name: sys.modules.get(name) for name in isolated_modules}
+    for name in isolated_modules:
+        sys.modules.pop(name, None)
     sys.modules["msgpack"] = msgpack_stub
     sys.modules["transformers"] = transformers_stub
     try:
@@ -50,6 +58,10 @@ def _load_script_with_msgpack_stub(script_name: str):
             sys.modules.pop("transformers", None)
         else:
             sys.modules["transformers"] = original_transformers
+        for name in isolated_modules:
+            sys.modules.pop(name, None)
+            if original_isolated[name] is not None:
+                sys.modules[name] = original_isolated[name]
 
 
 def test_continual_consolidation_benchmark_exposes_idle_maintenance_trace():

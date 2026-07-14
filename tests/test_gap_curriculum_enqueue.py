@@ -54,6 +54,8 @@ def test_gap_curriculum_enqueue_pushes_manifest_items_into_queue():
     report_path = workspace_path("autobot", "test_gap_curriculum_enqueue_report.json")
     summary_path = workspace_path("autobot", "test_gap_curriculum_enqueue_summary.txt")
     _write_curriculum(curriculum_path)
+    if os.path.exists(queue_path):
+        os.remove(queue_path)
 
     exit_code = module.main(
         [

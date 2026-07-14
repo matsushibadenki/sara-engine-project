@@ -71,6 +71,18 @@ class SNNModule:
 
     def load_state_dict(self, state_dict: Dict[str, Any], strict: bool = False) -> None:
         """保存された状態を復元する"""
+        expected = set(self._state_vars)
+        expected.update(
+            f"{name}.{key}"
+            for name, module in self._modules.items()
+            for key in module.state_dict().keys()
+        )
+        received = set(state_dict)
+        if strict:
+            missing = sorted(expected - received)
+            unexpected = sorted(received - expected)
+            if missing or unexpected:
+                raise ValueError(f"state_dict mismatch: missing={missing}, unexpected={unexpected}")
         for var_name in self._state_vars:
             if var_name in state_dict:
                 setattr(self, var_name, copy.deepcopy(state_dict[var_name]))

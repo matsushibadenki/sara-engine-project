@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Tuple
@@ -78,15 +79,21 @@ class SparseSemanticEchoField:
             if comparisons >= self.max_comparisons:
                 break
             comparisons += 1
-            if event.role and prior.role == event.role and prior.feature != event.feature and self.enable_role_binding:
+            prior_key = (prior.axis, prior.feature, prior.role)
+            if event.role and prior.role == event.role and prior.feature != event.feature and prior_key in self._echoes and self.enable_role_binding:
                 decisions.append(EchoDecision(f"{prior.feature}->{event.feature}", "binding", 1.0, "role_binding"))
-            elif prior.feature == event.feature and prior.axis == event.axis and key in self._echoes:
+            elif prior.feature == event.feature and prior.axis == event.axis and prior_key in self._echoes:
                 decisions.append(EchoDecision(event.feature, event.axis, 1.0, "local_match"))
         self._echoes[key] = (1.0, self.time)
         self._recent.append(event)
         self._recent = self._recent[-self.max_comparisons :]
         self._trim()
-        if event.role == "claim" and any(prior.role == event.role and prior.feature != event.feature for prior in self._recent):
+        if event.role == "claim" and any(
+            prior.role == event.role
+            and prior.feature != event.feature
+            and (prior.axis, prior.feature, prior.role) in self._echoes
+            for prior in self._recent
+        ):
             decisions.append(EchoDecision(event.feature, event.axis, 1.0, "contradiction"))
         unique = tuple(dict.fromkeys(decisions))
         abstained = not bool(unique) or any(decision.kind == "contradiction" for decision in unique)
@@ -94,6 +101,24 @@ class SparseSemanticEchoField:
 
     def run(self, events: Iterable[Tuple[int, LanguageEvent]]) -> Tuple[EchoTrace, ...]:
         return tuple(self.step(event, gap=gap) for gap, event in events)
+
+    def state_dict(self) -> Dict[str, object]:
+        """Return a deterministic, bounded snapshot of transient echo state."""
+        echoes = [
+            {
+                "axis": key[0],
+                "feature": key[1],
+                "role": key[2],
+                "strength": round(value[0], 6),
+                "last_time": value[1],
+            }
+            for key, value in sorted(self._echoes.items())
+        ]
+        return {"schema": "sara-semantic-echo-state-v1", "time": self.time, "echoes": echoes}
+
+    def serialized_state_bytes(self) -> int:
+        payload = json.dumps(self.state_dict(), ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+        return len(payload.encode("utf-8"))
 
     def _decay(self, gap: int) -> None:
         updated: Dict[Tuple[str, str, str], Tuple[float, int]] = {}

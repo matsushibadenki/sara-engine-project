@@ -42,6 +42,7 @@ def build_report(*, benchmark_path: str = DEFAULT_BENCHMARK_PATH) -> Dict[str, A
         "echoes_bounded": int(metrics.get("max_active_echoes", 999) or 0) <= 24,
         "comparisons_bounded": int(metrics.get("max_comparisons", 999) or 0) <= 32,
         "updates_bounded": int(metrics.get("max_updates", 999) or 0) <= 3,
+        "serialized_state_bounded": int(metrics.get("max_state_bytes", 999999) or 0) <= 4096,
         "sparse_cpu_policy_visible": all(term in policy for term in ("sparse", "cpu-first", "no dense", "backpropagation")),
         "external_assistance_disabled": "without an external parser or llm" in policy,
         "production_control_preserved": "fixed single-decay" in policy and "observed-only" in policy,

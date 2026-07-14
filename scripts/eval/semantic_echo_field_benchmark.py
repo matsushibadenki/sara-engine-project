@@ -46,6 +46,7 @@ def _run(case: Mapping[str, Any], *, tiers: tuple[str, ...], role_binding: bool)
         "active_echoes": max(trace.active_echoes for trace in traces),
         "comparisons": sum(trace.comparisons for trace in traces),
         "updates": sum(trace.updates for trace in traces),
+        "state_bytes": field.serialized_state_bytes(),
         "decisions": [decision.__dict__ for decision in decisions],
     }
 
@@ -72,6 +73,7 @@ def build_report(*, fixture_path: str = DEFAULT_FIXTURE_PATH, trace_path: str = 
         "max_active_echoes": max(row["active_echoes"] for row in semantic_echo),
         "max_comparisons": max(row["comparisons"] for row in semantic_echo),
         "max_updates": max(row["updates"] for row in semantic_echo),
+        "max_state_bytes": max(row["state_bytes"] for row in semantic_echo),
         "replay_determinism": 1.0,
         "idle_spikes": 0,
     }
@@ -88,7 +90,7 @@ def build_report(*, fixture_path: str = DEFAULT_FIXTURE_PATH, trace_path: str = 
         "policy_notes": [
             "The adapter is raw-text-only and emits sparse source-labelled events without an external parser or LLM.",
             "The echo field is CPU-first, finite, event-driven, and uses no dense Attention or recurrent matrix.",
-            "Active echoes, local comparisons, updates, and state occupancy are hard bounded; idle spikes remain zero.",
+            "Active echoes, local comparisons, updates, and serialized state occupancy are hard bounded; idle spikes remain zero.",
             "The fixed single-decay and fixed multi-timescale paths remain controls; this evidence is observed-only.",
             "Runtime backpropagation, GPU dependence, and durable crystallization are not used by this benchmark.",
         ],
