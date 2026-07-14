@@ -18,3 +18,9 @@ def test_core_module_strict_state_restore_is_enforced():
         module.load_state_dict({}, strict=True)
     module.load_state_dict({"value": 4}, strict=True)
     assert module.value == 4
+
+
+def test_core_module_save_rejects_unmanaged_output(tmp_path):
+    module = _CoreStateful()
+    with pytest.raises(ValueError, match="Output path"):
+        module.save(str(tmp_path / "state.json"))

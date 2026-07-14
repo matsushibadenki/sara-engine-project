@@ -5,6 +5,8 @@
 import json
 from typing import Dict, Any
 
+from sara_engine.utils.project_paths import ensure_parent_directory
+
 
 class SaraModule:
     """
@@ -77,7 +79,8 @@ class SaraModule:
 
     def save(self, filepath: str):
         """Saves the module's state to a JSON file."""
-        with open(filepath, 'w', encoding='utf-8') as f:
+        resolved = ensure_parent_directory(filepath)
+        with open(resolved, 'w', encoding='utf-8') as f:
             json.dump(self.state_dict(), f, indent=2)
 
     def load(self, filepath: str):

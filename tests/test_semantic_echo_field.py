@@ -32,3 +32,15 @@ def test_expired_echo_cannot_bind_from_recent_history():
     field.step(LanguageEvent(1, "orthographic", "subject", role="agent"))
     trace = field.step(LanguageEvent(51, "orthographic", "predicate", role="agent"), gap=50)
     assert not any(decision.kind == "role_binding" for decision in trace.decisions)
+
+
+def test_echo_state_round_trip_preserves_reactivation_and_limits():
+    field = SparseSemanticEchoField(max_echoes=6, max_comparisons=4)
+    field.step(LanguageEvent(1, "orthographic", "river", role="place"))
+    state = field.state_dict()
+    restored = SparseSemanticEchoField(max_echoes=6, max_comparisons=4)
+    restored.load_state_dict(state)
+
+    assert restored.state_dict() == state
+    trace = restored.step(LanguageEvent(2, "orthographic", "river", role="place"))
+    assert any(decision.kind == "reactivation" for decision in trace.decisions)
