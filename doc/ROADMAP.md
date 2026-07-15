@@ -41,6 +41,8 @@ The project is now structurally ready as a CPU-first SNN research product. The n
 - [Later] Phase 8 optional internal extensions: FAISS CPU and tiny-Transformer/cross-encoder references when their optional local dependencies are intentionally provisioned.
 - [Done] Internal benchmark, fixture, gap-loop, migration, Event Memory, maintenance, and Phase 19/20 observed-only completion surfaces.
 - [Done] Internal practical integration gate combines six inference tasks, Phase 4 continual drift recovery, architecture migration knowledge reuse, read-only legacy-state preservation, maintenance efficiency, reproducibility, and CPU-only execution without external devices.
+- [Done] Internal practical integration now also compares bounded knowledge revision uptake against a frozen initial-state control, verifying that new evidence updates the continued learner without mutating the control.
+- [Done] Internal practical integration now includes a source-grounded RAG case with citation identity and source-agreement assertions, while keeping multilingual real-data mismatches visible rather than masking them.
 - [Done] Phase 7: rerun the managed gap loop with the new source-backed data and complete the autonomous-material readiness gate without weakening the threshold.
 - [Done] Phase 7 independent corpus collected: 24 Train and 24 Evaluation records across disjoint three-domain sets, with provenance, license, revision, and near-duplicate metadata.
 - [Later] Phase 19/20 promotion, phonological recoding, dynamic semantic modes, and architecture-migration promotion require independent evidence before activation.

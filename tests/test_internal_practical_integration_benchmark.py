@@ -36,6 +36,8 @@ def test_internal_practical_integration_benchmark_passes_without_external_device
     assert report["execution_policy"]["cpu_only"] is True
     assert report["checks"]["practical_task_quality"] is True
     assert report["checks"]["continual_learning_and_drift_recovery"] is True
+    assert report["checks"]["revision_uptake_against_frozen_control"] is True
+    assert report["checks"]["source_grounding_and_citation"] is True
     assert report["checks"]["architecture_change_knowledge_reuse"] is True
     assert report["checks"]["reproducible_state_migration"] is True
     assert report["metrics"]["practical_task_count"] >= 6

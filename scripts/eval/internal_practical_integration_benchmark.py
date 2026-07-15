@@ -21,6 +21,7 @@ for path in (SRC_PATH, EVAL_PATH):
         sys.path.insert(0, path)
 
 from sara_engine.utils.project_paths import ensure_parent_directory, workspace_path  # noqa: E402
+from sara_engine.rag.rag_pipeline import SNNRAGPipeline  # noqa: E402
 
 
 DEFAULT_REPORT_PATH = workspace_path("evaluation", "internal_practical_integration_benchmark.json")
@@ -64,6 +65,60 @@ def _migration_fingerprint(report: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _run_revision_uptake_case(inference_module: Any) -> Dict[str, Any]:
+    """Compare bounded revision uptake with a frozen initial-state control."""
+    frozen = inference_module._build_engine()
+    continued = inference_module._build_engine()
+    initial_sequence = [10, 20, 30]
+    revised_sequence = [10, 20, 31]
+    frozen.learn_sequence(initial_sequence)
+    continued.learn_sequence(initial_sequence)
+    initial_prediction = inference_module._predict_next_token(continued, [10, 20])
+    for _ in range(2):
+        continued.learn_sequence(revised_sequence)
+    frozen_prediction = inference_module._predict_next_token(frozen, [10, 20])
+    revised_prediction = inference_module._predict_next_token(continued, [10, 20])
+    return {
+        "passed": bool(
+            initial_prediction == 30
+            and frozen_prediction == 30
+            and revised_prediction == 31
+        ),
+        "initial_prediction": initial_prediction,
+        "frozen_prediction": frozen_prediction,
+        "revised_prediction": revised_prediction,
+        "revision_uptake": bool(revised_prediction == 31),
+        "frozen_control_preserved": bool(frozen_prediction == 30),
+    }
+
+
+def _run_source_grounding_case() -> Dict[str, Any]:
+    rag = SNNRAGPipeline(sdr_size=256, max_chunk_size=200)
+    rag.add_document(
+        "Release gate passes after pytest evidence is complete.",
+        source="release_notes",
+    )
+    rag.add_document(
+        "Release should not proceed without pytest evidence.",
+        source="risk_notes",
+    )
+    trace = rag.query_with_rerank("release gate pytest evidence", top_k=1, candidate_k=2)
+    selected = trace.get("selected", []) if isinstance(trace, Mapping) else []
+    top = selected[0] if selected and isinstance(selected[0], Mapping) else {}
+    metrics = trace.get("metrics", {}) if isinstance(trace, Mapping) else {}
+    agreement = float(metrics.get("sparse_rag_rerank_source_agreement_observed", 0.0) or 0.0)
+    return {
+        "passed": bool(
+            agreement == 1.0
+            and str(top.get("citation_id", "") or "") == "release_notes#0"
+            and float(top.get("source_agreement", 0.0) or 0.0) > 0.0
+        ),
+        "source_agreement": agreement,
+        "citation_id": str(top.get("citation_id", "") or ""),
+        "selected_source_count": int(trace.get("selected_source_count", 0) or 0),
+    }
+
+
 def build_report() -> Dict[str, Any]:
     inference_module = _load_module(
         "internal_integration_inference", "inference_accuracy_benchmark.py"
@@ -84,12 +139,16 @@ def build_report() -> Dict[str, Any]:
     migration_first = migration_module.build_report()
     migration_second = migration_module.build_report()
     maintenance = maintenance_module.build_report()
+    revision_uptake = _run_revision_uptake_case(inference_module)
+    source_grounding = _run_source_grounding_case()
 
     inference_fingerprint = _inference_fingerprint(inference_first)
     migration_fingerprint = _migration_fingerprint(migration_first)
     checks = {
         "practical_task_quality": bool(inference_first.get("passed", False)),
         "continual_learning_and_drift_recovery": bool(phase4.get("passed", False)),
+        "revision_uptake_against_frozen_control": bool(revision_uptake["passed"]),
+        "source_grounding_and_citation": bool(source_grounding["passed"]),
         "architecture_change_knowledge_reuse": bool(migration_first.get("passed", False)),
         "state_migration_read_only_legacy": float(
             migration_first.get("metrics", {}).get("legacy_reference_unchanged", 0.0)
@@ -127,6 +186,7 @@ def build_report() -> Dict[str, Any]:
                 else {}
             ),
             "phase4_continual_score": float(phase4.get("overall_score", 0.0) or 0.0),
+            "revision_uptake": 1.0 if revision_uptake["revision_uptake"] else 0.0,
             "migration_target_replay_recall": float(
                 migration_first.get("metrics", {}).get("target_replay_recall", 0.0)
                 if isinstance(migration_first.get("metrics"), Mapping)
@@ -155,6 +215,8 @@ def build_report() -> Dict[str, Any]:
                 if isinstance(maintenance.get("metrics"), Mapping)
                 else {},
             },
+            "revision_uptake": revision_uptake,
+            "source_grounding": source_grounding,
         },
         "policy_notes": [
             "This benchmark uses only deterministic local CPU execution and managed fixtures.",
