@@ -24,6 +24,13 @@ def _load_module():
     return module
 
 
+def test_comparison_numeric_normalization_rejects_non_finite_values():
+    module = _load_module()
+    assert module._safe_float("NaN") == 0.0
+    assert module._safe_float("Infinity") == 0.0
+    assert module._safe_float(True) == 0.0
+
+
 def _external_validity_report(with_real_reference: bool = False):
     return {
         "passed": True,

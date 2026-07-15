@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from typing import Any, Dict, List, Mapping, Optional, Sequence
@@ -58,10 +59,13 @@ def _reference_readiness(report: Mapping[str, Any]) -> Mapping[str, Any]:
 
 
 def _safe_float(value: Any) -> float:
+    if isinstance(value, bool):
+        return 0.0
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError):
         return 0.0
+    return parsed if math.isfinite(parsed) else 0.0
 
 
 def _safe_int(value: Any) -> int:

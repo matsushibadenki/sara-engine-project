@@ -40,7 +40,10 @@ def build_report(readiness: Mapping[str, Any], isolation: Mapping[str, Any]) -> 
     isolation_schema_valid = isolation.get("schema") == "sara-phase7-isolation-audit-v1"
     implementation_ready = bool(readiness_schema_valid and readiness_checks and isolation_schema_valid and isolation_checks)
     gap_loop_ready = bool(readiness.get("passed", False))
-    isolation_evidence_complete = bool(isolation.get("passed", False))
+    isolation_evidence_complete = bool(
+        isolation.get("passed", False)
+        and isolation_checks.get("independent_evidence_scope_valid", False)
+    )
     phase7_complete = bool(implementation_ready and gap_loop_ready and isolation_evidence_complete)
     if phase7_complete:
         status = "phase7_complete"
@@ -64,6 +67,9 @@ def build_report(readiness: Mapping[str, Any], isolation: Mapping[str, Any]) -> 
         "phase7_complete": phase7_complete,
         "next_action": next_action,
         "readiness_passed": bool(readiness.get("passed", False)),
+        "independent_evidence_scope_valid": bool(
+            isolation_checks.get("independent_evidence_scope_valid", False)
+        ),
         "isolation_checks": dict(isolation_checks),
         "isolation_metrics": {
             "train_row_count": int(metrics.get("train_row_count", 0) or 0),

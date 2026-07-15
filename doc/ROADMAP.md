@@ -9,9 +9,41 @@ SARA Engine v1.1 is release-ready by the active gates:
 - v1.1 release gate: `15/15` checks passing
 - Research product completion gate: `14/14` checks passing
 - ANN-efficiency roadmap gate: `6/6` stages passing
-- Full test suite: `1008` tests passing in the project Python 3.10 environment
+- Full test suite: `1328` tests passing in the project Python 3.10 environment
 
 The project is now structurally ready as a CPU-first SNN research product. The next phase should convert proxy evidence into stronger external evidence, improve real-world usefulness, and keep the sparse/runtime policy intact.
+
+## Progress Snapshot
+
+- [Done] v1.1 release hardening, research-product gates, managed-output validation, and Phase 12-20 observed-only implementation surfaces.
+- [Done] Phase 18 Event Memory, Phase 19 liquid dynamics, and Phase 20 Semantic Echo controls have deterministic local benchmarks and completion gates.
+- [Done] Small-scale quality pass: Semantic Echo state round-trip, strict module state loading, managed model-save paths, and sparse label-event accounting.
+- [Done] Phase 7 isolation audit now normalizes ISO-8601 and Unix collection times before enforcing the train/evaluation time split.
+- [Done] Phase 7 isolation audit now rejects non-finite numeric collection times before split comparison.
+- [Done] Phase 7 isolation audit now rejects malformed near-duplicate signatures before overlap analysis.
+- [Done] Phase 7 isolation audit now rejects negative or fractional near-duplicate distance thresholds instead of disabling overlap checks.
+- [Done] Phase 7 isolation block policy now treats malformed near-duplicate signatures as a repair-blocking axis.
+- [Done] Phase 7 completion gate now requires explicit `evidence_scope=independent_external`, preventing fixture-only promotion.
+- [Done] Phase 7 independent corpus now contains 24 train and 24 evaluation rows across disjoint licensed source domains; isolation audit passes all checks.
+- [Done] Phase 7 gap-loop coverage now passes at `1.00`, and the completion gate reports `phase7_complete`.
+- [Done] Concept revalidation fixture generation now accepts explicitly supplied Phase 7 source-backed material, normalizes source hash/URL lineage, and no longer collapses to zero cases when the latent manifest is fixture-derived.
+- [Done] The research benchmark suite now rebuilds the autobot gap loop before readiness and clears stale fixture isolation blocks, removing order-dependent false failures.
+- [Done] Physical-energy meter ingestion now rejects boolean and non-finite joule/power/duration values before pairing.
+- [Done] Phase 6 now supports optional macOS `ioreg` system-power estimation through `--auto-system-energy-estimate`; estimates are stored with `measurement_quality=system_estimate` and `physical_evidence=false`.
+- [Done] Phase 6 readiness aggregation now normalizes non-finite and boolean numeric fields instead of silently treating them as valid measurements.
+- [Done] Phase 8 SARA/ANN comparison and ANN-efficiency gate now apply the same finite numeric normalization to proxy and maintenance metrics.
+- [Done] Phase 8 required CPU reference baseline and completion gate are verified; optional FAISS/tiny-Transformer comparisons remain additive work.
+- [Done] Phase 19/20 observed-only local completion gates are verified; promotion remains gated by independent held-out evidence and physical/regression review.
+- [Done] Full project regression suite passes with `1328` tests after the latest gate and input-validation hardening.
+- [Done] Internal Phase 6 path: macOS `ioreg` system estimates can exercise the complete paired-data pipeline; values remain explicitly non-physical evidence.
+- [Done] Phase 8 required internal CPU reference path, quality parity, comparison report, and completion gate.
+- [Later] Phase 6 external-only evidence: collect real paired SARA/ANN physical energy rows with an external meter or authorized privileged power session, then validate `joule_per_success` under the frozen fairness contract.
+- [Later] Phase 8 optional internal extensions: FAISS CPU and tiny-Transformer/cross-encoder references when their optional local dependencies are intentionally provisioned.
+- [Done] Internal benchmark, fixture, gap-loop, migration, Event Memory, maintenance, and Phase 19/20 observed-only completion surfaces.
+- [Done] Internal practical integration gate combines six inference tasks, Phase 4 continual drift recovery, architecture migration knowledge reuse, read-only legacy-state preservation, maintenance efficiency, reproducibility, and CPU-only execution without external devices.
+- [Done] Phase 7: rerun the managed gap loop with the new source-backed data and complete the autonomous-material readiness gate without weakening the threshold.
+- [Done] Phase 7 independent corpus collected: 24 Train and 24 Evaluation records across disjoint three-domain sets, with provenance, license, revision, and near-duplicate metadata.
+- [Later] Phase 19/20 promotion, phonological recoding, dynamic semantic modes, and architecture-migration promotion require independent evidence before activation.
 
 * **ROADMAP closure audit:**
   * DONE: release-critical path is complete for the v1.1 baseline.

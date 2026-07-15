@@ -1346,6 +1346,18 @@ def main():
             "internal_maintenance_efficiency_benchmark_summary.txt",
         ),
     )
+    parser_internal_integration = subparsers.add_parser(
+        "eval-internal-practical-integration",
+        help="Run the internal-only practical integration benchmark.",
+    )
+    parser_internal_integration.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "internal_practical_integration_benchmark.json"),
+    )
+    parser_internal_integration.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "internal_practical_integration_benchmark_summary.txt"),
+    )
 
     parser_operator_llm = subparsers.add_parser(
         "eval-operator-llm-assistant-readiness",
@@ -1463,6 +1475,11 @@ def main():
     )
     parser_physical_pair.add_argument("--sara-joules", type=float, default=0.0)
     parser_physical_pair.add_argument("--ann-joules", type=float, default=0.0)
+    parser_physical_pair.add_argument(
+        "--auto-system-energy-estimate",
+        action="store_true",
+        help="Estimate energy from macOS ioreg telemetry; this is not physical-meter evidence.",
+    )
     parser_physical_pair.add_argument(
         "--measurement-path",
         default="data/raw/energy_measurements.jsonl",
@@ -2787,6 +2804,18 @@ def main():
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
+    elif args.command == "eval-internal-practical-integration":
+        command = [
+            sys.executable,
+            "scripts/eval/internal_practical_integration_benchmark.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
     elif args.command == "eval-operator-llm-assistant-readiness":
         command = [
             sys.executable,
@@ -2942,6 +2971,8 @@ def main():
             "--meter-template-path",
             str(args.meter_template_path),
         ]
+        if args.auto_system_energy_estimate:
+            command.append("--auto-system-energy-estimate")
         if args.dry_run:
             command.append("--dry-run")
         result = subprocess.run(command)

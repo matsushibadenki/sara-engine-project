@@ -34,3 +34,18 @@ def test_phase7_isolation_block_policy_releases_only_its_own_axes():
     assert policy["action"] == "released"
     assert policy["targets"]["blocked_request_ids"] == ["normal_gap"]
     assert "fixture_gap" not in policy["targets"]["blocked_request_missing_axes"]
+
+
+def test_phase7_isolation_block_policy_blocks_invalid_signature_format():
+    module = _load_module()
+    policy = module.build_policy(
+        {
+            "passed": False,
+            "checks": {"near_duplicate_signature_format_valid": False},
+        },
+        {"targets": [{"request_id": "fixture_gap"}]},
+    )
+    assert policy["failed_axes"] == ["near_duplicate_signature_format_valid"]
+    assert policy["targets"]["blocked_request_missing_axes"]["fixture_gap"] == [
+        "near_duplicate_signature_format_valid"
+    ]

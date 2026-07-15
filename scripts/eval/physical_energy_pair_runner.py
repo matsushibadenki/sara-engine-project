@@ -7,8 +7,10 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import platform
+import re
 import subprocess
 import sys
 import time
@@ -44,11 +46,13 @@ DEFAULT_EVENT_MEMORY_MAINTENANCE_COUPLING_REPORT_PATH = workspace_path(
 
 
 def _positive_float(value: Any, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a finite number.")
     try:
         parsed = float(value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"{field_name} must be a number.") from exc
-    if parsed <= 0.0:
+        raise ValueError(f"{field_name} must be a finite number.") from exc
+    if not math.isfinite(parsed) or parsed <= 0.0:
         raise ValueError(f"{field_name} must be greater than zero.")
     return parsed
 
@@ -141,6 +145,36 @@ def _cpu_model() -> str:
     if chip or model_identifier:
         return " ".join(part for part in (chip, model_identifier) if part)
     return platform.processor() or platform.machine()
+
+
+def _macos_system_power_sample() -> Optional[Dict[str, Any]]:
+    """Read macOS system power telemetry as an explicitly non-physical estimate."""
+    if sys.platform != "darwin":
+        return None
+    try:
+        result = subprocess.run(
+            ["ioreg", "-r", "-k", "BatteryData", "-d", "1"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    match = re.search(r'"SystemPowerIn"\s*=\s*([0-9]+)', result.stdout)
+    if not match:
+        return None
+    milliwatts = float(match.group(1))
+    if milliwatts <= 0.0:
+        return None
+    return {
+        "watts": milliwatts / 1000.0,
+        "source": "macos_ioreg_system_power",
+        "measurement_quality": "system_estimate",
+        "physical_evidence": False,
+    }
 
 
 def build_manifest(
@@ -322,6 +356,7 @@ def execute_pair(
     *,
     trace_path: str,
     dry_run: bool,
+    auto_system_energy_estimate: bool = False,
 ) -> List[Dict[str, Any]]:
     traces: List[Dict[str, Any]] = []
     for order_index, system in enumerate(manifest["run_order"], start=1):
@@ -342,6 +377,9 @@ def execute_pair(
             "status": "planned" if dry_run else "pending",
         }
         if not dry_run:
+            power_before = (
+                _macos_system_power_sample() if auto_system_energy_estimate else None
+            )
             started = time.perf_counter()
             environment = dict(os.environ)
             thread_count = str(manifest["thread_count"])
@@ -361,6 +399,27 @@ def execute_pair(
                 env=environment,
             )
             trace["wall_duration_seconds"] = time.perf_counter() - started
+            power_after = (
+                _macos_system_power_sample() if auto_system_energy_estimate else None
+            )
+            if power_before and power_after:
+                average_watts = (float(power_before["watts"]) + float(power_after["watts"])) / 2.0
+                trace["system_energy_estimate"] = {
+                    "average_watts": average_watts,
+                    "duration_seconds": trace["wall_duration_seconds"],
+                    "joules": average_watts * trace["wall_duration_seconds"],
+                    "source": "macos_ioreg_system_power",
+                    "measurement_quality": "system_estimate",
+                    "physical_evidence": False,
+                }
+            elif auto_system_energy_estimate:
+                trace["system_energy_estimate"] = {
+                    "available": False,
+                    "source": "macos_ioreg_system_power",
+                    "measurement_quality": "system_estimate",
+                    "physical_evidence": False,
+                    "notes": "macOS SystemPowerIn telemetry was unavailable before or after the workload.",
+                }
             trace["returncode"] = result.returncode
             trace["status"] = "passed" if result.returncode == 0 else "failed"
             trace["stderr_tail"] = result.stderr[-1000:]
@@ -382,6 +441,9 @@ def append_measured_rows(
     sara_joules: float,
     ann_joules: float,
     measurement_path: str,
+    source: str = "physical_energy_pair_runner",
+    measurement_quality: str = "physical_meter",
+    physical_evidence: bool = True,
 ) -> List[Dict[str, Any]]:
     energy = _load_energy_module()
     joules = {"sara": float(sara_joules), "ann": float(ann_joules)}
@@ -398,7 +460,9 @@ def append_measured_rows(
             success_count=int(result["success_count"]),
             trial_count=int(result["trial_count"]),
             joules=joules[system],
-            source="physical_energy_pair_runner",
+            source=source,
+            measurement_quality=measurement_quality,
+            physical_evidence=physical_evidence,
             duration_seconds=float(result["duration_seconds"]),
             protocol_version=str(manifest["protocol_version"]),
             pair_id=str(manifest["pair_id"]),
@@ -875,6 +939,11 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--measurement-tool", default="external-meter-manual-v1")
     parser.add_argument("--sara-joules", type=float, default=0.0)
     parser.add_argument("--ann-joules", type=float, default=0.0)
+    parser.add_argument(
+        "--auto-system-energy-estimate",
+        action="store_true",
+        help="Estimate workload energy from macOS ioreg telemetry; this is not physical-meter evidence.",
+    )
     parser.add_argument("--measurement-path", default=DEFAULT_MEASUREMENT_PATH)
     parser.add_argument(
         "--meter-reading-path",
@@ -919,7 +988,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2, ensure_ascii=False, sort_keys=True)
         handle.write("\n")
-    traces = execute_pair(manifest, trace_path=args.trace_path, dry_run=args.dry_run)
+    traces = execute_pair(
+        manifest,
+        trace_path=args.trace_path,
+        dry_run=args.dry_run,
+        auto_system_energy_estimate=args.auto_system_energy_estimate,
+    )
     meter_template = build_meter_reading_template(manifest, traces)
     meter_template_path = ensure_parent_directory(args.meter_template_path)
     with open(meter_template_path, "w", encoding="utf-8") as handle:
@@ -932,6 +1006,33 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         meter_joules = load_meter_joules(args.meter_reading_path, manifest=manifest)
         sara_joules = meter_joules["sara"]
         ann_joules = meter_joules["ann"]
+    measurement_quality = "physical_meter"
+    physical_evidence = True
+    measurement_source = "physical_energy_pair_runner"
+    if (
+        not args.dry_run
+        and args.auto_system_energy_estimate
+        and sara_joules <= 0.0
+        and ann_joules <= 0.0
+    ):
+        estimates = {
+            str(trace.get("system", "")): trace.get("system_energy_estimate", {})
+            for trace in traces
+            if isinstance(trace, Mapping)
+        }
+        sara_estimate = estimates.get("sara", {})
+        ann_estimate = estimates.get("ann", {})
+        if (
+            isinstance(sara_estimate, Mapping)
+            and isinstance(ann_estimate, Mapping)
+            and float(sara_estimate.get("joules", 0.0) or 0.0) > 0.0
+            and float(ann_estimate.get("joules", 0.0) or 0.0) > 0.0
+        ):
+            sara_joules = float(sara_estimate["joules"])
+            ann_joules = float(ann_estimate["joules"])
+            measurement_quality = "system_estimate"
+            physical_evidence = False
+            measurement_source = "macos_ioreg_system_power"
     if not args.dry_run and sara_joules > 0.0 and ann_joules > 0.0:
         recorded_rows = append_measured_rows(
             manifest,
@@ -939,6 +1040,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             sara_joules=sara_joules,
             ann_joules=ann_joules,
             measurement_path=args.measurement_path,
+            source=measurement_source,
+            measurement_quality=measurement_quality,
+            physical_evidence=physical_evidence,
         )
     report = build_pair_report(
         manifest,

@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import sys
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, Mapping, Optional, Sequence
 
 
@@ -74,11 +76,34 @@ def _values(rows: Iterable[Mapping[str, Any]], key: str) -> set[str]:
     return {str(row.get(key, "") or "").strip() for row in rows if str(row.get(key, "") or "").strip()}
 
 
+def _time_value(value: str) -> Optional[float]:
+    """Normalize numeric or ISO-8601 collection times before comparing splits."""
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        numeric = float(text)
+        return numeric if math.isfinite(numeric) else None
+    except ValueError:
+        pass
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
+
+
 def _hamming(left: str, right: str) -> Optional[int]:
     try:
         return (int(left, 16) ^ int(right, 16)).bit_count()
     except ValueError:
         return None
+
+
+def _signature_is_valid(value: str) -> bool:
+    return bool(re.fullmatch(r"[0-9a-f]{16}", str(value or "").lower()))
 
 
 def build_report(
@@ -87,6 +112,12 @@ def build_report(
     *,
     max_signature_hamming_distance: int = 3,
 ) -> Dict[str, Any]:
+    if (
+        isinstance(max_signature_hamming_distance, bool)
+        or not isinstance(max_signature_hamming_distance, int)
+        or max_signature_hamming_distance < 0
+    ):
+        raise ValueError("max_signature_hamming_distance must be a non-negative integer")
     train = [dict(row) for row in train_rows if isinstance(row, Mapping)]
     evaluation = [dict(row) for row in evaluation_rows if isinstance(row, Mapping)]
     for row in train + evaluation:
@@ -102,15 +133,35 @@ def build_report(
     evaluation_times = _values(evaluation, "collection_time")
     train_signatures = _values(train, "near_duplicate_signature")
     evaluation_signatures = _values(evaluation, "near_duplicate_signature")
+    evidence_scope_valid = bool(
+        train
+        and evaluation
+        and all(
+            str(row.get("evidence_scope", "") or "").strip().lower()
+            == "independent_external"
+            for row in train + evaluation
+        )
+    )
+    signature_format_valid = all(
+        _signature_is_valid(value) for value in train_signatures | evaluation_signatures
+    )
     near_duplicate_pairs = []
     for left in sorted(train_signatures):
         for right in sorted(evaluation_signatures):
             distance = _hamming(left, right)
-            if distance is not None and distance <= int(max_signature_hamming_distance):
+            if distance is not None and distance <= max_signature_hamming_distance:
                 near_duplicate_pairs.append({"train_signature": left, "evaluation_signature": right, "hamming_distance": distance})
     required_fields = ("source_hash", "source_revision", "source_domain", "collection_time", "near_duplicate_signature")
     metadata_complete = all(all(str(row.get(field, "") or "").strip() for field in required_fields) for row in train + evaluation)
-    time_split_valid = bool(train_times and evaluation_times and max(train_times) < min(evaluation_times))
+    train_time_values = [_time_value(value) for value in train_times]
+    evaluation_time_values = [_time_value(value) for value in evaluation_times]
+    time_split_valid = bool(
+        train_time_values
+        and evaluation_time_values
+        and all(value is not None for value in train_time_values + evaluation_time_values)
+        and max(value for value in train_time_values if value is not None)
+        < min(value for value in evaluation_time_values if value is not None)
+    )
     checks = {
         "train_rows_present": bool(train),
         "evaluation_rows_present": bool(evaluation),
@@ -119,6 +170,8 @@ def build_report(
         "source_revision_isolated": not bool(train_revisions & evaluation_revisions),
         "source_domain_isolated": not bool(train_domains & evaluation_domains),
         "time_split_isolated": time_split_valid,
+        "independent_evidence_scope_valid": evidence_scope_valid,
+        "near_duplicate_signature_format_valid": signature_format_valid,
         "near_duplicate_signature_isolated": not bool(near_duplicate_pairs),
     }
     return {
@@ -132,7 +185,7 @@ def build_report(
             "shared_source_revisions": sorted(train_revisions & evaluation_revisions),
             "shared_source_domains": sorted(train_domains & evaluation_domains),
             "near_duplicate_pairs": near_duplicate_pairs,
-            "max_signature_hamming_distance": int(max_signature_hamming_distance),
+            "max_signature_hamming_distance": max_signature_hamming_distance,
         },
         "policy_notes": [
             "Phase 7 isolation is a release guard for autonomous material generation, not a quality benchmark.",

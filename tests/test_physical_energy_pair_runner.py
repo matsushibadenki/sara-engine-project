@@ -118,6 +118,24 @@ def test_physical_energy_pair_runner_alternates_even_replicate_order():
     assert manifest["run_order"] == ["ann", "sara"]
 
 
+def test_macos_system_power_sample_is_explicitly_non_physical(monkeypatch):
+    module = _load_module()
+
+    class Result:
+        returncode = 0
+        stdout = '"SystemPowerIn" = 19531\n'
+
+    monkeypatch.setattr(module.sys, "platform", "darwin")
+    monkeypatch.setattr(module.subprocess, "run", lambda *args, **kwargs: Result())
+
+    sample = module._macos_system_power_sample()
+
+    assert sample["watts"] == 19.531
+    assert sample["source"] == "macos_ioreg_system_power"
+    assert sample["measurement_quality"] == "system_estimate"
+    assert sample["physical_evidence"] is False
+
+
 def test_energy_pair_workload_reports_sparse_maintenance_for_sara():
     module = _load_workload_module()
 
@@ -476,6 +494,29 @@ def test_load_meter_joules_rejects_mismatched_pair():
     finally:
         if os.path.exists(reading_path):
             os.remove(reading_path)
+
+
+def test_load_meter_joules_rejects_boolean_and_non_finite_values():
+    module = _load_module()
+    for value in (True, "NaN", "Infinity"):
+        reading_path = workspace_path("evaluation", "test_physical_meter_invalid_value.json")
+        payload = {
+            "pair_id": "meter-pair",
+            "replicate_index": 1,
+            "readings": {"sara": {"joules": value}, "ann": {"joules": 2.0}},
+        }
+        with open(reading_path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+        try:
+            try:
+                module.load_meter_joules(reading_path, manifest={"pair_id": "meter-pair", "replicate_index": 1})
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("Expected invalid meter value to be rejected.")
+        finally:
+            if os.path.exists(reading_path):
+                os.remove(reading_path)
 
 
 def test_build_meter_reading_template_carries_workload_duration():

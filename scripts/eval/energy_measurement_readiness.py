@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import platform
 import statistics
@@ -88,13 +89,18 @@ MAINTENANCE_FIELDS = (
 
 
 def _safe_float(value: Any) -> float:
+    if isinstance(value, bool):
+        return 0.0
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError):
         return 0.0
+    return parsed if math.isfinite(parsed) else 0.0
 
 
 def _safe_int(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
     try:
         return int(value)
     except (TypeError, ValueError):
@@ -297,6 +303,8 @@ def build_measurement_row(
     maintenance_phase_count: int | None = None,
     maintenance_refresh_count: int | None = None,
     maintenance_event_cost: float | None = None,
+    measurement_quality: str = "physical_meter",
+    physical_evidence: bool = True,
 ) -> Dict[str, Any]:
     resolved_joules = float(joules)
     if resolved_joules <= 0.0 and average_watts is not None and duration_seconds is not None:
@@ -324,6 +332,8 @@ def build_measurement_row(
         "measured_repetitions": int(measured_repetitions),
         "trial_count": int(trial_count if trial_count is not None else success_count),
         "run_order": int(run_order),
+        "measurement_quality": str(measurement_quality),
+        "physical_evidence": bool(physical_evidence),
     }
     if not row["environment_fingerprint"] and cpu_model and process_affinity and power_mode:
         row["environment_fingerprint"] = default_environment_fingerprint(
@@ -1527,8 +1537,11 @@ def build_energy_measurement_readiness_report(
         valid_rows,
         max_success_rate_delta=max_success_rate_delta,
     )
+    physical_rows = [row for row in valid_rows if row.get("physical_evidence", True) is not False]
+    system_estimate_rows = [row for row in valid_rows if row.get("physical_evidence", True) is False]
     has_real_measurements = bool(
-        aggregate["has_sara_measurements"] and aggregate["has_ann_measurements"]
+        any(str(row.get("system", "")).lower() == "sara" for row in physical_rows)
+        and any(str(row.get("system", "")).lower() == "ann" for row in physical_rows)
     )
     ratio = float(aggregate["ann_to_sara_joule_efficiency_ratio"])
     paired_task_count = int(aggregate.get("paired_task_count", 0) or 0)
@@ -1629,14 +1642,17 @@ def build_energy_measurement_readiness_report(
         aggregate,
         internal_maintenance_reference,
     )
+    physical_checks_passed = bool(all(checks.values()) and has_real_measurements)
     return {
         "schema": "sara-energy-measurement-readiness-v2",
-        "passed": bool(protocol_ready and (not rows or all(checks.values()))),
+        "passed": bool(protocol_ready and (not rows or physical_checks_passed)),
         "status": "real_joule_evidence_passed"
-        if all(checks.values())
-        else ("protocol_ready_pending_measurements" if protocol_ready and not rows else "needs_measurement_repair"),
+        if physical_checks_passed
+        else ("system_estimate_pending_physical_measurement" if system_estimate_rows and protocol_ready else ("protocol_ready_pending_measurements" if protocol_ready and not rows else "needs_measurement_repair")),
         "measurement_count": len(rows),
         "valid_measurement_count": len(valid_rows),
+        "physical_measurement_count": len(physical_rows),
+        "system_estimate_measurement_count": len(system_estimate_rows),
         "real_joule_measurements_present": has_real_measurements,
         "min_ann_to_sara_ratio": float(min_ann_to_sara_ratio),
         "max_success_rate_delta": float(max_success_rate_delta),

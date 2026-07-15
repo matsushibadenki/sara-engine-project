@@ -30,6 +30,8 @@ def _row(
     maintenance_phase_count=None,
     maintenance_refresh_count=None,
     maintenance_event_cost=None,
+    measurement_quality="physical_meter",
+    physical_evidence=True,
 ):
     return module.build_measurement_row(
         run_id=f"{system}-{task}-{replicate}",
@@ -57,6 +59,8 @@ def _row(
         maintenance_phase_count=maintenance_phase_count,
         maintenance_refresh_count=maintenance_refresh_count,
         maintenance_event_cost=maintenance_event_cost,
+        measurement_quality=measurement_quality,
+        physical_evidence=physical_evidence,
     )
 
 
@@ -97,6 +101,22 @@ def test_energy_measurement_readiness_is_protocol_ready_without_rows():
     assert "Measurement Session Plan:" in summary
     assert "task=real_data_external_validity" in summary
     assert "python scripts/sara_cli.py record-energy-measurement" in summary
+
+
+def test_system_estimates_are_recorded_but_do_not_complete_physical_gate():
+    module = _load_module()
+    rows = [
+        _row(module, "sara", "qa", 2.0, measurement_quality="system_estimate", physical_evidence=False),
+        _row(module, "ann", "qa", 8.0, measurement_quality="system_estimate", physical_evidence=False),
+    ]
+
+    report = module.build_energy_measurement_readiness_report(rows)
+
+    assert report["passed"] is False
+    assert report["status"] == "system_estimate_pending_physical_measurement"
+    assert report["physical_measurement_count"] == 0
+    assert report["system_estimate_measurement_count"] == 2
+    assert report["real_joule_measurements_present"] is False
 
 
 def test_energy_measurement_readiness_accepts_real_joule_advantage():
@@ -697,3 +717,10 @@ def test_energy_measurement_reports_median_and_mad_across_replicates():
     assert stats["valid_pair_count"] == 3
     assert stats["sara_joule_per_success_mad"] > 0.0
     assert report["metrics"]["run_order_balance"] == {"sara_first": 2, "ann_first": 1}
+
+
+def test_safe_numeric_helpers_reject_non_finite_and_boolean_values():
+    module = _load_module()
+    assert module._safe_float("NaN") == 0.0
+    assert module._safe_float("Infinity") == 0.0
+    assert module._safe_int(True) == 0

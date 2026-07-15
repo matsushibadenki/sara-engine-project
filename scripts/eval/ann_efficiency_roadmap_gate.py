@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import subprocess
 import sys
@@ -55,10 +56,14 @@ def _checks(report: Mapping[str, Any]) -> Mapping[str, Any]:
 
 
 def _float(mapping: Mapping[str, Any], name: str) -> float:
+    value = mapping.get(name, 0.0)
+    if isinstance(value, bool):
+        return 0.0
     try:
-        return float(mapping.get(name, 0.0) or 0.0)
+        parsed = float(value or 0.0)
     except (TypeError, ValueError):
         return 0.0
+    return parsed if math.isfinite(parsed) else 0.0
 
 
 def _measurement_plan(report: Mapping[str, Any] | None) -> Mapping[str, Any]:

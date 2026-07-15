@@ -266,9 +266,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--report-path", default=DEFAULT_REPORT_PATH)
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--max-cases", type=int, default=4)
+    parser.add_argument(
+        "--additional-material-path",
+        action="append",
+        default=[],
+        help="Additional managed source-backed JSONL material to improve source diversity.",
+    )
     args = parser.parse_args(argv)
 
     materials = read_jsonl(args.manifest_path)
+    for additional_path in args.additional_material_path:
+        for row in read_jsonl(additional_path):
+            normalized = dict(row)
+            if not normalized.get("material_hash"):
+                normalized["material_hash"] = normalized.get("source_hash", "")
+            if not normalized.get("source_ref"):
+                normalized["source_ref"] = normalized.get("source_url", "")
+            if normalized.get("material_hash") and normalized.get("source_ref"):
+                materials.append(normalized)
     cases = build_concept_revalidation_cases(materials, max_cases=args.max_cases)
     resolved_fixture = write_jsonl(args.fixture_path, cases)
     report = build_report(

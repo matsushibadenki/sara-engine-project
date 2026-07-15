@@ -128,6 +128,45 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             ],
         ),
         BenchmarkCommand(
+            command_id="internal_practical_integration",
+            purpose="Verify practical tasks, continual learning, architecture migration, reproducibility, and CPU-only execution without external devices.",
+            command=[
+                sys.executable,
+                "scripts/eval/internal_practical_integration_benchmark.py",
+            ],
+            managed_outputs=[
+                workspace_path(
+                    "evaluation", "internal_practical_integration_benchmark.json"
+                ),
+                workspace_path(
+                    "evaluation", "internal_practical_integration_benchmark_summary.txt"
+                ),
+            ],
+        ),
+        BenchmarkCommand(
+            command_id="autobot_gap_loop_prepare",
+            purpose="Rebuild the managed gap loop before downstream coverage checks and clear stale fixture isolation blocks.",
+            command=[
+                sys.executable,
+                "bot/run_gap_loop.py",
+                "--clear-blocked-request-id",
+                "fixture_counterexample_gap",
+                "--clear-blocked-request-id",
+                "fixture_source_diversity_gap",
+                "--clear-blocked-request-id",
+                "fixture_repair_support_gap",
+                "--clear-blocked-request-id",
+                "fixture_revision_conflict_gap",
+            ],
+            managed_outputs=[
+                workspace_path("autobot", "gap_loop_report.json"),
+                workspace_path("autobot", "gap_loop_summary.txt"),
+                workspace_path("autobot", "dataset_builder_collection_targets.json"),
+                processed_data_path("autobot", "gap_materials.jsonl"),
+                processed_data_path("autobot", "gap_curriculum_manifest.jsonl"),
+            ],
+        ),
+        BenchmarkCommand(
             command_id="gap_materials_closed_loop",
             purpose="Measure whether deterministic gap materials reduce own-latent fixture coverage gaps.",
             command=[
@@ -432,6 +471,10 @@ def build_recommended_commands(*, rust_iterations: int) -> List[BenchmarkCommand
             command=[
                 sys.executable,
                 "scripts/eval/build_concept_revalidation_fixture.py",
+                "--additional-material-path",
+                processed_data_path("phase7", "train.jsonl"),
+                "--additional-material-path",
+                processed_data_path("phase7", "evaluation.jsonl"),
             ],
             managed_outputs=[
                 processed_data_path(

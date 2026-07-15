@@ -27,6 +27,8 @@ PHASE7_AXES = {
     "source_revision_isolated",
     "source_domain_isolated",
     "time_split_isolated",
+    "independent_evidence_scope_valid",
+    "near_duplicate_signature_format_valid",
     "near_duplicate_signature_isolated",
 }
 

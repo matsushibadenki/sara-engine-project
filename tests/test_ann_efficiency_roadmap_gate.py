@@ -15,6 +15,13 @@ def _load_gate_module():
     return module
 
 
+def test_roadmap_gate_numeric_normalization_rejects_non_finite_values():
+    module = _load_gate_module()
+    assert module._float({"value": "NaN"}, "value") == 0.0
+    assert module._float({"value": "Infinity"}, "value") == 0.0
+    assert module._float({"value": True}, "value") == 0.0
+
+
 def _energy_report():
     metrics = {
         "performance_energy_ratio_proxy": 0.22,
