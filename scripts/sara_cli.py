@@ -344,6 +344,10 @@ def main():
     parser_autobot_gap_loop_readiness.add_argument("--gap-report-path", default="")
     parser_autobot_gap_loop_readiness.add_argument("--enqueue-report-path", default="")
     parser_autobot_gap_loop_readiness.add_argument(
+        "--isolation-audit-path",
+        default=workspace_path("evaluation", "phase7_isolation_audit.json"),
+    )
+    parser_autobot_gap_loop_readiness.add_argument(
         "--report-path",
         default=workspace_path("evaluation", "autobot_gap_loop_readiness.json"),
     )
@@ -1981,6 +1985,8 @@ def main():
             str(args.report_path),
             "--summary-path",
             str(args.summary_path),
+            "--isolation-audit-path",
+            str(args.isolation_audit_path),
             "--min-accepted-count",
             str(args.min_accepted_count),
             "--min-gap-build-coverage",

@@ -23,6 +23,42 @@ DEFAULT_LOOP_REPORT_PATH = workspace_path("autobot", "gap_loop_report.json")
 DEFAULT_COLLECTION_TARGETS_PATH = workspace_path("autobot", "dataset_builder_collection_targets.json")
 DEFAULT_REPORT_PATH = workspace_path("evaluation", "autobot_gap_loop_readiness.json")
 DEFAULT_SUMMARY_PATH = workspace_path("evaluation", "autobot_gap_loop_readiness_summary.txt")
+DEFAULT_ISOLATION_AUDIT_PATH = workspace_path("evaluation", "phase7_isolation_audit.json")
+
+ISOLATION_AXIS_REPAIR_REQUIREMENTS = {
+    "metadata_complete": {
+        "required_fields": ["source_hash", "source_revision", "source_domain", "collection_time", "near_duplicate_signature"],
+        "verification": "all train and evaluation rows must contain non-empty provenance fields",
+    },
+    "source_hash_isolated": {
+        "required_fields": ["source_hash"],
+        "verification": "shared_source_hashes must be empty after the full split audit",
+    },
+    "source_revision_isolated": {
+        "required_fields": ["source_revision"],
+        "verification": "shared_source_revisions must be empty after the full split audit",
+    },
+    "source_domain_isolated": {
+        "required_fields": ["source_domain"],
+        "verification": "shared_source_domains must be empty after the full split audit",
+    },
+    "time_split_isolated": {
+        "required_fields": ["collection_time"],
+        "verification": "the latest train timestamp must be earlier than the earliest evaluation timestamp",
+    },
+    "independent_evidence_scope_valid": {
+        "required_fields": ["evidence_scope"],
+        "verification": "all rows must declare independent_external evidence scope",
+    },
+    "near_duplicate_signature_format_valid": {
+        "required_fields": ["near_duplicate_signature"],
+        "verification": "all signatures must be valid 16-digit lowercase hexadecimal values",
+    },
+    "near_duplicate_signature_isolated": {
+        "required_fields": ["near_duplicate_signature"],
+        "verification": "all train/evaluation signature pairs must exceed the configured Hamming threshold",
+    },
+}
 
 
 def read_json(path: str) -> Optional[Dict[str, Any]]:
@@ -139,6 +175,8 @@ def _build_fixture_repair_actions(
     blocked_request_ids: Optional[Sequence[str]] = None,
     blocked_request_missing_axes: Optional[Mapping[str, Sequence[str]]] = None,
     clearable_blocked_request_ids: Optional[Sequence[str]] = None,
+    request_isolation_audit: Optional[Mapping[str, Any]] = None,
+    global_isolation_audit: Optional[Mapping[str, Any]] = None,
 ) -> Sequence[Dict[str, Any]]:
     targets_by_request = {
         str(item.get("request_id", "") or ""): item
@@ -154,6 +192,8 @@ def _build_fixture_repair_actions(
     clearable_blocked_request_id_set = {
         str(item) for item in (clearable_blocked_request_ids or []) if str(item)
     }
+    request_isolation_audit = request_isolation_audit if isinstance(request_isolation_audit, Mapping) else {}
+    global_isolation_audit = global_isolation_audit if isinstance(global_isolation_audit, Mapping) else {}
     actions = []
     for request_id in sorted(requested_slots_by_request):
         requested = _safe_int(requested_slots_by_request.get(request_id))
@@ -205,6 +245,88 @@ def _build_fixture_repair_actions(
             ]
         is_blocked = request_id in blocked_request_id_set
         is_clearable = request_id in clearable_blocked_request_id_set
+        request_audit = request_isolation_audit.get(request_id, {})
+        request_audit = request_audit if isinstance(request_audit, Mapping) else {}
+        isolation_evidence = {
+            "schema": "sara-phase7-repair-action-isolation-evidence-v1",
+            "global": {
+                "available": bool(global_isolation_audit.get("available", False)),
+                "passed": global_isolation_audit.get("passed"),
+                "missing_axes": [
+                    str(axis)
+                    for axis in global_isolation_audit.get("missing_axes", [])
+                    if str(axis)
+                ],
+                "overlap_values": {
+                    "shared_source_hashes": [
+                        str(value)
+                        for value in global_isolation_audit.get("shared_source_hashes", [])
+                        if str(value)
+                    ],
+                    "shared_source_revisions": [
+                        str(value)
+                        for value in global_isolation_audit.get("shared_source_revisions", [])
+                        if str(value)
+                    ],
+                    "shared_source_domains": [
+                        str(value)
+                        for value in global_isolation_audit.get("shared_source_domains", [])
+                        if str(value)
+                    ],
+                    "near_duplicate_pairs": [
+                        dict(value)
+                        for value in global_isolation_audit.get("near_duplicate_pairs", [])
+                        if isinstance(value, Mapping)
+                    ],
+                    "time_split_isolated": global_isolation_audit.get("time_split_isolated"),
+                },
+            },
+            "request": {
+                "row_count": _safe_int(request_audit.get("row_count")),
+                "axis_status": dict(request_audit.get("axis_status", {}))
+                if isinstance(request_audit.get("axis_status"), Mapping)
+                else {},
+                "missing_axes": [
+                    str(axis) for axis in request_audit.get("missing_axes", []) if str(axis)
+                ],
+                "source_hash_coverage": _safe_float(request_audit.get("source_hash_coverage")),
+                "source_revision_coverage": _safe_float(
+                    request_audit.get("source_revision_coverage")
+                ),
+                "source_domain_candidate_count": _safe_int(
+                    request_audit.get("candidate_source_domain_count")
+                ),
+                "collection_time_coverage": _safe_float(
+                    request_audit.get("collection_time_coverage")
+                ),
+            },
+        }
+        overlap_values = isolation_evidence["global"]["overlap_values"]
+        guidance_parts = [
+            "Phase 7 isolation evidence",
+            f"global={'PASS' if isolation_evidence['global']['passed'] is True else 'FAIL' if isolation_evidence['global']['available'] else 'UNAVAILABLE'}",
+            "failed_axes="
+            + (",".join(isolation_evidence["global"]["missing_axes"]) or "none"),
+            "time_split="
+            + (
+                str(overlap_values["time_split_isolated"])
+                if overlap_values["time_split_isolated"] is not None
+                else "unknown"
+            ),
+        ]
+        for label, key in (
+            ("shared_hashes", "shared_source_hashes"),
+            ("shared_revisions", "shared_source_revisions"),
+            ("shared_domains", "shared_source_domains"),
+        ):
+            values = overlap_values[key]
+            if values:
+                guidance_parts.append(f"{label}={','.join(values)}")
+        if overlap_values["near_duplicate_pairs"]:
+            guidance_parts.append(
+                f"near_duplicate_pairs={len(overlap_values['near_duplicate_pairs'])}"
+            )
+        operator_guidance = "; ".join(guidance_parts)
         command = ""
         if is_blocked and is_clearable and collection_targets_path:
             command = (
@@ -238,6 +360,18 @@ def _build_fixture_repair_actions(
                     f"--report-path {json.dumps(gap_report_path)}"
                 )
             )
+        isolation_audit_command = (
+            "python scripts/sara_cli.py eval-phase7-isolation "
+            "--report-path workspace/evaluation/phase7_isolation_audit.json "
+            "--summary-path workspace/evaluation/phase7_isolation_audit_summary.txt"
+        )
+        isolation_policy_command = (
+            "python scripts/sara_cli.py apply-phase7-isolation-block-policy "
+            "--audit-path workspace/evaluation/phase7_isolation_audit.json "
+            "--targets-path workspace/autobot/dataset_builder_collection_targets.json "
+            "--report-path workspace/evaluation/phase7_isolation_block_policy.json"
+        )
+        repair_command = command or "python bot/gap_materials_builder.py"
         actions.append(
             {
                 "request_id": request_id,
@@ -257,6 +391,19 @@ def _build_fixture_repair_actions(
                 "blocked_by_isolation_review": is_blocked,
                 "clearable_after_review": is_clearable,
                 "blocked_missing_axes": blocked_missing_axes,
+                "isolation_evidence": isolation_evidence,
+                "operator_guidance": operator_guidance,
+                "rerun_commands": {
+                    "audit_all_axes": isolation_audit_command,
+                    "reapply_block_policy": isolation_policy_command,
+                    "repair_request": repair_command,
+                    "failed_axes": list(isolation_evidence["global"]["missing_axes"]),
+                    "axis_repair_requirements": {
+                        axis: dict(ISOLATION_AXIS_REPAIR_REQUIREMENTS.get(axis, {}))
+                        for axis in isolation_evidence["global"]["missing_axes"]
+                        if axis in ISOLATION_AXIS_REPAIR_REQUIREMENTS
+                    },
+                },
                 "affected_checks": [
                     "autobot_gap_loop_readiness",
                     "event_memory_ingest_pipeline",
@@ -313,14 +460,26 @@ def _fixture_request_isolation_audit(
         collection_time_ready_count = sum(
             1 for row in request_rows if str(row.get("collection_time", "") or "").strip()
         )
+        source_hash_ready_count = sum(
+            1 for row in request_rows if str(row.get("source_hash", "") or "").strip()
+        )
+        source_revision_ready_count = sum(
+            1 for row in request_rows if str(row.get("source_revision", "") or "").strip()
+        )
         lineage_coverage = 1.0 if row_count <= 0 else lineage_ready_count / float(row_count)
         collection_time_coverage = (
             1.0 if row_count <= 0 else collection_time_ready_count / float(row_count)
+        )
+        source_hash_coverage = 1.0 if row_count <= 0 else source_hash_ready_count / float(row_count)
+        source_revision_coverage = (
+            1.0 if row_count <= 0 else source_revision_ready_count / float(row_count)
         )
         axis_status = {
             "source_domain": bool(candidate_source_domains) or bool(accepted_source_domains),
             "source_lineage": row_count <= 0 or lineage_coverage >= 1.0,
             "collection_time": row_count <= 0 or collection_time_coverage >= 1.0,
+            "source_hash": row_count <= 0 or source_hash_coverage >= 1.0,
+            "source_revision": row_count <= 0 or source_revision_coverage >= 1.0,
         }
         missing_axes = sorted(key for key, ready in axis_status.items() if not bool(ready))
         audit[request_id] = {
@@ -329,6 +488,8 @@ def _fixture_request_isolation_audit(
             "accepted_source_domain_count": len(accepted_source_domains),
             "lineage_coverage": lineage_coverage,
             "collection_time_coverage": collection_time_coverage,
+            "source_hash_coverage": source_hash_coverage,
+            "source_revision_coverage": source_revision_coverage,
             "axis_status": axis_status,
             "missing_axes": missing_axes,
         }
@@ -347,6 +508,7 @@ def build_report(
     min_accepted_count: int,
     min_gap_build_coverage: float,
     input_paths: Optional[Mapping[str, str]] = None,
+    isolation_audit: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     target_count = 0 if not isinstance(collection_targets, dict) else _safe_int(collection_targets.get("target_count"))
     requested_slot_count = _count_requested_slots(collection_targets)
@@ -454,6 +616,18 @@ def build_report(
         fixture_gap_rows=fixture_gap_rows,
         accepted_rows=accepted_rows,
     )
+    isolation_audit_available = isinstance(isolation_audit, dict) and bool(isolation_audit)
+    isolation_checks = (
+        isolation_audit.get("checks", {})
+        if isolation_audit_available and isinstance(isolation_audit.get("checks"), dict)
+        else {}
+    )
+    isolation_missing_axes = sorted(
+        str(axis) for axis, passed in isolation_checks.items() if passed is False and str(axis)
+    )
+    isolation_audit_passed = (
+        bool(isolation_audit.get("passed", False)) if isolation_audit_available else None
+    )
     blocked_request_ids = []
     blocked_request_missing_axes = {}
     if isinstance(collection_targets, dict):
@@ -474,11 +648,17 @@ def build_report(
     clearable_blocked_request_ids = sorted(
         request_id
         for request_id in blocked_request_ids
-        if not [str(axis) for axis in blocked_request_missing_axes.get(request_id, []) if str(axis)]
-        or (
+        if (
+            (
+                not [str(axis) for axis in blocked_request_missing_axes.get(request_id, []) if str(axis)]
+                and (not isolation_audit_available or isolation_audit_passed is True)
+            )
+            or (
             isinstance(fixture_request_isolation_audit.get(request_id, {}), dict)
             and int(fixture_request_isolation_audit.get(request_id, {}).get("row_count", 0) or 0) > 0
             and not fixture_request_isolation_audit.get(request_id, {}).get("missing_axes", [])
+            and (not isolation_audit_available or isolation_audit_passed is True)
+            )
         )
     )
     checks = {
@@ -544,6 +724,35 @@ def build_report(
         blocked_request_ids=blocked_request_ids,
         blocked_request_missing_axes=blocked_request_missing_axes,
         clearable_blocked_request_ids=clearable_blocked_request_ids,
+        request_isolation_audit=fixture_request_isolation_audit,
+        global_isolation_audit={
+            "available": isolation_audit_available,
+            "passed": isolation_audit_passed,
+            "missing_axes": isolation_missing_axes,
+            "shared_source_hashes": (
+                isolation_audit.get("metrics", {}).get("shared_source_hashes", [])
+                if isolation_audit_available and isinstance(isolation_audit.get("metrics"), Mapping)
+                else []
+            ),
+            "shared_source_revisions": (
+                isolation_audit.get("metrics", {}).get("shared_source_revisions", [])
+                if isolation_audit_available and isinstance(isolation_audit.get("metrics"), Mapping)
+                else []
+            ),
+            "shared_source_domains": (
+                isolation_audit.get("metrics", {}).get("shared_source_domains", [])
+                if isolation_audit_available and isinstance(isolation_audit.get("metrics"), Mapping)
+                else []
+            ),
+            "near_duplicate_pairs": (
+                isolation_audit.get("metrics", {}).get("near_duplicate_pairs", [])
+                if isolation_audit_available and isinstance(isolation_audit.get("metrics"), Mapping)
+                else []
+            ),
+            "time_split_isolated": (
+                isolation_checks.get("time_split_isolated") if isolation_audit_available else None
+            ),
+        },
     )
     return {
         "schema": "sara-autobot-gap-loop-readiness-v1",
@@ -574,6 +783,11 @@ def build_report(
         "fixture_isolation_audit": {
             "axis_status": fixture_isolation_axis_status,
             "missing_axes": missing_isolation_axes,
+        },
+        "phase7_global_isolation_audit": {
+            "available": isolation_audit_available,
+            "passed": isolation_audit_passed,
+            "missing_axes": isolation_missing_axes,
         },
         "fixture_request_isolation_audit": fixture_request_isolation_audit,
         "fixture_lane": {
@@ -627,6 +841,11 @@ def summarize_report(report: Mapping[str, Any]) -> str:
         if isinstance(report.get("fixture_execution_policy"), dict)
         else {}
     )
+    global_isolation = (
+        report.get("phase7_global_isolation_audit", {})
+        if isinstance(report.get("phase7_global_isolation_audit"), dict)
+        else {}
+    )
     lines = [
         f"Autobot gap loop readiness: {'PASS' if report.get('passed') else 'FAIL'}",
         f"Accepted materials: {metrics.get('accepted_count')}",
@@ -646,6 +865,12 @@ def summarize_report(report: Mapping[str, Any]) -> str:
         f"Fixture accepted source domain count: {metrics.get('fixture_accepted_source_domain_count')}",
         f"Fixture lineage coverage: {float(metrics.get('fixture_source_lineage_coverage', 0.0) or 0.0):.3f}",
         f"Fixture collection-time coverage: {float(metrics.get('fixture_collection_time_coverage', 0.0) or 0.0):.3f}",
+        "Phase 7 global isolation audit: "
+        + (
+            "unavailable"
+            if not bool(global_isolation.get("available", False))
+            else "PASS" if bool(global_isolation.get("passed", False)) else "FAIL"
+        ),
         "Checks:",
     ]
     requested_slots_by_request = (
@@ -757,6 +982,7 @@ def run_readiness(
     summary_path: str = DEFAULT_SUMMARY_PATH,
     min_accepted_count: int = 4,
     min_gap_build_coverage: float = 0.5,
+    isolation_audit_path: str = DEFAULT_ISOLATION_AUDIT_PATH,
 ) -> Dict[str, Any]:
     loop_report = read_json(loop_report_path)
     if not dataset_report_path:
@@ -769,6 +995,7 @@ def run_readiness(
     gap_report = read_json(gap_report_path)
     enqueue_report = read_json(enqueue_report_path)
     collection_targets = read_json(collection_targets_path)
+    isolation_audit = read_json(isolation_audit_path)
     accepted_rows = read_jsonl(_resolve_output_path(loop_report, "accepted_materials"))
     gap_rows = read_jsonl(_resolve_output_path(loop_report, "gap_materials"))
     input_paths = {
@@ -789,6 +1016,7 @@ def run_readiness(
         min_accepted_count=min_accepted_count,
         min_gap_build_coverage=min_gap_build_coverage,
         input_paths=input_paths,
+        isolation_audit=isolation_audit,
     )
     report["input_paths"] = input_paths
     report["report_path"] = write_json(report_path, report)
@@ -806,6 +1034,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--dataset-report-path", default="")
     parser.add_argument("--gap-report-path", default="")
     parser.add_argument("--enqueue-report-path", default="")
+    parser.add_argument("--isolation-audit-path", default=DEFAULT_ISOLATION_AUDIT_PATH)
     parser.add_argument("--report-path", default=DEFAULT_REPORT_PATH)
     parser.add_argument("--summary-path", default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--min-accepted-count", type=int, default=4)
@@ -821,6 +1050,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         dataset_report_path=args.dataset_report_path,
         gap_report_path=args.gap_report_path,
         enqueue_report_path=args.enqueue_report_path,
+        isolation_audit_path=args.isolation_audit_path,
         report_path=args.report_path,
         summary_path=args.summary_path,
         min_accepted_count=args.min_accepted_count,

@@ -118,6 +118,25 @@ def _tokenize(text: str) -> List[str]:
     return [token for token in tokens if len(token) >= 2]
 
 
+def _language_family(text: str) -> str:
+    """Classify supported language families without requiring an external model."""
+    value = str(text or "")
+    has_han = bool(re.search(r"[一-龥]", value))
+    has_kana = bool(re.search(r"[ぁ-んァ-ン]", value))
+    has_latin = bool(re.search(r"[A-Za-z]", value))
+    if (has_han or has_kana) and has_latin:
+        return "mixed"
+    if has_kana:
+        return "ja"
+    if has_han:
+        # Han-only text is treated as Simplified Chinese for this lightweight
+        # evaluator; Japanese text with kana is classified as Japanese above.
+        return "zh"
+    if has_latin:
+        return "latin"
+    return "unknown"
+
+
 def _load_corpus(path: str, limit: int) -> List[str]:
     with open(path, "r", encoding="utf-8", errors="ignore") as handle:
         lines = [re.sub(r"\s+", " ", line).strip() for line in handle]
@@ -1306,8 +1325,38 @@ def _score_sparse_rag_rerank(tasks: Sequence[Dict[str, Any]], docs: Sequence[str
         rag.add_document(doc, source=f"doc_{index}")
     traces: List[Dict[str, Any]] = []
     metric_sums: Dict[str, float] = defaultdict(float)
+    aligned_source_agreement_sum = 0.0
+    aligned_case_count = 0
+    language_aligned_count = 0
+    query_language_counts: Dict[str, int] = defaultdict(int)
+    selected_language_counts: Dict[str, int] = defaultdict(int)
+    known_language_mismatch_count = 0
+    excluded_language_case_count = 0
     for task in tasks[: max(1, min(len(tasks), 8))]:
         trace = rag.query_with_rerank(str(task.get("query", "")), top_k=1, candidate_k=4)
+        query_language = _language_family(str(task.get("query", "")))
+        selected = trace.get("selected", []) if isinstance(trace.get("selected"), list) else []
+        selected_text = str(selected[0].get("text", "")) if selected and isinstance(selected[0], dict) else ""
+        selected_language = _language_family(selected_text)
+        language_aligned = query_language == selected_language and query_language not in {"unknown", "mixed"}
+        query_language_counts[query_language] += 1
+        selected_language_counts[selected_language] += 1
+        if query_language in {"unknown", "mixed"} or selected_language in {"unknown", "mixed"}:
+            excluded_language_case_count += 1
+        elif not language_aligned:
+            known_language_mismatch_count += 1
+        trace["evaluation_language_alignment"] = {
+            "query_language_family": query_language,
+            "selected_language_family": selected_language,
+            "language_aligned": bool(language_aligned),
+        }
+        if language_aligned:
+            language_aligned_count += 1
+            aligned_case_count += 1
+            trace_metrics = trace.get("metrics", {}) if isinstance(trace.get("metrics"), dict) else {}
+            aligned_source_agreement_sum += float(
+                trace_metrics.get("sparse_rag_rerank_source_agreement_observed", 0.0) or 0.0
+            )
         traces.append(trace)
         metrics = trace.get("metrics", {}) if isinstance(trace.get("metrics"), dict) else {}
         for metric_name, value in metrics.items():
@@ -1317,10 +1366,21 @@ def _score_sparse_rag_rerank(tasks: Sequence[Dict[str, Any]], docs: Sequence[str
         metric_name: float(value / total)
         for metric_name, value in sorted(metric_sums.items())
     }
+    averaged_metrics["sparse_rag_rerank_language_alignment_observed"] = float(language_aligned_count / total)
+    averaged_metrics["sparse_rag_rerank_language_aligned_case_count"] = float(aligned_case_count)
+    averaged_metrics["sparse_rag_rerank_source_agreement_language_aligned_observed"] = float(
+        aligned_source_agreement_sum / max(aligned_case_count, 1)
+    )
     return {
         "observed_only": True,
         "case_count": int(len(traces)),
         "metrics": averaged_metrics,
+        "language_alignment_summary": {
+            "query_language_family_counts": dict(sorted(query_language_counts.items())),
+            "selected_language_family_counts": dict(sorted(selected_language_counts.items())),
+            "known_language_mismatch_count": int(known_language_mismatch_count),
+            "excluded_unknown_or_mixed_case_count": int(excluded_language_case_count),
+        },
         "traces": traces[:5],
     }
 
@@ -1944,6 +2004,17 @@ def run_real_data_external_validity(
             "sparse_rag_rerank_source_agreement_observed": float(
                 sparse_rag_rerank_metrics.get("sparse_rag_rerank_source_agreement_observed", 0.0)
             ),
+            "sparse_rag_rerank_language_alignment_observed": float(
+                sparse_rag_rerank_metrics.get("sparse_rag_rerank_language_alignment_observed", 0.0)
+            ),
+            "sparse_rag_rerank_language_aligned_case_count": float(
+                sparse_rag_rerank_metrics.get("sparse_rag_rerank_language_aligned_case_count", 0.0)
+            ),
+            "sparse_rag_rerank_source_agreement_language_aligned_observed": float(
+                sparse_rag_rerank_metrics.get(
+                    "sparse_rag_rerank_source_agreement_language_aligned_observed", 0.0
+                )
+            ),
             "sparse_rag_rerank_contradiction_guard_observed": float(
                 sparse_rag_rerank_metrics.get("sparse_rag_rerank_contradiction_guard_observed", 0.0)
             ),
@@ -2161,6 +2232,8 @@ def format_real_data_external_validity_summary(report: Dict[str, Any]) -> str:
         f"- contrastive_control_accuracy: {float(metrics.get('contrastive_control_accuracy', 0.0)):.3f}",
         f"- contrastive_control_cost_advantage_proxy: {float(metrics.get('contrastive_control_cost_advantage_proxy', 0.0)):.3f}",
         f"- sparse_rag_rerank_source_agreement_observed: {float(metrics.get('sparse_rag_rerank_source_agreement_observed', 0.0)):.3f}",
+        f"- sparse_rag_rerank_language_alignment_observed: {float(metrics.get('sparse_rag_rerank_language_alignment_observed', 0.0)):.3f}",
+        f"- sparse_rag_rerank_source_agreement_language_aligned_observed: {float(metrics.get('sparse_rag_rerank_source_agreement_language_aligned_observed', 0.0)):.3f}",
         f"- sparse_rag_rerank_contradiction_guard_observed: {float(metrics.get('sparse_rag_rerank_contradiction_guard_observed', 0.0)):.3f}",
         f"- sparse_rag_rerank_citation_grounding_observed: {float(metrics.get('sparse_rag_rerank_citation_grounding_observed', 0.0)):.3f}",
         f"- sparse_rag_rerank_source_reliability_observed: {float(metrics.get('sparse_rag_rerank_source_reliability_observed', 0.0)):.3f}",

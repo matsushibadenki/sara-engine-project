@@ -33,6 +33,30 @@ def test_build_real_data_tasks_prefers_rare_discriminative_terms():
     assert "gamma" in tasks[2]["query"]
 
 
+def test_language_family_is_explicit_and_does_not_treat_mixed_text_as_aligned():
+    module = _load_script()
+
+    assert module._language_family("日本語の検索") == "ja"
+    assert module._language_family("稀疏检索记忆") == "zh"
+    assert module._language_family("sparse retrieval memory") == "latin"
+    assert module._language_family("日本語 retrieval") == "mixed"
+    assert module._language_family("123 !!!") == "unknown"
+
+
+def test_sparse_rag_language_alignment_supports_simplified_chinese():
+    module = _load_script()
+    result = module._score_sparse_rag_rerank(
+        [{"query": "稀疏 检索 记忆"}],
+        ["稀疏脉冲降低检索和记忆的事件成本。"],
+    )
+
+    assert result["metrics"]["sparse_rag_rerank_language_alignment_observed"] == 1.0
+    assert result["traces"][0]["evaluation_language_alignment"]["query_language_family"] == "zh"
+    assert result["traces"][0]["evaluation_language_alignment"]["selected_language_family"] == "zh"
+    assert result["language_alignment_summary"]["query_language_family_counts"] == {"zh": 1}
+    assert result["language_alignment_summary"]["known_language_mismatch_count"] == 0
+
+
 def test_real_data_external_validity_passes_and_reports_ann_cost_advantage(tmp_path):
     module = _load_script()
     corpus = tmp_path / "external_validity_corpus.txt"
@@ -64,6 +88,8 @@ def test_real_data_external_validity_passes_and_reports_ann_cost_advantage(tmp_p
     assert report["metrics"]["dense_embedding_ann_proxy_qa_accuracy"] >= 0.80
     assert report["metrics"]["bm25_offline_proxy_qa_accuracy"] >= 0.80
     assert report["metrics"]["ann_cost_advantage_proxy"] >= 2.0
+    assert report["metrics"]["sparse_rag_rerank_language_alignment_observed"] == 1.0
+    assert report["metrics"]["sparse_rag_rerank_source_agreement_language_aligned_observed"] >= 0.5
     assert report["metrics"]["dense_embedding_ann_cost_advantage_proxy"] >= 2.0
     assert report["metrics"]["bm25_offline_cost_advantage_proxy"] >= 2.0
     assert report["metrics"]["real_pretrained_embedding_reference_available"] == 0.0

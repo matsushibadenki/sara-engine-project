@@ -165,6 +165,8 @@ def test_autobot_gap_loop_readiness_reports_pass_on_managed_gap_cycle():
     assert report["fixture_isolation_audit"]["missing_axes"] == []
     assert report["fixture_request_isolation_audit"]["fixture_counterexample_gap"]["missing_axes"] == []
     assert report["fixture_request_isolation_audit"]["fixture_source_diversity_gap"]["missing_axes"] == []
+    assert report["fixture_request_isolation_audit"]["fixture_counterexample_gap"]["source_hash_coverage"] == 1.0
+    assert report["fixture_request_isolation_audit"]["fixture_counterexample_gap"]["source_revision_coverage"] == 1.0
     with open(readiness_summary_path, "r", encoding="utf-8") as handle:
         summary = handle.read()
     assert "Autobot gap loop readiness: PASS" in summary
@@ -246,6 +248,8 @@ def test_autobot_gap_loop_readiness_marks_blocked_fixture_requests():
     )
     assert blocked_action["blocked_by_isolation_review"] is True
     assert blocked_action["blocked_missing_axes"] == ["source_lineage"]
+    assert blocked_action["isolation_evidence"]["request"]["missing_axes"] == []
+    assert blocked_action["isolation_evidence"]["global"]["available"] is False
     assert "Review fixture isolation block" in blocked_action["command"]
     with open(summary_path, "r", encoding="utf-8") as handle:
         summary = handle.read()
@@ -290,3 +294,73 @@ def test_autobot_gap_loop_readiness_marks_clearable_blocked_fixture_requests():
     assert blocked_action["blocked_by_isolation_review"] is True
     assert blocked_action["clearable_after_review"] is True
     assert "--clear-blocked-request-id" in blocked_action["command"]
+
+
+def test_autobot_gap_loop_readiness_keeps_clear_release_blocked_on_global_isolation_failure():
+    readiness = _load_readiness_module()
+    payload = {
+        "target_count": 1,
+        "blocked_request_ids": ["fixture_counterexample_gap"],
+        "blocked_request_missing_axes": {"fixture_counterexample_gap": []},
+        "targets": [
+            {
+                "request_id": "fixture_counterexample_gap",
+                "missing_material_types": ["counterexample"],
+                "candidate_source_domains": ["example.org"],
+            }
+        ],
+    }
+    report = readiness.build_report(
+        loop_report={"passed": True},
+        dataset_report={"accepted_count": 1},
+        gap_report={"built_count": 0, "skipped_count": 0, "curriculum_distribution": {}},
+        enqueue_report={"enqueued_count": 0, "queue_pending": 0},
+        collection_targets=payload,
+        accepted_rows=[],
+        gap_rows=[],
+        min_accepted_count=1,
+        min_gap_build_coverage=0.0,
+        isolation_audit={
+            "passed": False,
+            "checks": {"source_hash_isolated": False, "time_split_isolated": True},
+            "metrics": {
+                "shared_source_hashes": ["hash-shared"],
+                "shared_source_revisions": ["revision-shared"],
+                "shared_source_domains": ["example.org"],
+                "near_duplicate_pairs": [
+                    {"train_signature": "aaaaaaaaaaaaaaaa", "evaluation_signature": "bbbbbbbbbbbbbbbb"}
+                ],
+            },
+        },
+    )
+
+    assert report["phase7_global_isolation_audit"]["missing_axes"] == ["source_hash_isolated"]
+    assert report["fixture_execution_policy"]["clearable_blocked_request_ids"] == []
+    assert report["fixture_repair_actions"][0]["clearable_after_review"] is False
+    assert report["fixture_repair_actions"][0]["isolation_evidence"]["global"]["missing_axes"] == [
+        "source_hash_isolated"
+    ]
+    assert report["fixture_repair_actions"][0]["isolation_evidence"]["global"]["overlap_values"] == {
+        "shared_source_hashes": ["hash-shared"],
+        "shared_source_revisions": ["revision-shared"],
+        "shared_source_domains": ["example.org"],
+        "near_duplicate_pairs": [
+            {"train_signature": "aaaaaaaaaaaaaaaa", "evaluation_signature": "bbbbbbbbbbbbbbbb"}
+        ],
+        "time_split_isolated": True,
+    }
+    guidance = report["fixture_repair_actions"][0]["operator_guidance"]
+    assert "global=FAIL" in guidance
+    assert "failed_axes=source_hash_isolated" in guidance
+    assert "shared_hashes=hash-shared" in guidance
+    assert "near_duplicate_pairs=1" in guidance
+    rerun_commands = report["fixture_repair_actions"][0]["rerun_commands"]
+    assert "eval-phase7-isolation" in rerun_commands["audit_all_axes"]
+    assert "apply-phase7-isolation-block-policy" in rerun_commands["reapply_block_policy"]
+    assert rerun_commands["failed_axes"] == ["source_hash_isolated"]
+    assert rerun_commands["axis_repair_requirements"]["source_hash_isolated"]["required_fields"] == [
+        "source_hash"
+    ]
+    assert "shared_source_hashes must be empty" in rerun_commands["axis_repair_requirements"][
+        "source_hash_isolated"
+    ]["verification"]
