@@ -16,8 +16,10 @@ This document defines where and how to collect the independent data required by 
 - [Done] Phase 7 isolation audit, block policy, request-level repair evidence, and rerun templates are implemented.
 - [Done] Phase 8 required CPU comparison surface and Event Memory compression-maintenance coupling surface are implemented as observed-only evidence.
 - [Done] Architecture Migration has a provenance gate, manifest builder, evidence cycle, and managed collection request.
-- [Next] Collect independent long-horizon Architecture Migration records and pass the external gate.
-- [Later] Collect independent held-out language evidence for Phase 19/20 promotion.
+- [Done] Collect independent long-horizon Architecture Migration records and pass the external gate.
+- [Done] Collect independent UD English, Japanese, and Simplified Chinese train/dev/test material with split isolation audit.
+- [Next] Collect additional independent raw-text role-binding evidence for Phase 19/20 promotion review.
+- [Next] Keep raw-text promotion blocked until endpoint coverage, structural disambiguation, and bounded-state gates pass together.
 - [Later] Collect independent structural evidence for RISA structural interpolation and smoothing.
 - [Later] Provision optional local FAISS and cross-encoder references when their local dependencies are intentionally available.
 
@@ -182,6 +184,35 @@ Required rules:
 5. Keep optional embeddings as an ablation and never as the durable truth path.
 
 **Acceptance:** held-out structural utility or abstention improves without increasing durable false links, rewrites, state, maintenance cost, or isolation risk beyond declared ceilings.
+
+### Delayed-Label Video And Multimodal Concept Discovery
+
+**Purpose:** test whether SARA/RISA can form useful anonymous concepts from observations first and attach a sparse human label later, without leaking labels into representation learning or promoting unsupported structure.
+
+**Collection destinations:**
+
+- Publicly licensed video or audio-action datasets with recording/session, speaker/creator, and source boundaries.
+- Operator-supplied recordings collected with consent and an explicit retention and usage policy.
+- Small, source-backed multimodal clips with stable revisions and permission to retain derived event metadata.
+
+**Required records:**
+
+- Raw media reference, source URL or operator record ID, license/consent status, source hash, revision, collection time, and recording/session identity.
+- Sparse observations for motion, trajectory, contact, sound, color, shape, object persistence, and change-point events; each observation must retain modality and timestamp provenance.
+- Anonymous cluster ID and representative-event manifest created before semantic naming.
+- Optional human label with annotator, timestamp, label scope, confidence, alternative labels, and “unresolved” or “mixed” outcome support.
+
+**Collection method:**
+
+1. Register sources and rights before retaining media or derived records; do not default to broad web scraping.
+2. Split by recording session, speaker/creator, series, source hash, and collection period before extracting clips, events, clusters, or representatives.
+3. Extract bounded sparse events and cluster them without label tokens or human action names in the input path.
+4. Show a small, provenance-preserving representative sample to a human for delayed naming; keep the label as a semantic binding record rather than rewriting the anonymous cluster evidence.
+5. Re-run Concept Review, contradiction checks, and Event Memory admission after naming. Keep unsupported, unstable, or mixed clusters provisional.
+
+**Required comparison:** labels-first supervised control, self-supervised/late-label control, and RISA structure-only control must use the same source split and declared event/state/maintenance budgets.
+
+**Acceptance:** held-out cluster purity, naming consistency, hierarchy quality, non-language transfer, and mixed-cluster abstention improve or remain competitive without source leakage, unsupported durable links, or unbounded labeling and maintenance cost.
 
 ## Verification Workflow
 
