@@ -18,6 +18,7 @@ The v1.1 release surface is completion-gated. The current gates validate Phase 3
 
 - [Policy](policy.md): design and output-location rules that new implementation should follow.
 - [Roadmap](ROADMAP.md): post-v1.1 development direction and next research/product phases.
+- [Next-Level Roadmap](ROADMAP_NEXT_LEVEL.md): Phase 21-28 goals for structural cognition, continual horizons, multimodal world modeling, and verifiable agency.
 - [Implemented Features](IMPLEMENTED_FEATURES.md): completed v1.1 feature inventory and gate status.
 - [Architecture Review](ARCHITECTURE_REVIEW.md): design-health review, architecture spine, research adoption rules, and risk controls.
 - [Release Checklist](RELEASE_CHECKLIST.md): commands and review steps for release, operational readiness, and v1.1 gates.

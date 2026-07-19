@@ -13,10 +13,11 @@ from sara_engine.core.cortex import CorticalColumn
 from sara_engine.memory.hippocampus import CorticoHippocampalSystem
 from sara_engine.memory.sdr import SDREncoder
 from sara_engine.utils.tokenizer import SaraTokenizer
+from sara_engine.utils.project_paths import workspace_path
 
 def run_evaluation():
     test_ltm_file = "test_eval_ltm.pkl"
-    vocab_file = "workspace/sara_vocab.json"
+    vocab_file = workspace_path("tokenizers", "sara_vocab.json")
     
     for f in [test_ltm_file, vocab_file]:
         if os.path.exists(f):

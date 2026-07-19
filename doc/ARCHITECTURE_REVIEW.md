@@ -129,7 +129,7 @@ The gate system is a strength, but it should be made harder in a few specific wa
 
 Before adding more major research ideas, post-v1.1 work should prioritize stronger evidence and integration quality.
 
-1. Collect paired SARA/ANN real-joule measurements for the current measurement session plan.
+1. Keep paired SARA/ANN real-joule measurement protocol artifacts frozen on indefinite hold; do not block software evidence on them.
 2. Add stronger offline ANN-style baselines while keeping them outside the runtime path.
 3. Expand external-validity fixtures toward noisy, delayed, and adversarial retrieval cases.
 4. Formalize the sparse event IR and backend capability matrix for neuromorphic portability.

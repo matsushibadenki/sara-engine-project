@@ -21,6 +21,7 @@ This document defines where and how to collect the independent data required by 
 - [Next] Collect additional independent raw-text role-binding evidence for Phase 19/20 promotion review.
 - [Next] Keep raw-text promotion blocked until endpoint coverage, structural disambiguation, and bounded-state gates pass together.
 - [Later] Collect independent structural evidence for RISA structural interpolation and smoothing.
+- [Done] A local pretrained embedding reference is now available for the current Phase 8 comparison; FAISS and cross-encoder remain optional extensions.
 - [Later] Provision optional local FAISS and cross-encoder references when their local dependencies are intentionally available.
 
 ## Common Collection Contract
@@ -127,6 +128,8 @@ Required rules:
 - Record model identity, revision, license, parameter count, embedding dimension, tokenizer identity, quantization, and CPU thread count.
 - Run all references on the same corpus, query set, candidates, quality criteria, and measurement boundary.
 - Keep model preparation and index construction outside the SARA production runtime.
+
+**Current local reference:** `nomic-ai/nomic-embed-text-v1` is evaluated from an existing operator-managed cache as an `offline_reference`. The cache path is intentionally not copied into repository artifacts; reruns must record the resolved model revision and local path in the managed comparison report.
 
 **Acceptance:** label every result as `offline_reference`; report quality, abstention, latency, memory, and event/cost proxy together; do not promote a stronger baseline from configuration metadata alone.
 

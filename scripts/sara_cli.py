@@ -20,6 +20,12 @@ if project_root not in sys.path:
 sys.path.insert(0, scripts_dir)
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
+# Keep CLI-launched evaluator subprocesses on the same source tree even when
+# the package has not been installed into the active Python environment.
+_pythonpath_parts = [src_dir, project_root]
+if os.environ.get("PYTHONPATH"):
+    _pythonpath_parts.append(os.environ["PYTHONPATH"])
+os.environ["PYTHONPATH"] = os.pathsep.join(_pythonpath_parts)
 
 from sara_engine.utils.project_paths import (
     ensure_parent_directory,
@@ -364,11 +370,11 @@ def main():
     )
     parser_phase7_isolation.add_argument(
         "--train-path",
-        default=workspace_path("autobot", "phase7_train_materials.jsonl"),
+        default=processed_data_path("phase7", "train.jsonl"),
     )
     parser_phase7_isolation.add_argument(
         "--evaluation-path",
-        default=workspace_path("autobot", "phase7_evaluation_materials.jsonl"),
+        default=processed_data_path("phase7", "evaluation.jsonl"),
     )
     parser_phase7_isolation.add_argument(
         "--report-path",
@@ -1072,6 +1078,91 @@ def main():
         default=workspace_path(
             "evaluation", "risa_structural_plasticity_benchmark_summary.txt"
         ),
+    )
+
+    parser_structural_interpolation = subparsers.add_parser(
+        "eval-structural-interpolation",
+        help="Run the observed-only RISA structural interpolation benchmark.",
+    )
+    parser_structural_interpolation.add_argument(
+        "--fixture-path",
+        default=processed_data_path("benchmark_fixtures", "structural_interpolation_cases.jsonl"),
+    )
+    parser_structural_interpolation.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "structural_interpolation_benchmark.json"),
+    )
+    parser_structural_interpolation.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "structural_interpolation_benchmark_summary.txt"),
+    )
+
+    parser_structural_interpolation_external = subparsers.add_parser(
+        "eval-structural-interpolation-external",
+        help="Run structural interpolation against the frozen independent migration manifest.",
+    )
+    parser_structural_interpolation_external.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "architecture_migration_latent_manifest.jsonl"),
+    )
+    parser_structural_interpolation_external.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "structural_interpolation_external_benchmark.json"),
+    )
+    parser_structural_interpolation_external.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "structural_interpolation_external_benchmark_summary.txt"),
+    )
+
+    parser_structural_interpolation_memory = subparsers.add_parser(
+        "eval-structural-interpolation-event-memory",
+        help="Evaluate structural proposals at the verified Event Memory boundary.",
+    )
+    parser_structural_interpolation_memory.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "architecture_migration_latent_manifest.jsonl"),
+    )
+    parser_structural_interpolation_memory.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "structural_interpolation_event_memory_benchmark.json"),
+    )
+    parser_structural_interpolation_memory.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "structural_interpolation_event_memory_benchmark_summary.txt"),
+    )
+
+    parser_next_level_structural = subparsers.add_parser(
+        "eval-next-level-structural",
+        help="Run the observed-only Phase 21 bounded structural reasoning benchmark.",
+    )
+    parser_next_level_structural.add_argument(
+        "--fixture-path",
+        default=processed_data_path("benchmark_fixtures", "next_level_structural_cases.jsonl"),
+    )
+    parser_next_level_structural.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "next_level_structural_benchmark.json"),
+    )
+    parser_next_level_structural.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "next_level_structural_benchmark_summary.txt"),
+    )
+
+    parser_continual_horizon = subparsers.add_parser(
+        "eval-continual-horizon",
+        help="Run the observed-only Phase 22 continual horizon benchmark.",
+    )
+    parser_continual_horizon.add_argument(
+        "--fixture-path",
+        default=processed_data_path("benchmark_fixtures", "continual_horizon_cases.jsonl"),
+    )
+    parser_continual_horizon.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "continual_horizon_benchmark.json"),
+    )
+    parser_continual_horizon.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "continual_horizon_benchmark_summary.txt"),
     )
 
     parser_adaptive_credit_event_memory = subparsers.add_parser(
@@ -2626,6 +2717,76 @@ def main():
         command = [
             sys.executable,
             "scripts/eval/risa_structural_plasticity_benchmark.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-structural-interpolation":
+        command = [
+            sys.executable,
+            "scripts/eval/structural_interpolation_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-structural-interpolation-external":
+        command = [
+            sys.executable,
+            "scripts/eval/structural_interpolation_external_benchmark.py",
+            "--manifest-path",
+            str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-structural-interpolation-event-memory":
+        command = [
+            sys.executable,
+            "scripts/eval/structural_interpolation_event_memory_benchmark.py",
+            "--manifest-path",
+            str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-next-level-structural":
+        command = [
+            sys.executable,
+            "scripts/eval/next_level_structural_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-continual-horizon":
+        command = [
+            sys.executable,
+            "scripts/eval/continual_horizon_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
             "--report-path",
             str(args.report_path),
             "--summary-path",

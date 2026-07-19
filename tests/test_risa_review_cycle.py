@@ -11,6 +11,7 @@ from sara_engine.memory.concept_queue_store import (
     load_revalidation_queue,
     save_revalidation_queue,
 )
+from sara_engine.utils.project_paths import workspace_path
 
 
 def _toy_observations():
@@ -25,8 +26,8 @@ def test_risa_review_cycle_merges_queue_runs_review_and_persists_outputs() -> No
     kernel = SARAAlignedRisaKernel(min_support=2, min_distinct_actors=2)
     kernel.ingest_observations(_toy_observations())
 
-    queue_path = os.path.abspath("workspace/test_risa_review_cycle_queue.json")
-    report_path = os.path.abspath("workspace/test_risa_review_cycle_report.json")
+    queue_path = workspace_path("test_risa_review_cycle_queue.json")
+    report_path = workspace_path("test_risa_review_cycle_report.json")
     save_revalidation_queue(
         (
             ConceptRevalidationEntry(
@@ -79,7 +80,7 @@ def test_risa_review_cycle_keeps_queue_when_concepts_are_dormant() -> None:
     kernel.ingest_observations(_toy_observations())
     kernel.apply_metabolism(current_timestamp=20)
 
-    queue_path = os.path.abspath("workspace/test_risa_review_cycle_dormant_queue.json")
+    queue_path = workspace_path("test_risa_review_cycle_dormant_queue.json")
     initial = (
         ConceptRevalidationEntry(
             concept_key="predicts:legacy->legacy",

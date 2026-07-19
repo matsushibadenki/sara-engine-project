@@ -20,7 +20,9 @@ python scripts/sara_cli.py eval-phase11-completion
 python scripts/sara_cli.py eval-phase13-completion
 ```
 
-For physical energy work, prepare the paired session without fabricating joules:
+Physical energy measurement is indefinitely pending and is not part of the active execution queue. Do not run a meter session or generate joule rows unless the operator explicitly reopens Phase 6.
+
+If Phase 6 is explicitly reopened, prepare the paired session without fabricating joules:
 
 ```bash
 python scripts/sara_cli.py run-physical-energy-session-batch
@@ -33,4 +35,4 @@ python scripts/sara_cli.py eval-physical-energy-session-progress
 - **Missing optional dependency:** run the command that reports the missing dependency. Optional ANN, LLM, hardware, and meter integrations must not be replaced with fabricated evidence.
 - **Managed output violation:** write temporary files under `workspace/`; training data belongs under `data/`; final model artifacts belong under `models/`. Do not redirect reports to the repository root.
 - **Gate failure:** open the referenced JSON report, run its suggested command, and rerun `eval-operator-dashboard`.
-- **Physical energy pending:** use the generated meter templates and an authorized meter or `powermetrics` session; keep the gate labeled pending until paired rows validate.
+- **Physical energy indefinitely pending:** keep Phase 6 labeled pending and non-blocking. CPU telemetry, `ioreg`, wall-clock time, event counts, and proxy costs must never be promoted to physical joules.

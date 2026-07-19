@@ -47,7 +47,7 @@ def build_report(readiness: Mapping[str, Any], isolation: Mapping[str, Any]) -> 
     phase7_complete = bool(implementation_ready and gap_loop_ready and isolation_evidence_complete)
     if phase7_complete:
         status = "phase7_complete"
-        next_action = "Regenerate the operational, research-product, and release evidence using the isolated material split."
+        next_action = "Keep the isolated material split pinned; rerun downstream evidence only when the split or source data changes."
     elif implementation_ready and not isolation_evidence_complete:
         status = "implementation_complete_isolation_evidence_pending"
         next_action = "Freeze independent train and evaluation material manifests, then resolve every reported provenance or overlap check."

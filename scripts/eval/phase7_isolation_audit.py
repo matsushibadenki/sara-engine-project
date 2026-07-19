@@ -19,11 +19,11 @@ SRC_PATH = os.path.join(PROJECT_ROOT, "src")
 if SRC_PATH not in sys.path:
     sys.path.insert(0, SRC_PATH)
 
-from sara_engine.utils.project_paths import ensure_parent_directory, workspace_path  # noqa: E402
+from sara_engine.utils.project_paths import ensure_parent_directory, processed_data_path, workspace_path  # noqa: E402
 
 
-DEFAULT_TRAIN_PATH = workspace_path("autobot", "phase7_train_materials.jsonl")
-DEFAULT_EVALUATION_PATH = workspace_path("autobot", "phase7_evaluation_materials.jsonl")
+DEFAULT_TRAIN_PATH = processed_data_path("phase7", "train.jsonl")
+DEFAULT_EVALUATION_PATH = processed_data_path("phase7", "evaluation.jsonl")
 DEFAULT_REPORT_PATH = workspace_path("evaluation", "phase7_isolation_audit.json")
 DEFAULT_SUMMARY_PATH = workspace_path("evaluation", "phase7_isolation_audit_summary.txt")
 
@@ -97,7 +97,8 @@ def _time_value(value: str) -> Optional[float]:
 
 def _hamming(left: str, right: str) -> Optional[int]:
     try:
-        return (int(left, 16) ^ int(right, 16)).bit_count()
+        value = int(left, 16) ^ int(right, 16)
+        return bin(value).count("1")
     except ValueError:
         return None
 

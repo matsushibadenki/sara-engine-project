@@ -66,4 +66,4 @@ SARA Engine は研究ライブラリとしては珍しく、release soak、relea
 
 SARA Engineは「誤差逆伝播に依存しない」という困難な道を選んだため、**深いネットワークの最適化（Credit Assignment）では、snnTorch等のBPTTベースライブラリに性能で負けるリスク**が最大の懸念事項です。
 
-v1.1 以降は、BPTTの土俵ではなく「少量経験からの安定適応」「疎イベント trace の説明可能性」「CPU上の電力効率」で競争力を作る方針が妥当です。次の重点は、paired real-joule measurement、より強い外部 ANN baseline、DVSデータセット統合、ハードウェアIR、インタラクティブな運用・観測UIです。
+v1.1 以降は、BPTTの土俵ではなく「少量経験からの安定適応」「疎イベント trace の説明可能性」「CPU上の計算コスト proxy」で競争力を作る方針が妥当です。paired real-joule measurementは無期ペンディングとし、次の重点は、より強い外部 ANN baseline、DVSデータセット統合、ハードウェアIR、インタラクティブな運用・観測UIです。

@@ -28,3 +28,20 @@ from .structural_feedback import route_key_for_relation as route_key_for_relatio
 from .structural_feedback import run_risa_structural_plasticity_cycle as run_risa_structural_plasticity_cycle
 from .structural_feedback import seed_structural_routes_from_risa as seed_structural_routes_from_risa
 from .state import RisaKernelState as RisaKernelState
+from .subgraph_reasoning import (
+    BoundedSubgraphComposer as BoundedSubgraphComposer,
+    ComposedRelationProposal as ComposedRelationProposal,
+    StructuralAnalogyEngine as StructuralAnalogyEngine,
+    StructuralAnalogyResult as StructuralAnalogyResult,
+    SubgraphCompositionResult as SubgraphCompositionResult,
+    SubgraphEdge as SubgraphEdge,
+)
+from .structural_interpolation import (
+    PredictiveStructuralFeedbackEngine as PredictiveStructuralFeedbackEngine,
+    StructuralEvidence as StructuralEvidence,
+    StructuralEditProposal as StructuralEditProposal,
+    StructuralFeedbackSignal as StructuralFeedbackSignal,
+    StructuralInterpolationEngine as StructuralInterpolationEngine,
+    StructuralInterpolationProposal as StructuralInterpolationProposal,
+    StructuralInterpolationResult as StructuralInterpolationResult,
+)

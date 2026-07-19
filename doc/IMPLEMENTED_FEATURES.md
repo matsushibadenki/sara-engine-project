@@ -8,7 +8,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - v1.1 release gate: `15/15` checks passing
 - Research product completion gate: `14/14` checks passing
 - Full test suite: `1008` tests passing in the Python 3.10 project environment
-- Current release posture: ready for v1.1 release, with physical joule measurements intentionally left as the next evidence loop
+- Current release posture: ready for v1.1 release, with physical joule measurements intentionally placed on indefinite hold and excluded from active release blocking
 
 ## Core Policy And Runtime Constraints
 
@@ -99,6 +99,14 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Per-class feedback combines repeated review evidence, controller-held contradiction history, replay score and event cost, and memory-phase maturity, plasticity, and retention.
 - Route-specific contradiction pressure prevents a contradictory relation class from uniformly degrading unrelated sparse routes; all resulting decisions remain in the structural-plasticity trace.
 - `python scripts/sara_cli.py eval-risa-structural-plasticity` runs a frozen observed-only comparison with equal replay and rewrite budgets; it verifies predictive-route retention, contradictory-route recovery, bounded rewrites/state, and equal maintenance event cost.
+- `StructuralInterpolationEngine` provides an observed-only structural-space alternative to weight interpolation. It requires independent verified source hashes, preserves revision/context/expiry/cost metadata, interpolates bounded relation confidence, and emits non-mutating `merge_candidate` proposals.
+- `python scripts/sara_cli.py eval-structural-interpolation` verifies independent-evidence merging, same-source duplicate blocking, contradiction blocking, and durable-mutation blocking.
+- `PredictiveStructuralFeedbackEngine` converts upper/lower mismatches into bounded typed structural edit proposals, requests more evidence when eligibility is insufficient, and freezes contradictory or oscillating subgraphs with rollback traceability.
+- The structural interpolation benchmark now covers independent merge, source-revision recovery, context separation, unsupported-neighbor abstention, oscillation rollback/freeze, contradiction blocking, and durable-mutation blocking.
+- `python scripts/sara_cli.py eval-structural-interpolation-external` validates the structural proposal lane against six observed independent records from two source domains, preserving source hashes, revisions, horizon order, and the non-mutating boundary.
+- `python scripts/sara_cli.py eval-structural-interpolation-event-memory` verifies bounded Event Memory admission/reactivation for structural proposals, full small-control recall, contradiction blocking, state budget, and event-cost visibility.
+- `python scripts/sara_cli.py eval-next-level-structural` verifies bounded verified subgraph composition, relation-signature analogy, unsupported-neighbor abstention, and the non-mutating durable boundary for Phase 21.
+- The first equal-budget retention comparison records fixed recall `1.0` versus linear/logarithmic recall `0.5` under `max_entries=4`; the lower hierarchical result is preserved as a partial observation rather than promoted as an advantage.
 
 ## Phase 5 Completion Surface
 
@@ -264,7 +272,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - `python scripts/sara_cli.py eval-phase8-evidence-cycle` reproducibly runs real-data validity, the small/medium/large ladder, the labeled SARA-vs-ANN comparison, and the Phase 8 completion gate as one managed cycle.
 - `python scripts/sara_cli.py build-phase8-reference-request` converts a blocked Phase 8 gate into a local-only reference request with required fairness fields and a rerun command, without downloading or fabricating a model.
 - The optional local embedding reference accepts both Transformers model directories and CPU ONNX directories containing `model.onnx` and `tokenizer.json`; ONNX runtime availability remains explicitly reported as a dependency check.
-- The Phase 8 required baseline is now verified with the cached `sentence-transformers/all-MiniLM-L6-v2` ONNX model: real-data validity, all ladder profiles, labeled comparison, and `phase8_complete` promotion pass on CPU.
+- The Phase 8 required baseline is now verified with the existing local `nomic-ai/nomic-embed-text-v1` snapshot: real-data validity, all ladder profiles, labeled comparison, and `phase8_complete` promotion pass on CPU.
 
 ## Neuromorphic Capability Matrix
 
@@ -307,7 +315,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - `doc/ENERGY_MEASUREMENT_PROTOCOL.md` documents the fixed conditions and laboratory workflow.
 - `run-physical-energy-pair` freezes the corpus/task hash, exact-match criterion, Apple CPU identity, thread environment, warm-up and repetition counts, and alternating run order before launching separate SARA and BM25 workload processes.
 - The pilot runner execution preserved quality at `48/48` trials for both systems and writes unmeasured candidates only under `workspace/evaluation/`.
-- Current state: fairness protocol and validation are complete; physical paired measurements are pending.
+- Current state: fairness protocol and validation are complete; physical paired measurements are indefinitely pending and do not block internal evidence or release gates.
 
 ## Operational Readiness And Release Gates
 
@@ -359,3 +367,8 @@ These are not v1.1 blockers, but remain important research/product work:
 ### Phase 20: Semantic Echo Field
 
 Implemented a bounded raw-text sparse language-event adapter and finite fast/medium/slow Semantic Echo Field with local role binding, explicit decay, abstention, contradiction traces, fixed controls, benchmark, CLI, and completion gate. The experiment remains observed-only and does not replace the production fixed SNN path.
+
+### Phase 22: Continual Horizon Intelligence
+
+Implemented the observed-only `eval-continual-horizon` benchmark for fixed-initial-state 10/30/100 episode workloads. It compares a frozen control with Event Memory, resonance-credit Event Memory, and structural-feedback Event Memory profiles, and records revision uptake latency, useful recall, contradiction blocking, abstention integrity, bounded state growth, maintenance event cost, and replay count. This fixture evidence does not claim independent-source generalization or physical joule efficiency.
+The benchmark also applies distractor pressure, compares fixed/linear/logarithmic retention profiles, measures delayed versus immediate verification, and checks protected unrelated knowledge as a catastrophic-interference guard.
