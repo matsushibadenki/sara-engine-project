@@ -1165,6 +1165,23 @@ def main():
         default=workspace_path("evaluation", "continual_horizon_benchmark_summary.txt"),
     )
 
+    parser_continual_horizon_external = subparsers.add_parser(
+        "eval-continual-horizon-external",
+        help="Validate independent source coverage for Phase 22 horizon promotion.",
+    )
+    parser_continual_horizon_external.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "architecture_migration_latent_manifest.jsonl"),
+    )
+    parser_continual_horizon_external.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "continual_horizon_external_gate.json"),
+    )
+    parser_continual_horizon_external.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "continual_horizon_external_gate_summary.txt"),
+    )
+
     parser_adaptive_credit_event_memory = subparsers.add_parser(
         "eval-adaptive-credit-event-memory",
         help="Run the observed-only adaptive credit/Event Memory integration benchmark.",
@@ -2787,6 +2804,20 @@ def main():
             "scripts/eval/continual_horizon_benchmark.py",
             "--fixture-path",
             str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-continual-horizon-external":
+        command = [
+            sys.executable,
+            "scripts/eval/continual_horizon_external_gate.py",
+            "--manifest-path",
+            str(args.manifest_path),
             "--report-path",
             str(args.report_path),
             "--summary-path",

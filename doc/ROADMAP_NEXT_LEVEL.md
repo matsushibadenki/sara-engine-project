@@ -102,10 +102,13 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Added frozen fixture cases for 10, 30, and 100 ordered episodes with source revision, contradiction, delayed verification, and bounded distractor pressure.
 - Reports now expose revision uptake latency, useful recall, contradiction blocking, abstention integrity, state growth, maintenance cost, replay count, independent source hashes/domains, and fixed/linear/logarithmic retention profiles without making a physical-energy claim.
 - Delayed-verification and protected-knowledge retention ablations now expose correction latency and catastrophic-interference checks under distractor pressure.
+- Added `eval-continual-horizon-external`, which validates the existing independent migration manifest before any Phase 22 promotion review; it deliberately keeps `promotion_allowed=false`.
+- The external gate now separates manifest quality from horizon promotion: the current 0-5 record span passes input validation but remains blocked until every domain reaches the 10/30/100 buckets.
 
 ### [Next]
 
 - Repeat delayed correction and forgetting ablations with independently collected records and equal event/state budgets.
+- Expand the external manifest to 10/30/100 episode coverage per domain before independent long-horizon claims.
 - Replace the compact fixture source metadata with independently collected manifests and domain-transfer rows.
 - Keep all horizon reports observed-only until independent source coverage is sufficient.
 
