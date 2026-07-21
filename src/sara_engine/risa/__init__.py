@@ -45,6 +45,12 @@ from .structural_interpolation import (
     StructuralInterpolationProposal as StructuralInterpolationProposal,
     StructuralInterpolationResult as StructuralInterpolationResult,
 )
+from .structural_edit_transaction import (
+    BoundedStructuralEditTransaction as BoundedStructuralEditTransaction,
+    StructuralEditBatchResult as StructuralEditBatchResult,
+    StructuralGraphSnapshot as StructuralGraphSnapshot,
+    graph_digest as graph_digest,
+)
 from .causal_reasoning import (
     BoundedCausalReasoner as BoundedCausalReasoner,
     CausalEvidence as CausalEvidence,

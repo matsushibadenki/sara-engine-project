@@ -97,6 +97,9 @@ class StructuralFeedbackSignal:
     recent_actions: Tuple[str, ...] = ()
     eligible: bool = True
     rollback_state: str = "verified_snapshot"
+    target_exists: bool = True
+    provisional_node_kind: str = "provisional_concept"
+    provisional_node_label: str = ""
 
 
 @dataclass(frozen=True)
@@ -113,6 +116,8 @@ class StructuralEditProposal:
     context_tags: Tuple[str, ...]
     rollback_state: str
     frozen: bool
+    provisional_node_kind: str = ""
+    provisional_node_label: str = ""
     durable_mutation_allowed: bool = False
     reason: str = ""
 
@@ -155,6 +160,10 @@ class PredictiveStructuralFeedbackEngine:
                 edit_type = "request_more_evidence"
                 reason = "ineligible_or_missing_evidence"
                 frozen = False
+            elif not signal.target_exists:
+                edit_type = "create_provisional_node"
+                reason = "source_backed_unknown_target"
+                frozen = False
             elif error >= self.mismatch_threshold:
                 edit_type = "strengthen_relation"
                 reason = "observed_support_exceeds_prediction"
@@ -192,6 +201,16 @@ class PredictiveStructuralFeedbackEngine:
                     context_tags=tuple(sorted(set(signal.context_tags))),
                     rollback_state=signal.rollback_state,
                     frozen=frozen,
+                    provisional_node_kind=(
+                        signal.provisional_node_kind
+                        if edit_type == "create_provisional_node"
+                        else ""
+                    ),
+                    provisional_node_label=(
+                        signal.provisional_node_label
+                        if edit_type == "create_provisional_node"
+                        else ""
+                    ),
                     reason=reason,
                 )
             )

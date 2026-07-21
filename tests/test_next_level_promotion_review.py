@@ -56,8 +56,8 @@ def test_next_level_review_accepts_current_evidence_bound_human_approval(tmp_pat
         "continual_horizon_external_gate.json": {"passed": True, "promotion_allowed": True},
         "phase23_structural_fusion_benchmark.json": {
             "passed": True,
-            "independent_source_scope": {"domains": 2},
         },
+        "phase23_external_multimodal_gate.json": {"passed": True, "promotion_allowed": True},
         "phase24_causal_benchmark.json": {"passed": True},
         "phase25_agent_loop_benchmark.json": {"passed": True},
     }

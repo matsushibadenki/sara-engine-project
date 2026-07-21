@@ -27,6 +27,7 @@ REPORT_FILES = {
     "phase22_horizon": "continual_horizon_benchmark.json",
     "phase22_external": "continual_horizon_external_gate.json",
     "phase23_multimodal": "phase23_structural_fusion_benchmark.json",
+    "phase23_external": "phase23_external_multimodal_gate.json",
     "phase24_causal": "phase24_causal_benchmark.json",
     "phase25_agent": "phase25_agent_loop_benchmark.json",
 }
@@ -51,15 +52,21 @@ def build_review(evaluation_dir: str, approval_path: str = "") -> Dict[str, Any]
         key: bool(reports[key].get("passed", False)) for key in internal_keys
     }
     external = reports["phase22_external"]
+    external_multimodal = reports["phase23_external"]
     approval = _read_json(approval_path) if approval_path else {}
     approval_valid = validate_approval(approval, reports)
     negative_results = []
     if not external.get("promotion_allowed", False):
         negative_results.append("independent long-horizon coverage is below 10/30/100 buckets")
-    if not reports["phase23_multimodal"].get("independent_source_scope"):
-        negative_results.append("Phase 23 evidence is an observed-only fixture, not independent multimodal coverage")
+    if not external_multimodal.get("promotion_allowed", False):
+        negative_results.append("Phase 23 independent multimodal coverage is incomplete")
     negative_results.append("physical joule evidence remains indefinitely pending by operator decision")
     next_actions = [
+        {
+            "action": "collect_independent_multimodal_records",
+            "command": "python scripts/sara_cli.py build-phase23-multimodal-collection-request",
+            "artifact": "workspace/autobot/phase23_multimodal_collection_targets.json",
+        },
         {
             "action": "collect_independent_horizon_records",
             "command": "python scripts/sara_cli.py build-continual-horizon-collection-request",
@@ -74,6 +81,9 @@ def build_review(evaluation_dir: str, approval_path: str = "") -> Dict[str, Any]
     checks = {
         "internal_phase_evidence_complete": all(internal_results.values()),
         "external_horizon_promotion_allowed": bool(external.get("promotion_allowed", False)),
+        "external_multimodal_promotion_allowed": bool(
+            external_multimodal.get("promotion_allowed", False)
+        ),
         "human_approval_required": not approval_valid,
         "human_approval_valid": approval_valid,
         "physical_energy_excluded": True,
@@ -81,8 +91,8 @@ def build_review(evaluation_dir: str, approval_path: str = "") -> Dict[str, Any]
     promotion_allowed = bool(
         checks["internal_phase_evidence_complete"]
         and checks["external_horizon_promotion_allowed"]
+        and checks["external_multimodal_promotion_allowed"]
         and approval_valid
-        and reports["phase23_multimodal"].get("independent_source_scope")
     )
     return {
         "schema": "sara-next-level-promotion-review-v1",

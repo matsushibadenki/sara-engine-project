@@ -43,7 +43,7 @@ observe
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1382 passed` in the project Python 3.10 environment after verification-receipt hardening.
+- [Done] Full Python test suite: `1392 passed` in the project Python 3.10 environment after Phase 21 atomic structural-edit staging.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -76,11 +76,12 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Event Memory admission and reactivation boundary.
 - Bounded verified subgraph composition and relation-signature structural analogy.
 - Phase 21 fixture and CLI benchmark for supported composition, unsupported abstention, analogy, and durable-mutation blocking.
+- Added source-backed `create_provisional_node` feedback proposals; unknown nodes remain review-only and cannot enter the durable graph directly.
+- Added bounded multi-edit staging with deterministic graph snapshots, exact-digest rollback validation, edit/node/edge budgets, and byte-equivalent restoration after any late edit failure.
+- The Phase 21 benchmark now verifies provisional-node isolation, successful two-edit staging, and atomic rollback after a partially staged batch.
 
 ### [Next]
 
-- Add explicit `create_provisional_node` proposals without durable admission.
-- Add rollback snapshots for multi-edit proposals, not only individual edits.
 - Repeat compositional and analogy benchmarks with independent held-out cases.
 
 ### Acceptance Gate
@@ -131,13 +132,16 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Structural fusion decisions now gate the existing Event Memory multimodal admission boundary: only `verify_cross_modal_structure` may promote, while all other decisions freeze.
 - The production ingest path now requires a receipt-backed structural decision; missing, stale, or forged decisions freeze before Event Memory admission.
 - Cross-modal claims are separated from modality-local labels so relations such as vision `dog` and audio `bark` can support one shared claim.
+- Added `eval-phase23-external-multimodal`, which audits independent provenance, rights metadata, source and near-duplicate uniqueness, decision-family coverage, verifier accuracy, and Event Memory admission integrity.
+- Added `build-phase23-multimodal-collection-request`; missing evidence now produces managed aligned, missing-modality, contradiction, and temporal-misalignment targets instead of relaxing the gate.
+- The independent Phase 23 gate is connected to Level-2 promotion review, capability-matrix provenance, evidence-bound human approval, and scale-up readiness.
 
 ### [Next]
 
 - Represent cross-modal relations as hypotheses first, not immediate concepts.
 - Add asynchronous binding windows and modality dropout tests.
 - Connect verified bundles to RISA subgraphs and Event Memory episodes.
-- Validate the complete path on independently collected multimodal records.
+- Collect the five-case minimum across at least two independent recording/source domains and pass the external Phase 23 gate.
 
 ### Acceptance Gate
 
@@ -252,6 +256,8 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 - Added `eval-level2-capability-matrix` to compare structural, continual, multimodal, causal, and agent capabilities with their evidence scope.
 - The matrix explicitly reports unresolved independent-data gaps and keeps promotion blocked until human review.
+- Independent horizon and multimodal gates are now separate mandatory checks; fixture-only Phase 23 evidence cannot satisfy the multimodal requirement.
+- Human approval is bound to both external reports and becomes stale whenever either evidence set changes.
 
 ### [Later]
 
@@ -271,7 +277,7 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Compare frozen control, Event Memory, and structural-feedback Event Memory with five replicates per condition.
 - Freeze source, fixture, environment, state, and event budgets before execution.
 - Measure revision uptake, useful recall, catastrophic interference, abstention, state growth, event cost, latency, and provenance completeness.
-- Keep the scale-up command planning-only until the Phase 28 promotion gate and independent horizon gate pass.
+- Keep the scale-up command planning-only until the Phase 28 promotion gate and both independent horizon and multimodal gates pass.
 
 ### Acceptance Gate
 
@@ -307,6 +313,9 @@ Every major mechanism must pass this ladder before it can affect production defa
 - `workspace/evaluation/next_level_structural_benchmark.json`
 - `workspace/evaluation/continual_horizon_benchmark.json`
 - `workspace/evaluation/phase23_structural_fusion_benchmark.json`
+- `data/processed/autobot/phase23_independent_multimodal_manifest.jsonl`
+- `workspace/evaluation/phase23_external_multimodal_gate.json`
+- `workspace/autobot/phase23_multimodal_collection_targets.json`
 - `workspace/evaluation/phase24_causal_benchmark.json`
 - `workspace/evaluation/phase25_agent_loop_benchmark.json`
 - `workspace/evaluation/next_level_research_journal.jsonl`

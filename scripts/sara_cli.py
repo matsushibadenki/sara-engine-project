@@ -1216,6 +1216,40 @@ def main():
         default=workspace_path("evaluation", "phase23_structural_fusion_benchmark_summary.txt"),
     )
 
+    parser_phase23_external = subparsers.add_parser(
+        "eval-phase23-external-multimodal",
+        help="Validate independent multimodal evidence for Phase 23 promotion.",
+    )
+    parser_phase23_external.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "phase23_independent_multimodal_manifest.jsonl"),
+    )
+    parser_phase23_external.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase23_external_multimodal_gate.json"),
+    )
+    parser_phase23_external.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase23_external_multimodal_gate_summary.txt"),
+    )
+
+    parser_phase23_request = subparsers.add_parser(
+        "build-phase23-multimodal-collection-request",
+        help="Build managed independent multimodal collection targets from the Phase 23 gate.",
+    )
+    parser_phase23_request.add_argument(
+        "--gate-path",
+        default=workspace_path("evaluation", "phase23_external_multimodal_gate.json"),
+    )
+    parser_phase23_request.add_argument(
+        "--targets-path",
+        default=workspace_path("autobot", "phase23_multimodal_collection_targets.json"),
+    )
+    parser_phase23_request.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase23_multimodal_collection_request.json"),
+    )
+
     parser_phase24_causal = subparsers.add_parser(
         "eval-phase24-causal",
         help="Run the observed-only Phase 24 causal and counterfactual benchmark.",
@@ -1275,6 +1309,7 @@ def main():
     )
     parser_scale_up_readiness.add_argument("--promotion-gate", default=workspace_path("evaluation", "next_level_promotion_gate.json"))
     parser_scale_up_readiness.add_argument("--external-gate", default=workspace_path("evaluation", "continual_horizon_external_gate.json"))
+    parser_scale_up_readiness.add_argument("--multimodal-gate", default=workspace_path("evaluation", "phase23_external_multimodal_gate.json"))
     parser_scale_up_readiness.add_argument("--output-path", default=workspace_path("evaluation", "scale_up_experiment_readiness.json"))
 
     parser_phase27_runtime = subparsers.add_parser(
@@ -2964,6 +2999,34 @@ def main():
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
+    elif args.command == "eval-phase23-external-multimodal":
+        command = [
+            sys.executable,
+            "scripts/eval/phase23_external_multimodal_gate.py",
+            "--manifest-path",
+            str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase23-multimodal-collection-request":
+        command = [
+            sys.executable,
+            "scripts/eval/phase23_multimodal_collection_request.py",
+            "--gate-path",
+            str(args.gate_path),
+            "--targets-path",
+            str(args.targets_path),
+            "--report-path",
+            str(args.report_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
     elif args.command == "eval-phase24-causal":
         command = [
             sys.executable,
@@ -3034,6 +3097,8 @@ def main():
             str(args.promotion_gate),
             "--external-gate",
             str(args.external_gate),
+            "--multimodal-gate",
+            str(args.multimodal_gate),
             "--output-path",
             str(args.output_path),
         ]

@@ -1,6 +1,6 @@
 # Independent Data Collection Plan
 
-**更新日 / Updated / 更新日期:** 2026-07-17  
+**更新日 / Updated / 更新日期:** 2026-07-21
 **対象 / Scope / 范围:** Phase 7, Phase 8, Architecture Migration, Phase 19/20, RISA  
 **対象外 / Out of scope / 不包含:** Phase 6 external power measurements
 
@@ -19,6 +19,8 @@ This document defines where and how to collect the independent data required by 
 - [Done] Collect independent long-horizon Architecture Migration records and pass the external gate.
 - [Done] Collect independent UD English, Japanese, and Simplified Chinese train/dev/test material with split isolation audit.
 - [Next] Collect additional independent raw-text role-binding evidence for Phase 19/20 promotion review.
+- [Next] Collect the Phase 23 five-case multimodal minimum across at least two independent source domains.
+- [Done] Phase 23 independent provenance, leakage, decision coverage, structural verification, and Event Memory admission gates are implemented.
 - [Next] Keep raw-text promotion blocked until endpoint coverage, structural disambiguation, and bounded-state gates pass together.
 - [Later] Collect independent structural evidence for RISA structural interpolation and smoothing.
 - [Done] A local pretrained embedding reference is now available for the current Phase 8 comparison; FAISS and cross-encoder remain optional extensions.
@@ -217,6 +219,75 @@ Required rules:
 
 **Acceptance:** held-out cluster purity, naming consistency, hierarchy quality, non-language transfer, and mixed-cluster abstention improve or remain competitive without source leakage, unsupported durable links, or unbounded labeling and maintenance cost.
 
+### Phase 23 Independent Multimodal Gate
+
+**Purpose:** replace fixture-only structural-fusion evidence with independently collected, source-auditable observations while preserving abstention and Event Memory admission boundaries.
+
+**Minimum batch:**
+
+- At least five cases across at least two independent recording sessions or source domains, with at least two cases per domain.
+- Two aligned vision/audio cases expected to produce `verify_cross_modal_structure`.
+- One missing-modality case expected to remain `provisional_missing_modality_prediction`.
+- One contradictory claim case expected to produce `abstain_cross_modal_contradiction`.
+- One delay greater than 32 ms expected to produce `abstain_temporal_misalignment`.
+
+**Manifest location:** `data/processed/autobot/phase23_independent_multimodal_manifest.jsonl`
+
+Each JSONL row must use this shape:
+
+```json
+{
+  "schema": "sara-phase23-independent-multimodal-row-v1",
+  "case_id": "session-a-impact-001",
+  "source_ref": "operator:session-a:clip-001",
+  "source_hash": "sha256-of-canonical-clip-or-observation-record",
+  "source_revision": "recording-v1",
+  "source_domain": "session-a",
+  "collection_time": "2026-07-21T00:00:00Z",
+  "license_hint": "operator-owned-or-license-reference",
+  "near_duplicate_signature": "stable-perceptual-signature",
+  "evidence_scope": "independent_external",
+  "observed_only": true,
+  "compliance_level": "allow",
+  "expected_modalities": ["audio", "vision"],
+  "expected_decision": "verify_cross_modal_structure",
+  "evidence": [
+    {
+      "modality": "vision",
+      "label": "contact_motion",
+      "claim_key": "impact_event",
+      "timestamp_ms": 10.0,
+      "source_ref": "operator:session-a:clip-001:vision",
+      "source_hash": "sha256-of-vision-track"
+    },
+    {
+      "modality": "audio",
+      "label": "impact_sound",
+      "claim_key": "impact_event",
+      "timestamp_ms": 18.0,
+      "source_ref": "operator:session-a:clip-001:audio",
+      "source_hash": "sha256-of-audio-track"
+    }
+  ]
+}
+```
+
+**Collection method:**
+
+1. Prefer operator-owned recordings with consent, or explicitly licensed retained media; record rights before extracting events.
+2. Use separate recording sessions or unrelated licensed sources as domains. Do not split one clip into artificial domains.
+3. Preserve modality-local timestamps and references. `claim_key` expresses the shared proposition while `label` remains modality-local.
+4. Hash the canonical clip or immutable observation record, then compute a near-duplicate signature before selecting evaluation cases.
+5. Do not reuse repository fixtures, generated media, or `fixture:`, `synthetic:`, or `generated:` references.
+6. Run the external gate, then regenerate only missing targets if it remains blocked.
+
+```bash
+python scripts/sara_cli.py eval-phase23-external-multimodal
+python scripts/sara_cli.py build-phase23-multimodal-collection-request
+```
+
+**Acceptance:** every provenance and coverage check passes, verifier decision accuracy is 1.0, and only aligned verified cases cross the Event Memory admission boundary.
+
 ## Verification Workflow
 
 Run the following in order after each collection batch:
@@ -228,6 +299,8 @@ python scripts/sara_cli.py eval-autobot-gap-loop-readiness
 python scripts/sara_cli.py eval-phase7-completion
 python scripts/sara_cli.py eval-architecture-migration-evidence-cycle
 python scripts/sara_cli.py eval-phase8-evidence-cycle
+python scripts/sara_cli.py eval-phase23-external-multimodal
+python scripts/sara_cli.py build-phase23-multimodal-collection-request
 python scripts/sara_cli.py eval-research-benchmark-suite
 ```
 

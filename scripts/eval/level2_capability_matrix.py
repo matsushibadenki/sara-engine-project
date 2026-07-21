@@ -38,6 +38,9 @@ def build_matrix(evaluation_dir: str) -> Dict[str, Any]:
         "agent": _read(os.path.join(evaluation_dir, "phase25_agent_loop_benchmark.json")),
         "promotion": _read(os.path.join(evaluation_dir, "next_level_promotion_gate.json")),
         "external": _read(os.path.join(evaluation_dir, "continual_horizon_external_gate.json")),
+        "external_multimodal": _read(
+            os.path.join(evaluation_dir, "phase23_external_multimodal_gate.json")
+        ),
     }
     matrix = {
         "structural_reasoning": {
@@ -57,7 +60,11 @@ def build_matrix(evaluation_dir: str) -> Dict[str, Any]:
             "passed": bool(reports["multimodal"].get("passed", False)),
             "accuracy": reports["multimodal"].get("metrics", {}).get("decision_accuracy", 0.0),
             "abstention": reports["multimodal"].get("metrics", {}).get("contradiction_abstention", 0.0),
-            "provenance": "fixture_observed_only",
+            "provenance": (
+                "independent_external"
+                if reports["external_multimodal"].get("promotion_allowed", False)
+                else "fixture_observed_only"
+            ),
         },
         "causal_counterfactual": {
             "passed": bool(reports["causal"].get("passed", False)),
@@ -75,18 +82,22 @@ def build_matrix(evaluation_dir: str) -> Dict[str, Any]:
     checks = {
         "internal_capabilities_pass": all(bool(item["passed"]) for item in matrix.values()),
         "independent_horizon_gate_pass": bool(reports["external"].get("promotion_allowed", False)),
+        "independent_multimodal_gate_pass": bool(
+            reports["external_multimodal"].get("promotion_allowed", False)
+        ),
         "human_review_gate_pass": bool(reports["promotion"].get("promotion_allowed", False)),
         "physical_energy_required_for_matrix": False,
     }
     promotion_allowed = bool(
         checks["internal_capabilities_pass"]
         and checks["independent_horizon_gate_pass"]
+        and checks["independent_multimodal_gate_pass"]
         and checks["human_review_gate_pass"]
     )
     unresolved_gaps = []
     if not checks["independent_horizon_gate_pass"]:
         unresolved_gaps.append("independent 10/30/100 horizon coverage")
-    if not reports["multimodal"].get("independent_source_scope"):
+    if not checks["independent_multimodal_gate_pass"]:
         unresolved_gaps.append("independent multimodal workload")
     if not checks["human_review_gate_pass"]:
         unresolved_gaps.append("human promotion approval")

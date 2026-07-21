@@ -44,3 +44,21 @@ def test_predictive_feedback_requests_more_evidence_before_editing():
         (_signal(evidence_ids=(), eligible=False),)
     )[0]
     assert proposal.edit_type == "request_more_evidence"
+
+
+def test_predictive_feedback_creates_only_a_provisional_unknown_node_proposal():
+    proposal = PredictiveStructuralFeedbackEngine().propose(
+        (
+            _signal(
+                target_node="concept:unknown-animal",
+                target_exists=False,
+                provisional_node_kind="animal_candidate",
+                provisional_node_label="unknown animal",
+            ),
+        )
+    )[0]
+
+    assert proposal.edit_type == "create_provisional_node"
+    assert proposal.provisional_node_kind == "animal_candidate"
+    assert proposal.provisional_node_label == "unknown animal"
+    assert proposal.durable_mutation_allowed is False

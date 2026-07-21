@@ -21,6 +21,7 @@ def test_scale_up_readiness_stays_blocked_until_gates_pass():
     report = module.build_readiness(
         {"promotion_allowed": False},
         {"promotion_allowed": False},
+        {"promotion_allowed": False},
     )
 
     assert report["ready_to_execute"] is False
@@ -31,6 +32,7 @@ def test_scale_up_readiness_stays_blocked_until_gates_pass():
 def test_scale_up_readiness_can_open_only_when_both_gates_pass():
     module = _load_module()
     report = module.build_readiness(
+        {"promotion_allowed": True},
         {"promotion_allowed": True},
         {"promotion_allowed": True},
     )

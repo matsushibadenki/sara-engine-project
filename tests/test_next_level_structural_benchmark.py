@@ -17,4 +17,6 @@ def test_next_level_structural_benchmark_passes():
         rows = [module.json.loads(line) for line in handle if line.strip()]
     report = module.build_report(rows)
     assert report["passed"] is True
+    assert report["metrics"]["provisional_node_boundary"] == 1.0
+    assert report["metrics"]["multi_edit_atomic_rollback"] == 1.0
     assert all(value == 1.0 for value in report["metrics"].values())

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import json
 import os
 import sys
@@ -18,6 +19,16 @@ from sara_engine.risa.subgraph_reasoning import (  # noqa: E402
     BoundedSubgraphComposer,
     StructuralAnalogyEngine,
     SubgraphEdge,
+)
+from sara_engine.risa.graph_store import RisaGraphStore  # noqa: E402
+from sara_engine.risa.models import ConceptCell  # noqa: E402
+from sara_engine.risa.structural_edit_transaction import (  # noqa: E402
+    BoundedStructuralEditTransaction,
+    graph_digest,
+)
+from sara_engine.risa.structural_interpolation import (  # noqa: E402
+    PredictiveStructuralFeedbackEngine,
+    StructuralFeedbackSignal,
 )
 from sara_engine.utils.project_paths import ensure_parent_directory, processed_data_path, workspace_path  # noqa: E402
 
@@ -65,7 +76,84 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
                 analogy_ok = result.score == 1.0 and result.abstained is False
             if case_id == "analogy_unsupported":
                 analogy_abstain_ok = result.abstained is True
-    passed = bool(supported_ok and unsupported_ok and analogy_ok and analogy_abstain_ok)
+
+    store = RisaGraphStore()
+    store.add_or_update_node(
+        ConceptCell(cell_id="concept:animal", kind="concept", label="animal")
+    )
+    original_digest = graph_digest(store)
+    feedback = PredictiveStructuralFeedbackEngine()
+    create_proposal = feedback.propose(
+        (
+            StructuralFeedbackSignal(
+                predicting_concept="concept:animal",
+                source_node="concept:animal",
+                target_node="concept:unknown-animal",
+                relation_type="predicts",
+                predicted_confidence=0.2,
+                observed_confidence=0.8,
+                evidence_ids=("phase21-evidence-a", "phase21-evidence-b"),
+                context_tags=("biology",),
+                target_exists=False,
+                provisional_node_kind="animal_candidate",
+                provisional_node_label="unknown animal",
+            ),
+        )
+    )[0]
+    link_proposal = feedback.propose(
+        (
+            StructuralFeedbackSignal(
+                predicting_concept="concept:animal",
+                source_node="concept:animal",
+                target_node="concept:unknown-animal",
+                relation_type="predicts",
+                predicted_confidence=0.2,
+                observed_confidence=0.8,
+                evidence_ids=("phase21-evidence-a", "phase21-evidence-b"),
+                context_tags=("biology",),
+            ),
+        )
+    )[0]
+    transaction = BoundedStructuralEditTransaction(max_edits=4)
+    staged = transaction.stage(store, (create_proposal, link_proposal))
+    rollback = transaction.stage(
+        store,
+        (
+            create_proposal,
+            replace(
+                link_proposal,
+                proposal_id="phase21-invalid-late-edit",
+                source_node="concept:missing-source",
+            ),
+        ),
+    )
+    provisional_ok = bool(
+        create_proposal.edit_type == "create_provisional_node"
+        and not create_proposal.durable_mutation_allowed
+    )
+    staging_ok = bool(
+        staged.accepted_for_review
+        and staged.staged_edit_count == 2
+        and graph_digest(store) == original_digest
+        and store.get_node("concept:unknown-animal") is None
+    )
+    rollback_ok = bool(
+        rollback.rolled_back
+        and rollback.rollback_verified
+        and rollback.final_digest == original_digest
+        and rollback.staged_edit_count == 1
+    )
+    results["provisional_node_batch"] = staged.to_dict()
+    results["multi_edit_atomic_rollback"] = rollback.to_dict()
+    passed = bool(
+        supported_ok
+        and unsupported_ok
+        and analogy_ok
+        and analogy_abstain_ok
+        and provisional_ok
+        and staging_ok
+        and rollback_ok
+    )
     return {
         "schema": "sara-next-level-structural-benchmark-v1",
         "passed": passed,
@@ -75,6 +163,9 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "unsupported_composition_abstention": float(unsupported_ok),
             "supported_structural_analogy": float(analogy_ok),
             "unsupported_structural_analogy_abstention": float(analogy_abstain_ok),
+            "provisional_node_boundary": float(provisional_ok),
+            "multi_edit_staging_boundary": float(staging_ok),
+            "multi_edit_atomic_rollback": float(rollback_ok),
             "durable_mutation_boundary": float(
                 all(
                     all(not proposal.get("durable_mutation_allowed", True) for proposal in item.get("proposals", []))

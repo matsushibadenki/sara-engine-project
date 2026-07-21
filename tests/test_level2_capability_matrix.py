@@ -34,6 +34,7 @@ def test_level2_matrix_reports_internal_capabilities_from_managed_reports(tmp_pa
         "phase24_causal_benchmark.json": {"passed": True, "metrics": {"verified_causal_case": 1.0}, "checks": {"unsupported_counterfactual_abstention": True}},
         "phase25_agent_loop_benchmark.json": {"passed": True, "metrics": {"safe_plan_acceptance": 1.0}, "checks": {"unexpected_outcome_rolls_back": True}},
         "continual_horizon_external_gate.json": {"promotion_allowed": False},
+        "phase23_external_multimodal_gate.json": {"promotion_allowed": False},
         "next_level_promotion_gate.json": {"promotion_allowed": False},
     }
     for name, payload in payloads.items():
@@ -52,11 +53,11 @@ def test_level2_matrix_has_a_real_promotion_transition(tmp_path):
         "continual_horizon_benchmark.json": {"passed": True},
         "phase23_structural_fusion_benchmark.json": {
             "passed": True,
-            "independent_source_scope": {"domains": 2},
         },
         "phase24_causal_benchmark.json": {"passed": True},
         "phase25_agent_loop_benchmark.json": {"passed": True},
         "continual_horizon_external_gate.json": {"promotion_allowed": True},
+        "phase23_external_multimodal_gate.json": {"promotion_allowed": True},
         "next_level_promotion_gate.json": {"promotion_allowed": True},
     }
     for name, payload in payloads.items():

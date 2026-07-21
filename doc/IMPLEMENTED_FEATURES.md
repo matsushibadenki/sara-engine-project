@@ -7,7 +7,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Target version: `1.1.0`
 - v1.1 release gate: `15/15` checks passing
 - Research product completion gate: `14/14` checks passing
-- Full test suite: `1008` tests passing in the Python 3.10 project environment
+- Full test suite: `1392` tests passing in the Python 3.10 project environment
 - Current release posture: ready for v1.1 release, with physical joule measurements intentionally placed on indefinite hold and excluded from active release blocking
 
 ## Core Policy And Runtime Constraints
@@ -368,6 +368,10 @@ These are not v1.1 blockers, but remain important research/product work:
 
 Implemented a bounded raw-text sparse language-event adapter and finite fast/medium/slow Semantic Echo Field with local role binding, explicit decay, abstention, contradiction traces, fixed controls, benchmark, CLI, and completion gate. The experiment remains observed-only and does not replace the production fixed SNN path.
 
+### Phase 21: Structural Cognition Core
+
+Added source-backed `create_provisional_node` proposals for unknown structural targets without durable graph admission. Multi-edit proposals run only on a bounded isolated graph copy with deterministic snapshots, exact-digest validation, edit/node/edge ceilings, and atomic rollback after any late failure. The Phase 21 benchmark verifies successful two-edit staging, original-graph immutability, and byte-equivalent restoration.
+
 ### Phase 22: Continual Horizon Intelligence
 
 Implemented the observed-only `eval-continual-horizon` benchmark for fixed-initial-state 10/30/100 episode workloads. It compares a frozen control with Event Memory, resonance-credit Event Memory, and structural-feedback Event Memory profiles, and records revision uptake latency, useful recall, contradiction blocking, abstention integrity, bounded state growth, maintenance event cost, and replay count. This fixture evidence does not claim independent-source generalization or physical joule efficiency.
@@ -378,6 +382,7 @@ The external gate separates manifest quality from promotion coverage and emits m
 
 Added `eval-phase23-structural-fusion` and a bounded modality-provenance verifier. Supported evidence is verified, missing modalities remain provisional, cross-modal contradictions abstain, temporal misalignment abstains, and no fusion result can directly mutate durable structural state.
 The verifier is connected to multimodal Event Memory admission; only verified structural fusion can promote, while contradiction and missing-modality decisions are frozen.
+Added `eval-phase23-external-multimodal` to validate independent source scope, rights and revision metadata, source/hash/near-duplicate uniqueness, required decision coverage, verifier behavior, and Event Memory admission integrity. Missing data is converted into managed collection targets by `build-phase23-multimodal-collection-request` and remains blocked rather than being synthesized.
 
 ### Phase 24: Causal And Counterfactual Structure
 
@@ -407,6 +412,7 @@ Existing Rust sparse-primitive output-equivalence evidence is surfaced separatel
 
 Added `eval-level2-capability-matrix`, which summarizes Phase21-25 capability evidence, provenance scope, unresolved gaps, and promotion status without changing production defaults.
 Added evidence-bound human approval manifests. Approval is invalidated whenever its source reports change and cannot bypass independent-data gates.
+The Phase 23 independent multimodal report is now a mandatory promotion input and is surfaced separately in the Level-2 matrix and scale-up readiness gate.
 
 ### Verification Receipt Boundary
 

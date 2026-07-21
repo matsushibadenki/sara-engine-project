@@ -18,6 +18,9 @@ from sara_engine.utils.project_paths import ensure_parent_directory, workspace_p
 
 DEFAULT_PROMOTION_GATE = workspace_path("evaluation", "next_level_promotion_gate.json")
 DEFAULT_EXTERNAL_GATE = workspace_path("evaluation", "continual_horizon_external_gate.json")
+DEFAULT_MULTIMODAL_GATE = workspace_path(
+    "evaluation", "phase23_external_multimodal_gate.json"
+)
 DEFAULT_OUTPUT = workspace_path("evaluation", "scale_up_experiment_readiness.json")
 
 
@@ -33,12 +36,15 @@ def _read_json(path: str) -> Dict[str, Any]:
 def build_readiness(
     promotion_gate: Mapping[str, Any],
     external_gate: Mapping[str, Any],
+    multimodal_gate: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     blockers = []
     if not bool(promotion_gate.get("promotion_allowed", False)):
         blockers.append("next_level_promotion_gate_blocked")
     if not bool(external_gate.get("promotion_allowed", False)):
         blockers.append("independent_horizon_coverage_incomplete")
+    if multimodal_gate is not None and not bool(multimodal_gate.get("promotion_allowed", False)):
+        blockers.append("independent_multimodal_coverage_incomplete")
     plan = {
         "profiles": ["frozen_control", "event_memory", "structural_feedback_event_memory"],
         "episode_buckets": [1000, 10000],
@@ -72,6 +78,7 @@ def build_readiness(
         "plan": plan,
         "required_before_execution": [
             "complete independent 10/30/100 horizon coverage",
+            "complete independent multimodal decision and provenance coverage",
             "complete human promotion review",
             "freeze fixture, source, and environment fingerprints",
             "record pre-registered thresholds before execution",
@@ -84,9 +91,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--promotion-gate", default=DEFAULT_PROMOTION_GATE)
     parser.add_argument("--external-gate", default=DEFAULT_EXTERNAL_GATE)
+    parser.add_argument("--multimodal-gate", default=DEFAULT_MULTIMODAL_GATE)
     parser.add_argument("--output-path", default=DEFAULT_OUTPUT)
     args = parser.parse_args(argv)
-    report = build_readiness(_read_json(args.promotion_gate), _read_json(args.external_gate))
+    report = build_readiness(
+        _read_json(args.promotion_gate),
+        _read_json(args.external_gate),
+        _read_json(args.multimodal_gate),
+    )
     with open(ensure_parent_directory(args.output_path), "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2, sort_keys=True)
         handle.write("\n")
