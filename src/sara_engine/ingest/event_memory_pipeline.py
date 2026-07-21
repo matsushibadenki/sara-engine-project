@@ -13,6 +13,10 @@ from sara_engine.memory.multimodal_event_bundle_admission import (
     build_multimodal_event_state_candidate,
 )
 from sara_engine.multimodal.synesthetic_binding import SparseEventBundle
+from sara_engine.multimodal.structural_verification import (
+    ModalityEvidence,
+    MultimodalStructuralVerifier,
+)
 
 from .candidate_proposals import (
     CandidateEvent,
@@ -84,6 +88,7 @@ class EventMemoryIngestPipeline:
         prediction_gain_estimator: PredictionGainEstimator | None = None,
         verifier: ProposalVerifier | None = None,
         persistent_self_state: PersistentSelfStateController | None = None,
+        multimodal_verifier: MultimodalStructuralVerifier | None = None,
     ) -> None:
         self.change_detector = change_detector or ScalarChangeDetector()
         self.temporal_eventizer = temporal_eventizer or TemporalEventizer()
@@ -93,6 +98,7 @@ class EventMemoryIngestPipeline:
         self.prediction_gain_estimator = prediction_gain_estimator or PredictionGainEstimator()
         self.verifier = verifier or ProposalVerifier()
         self.persistent_self_state = persistent_self_state
+        self.multimodal_verifier = multimodal_verifier or MultimodalStructuralVerifier()
 
     def ingest_streams(
         self,
@@ -103,6 +109,7 @@ class EventMemoryIngestPipeline:
         candidate_events: Sequence[CandidateEvent] = (),
         reactivation_hints: Sequence[Mapping[str, Any]] = (),
         multimodal_bundles: Sequence[SparseEventBundle] = (),
+        expected_modalities: Sequence[str] = (),
     ) -> EventMemoryIngestResult:
         change_points: List[ChangePoint] = []
         observed_events: List[ObservedEvent] = []
@@ -186,6 +193,21 @@ class EventMemoryIngestPipeline:
             build_multimodal_event_state_candidate(
                 bundle,
                 time_segment=int(bundle.time_chunk_id),
+                structural_decision=self.multimodal_verifier.verify(
+                    (
+                        ModalityEvidence(
+                            modality=record.modality,
+                            label=record.label,
+                            claim_key=record.claim_key,
+                            timestamp_ms=record.timestamp_ms,
+                            source_ref=record.source_ref,
+                            observed=record.observed,
+                            confidence=record.confidence,
+                        )
+                        for record in bundle.child_records
+                    ),
+                    expected_modalities=expected_modalities or bundle.modality_ids,
+                ),
             )
             for bundle in multimodal_bundles
         )

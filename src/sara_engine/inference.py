@@ -8,8 +8,8 @@ import math
 import hashlib
 import re
 from typing import Any, Dict, List, Optional, Sequence, Tuple
-from transformers import AutoTokenizer
 from .utils.direct_map import restore_direct_map, serialize_direct_map
+from .utils.tokenizer import SaraTokenizer
 from .dynamics.fluid_field import FluidFieldDynamics
 from .utils.future_state_runtime import LightweightFutureStateRuntime
 from .utils.retrieval_diagnostics import format_retrieval_diagnostics, normalize_retrieval_diagnostic
@@ -23,6 +23,25 @@ except ImportError:
     HAS_RUST_CORE = False
 
 
+class _TokenIdList(list):
+    def tolist(self) -> List[int]:
+        return list(self)
+
+
+class _NativeTokenizerAdapter:
+    """Expose the small tokenizer subset used by the sparse inference path."""
+
+    def __init__(self, tokenizer: SaraTokenizer) -> None:
+        self._tokenizer = tokenizer
+
+    def __call__(self, text: str, *, return_tensors: str = "pt") -> Dict[str, List[_TokenIdList]]:
+        del return_tensors
+        return {"input_ids": [_TokenIdList(self._tokenizer.encode(text))]}
+
+    def decode(self, ids: Sequence[int]) -> str:
+        return self._tokenizer.decode([int(item) for item in ids])
+
+
 class SaraInference:
     """
     SNN-based inference engine, designed to act as a lightweight replacement for 
@@ -33,14 +52,25 @@ class SaraInference:
     def __init__(
         self,
         model_path="models/distilled_sara_llm.msgpack",
-        tokenizer_name="google/gemma-2-2b",
+        tokenizer_name: Optional[str] = None,
+        tokenizer: Any = None,
         enable_turboquant: bool = False,
         turboquant_main_bits: int = 3,
         turboquant_residual_scale: Optional[float] = None,
     ):
         self.model_path = model_path
-        # Support multilingual tokenizer dynamically
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+        if tokenizer is not None:
+            self.tokenizer = tokenizer
+        elif tokenizer_name:
+            try:
+                from transformers import AutoTokenizer
+            except ImportError as exc:
+                raise RuntimeError(
+                    "The optional 'ann-reference' dependencies are required for a Hugging Face tokenizer."
+                ) from exc
+            self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+        else:
+            self.tokenizer = _NativeTokenizerAdapter(SaraTokenizer())
         self.direct_map: Dict[Tuple[int, ...], Dict[int, float]] = {}
         self.context_index: Dict[Tuple[int, ...], Tuple[int, ...]] = {}
         self.retrieval_diagnostics: List[Dict[str, object]] = []

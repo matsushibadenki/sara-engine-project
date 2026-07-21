@@ -43,7 +43,7 @@ observe
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1343 passed` in the project Python 3.10 environment.
+- [Done] Full Python test suite: `1382 passed` in the project Python 3.10 environment after verification-receipt hardening.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -79,11 +79,9 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 ### [Next]
 
-- Add bounded subgraph composition for two or more verified relations.
-- Add structural analogy between concept neighborhoods using relation-type-aware overlap.
 - Add explicit `create_provisional_node` proposals without durable admission.
 - Add rollback snapshots for multi-edit proposals, not only individual edits.
-- Benchmark compositional queries, unsupported neighbors, revision conflict, and relation-type confusion.
+- Repeat compositional and analogy benchmarks with independent held-out cases.
 
 ### Acceptance Gate
 
@@ -104,6 +102,7 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Delayed-verification and protected-knowledge retention ablations now expose correction latency and catastrophic-interference checks under distractor pressure.
 - Added `eval-continual-horizon-external`, which validates the existing independent migration manifest before any Phase 22 promotion review; it deliberately keeps `promotion_allowed=false`.
 - The external gate now separates manifest quality from horizon promotion: the current 0-5 record span passes input validation but remains blocked until every domain reaches the 10/30/100 buckets.
+- Added `build-continual-horizon-collection-request`, which writes managed per-domain collection targets and required provenance fields without fabricating missing records.
 
 ### [Next]
 
@@ -124,13 +123,21 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 **Goal:** bind vision, audio, text, and temporal signals through shared sparse events while preserving modality-local evidence.
 
+### [Done]
+
+- Added the observed-only `eval-phase23-structural-fusion` benchmark.
+- Added modality-local provenance verification for supported, missing, contradictory, and temporally misaligned evidence.
+- Missing-modality outputs remain provisional, contradictions and delay conflicts abstain, and every decision blocks direct durable mutation.
+- Structural fusion decisions now gate the existing Event Memory multimodal admission boundary: only `verify_cross_modal_structure` may promote, while all other decisions freeze.
+- The production ingest path now requires a receipt-backed structural decision; missing, stale, or forged decisions freeze before Event Memory admission.
+- Cross-modal claims are separated from modality-local labels so relations such as vision `dog` and audio `bark` can support one shared claim.
+
 ### [Next]
 
-- Extend the current common spike-space path with modality-specific event provenance.
 - Represent cross-modal relations as hypotheses first, not immediate concepts.
 - Add asynchronous binding windows and modality dropout tests.
-- Add cross-modal contradiction cases where one modality is noisy or delayed.
 - Connect verified bundles to RISA subgraphs and Event Memory episodes.
+- Validate the complete path on independently collected multimodal records.
 
 ### Acceptance Gate
 
@@ -144,10 +151,16 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 **Goal:** distinguish temporal correlation from causal support and use verified structures for bounded counterfactual reasoning.
 
+### [Done]
+
+- Added the observed-only `eval-phase24-causal` benchmark and bounded causal reasoner.
+- Temporal or correlational evidence remains `causes_candidate`; intervention plus contrastive support is required for `causes_verified`.
+- Source conflict and unsupported counterfactuals abstain, branch depth/count are bounded, and durable mutation remains blocked.
+- Causal output is connected to Event Memory admission: only `causes_verified` is eligible, while temporal candidates and abstentions are rejected as unverified.
+- Intervention and contrastive evidence can now promote `causes_candidate`; callers no longer need to pre-label evidence as `causes_verified`.
+
 ### [Next]
 
-- Separate `precedes`, `correlates_with`, `causes_candidate`, and `causes_verified` relation types.
-- Require intervention-like or contrastive evidence before promoting causal hypotheses.
 - Add counterfactual branch records with bounded depth and explicit rollback.
 - Return supporting event paths and alternative explanations with every causal answer.
 - Freeze causal promotion under source conflict or unstable feedback.
@@ -163,13 +176,20 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 **Goal:** connect perception, memory, planning, action, and outcome correction into a safe bounded agent loop.
 
+### [Done]
+
+- Added the observed-only `eval-phase25-agent-loop` benchmark and bounded plan decision layer.
+- Structural predictions require a valid sparse plan trace, expected outcome, rollback action, acceptable risk, and current goal match.
+- Invalid, high-risk, stale-goal, or rollback-less plans are rejected; observed outcomes remain non-durable candidates.
+- Verified observed outcomes now enter the existing Event Memory admission path; rejected plans and mismatched outcomes produce no candidate.
+- Unexpected outcomes now produce an explicit rollback requirement and are excluded from Event Memory admission.
+- `SaraAgent` now exposes the bounded plan, verified outcome, causal reasoning, and Event Memory admission path.
+- Successful outcome text requires a source-backed observation receipt before it can become a memory candidate.
+
 ### [Next]
 
-- Use RISA structural predictions to propose actions, not to bypass policy checks.
-- Require a plan trace, expected outcome, risk estimate, and rollback action before execution.
-- Store action outcomes as Event Memory candidates only after observation and verification.
-- Add task interruption, goal change, stale-plan, and unexpected-outcome cases.
 - Compare action selection with and without structural feedback under equal event budgets.
+- Add tool-execution adapters with transactional rollback; the current loop remains side-effect-free.
 
 ### Acceptance Gate
 
@@ -182,12 +202,16 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 **Goal:** make SARA able to detect when its own evidence is weak and prioritize the next useful experiment.
 
+### [Done]
+
+- Added `eval-next-level-promotion-review` with a bounded research journal and a separate promotion gate.
+- The review links Phase 21-25 report artifacts, records negative results, emits reproducible next actions, and never self-promotes production defaults.
+- Physical joule measurement remains excluded and independent long-horizon/multimodal evidence remains visible as unresolved.
+- Added evidence-bound human approval manifests; any report change invalidates stale approval.
+
 ### [Next]
 
-- Add a bounded research journal for hypothesis, evidence, result, confidence, negative result, and next test.
-- Link every promotion proposal to the benchmark report and source manifest that justified it.
 - Detect repeated failed experiments and suppress duplicate work.
-- Generate repair priorities without automatically editing ROADMAP or production configuration.
 - Track metric drift across benchmark runs and distinguish data drift from code regression.
 
 ### Acceptance Gate
@@ -201,9 +225,14 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 **Goal:** make the verified SARA runtime portable across Python, Rust, and constrained edge targets without changing semantics.
 
+### [Done]
+
+- Added the canonical sparse IR v1 representation, deterministic event ordering, replay digest, and same-version state migration checks.
+- Added `eval-phase27-portable-runtime` as an observed-only readiness gate; it explicitly does not claim Python/Rust equivalence.
+- The gate surfaces existing Rust sparse-primitive output-equivalence evidence separately while keeping canonical IR replay equivalence unresolved.
+
 ### [Later]
 
-- Define a canonical sparse event IR and versioned state migration contract.
 - Add Python/Rust replay equivalence for Event Memory, RISA proposals, and predictive feedback.
 - Add low-memory, ARM64, and optional neuromorphic capability profiles.
 - Measure latency, state bytes, event count, and deterministic replay across targets.
@@ -219,6 +248,11 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 **Goal:** decide whether SARA has become a stronger general-purpose research prototype rather than a collection of passing mechanisms.
 
+### [Done]
+
+- Added `eval-level2-capability-matrix` to compare structural, continual, multimodal, causal, and agent capabilities with their evidence scope.
+- The matrix explicitly reports unresolved independent-data gaps and keeps promotion blocked until human review.
+
 ### [Later]
 
 - Run the complete promotion ladder on Phases 21-27.
@@ -226,6 +260,25 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Compare against frozen controls, not only against prior SARA versions.
 - Publish a capability matrix with accuracy, abstention, revision, state, event cost, latency, and provenance quality.
 - Keep physical joule claims explicitly unresolved while Phase 6 remains pending.
+
+## Phase 29: Scale-Up Experimental Validation
+
+**Goal:** after ROADMAP_NEXT_LEVEL evidence and human review are complete, test whether the bounded mechanisms remain useful at a larger but controlled scale.
+
+### [Next]
+
+- Run 1,000 and 10,000 episode buckets across at least four domains.
+- Compare frozen control, Event Memory, and structural-feedback Event Memory with five replicates per condition.
+- Freeze source, fixture, environment, state, and event budgets before execution.
+- Measure revision uptake, useful recall, catastrophic interference, abstention, state growth, event cost, latency, and provenance completeness.
+- Keep the scale-up command planning-only until the Phase 28 promotion gate and independent horizon gate pass.
+
+### Acceptance Gate
+
+- Scale-up runs are reproducible from managed manifests and pre-registered thresholds.
+- All controls use equal data, state, event, and replicate budgets.
+- No metric improvement is promoted without independent source coverage and human review.
+- Physical energy remains out of scope.
 
 ### Level-2 Promotion Criteria
 
@@ -240,11 +293,11 @@ Every major mechanism must pass this ladder before it can affect production defa
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
-2. [Next] Build the 10/30/100-episode continual horizon benchmark.
-3. [Next] Connect the horizon benchmark to Event Memory retention profiles.
-4. [Next] Add multimodal structural contradiction and missing-modality cases.
-5. [Later] Activate causal/counterfactual promotion only after horizon evidence is stable.
-6. [Later] Activate portable runtime work after canonical event IR is frozen.
+2. [Done] Build the observed-only 10/30/100-episode continual horizon benchmark.
+3. [Done] Connect the horizon benchmark to Event Memory retention profiles.
+4. [Done] Add multimodal structural contradiction and missing-modality cases.
+5. [Next] Collect independent 10/30/100 horizon and multimodal evidence.
+6. [Later] Complete Python/Rust canonical replay equivalence.
 7. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
@@ -253,10 +306,13 @@ Every major mechanism must pass this ladder before it can affect production defa
 - `data/processed/benchmark_fixtures/continual_horizon_cases.jsonl`
 - `workspace/evaluation/next_level_structural_benchmark.json`
 - `workspace/evaluation/continual_horizon_benchmark.json`
-- `workspace/evaluation/multimodal_structural_benchmark.json`
-- `workspace/evaluation/causal_counterfactual_benchmark.json`
+- `workspace/evaluation/phase23_structural_fusion_benchmark.json`
+- `workspace/evaluation/phase24_causal_benchmark.json`
+- `workspace/evaluation/phase25_agent_loop_benchmark.json`
 - `workspace/evaluation/next_level_research_journal.jsonl`
 - `workspace/evaluation/next_level_promotion_gate.json`
+- `workspace/evaluation/next_level_human_approval.json`
+- `workspace/evaluation/scale_up_experiment_readiness.json`
 
 ## Review Rule
 

@@ -35,7 +35,9 @@ def _build_fixture() -> tuple[
         source_ref = f"fixture:{doc_id}"
         concept_key = f"predicts:text:{query}->doc:{doc_id}"
         cache.admit(
-            EventStateCandidate(
+            EventStateCandidate.from_verified_evidence(
+                verifier_id="internal-maintenance-efficiency-benchmark",
+                evidence={"query": query, "answer": answer, "doc_id": doc_id},
                 entry_id=f"maintenance-{index}",
                 signature=(
                     stable_self_state_id(query, modulus=1024),

@@ -765,7 +765,9 @@ def _run_delta_retention_policy_case() -> Dict[str, Any]:
 def _run_idle_maintenance_trace_case() -> Dict[str, Any]:
     cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic")
     cache.admit(
-        EventStateCandidate(
+        EventStateCandidate.from_verified_evidence(
+            verifier_id="continual-consolidation-idle-maintenance",
+            evidence={"entry_id": "concept-memory", "signature": [21, 23, 27]},
             entry_id="concept-memory",
             signature=(21, 23, 27),
             source_ref="concept:aligned",

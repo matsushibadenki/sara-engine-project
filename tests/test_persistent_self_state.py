@@ -78,7 +78,9 @@ def test_persistent_self_state_evaluation_reports_observed_metrics():
 def test_persistent_self_state_accepts_real_event_memory_reactivation_hints():
     cache = VerifiedHierarchicalEventStateCache(retrieval_threshold=0.1)
     cache.admit(
-        EventStateCandidate(
+        EventStateCandidate.from_verified_evidence(
+            verifier_id="test-persistent-self-state",
+            evidence={"entry_id": "verified-anchor", "signature": [7, 11, 13]},
             entry_id="verified-anchor",
             signature=(7, 11, 13),
             source_ref="source:verified-anchor",

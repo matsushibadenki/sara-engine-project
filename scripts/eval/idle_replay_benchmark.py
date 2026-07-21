@@ -33,7 +33,11 @@ def _candidate(entry_id: str, **overrides: Any) -> EventStateCandidate:
         "verified": True,
     }
     values.update(overrides)
-    return EventStateCandidate(**values)
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="idle-replay-benchmark",
+        evidence={"entry_id": entry_id, "signature": list(values["signature"])},
+        **values,
+    )
 
 
 def _build_cache() -> VerifiedHierarchicalEventStateCache:

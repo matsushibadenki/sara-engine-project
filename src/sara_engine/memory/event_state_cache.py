@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 from sara_engine.dynamics import memory_self_state_alignment
+from sara_engine.memory.verification_receipt import VerificationReceipt, issue_verification_receipt
 
 
 def _clamp01(value: float) -> float:
@@ -58,15 +59,43 @@ class EventStateCandidate:
     credit_confidence: float = 0.0
     credit_longevity: float = 0.0
     metabolic_headroom: float = 1.0
-    observed: bool = True
-    source_backed: bool = True
-    verified: bool = True
+    observed: bool = False
+    source_backed: bool = False
+    verified: bool = False
     contradicted: bool = False
     abstained: bool = False
     event_cost: int = 0
     expires_at: Optional[int] = None
     architecture_version: str = "sara-architecture-v1"
     migration_source_architecture_version: str = ""
+    verification_receipt: Optional[VerificationReceipt] = None
+
+    @classmethod
+    def from_verified_evidence(
+        cls,
+        *,
+        verifier_id: str,
+        evidence: Any,
+        verifier_version: str = "v1",
+        decision: str = "verified_candidate",
+        **values: Any,
+    ) -> "EventStateCandidate":
+        """Construct a candidate with a receipt bound to its admission fields."""
+        source_ref = str(values.get("source_ref", ""))
+        receipt = issue_verification_receipt(
+            verifier_id=verifier_id,
+            verifier_version=verifier_version,
+            decision=decision,
+            evidence=evidence,
+            source_refs=(source_ref,),
+            source_revision=str(values.get("source_revision", "")),
+            observed=bool(values.get("observed", False)),
+            source_backed=bool(values.get("source_backed", False)),
+            verified=bool(values.get("verified", False)),
+            contradicted=bool(values.get("contradicted", False)),
+            abstained=bool(values.get("abstained", False)),
+        )
+        return cls(**values, verification_receipt=receipt)
 
 
 @dataclass(frozen=True)
@@ -703,10 +732,34 @@ class VerifiedHierarchicalEventStateCache:
             return "block_unverified_source"
         if not candidate.verified:
             return "block_failed_verification"
+        receipt_decision = self._receipt_decision(candidate)
+        if receipt_decision != "admit":
+            return receipt_decision
         if _clamp01(candidate.metabolic_headroom) < self.min_metabolic_headroom:
             return "block_metabolic_budget"
         if _clamp01(candidate.resonance_score) < self.min_resonance:
             return "block_insufficient_resonance"
+        return "admit"
+
+    @staticmethod
+    def _receipt_decision(candidate: EventStateCandidate) -> str:
+        receipt = candidate.verification_receipt
+        if receipt is None:
+            return "block_missing_verification_receipt"
+        if not receipt.is_valid():
+            return "block_invalid_verification_receipt"
+        if candidate.source_ref not in receipt.source_refs:
+            return "block_receipt_source_mismatch"
+        if str(candidate.source_revision) != receipt.source_revision:
+            return "block_receipt_revision_mismatch"
+        if (
+            bool(candidate.observed) != receipt.observed
+            or bool(candidate.source_backed) != receipt.source_backed
+            or bool(candidate.verified) != receipt.verified
+            or bool(candidate.contradicted) != receipt.contradicted
+            or bool(candidate.abstained) != receipt.abstained
+        ):
+            return "block_receipt_state_mismatch"
         return "admit"
 
     def _admission_trace(self, candidate: EventStateCandidate) -> Dict[str, Any]:
@@ -721,6 +774,11 @@ class VerifiedHierarchicalEventStateCache:
             "verified": bool(candidate.verified),
             "contradicted": bool(candidate.contradicted),
             "abstained": bool(candidate.abstained),
+            "verification_receipt": (
+                candidate.verification_receipt.to_dict()
+                if candidate.verification_receipt is not None
+                else None
+            ),
             "resonance_score": _clamp01(candidate.resonance_score),
             "sequence_support_score": _clamp01(candidate.sequence_support_score),
             "sequence_support_count": max(0, int(candidate.sequence_support_count)),

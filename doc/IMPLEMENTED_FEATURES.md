@@ -373,3 +373,41 @@ Implemented a bounded raw-text sparse language-event adapter and finite fast/med
 Implemented the observed-only `eval-continual-horizon` benchmark for fixed-initial-state 10/30/100 episode workloads. It compares a frozen control with Event Memory, resonance-credit Event Memory, and structural-feedback Event Memory profiles, and records revision uptake latency, useful recall, contradiction blocking, abstention integrity, bounded state growth, maintenance event cost, and replay count. This fixture evidence does not claim independent-source generalization or physical joule efficiency.
 The benchmark also applies distractor pressure, compares fixed/linear/logarithmic retention profiles, measures delayed versus immediate verification, and checks protected unrelated knowledge as a catastrophic-interference guard.
 The external gate separates manifest quality from promotion coverage and emits managed next actions while the existing independent records remain below the 10/30/100 horizon requirement.
+
+### Phase 23: Multimodal Structural World Model
+
+Added `eval-phase23-structural-fusion` and a bounded modality-provenance verifier. Supported evidence is verified, missing modalities remain provisional, cross-modal contradictions abstain, temporal misalignment abstains, and no fusion result can directly mutate durable structural state.
+The verifier is connected to multimodal Event Memory admission; only verified structural fusion can promote, while contradiction and missing-modality decisions are frozen.
+
+### Phase 24: Causal And Counterfactual Structure
+
+Added a bounded causal reasoner and observed-only benchmark. Temporal order produces only a causal candidate, verified causality requires intervention and contrastive evidence, source conflict abstains, unsupported counterfactuals abstain, and branch mutation remains non-durable.
+Verified causal output is connected to Event Memory admission; candidate-only or abstained causal claims are rejected as unverified.
+
+### Phase 25: Verifiable Agent Loop
+
+Added a bounded agent-loop decision layer around sparse plan verification. It rejects invalid or stale plans, missing rollback, and excessive risk; it requires expected outcomes and keeps all action/outcome mutations non-durable until independently verified.
+Verified observed outcomes are converted into source-backed Event Memory candidates; rejected plans and mismatched observations are not admitted.
+Unexpected outcomes now emit a rollback requirement and remain non-durable.
+
+### Phase 26: Self-Evaluation And Research Memory
+
+Added `eval-next-level-promotion-review`, which links Phase 21-25 evidence, records negative results and next tests in a managed journal, and emits a separate promotion gate. It never self-promotes production defaults and keeps human approval required.
+
+### Phase 29: Scale-Up Experimental Validation
+
+Added `eval-scale-up-readiness`, a planning-only gate for future 1,000/10,000 episode experiments across four domains and five replicates. It does not run large workloads until promotion and independent-data gates pass.
+
+### Phase 27: Portable Sparse Runtime
+
+Added canonical sparse IR v1 utilities with deterministic ordering, replay digest, and explicit same-version migration validation. The readiness benchmark keeps Python/Rust equivalence unclaimed until a native cross-runtime replay test exists.
+Existing Rust sparse-primitive output-equivalence evidence is surfaced separately and is not treated as canonical IR equivalence.
+
+### Phase 28: Level-2 Promotion Review
+
+Added `eval-level2-capability-matrix`, which summarizes Phase21-25 capability evidence, provenance scope, unresolved gaps, and promotion status without changing production defaults.
+Added evidence-bound human approval manifests. Approval is invalidated whenever its source reports change and cannot bypass independent-data gates.
+
+### Verification Receipt Boundary
+
+Event Memory candidates now carry deterministic verification receipts that bind verifier identity, decision, evidence digest, source references, revision, and observed/verified state. Missing, altered, stale, or mismatched receipts are rejected before durable admission.

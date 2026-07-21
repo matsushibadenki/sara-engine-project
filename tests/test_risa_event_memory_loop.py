@@ -59,7 +59,9 @@ def _verified_relation(record_id: str, source_event_id: str, target_event_id: st
 
 
 def _candidate(entry_id: str, own_latent_id: str) -> EventStateCandidate:
-    return EventStateCandidate(
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="test-risa-event-memory-loop",
+        evidence={"entry_id": entry_id, "own_latent_id": own_latent_id},
         entry_id=entry_id,
         signature=(1, 3, 5, 7),
         source_ref="fixture://memory",

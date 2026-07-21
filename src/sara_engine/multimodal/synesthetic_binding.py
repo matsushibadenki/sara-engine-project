@@ -37,6 +37,7 @@ class SparseMultimodalEvent:
     event_cost: int
     observed: bool = True
     label: str = ""
+    claim_key: str = ""
     source_ref: str = ""
     latent_cluster_id: str = ""
     specialization_factors: Tuple[str, ...] = ()
@@ -56,6 +57,7 @@ class SparseMultimodalEvent:
             "event_cost": self.event_cost,
             "observed": self.observed,
             "label": self.label,
+            "claim_key": self.claim_key,
             "source_ref": self.source_ref,
             "latent_cluster_id": self.latent_cluster_id,
             "specialization_factors": list(self.specialization_factors),
@@ -142,6 +144,7 @@ class SparseTemporalBinder:
         uncertainty: Optional[float] = None,
         observed: bool = True,
         label: str = "",
+        claim_key: str = "",
         source_ref: str = "",
         latent_cluster_id: str = "",
         specialization_factors: Iterable[str] = (),
@@ -167,6 +170,7 @@ class SparseTemporalBinder:
             event_cost=len(signature),
             observed=bool(observed),
             label=str(label),
+            claim_key=str(claim_key),
             source_ref=str(source_ref),
             latent_cluster_id=str(latent_cluster_id),
             specialization_factors=tuple(

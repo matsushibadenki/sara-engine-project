@@ -90,7 +90,11 @@ def _candidate(entry_id: str, **overrides) -> EventStateCandidate:
         "verified": True,
     }
     values.update(overrides)
-    return EventStateCandidate(**values)
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="test-idle-consolidation",
+        evidence={"entry_id": entry_id, "signature": list(values["signature"])},
+        **values,
+    )
 
 
 def test_idle_consolidation_loop_connects_replay_sleep_and_concept_review():

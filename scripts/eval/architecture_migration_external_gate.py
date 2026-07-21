@@ -102,7 +102,9 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     for index, row in enumerate(selected):
         manifest_id = str(row.get("manifest_id", "") or row["material_hash"])
         legacy.admit(
-            EventStateCandidate(
+            EventStateCandidate.from_verified_evidence(
+                verifier_id="architecture-migration-external-gate",
+                evidence=dict(row),
                 entry_id=manifest_id,
                 signature=tuple(int(value) for value in row["sparse_signature"][:64]),
                 source_ref=str(row["source_url"]),

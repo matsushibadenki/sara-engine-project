@@ -151,7 +151,12 @@ class ArchitectureMigrationCoordinator:
         return ""
 
     def _candidate_from_entry(self, entry: EventStateEntry) -> EventStateCandidate:
-        return EventStateCandidate(
+        return EventStateCandidate.from_verified_evidence(
+            verifier_id="architecture-migration-coordinator",
+            evidence={
+                "source_entry": entry.to_dict(),
+                "target_architecture_version": self.policy.target_architecture_version,
+            },
             entry_id=(
                 f"migration:{self.policy.target_architecture_version}:{entry.entry_id}"
             ),

@@ -26,7 +26,11 @@ def _candidate(entry_id: str, **overrides) -> EventStateCandidate:
         "architecture_version": "sara-architecture-v1",
     }
     values.update(overrides)
-    return EventStateCandidate(**values)
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="test-architecture-migration",
+        evidence={"entry_id": entry_id, "signature": list(values["signature"])},
+        **values,
+    )
 
 
 def test_architecture_migration_replays_verified_memory_without_mutating_legacy_cache():

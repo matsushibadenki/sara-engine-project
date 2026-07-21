@@ -26,7 +26,11 @@ def _candidate(entry_id: str, **overrides) -> EventStateCandidate:
         "verified": True,
     }
     values.update(overrides)
-    return EventStateCandidate(**values)
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="test-idle-replay",
+        evidence={"entry_id": entry_id, "signature": list(values["signature"])},
+        **values,
+    )
 
 
 def test_idle_replay_prefers_self_state_aligned_verified_memory():

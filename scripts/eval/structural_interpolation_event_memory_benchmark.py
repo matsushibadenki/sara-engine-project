@@ -56,7 +56,9 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     candidates = []
     for index, proposal in enumerate(interpolation.proposals, start=1):
         signature = tuple(sorted(int(item[:8], 16) % 4096 for item in proposal.source_hashes))
-        candidate = EventStateCandidate(
+        candidate = EventStateCandidate.from_verified_evidence(
+            verifier_id="structural-interpolation-event-memory",
+            evidence=proposal.to_dict(),
             entry_id=f"structural-proposal-{index}",
             signature=signature,
             source_ref=proposal.source_refs[0] if proposal.source_refs else "",

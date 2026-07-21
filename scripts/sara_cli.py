@@ -1182,6 +1182,116 @@ def main():
         default=workspace_path("evaluation", "continual_horizon_external_gate_summary.txt"),
     )
 
+    parser_continual_horizon_request = subparsers.add_parser(
+        "build-continual-horizon-collection-request",
+        help="Build managed independent-data targets from the blocked Phase 22 gate.",
+    )
+    parser_continual_horizon_request.add_argument(
+        "--gate-path",
+        default=workspace_path("evaluation", "continual_horizon_external_gate.json"),
+    )
+    parser_continual_horizon_request.add_argument(
+        "--targets-path",
+        default=workspace_path("autobot", "continual_horizon_collection_targets.json"),
+    )
+    parser_continual_horizon_request.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "continual_horizon_collection_request.json"),
+    )
+
+    parser_phase23_fusion = subparsers.add_parser(
+        "eval-phase23-structural-fusion",
+        help="Run the observed-only Phase 23 structural multimodal fusion benchmark.",
+    )
+    parser_phase23_fusion.add_argument(
+        "--fixture-path",
+        default=processed_data_path("benchmark_fixtures", "phase23_structural_fusion_cases.jsonl"),
+    )
+    parser_phase23_fusion.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase23_structural_fusion_benchmark.json"),
+    )
+    parser_phase23_fusion.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase23_structural_fusion_benchmark_summary.txt"),
+    )
+
+    parser_phase24_causal = subparsers.add_parser(
+        "eval-phase24-causal",
+        help="Run the observed-only Phase 24 causal and counterfactual benchmark.",
+    )
+    parser_phase24_causal.add_argument(
+        "--fixture-path",
+        default=processed_data_path("benchmark_fixtures", "phase24_causal_cases.jsonl"),
+    )
+    parser_phase24_causal.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase24_causal_benchmark.json"),
+    )
+    parser_phase24_causal.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase24_causal_benchmark_summary.txt"),
+    )
+
+    parser_phase25_agent = subparsers.add_parser(
+        "eval-phase25-agent-loop",
+        help="Run the observed-only Phase 25 bounded agent-loop benchmark.",
+    )
+    parser_phase25_agent.add_argument(
+        "--fixture-path",
+        default=processed_data_path("benchmark_fixtures", "phase25_agent_cases.jsonl"),
+    )
+    parser_phase25_agent.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase25_agent_loop_benchmark.json"),
+    )
+    parser_phase25_agent.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "phase25_agent_loop_benchmark_summary.txt"),
+    )
+
+    parser_next_level_review = subparsers.add_parser(
+        "eval-next-level-promotion-review",
+        help="Review Phase 21-25 evidence without self-promoting defaults.",
+    )
+    parser_next_level_review.add_argument("--evaluation-dir", default=workspace_path("evaluation"))
+    parser_next_level_review.add_argument("--report-path", default=workspace_path("evaluation", "next_level_promotion_review.json"))
+    parser_next_level_review.add_argument("--gate-path", default=workspace_path("evaluation", "next_level_promotion_gate.json"))
+    parser_next_level_review.add_argument("--journal-path", default=workspace_path("evaluation", "next_level_research_journal.jsonl"))
+    parser_next_level_review.add_argument("--approval-path", default=workspace_path("evaluation", "next_level_human_approval.json"))
+
+    parser_next_level_approval = subparsers.add_parser(
+        "record-next-level-human-approval",
+        help="Record evidence-bound human approval for the next-level promotion review.",
+    )
+    parser_next_level_approval.add_argument("--evaluation-dir", default=workspace_path("evaluation"))
+    parser_next_level_approval.add_argument("--reviewer", required=True)
+    parser_next_level_approval.add_argument("--note", default="")
+    parser_next_level_approval.add_argument("--output-path", default=workspace_path("evaluation", "next_level_human_approval.json"))
+
+    parser_scale_up_readiness = subparsers.add_parser(
+        "eval-scale-up-readiness",
+        help="Prepare, but do not run, the larger post-roadmap experiment.",
+    )
+    parser_scale_up_readiness.add_argument("--promotion-gate", default=workspace_path("evaluation", "next_level_promotion_gate.json"))
+    parser_scale_up_readiness.add_argument("--external-gate", default=workspace_path("evaluation", "continual_horizon_external_gate.json"))
+    parser_scale_up_readiness.add_argument("--output-path", default=workspace_path("evaluation", "scale_up_experiment_readiness.json"))
+
+    parser_phase27_runtime = subparsers.add_parser(
+        "eval-phase27-portable-runtime",
+        help="Check canonical sparse IR portability readiness without claiming Rust equivalence.",
+    )
+    parser_phase27_runtime.add_argument("--output-path", default=workspace_path("evaluation", "phase27_portable_runtime_readiness.json"))
+    parser_phase27_runtime.add_argument("--rust-report-path", default=workspace_path("evaluation", "rust_core_benchmark.json"))
+
+    parser_level2_matrix = subparsers.add_parser(
+        "eval-level2-capability-matrix",
+        help="Build the Level-2 capability matrix without promotion.",
+    )
+    parser_level2_matrix.add_argument("--evaluation-dir", default=workspace_path("evaluation"))
+    parser_level2_matrix.add_argument("--output-path", default=workspace_path("evaluation", "level2_capability_matrix.json"))
+    parser_level2_matrix.add_argument("--summary-path", default=workspace_path("evaluation", "level2_capability_matrix_summary.txt"))
+
     parser_adaptive_credit_event_memory = subparsers.add_parser(
         "eval-adaptive-credit-event-memory",
         help="Run the observed-only adaptive credit/Event Memory integration benchmark.",
@@ -2820,6 +2930,136 @@ def main():
             str(args.manifest_path),
             "--report-path",
             str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-continual-horizon-collection-request":
+        command = [
+            sys.executable,
+            "scripts/eval/continual_horizon_collection_request.py",
+            "--gate-path",
+            str(args.gate_path),
+            "--targets-path",
+            str(args.targets_path),
+            "--report-path",
+            str(args.report_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase23-structural-fusion":
+        command = [
+            sys.executable,
+            "scripts/eval/phase23_structural_fusion_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase24-causal":
+        command = [
+            sys.executable,
+            "scripts/eval/phase24_causal_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase25-agent-loop":
+        command = [
+            sys.executable,
+            "scripts/eval/phase25_agent_loop_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-next-level-promotion-review":
+        command = [
+            sys.executable,
+            "scripts/eval/next_level_promotion_review.py",
+            "--evaluation-dir",
+            str(args.evaluation_dir),
+            "--report-path",
+            str(args.report_path),
+            "--gate-path",
+            str(args.gate_path),
+            "--journal-path",
+            str(args.journal_path),
+            "--approval-path",
+            str(args.approval_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "record-next-level-human-approval":
+        command = [
+            sys.executable,
+            "scripts/eval/next_level_human_approval.py",
+            "--evaluation-dir",
+            str(args.evaluation_dir),
+            "--reviewer",
+            str(args.reviewer),
+            "--note",
+            str(args.note),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-scale-up-readiness":
+        command = [
+            sys.executable,
+            "scripts/eval/scale_up_experiment_readiness.py",
+            "--promotion-gate",
+            str(args.promotion_gate),
+            "--external-gate",
+            str(args.external_gate),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase27-portable-runtime":
+        command = [
+            sys.executable,
+            "scripts/eval/phase27_portable_runtime_readiness.py",
+            "--output-path",
+            str(args.output_path),
+            "--rust-report-path",
+            str(args.rust_report_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-level2-capability-matrix":
+        command = [
+            sys.executable,
+            "scripts/eval/level2_capability_matrix.py",
+            "--evaluation-dir",
+            str(args.evaluation_dir),
+            "--output-path",
+            str(args.output_path),
             "--summary-path",
             str(args.summary_path),
         ]

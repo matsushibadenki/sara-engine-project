@@ -162,7 +162,13 @@ class ConceptAdmissionPlanner:
         source_revision = self._aggregate_revision(source_hashes)
         source_reliability = min(1.0, 0.5 * candidate.confidence + 0.5 * (audit.distinct_source_hashes / max(1, audit.distinct_source_refs)))
         credit_summary = self._credit_summary_for_supporting_relations(supporting_relations)
-        return EventStateCandidate(
+        return EventStateCandidate.from_verified_evidence(
+            verifier_id="concept-admission-planner",
+            evidence={
+                "candidate": candidate.to_dict(),
+                "audit": audit.to_dict(),
+                "supporting_relations": [item.to_dict() for item in supporting_relations],
+            },
             entry_id=candidate.record_id,
             signature=signature,
             source_ref=source_ref,

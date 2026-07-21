@@ -64,7 +64,9 @@ def _candidate(
 ) -> EventStateCandidate:
     domain = str(case["domain"])
     source_ref = str(case["source_ref"])
-    return EventStateCandidate(
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="continual-horizon-benchmark",
+        evidence={"case": dict(case), "episode": episode, "revision": revision},
         entry_id=entry_id,
         signature=_signature(domain, "route", revision),
         source_ref=source_ref,
@@ -93,7 +95,9 @@ def _candidate(
 
 def _protected_candidate(case: Mapping[str, Any], episode: int) -> EventStateCandidate:
     protected = str(case["protected_domain"])
-    return EventStateCandidate(
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="continual-horizon-protected-knowledge",
+        evidence={"case": dict(case), "episode": episode, "protected": protected},
         entry_id=f"{case['case_id']}:protected:{protected}",
         signature=_signature(protected, "verified", "r1"),
         source_ref=str(case["protected_source_ref"]),

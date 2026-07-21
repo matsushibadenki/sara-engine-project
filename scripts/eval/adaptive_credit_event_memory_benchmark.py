@@ -158,7 +158,9 @@ def ensure_fixture(path: str) -> str:
 
 def _candidate_from_row(row: Dict[str, Any], *, with_credit: bool) -> EventStateCandidate:
     credit = summarize_event_memory_credit(row.get("route_states", ())) if with_credit else {}
-    return EventStateCandidate(
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="adaptive-credit-event-memory-benchmark",
+        evidence={"row": row, "with_credit": with_credit},
         entry_id=str(row.get("entry_id", "")),
         signature=tuple(int(value) for value in row.get("signature", ())),
         source_ref=str(row.get("source_ref", "")),

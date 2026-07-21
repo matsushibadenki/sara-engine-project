@@ -26,11 +26,19 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
-    "transformers",
     "msgpack",
     "numpy",
-    "torch",
     "tqdm"
+]
+
+[project.optional-dependencies]
+ann-reference = [
+    "torch",
+    "transformers",
+]
+visualization = [
+    "matplotlib",
+    "pillow",
 ]
 
 [project.urls]

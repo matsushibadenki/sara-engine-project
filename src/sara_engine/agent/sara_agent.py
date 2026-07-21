@@ -13,8 +13,15 @@ from ..memory.sdr import SDREncoder
 from ..utils.dialogue import AdaptiveTopicTracker
 from ..utils.retrieval_diagnostics import format_retrieval_diagnostics, normalize_retrieval_diagnostic
 from ..safety.safety_guard import SafetyGuard, SafetyCheckResult
+from .bounded_agent_loop import AgentPlanDecision, BoundedAgentLoop
+from ..memory.event_state_cache import VerifiedHierarchicalEventStateCache
+from ..risa.causal_reasoning import (
+    BoundedCausalReasoner,
+    CausalEvidence,
+    causal_event_state_candidate,
+)
 from ..pipelines.text_generation import pipeline  # 追加: パイプライン
-from typing import List, Dict, Any, Callable, Union, Generator, Optional
+from typing import List, Dict, Any, Callable, Union, Generator, Mapping, Optional, Sequence
 import hashlib
 import random
 import os
@@ -78,6 +85,9 @@ class SaraAgent:
         self.retrieval_diagnostics: List[Dict[str, Any]] = []
         self.system_prompt = system_prompt or ""
         self.safety_guard = safety_guard
+        self.bounded_plan_loop = BoundedAgentLoop()
+        self.causal_reasoner = BoundedCausalReasoner()
+        self.verified_event_memory = VerifiedHierarchicalEventStateCache()
         self._bootstrap()
 
     def save_agent(self, save_dir: str = model_path("sara_agent")) -> None:
@@ -121,6 +131,57 @@ class SaraAgent:
     def register_tool(self, trigger_spike: str, tool_func: Callable[[str], str]) -> None:
         self.tools[trigger_spike] = tool_func
         self._register_dynamic_vocab(f"tool_trigger {trigger_spike}")
+
+    def evaluate_structural_plan(self, **plan: Any) -> AgentPlanDecision:
+        """Route action proposals through the bounded plan policy."""
+        return self.bounded_plan_loop.evaluate_plan(**plan)
+
+    def record_structural_outcome(
+        self,
+        decision: AgentPlanDecision,
+        *,
+        observed_outcome: str,
+        source_ref: str,
+        observation_evidence: Mapping[str, Any],
+        time_segment: int = 0,
+    ) -> Dict[str, Any]:
+        """Verify an observed outcome and admit only receipt-backed evidence."""
+        outcome = self.bounded_plan_loop.verify_outcome(
+            decision,
+            observed_outcome=observed_outcome,
+            observation_verified=True,
+            observation_evidence=observation_evidence,
+        )
+        candidate = self.bounded_plan_loop.outcome_event_state_candidate(
+            decision,
+            observed_outcome=observed_outcome,
+            source_ref=source_ref,
+            observation_verified=True,
+            observation_evidence=observation_evidence,
+            time_segment=time_segment,
+        )
+        admission = self.verified_event_memory.admit(candidate) if candidate is not None else None
+        return {
+            "outcome": outcome,
+            "admission": admission.to_dict() if admission is not None else None,
+        }
+
+    def infer_causal_structure(
+        self,
+        evidence: Sequence[CausalEvidence],
+        *,
+        source_ref: str,
+        time_segment: int = 0,
+    ) -> Dict[str, Any]:
+        """Infer a bounded causal relation and apply the Event Memory gate."""
+        inference = self.causal_reasoner.infer(evidence)
+        candidate = causal_event_state_candidate(
+            inference,
+            source_ref=source_ref,
+            time_segment=time_segment,
+        )
+        admission = self.verified_event_memory.admit(candidate)
+        return {"inference": inference.to_dict(), "admission": admission.to_dict()}
 
     def _bootstrap(self) -> None:
         corpus = [

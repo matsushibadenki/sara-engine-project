@@ -3,6 +3,7 @@ from sara_engine.memory.multimodal_event_bundle_admission import (
     build_multimodal_event_state_candidate,
 )
 from sara_engine.multimodal.synesthetic_binding import SparseTemporalBinder
+from sara_engine.multimodal.structural_verification import ModalityEvidence, MultimodalStructuralVerifier
 
 
 def _bundle():
@@ -48,8 +49,29 @@ def _bundle():
     return binder.bundle_events(events)[0]
 
 
+def _decision(bundle):
+    return MultimodalStructuralVerifier().verify(
+        (
+            ModalityEvidence(
+                modality=item.modality,
+                label=item.label,
+                claim_key=item.claim_key,
+                timestamp_ms=item.timestamp_ms,
+                source_ref=item.source_ref,
+                observed=item.observed,
+                confidence=item.confidence,
+            )
+            for item in bundle.child_records
+        ),
+        expected_modalities=bundle.modality_ids,
+    )
+
+
 def test_verified_multimodal_bundle_promotes_into_event_state_candidate():
-    result = build_multimodal_event_state_candidate(_bundle(), time_segment=3)
+    bundle = _bundle()
+    result = build_multimodal_event_state_candidate(
+        bundle, time_segment=3, structural_decision=_decision(bundle)
+    )
 
     assert result.promotion_allowed is True
     assert result.promotion_decision == "promote_verified_multimodal_bundle"
@@ -61,7 +83,10 @@ def test_verified_multimodal_bundle_promotes_into_event_state_candidate():
 
 
 def test_verified_multimodal_bundle_can_enter_event_state_cache():
-    result = build_multimodal_event_state_candidate(_bundle(), time_segment=3)
+    bundle = _bundle()
+    result = build_multimodal_event_state_candidate(
+        bundle, time_segment=3, structural_decision=_decision(bundle)
+    )
     cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic")
 
     admission = cache.admit(result.candidate)
@@ -94,8 +119,31 @@ def test_bundle_without_source_backing_is_not_promoted():
     ]
     bundle = binder.bundle_events(events)[0]
 
-    result = build_multimodal_event_state_candidate(bundle, time_segment=2)
+    result = build_multimodal_event_state_candidate(
+        bundle, time_segment=2, structural_decision=_decision(bundle)
+    )
 
     assert result.promotion_allowed is False
-    assert result.promotion_decision == "freeze_material_source"
+    assert result.promotion_decision == "freeze_structural_fusion_abstain_missing_source"
     assert result.candidate.verified is False
+
+
+def test_bundle_cannot_promote_without_structural_receipt():
+    result = build_multimodal_event_state_candidate(_bundle())
+
+    assert result.promotion_allowed is False
+    assert result.promotion_decision == "freeze_missing_structural_verification"
+
+
+def test_cross_modal_local_labels_can_share_one_claim():
+    verifier = MultimodalStructuralVerifier()
+    result = verifier.verify(
+        (
+            ModalityEvidence("vision", "dog", 1.0, "fixture:vision", claim_key="dog_barking"),
+            ModalityEvidence("audio", "bark", 2.0, "fixture:audio", claim_key="dog_barking"),
+        ),
+        expected_modalities=("vision", "audio"),
+    )
+
+    assert result.decision == "verify_cross_modal_structure"
+    assert result.contradiction is False

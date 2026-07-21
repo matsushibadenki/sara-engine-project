@@ -3,6 +3,7 @@ from sara_engine.memory.event_state_cache import (
     VerifiedHierarchicalEventStateCache,
 )
 from sara_engine.dynamics import stable_self_state_id
+from sara_engine.memory.verification_receipt import issue_verification_receipt
 
 
 def _candidate(entry_id: str, **overrides):
@@ -24,6 +25,20 @@ def _candidate(entry_id: str, **overrides):
         "verified": True,
     }
     values.update(overrides)
+    if "verification_receipt" not in overrides:
+        values["verification_receipt"] = issue_verification_receipt(
+            verifier_id="test-event-state-candidate",
+            verifier_version="v1",
+            decision="verified_test_fixture",
+            evidence={"entry_id": values["entry_id"], "signature": list(values["signature"])},
+            source_refs=(values["source_ref"],),
+            source_revision=values.get("source_revision", ""),
+            observed=values["observed"],
+            source_backed=values["source_backed"],
+            verified=values["verified"],
+            contradicted=values.get("contradicted", False),
+            abstained=values.get("abstained", False),
+        )
     return EventStateCandidate(**values)
 
 

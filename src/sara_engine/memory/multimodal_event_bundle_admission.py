@@ -7,6 +7,12 @@ from typing import Any, Dict, Iterable, List
 from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
 from sara_engine.memory.event_state_cache import EventStateCandidate
 from sara_engine.multimodal.synesthetic_binding import SparseEventBundle
+from sara_engine.multimodal.structural_verification import (
+    ModalityEvidence,
+    StructuralFusionDecision,
+    structural_evidence_payload,
+)
+from sara_engine.memory.verification_receipt import evidence_digest, issue_verification_receipt
 
 
 def _clamp01(value: float) -> float:
@@ -41,6 +47,7 @@ def build_multimodal_event_state_candidate(
     *,
     time_segment: int | None = None,
     signature_width: int = 64,
+    structural_decision: StructuralFusionDecision | None = None,
 ) -> MultimodalBundleAdmissionResult:
     child_records = tuple(bundle.child_records)
     audit = bundle.audit
@@ -76,8 +83,47 @@ def build_multimodal_event_state_candidate(
         and observed
         and source_backed
     )
+    structural_decision_name = (
+        structural_decision.decision
+        if isinstance(structural_decision, StructuralFusionDecision)
+        else ""
+    )
+    structural_receipt_valid = False
+    if isinstance(structural_decision, StructuralFusionDecision):
+        structural_rows = tuple(
+            ModalityEvidence(
+                modality=record.modality,
+                label=record.label,
+                claim_key=record.claim_key,
+                timestamp_ms=record.timestamp_ms,
+                source_ref=record.source_ref,
+                observed=record.observed,
+                confidence=record.confidence,
+            )
+            for record in child_records
+        )
+        expected_modalities = structural_decision.trace.get("expected_modalities", bundle.modality_ids)
+        expected_digest = evidence_digest(
+            structural_evidence_payload(structural_rows, expected_modalities)
+        )
+        structural_receipt = structural_decision.verification_receipt
+        structural_receipt_valid = bool(
+            structural_receipt.is_valid()
+            and structural_receipt.verifier_id == "multimodal-structural-verifier"
+            and structural_receipt.evidence_digest == expected_digest
+            and set(source_refs).issubset(set(structural_receipt.source_refs))
+            and structural_receipt.verified
+            and structural_decision_name == "verify_cross_modal_structure"
+        )
+    verified = verified and structural_receipt_valid
     decision = "promote_verified_multimodal_bundle"
-    if not multi_modality:
+    if structural_decision is None:
+        decision = "freeze_missing_structural_verification"
+    elif not isinstance(structural_decision, StructuralFusionDecision):
+        decision = "freeze_invalid_structural_verification"
+    elif not structural_receipt_valid:
+        decision = f"freeze_structural_fusion_{structural_decision_name or 'invalid_receipt'}"
+    elif not multi_modality:
         decision = "freeze_single_modality_bundle"
     elif audit is None or not audit.admitted:
         decision = "freeze_unverified_bundle"
@@ -91,6 +137,24 @@ def build_multimodal_event_state_candidate(
     sequence_support_count = 1 if sequence_support_score > 0.0 else 0
     source_reliability = _clamp01(
         sum(float(record.confidence) for record in child_records) / float(max(1, len(child_records)))
+    )
+    candidate_receipt = issue_verification_receipt(
+        verifier_id="multimodal-event-memory-admission",
+        verifier_version="v2",
+        decision=decision,
+        evidence={
+            "bundle": bundle.to_dict(),
+            "structural_receipt": (
+                structural_decision.verification_receipt.to_dict()
+                if isinstance(structural_decision, StructuralFusionDecision)
+                else None
+            ),
+        },
+        source_refs=(source_ref, *source_refs),
+        source_revision=source_revision,
+        observed=observed,
+        source_backed=source_backed,
+        verified=verified,
     )
     candidate = EventStateCandidate(
         entry_id=str(bundle.event_id),
@@ -117,6 +181,7 @@ def build_multimodal_event_state_candidate(
         contradicted=False,
         abstained=False,
         event_cost=sum(int(record.event_cost) for record in child_records) + len(signature),
+        verification_receipt=candidate_receipt,
     )
     return MultimodalBundleAdmissionResult(
         candidate=candidate,
@@ -134,5 +199,7 @@ def build_multimodal_event_state_candidate(
             "route_trace_count": len(bundle.route_trace),
             "audit": audit.to_dict() if audit is not None else None,
             "credit_summary": credit_summary,
+            "structural_decision": structural_decision_name,
+            "structural_receipt_valid": structural_receipt_valid,
         },
     )

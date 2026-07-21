@@ -31,6 +31,10 @@ from sara_engine.memory.event_state_cache import VerifiedHierarchicalEventStateC
 from sara_engine.memory.multimodal_event_bundle_admission import (  # noqa: E402
     build_multimodal_event_state_candidate,
 )  # noqa: E402
+from sara_engine.multimodal.structural_verification import (  # noqa: E402
+    ModalityEvidence,
+    MultimodalStructuralVerifier,
+)
 from sara_engine.utils.project_paths import (  # noqa: E402
     ensure_parent_directory,
     interim_data_path,
@@ -316,8 +320,27 @@ def build_report(
         len([bundle for bundle in event_bundles if bundle.audit is not None and bundle.audit.admitted])
         / float(max(1, len(event_bundles)))
     )
+    structural_verifier = MultimodalStructuralVerifier()
     bundle_admission_results = [
-        build_multimodal_event_state_candidate(bundle, time_segment=bundle.time_chunk_id)
+        build_multimodal_event_state_candidate(
+            bundle,
+            time_segment=bundle.time_chunk_id,
+            structural_decision=structural_verifier.verify(
+                (
+                    ModalityEvidence(
+                        modality=item.modality,
+                        label=item.label,
+                        claim_key=item.claim_key,
+                        timestamp_ms=item.timestamp_ms,
+                        source_ref=item.source_ref,
+                        observed=item.observed,
+                        confidence=item.confidence,
+                    )
+                    for item in bundle.child_records
+                ),
+                expected_modalities=bundle.modality_ids,
+            ),
+        )
         for bundle in event_bundles
     ]
     event_state_cache = VerifiedHierarchicalEventStateCache(retention_profile="logarithmic", max_entries=8)

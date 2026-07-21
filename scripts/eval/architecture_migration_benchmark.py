@@ -82,7 +82,9 @@ def _frozen_workload() -> List[Dict[str, Any]]:
 
 
 def _candidate(row: Mapping[str, Any], *, time_segment: int) -> EventStateCandidate:
-    return EventStateCandidate(
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="architecture-migration-benchmark",
+        evidence={"row": dict(row), "time_segment": time_segment},
         entry_id=str(row["entry_id"]),
         signature=tuple(int(value) for value in row["signature"]),
         source_ref=str(row["source_ref"]),
@@ -211,7 +213,9 @@ def build_report() -> Dict[str, Any]:
             }
         )
     target_candidates = [
-        EventStateCandidate(
+        EventStateCandidate.from_verified_evidence(
+            verifier_id="architecture-migration-target-surface",
+            evidence=entry.to_dict(),
             entry_id=entry.entry_id,
             signature=entry.signature,
             source_ref=entry.source_ref,

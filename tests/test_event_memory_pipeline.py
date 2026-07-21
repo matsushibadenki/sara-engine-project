@@ -7,6 +7,7 @@ from sara_engine.ingest import (
     make_candidate_event,
 )
 from sara_engine.dynamics import PersistentSelfStateController, stable_self_state_id
+from sara_engine.multimodal.synesthetic_binding import SparseTemporalBinder
 
 
 def _candidate(record_id: str, time_ms: int, *, confidence: float, evidence_count: int, source_hash: str = "hash-a"):
@@ -192,3 +193,42 @@ def test_event_memory_pipeline_keeps_self_state_alive_during_idle_ingest():
     assert first_state["current_active_ids"]
     assert second_state["current_active_ids"]
     assert second_state["idle_self_state_ok"] is True
+
+
+def test_event_memory_pipeline_requires_and_issues_multimodal_structural_receipt():
+    binder = SparseTemporalBinder(window_ms=32.0)
+    bundle = binder.bundle_events(
+        (
+            binder.normalize_event(
+                modality="vision",
+                timestamp_ms=1.0,
+                source_id="vision",
+                sparse_signature=(1, 2),
+                label="dog",
+                claim_key="dog_barking",
+                source_ref="fixture:vision",
+            ),
+            binder.normalize_event(
+                modality="audio",
+                timestamp_ms=2.0,
+                source_id="audio",
+                sparse_signature=(3, 4),
+                label="bark",
+                claim_key="dog_barking",
+                source_ref="fixture:audio",
+            ),
+        )
+    )[0]
+
+    result = EventMemoryIngestPipeline().ingest_streams(
+        (),
+        source_ref="fixture:session",
+        source_hash="fixture-hash",
+        multimodal_bundles=(bundle,),
+        expected_modalities=("vision", "audio"),
+    )
+
+    admission = result.multimodal_bundle_admissions[0]
+    assert admission.promotion_allowed is True
+    assert admission.trace["structural_receipt_valid"] is True
+    assert admission.candidate.verification_receipt.is_valid() is True

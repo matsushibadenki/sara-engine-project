@@ -219,7 +219,9 @@ def ensure_fixture(path: str) -> str:
 
 
 def _candidate(row: Dict[str, Any]) -> EventStateCandidate:
-    return EventStateCandidate(
+    return EventStateCandidate.from_verified_evidence(
+        verifier_id="event-state-cache-benchmark",
+        evidence=row,
         entry_id=str(row.get("entry_id", "")),
         signature=tuple(int(value) for value in row.get("signature", [])),
         source_ref=str(row.get("source_ref", "")),

@@ -7,6 +7,7 @@ from sara_engine.learning.adaptive_credit import summarize_event_memory_credit
 from sara_engine.learning.resonance_credit import SparseResonanceCreditAssigner
 from sara_engine.learning.resonance_evidence import build_resonance_evidence
 from sara_engine.memory.event_state_cache import EventStateCandidate
+from sara_engine.memory.verification_receipt import issue_verification_receipt
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,32 @@ def build_event_state_candidate(
     elif credit.update_allowed and not signature:
         promotion_decision = "freeze_empty_signature"
 
+    source_revision = str(material.get("material_hash", ""))
+    receipt = issue_verification_receipt(
+        verifier_id="event-state-evidence-builder",
+        verifier_version="v1",
+        decision=(
+            "promote_verified_event_state" if promotion_allowed else promotion_decision
+        ),
+        evidence={
+            "material_hash": source_revision,
+            "source_ref": source_ref,
+            "signature": list(signature),
+            "credit": credit.to_dict(),
+            "resonance_evidence": evidence.to_dict(),
+        },
+        source_refs=(source_ref,),
+        source_revision=source_revision,
+        observed=observed,
+        source_backed=bool(
+            evidence.signals.get("source_backed", False) and material_source_backed
+        ),
+        verified=promotion_allowed,
+        contradicted=bool(
+            float(evidence.signals.get("contradiction", 0.0) or 0.0) >= 0.55
+        ),
+        abstained=bool(evidence.signals.get("abstained", False)),
+    )
     candidate = EventStateCandidate(
         entry_id=str(
             material.get("manifest_id")
@@ -83,7 +110,7 @@ def build_event_state_candidate(
         ),
         signature=signature,
         source_ref=source_ref,
-        source_revision=str(material.get("material_hash", "")),
+        source_revision=source_revision,
         time_segment=int(time_segment),
         own_latent_id=str(material.get("latent_cluster_id", "")),
         confidence=float(material.get("quality_score", 0.0) or 0.0),
@@ -115,6 +142,7 @@ def build_event_state_candidate(
         event_cost=int(material.get("event_cost", 0) or 0)
         + evidence.event_cost
         + credit.event_cost,
+        verification_receipt=receipt,
     )
     return EventStateEvidenceResult(
         candidate=candidate,
