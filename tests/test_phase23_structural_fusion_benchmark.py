@@ -24,6 +24,13 @@ def test_phase23_structural_fusion_benchmark_passes():
     assert report["passed"] is True
     assert report["metrics"]["decision_accuracy"] == 1.0
     assert report["checks"]["durable_mutation_blocked"] is True
+    assert report["checks"]["cross_modal_hypothesis_boundary"] is True
+    assert report["checks"]["cross_modal_hypothesis_contradiction_freeze"] is True
+    assert report["checks"]["risa_hypothesis_remains_unverified"] is True
+    assert report["checks"]["modality_dropout_is_symmetric"] is True
+    assert report["checks"]["asynchronous_window_boundary"] is True
+    assert report["checks"]["verified_bundle_episode_and_subgraph_bridge"] is True
+    assert report["checks"]["rejected_bundle_bridge_isolation"] is True
 
 
 def test_phase23_structural_fusion_rejects_contradiction():

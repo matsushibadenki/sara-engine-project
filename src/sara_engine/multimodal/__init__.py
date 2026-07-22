@@ -15,6 +15,12 @@ from .synesthetic_binding import (
     ThalamicGateResult,
     VisionEventAdapter,
 )
+from .relation_hypothesis import (
+    BoundedCrossModalHypothesisLedger,
+    CrossModalHypothesisObservation,
+    CrossModalHypothesisUpdate,
+    CrossModalRelationHypothesis,
+)
 
 __all__ = [
     "AudioEventAdapter",
@@ -30,4 +36,8 @@ __all__ = [
     "TactileEventAdapter",
     "ThalamicGateResult",
     "VisionEventAdapter",
+    "BoundedCrossModalHypothesisLedger",
+    "CrossModalHypothesisObservation",
+    "CrossModalHypothesisUpdate",
+    "CrossModalRelationHypothesis",
 ]

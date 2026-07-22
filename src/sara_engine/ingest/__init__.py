@@ -33,6 +33,14 @@ _LAZY_EXPORTS: Dict[str, Tuple[str, str]] = {
     "EventizationTrace": ("sara_engine.ingest.temporal_eventizer", "EventizationTrace"),
     "TemporalEventizer": ("sara_engine.ingest.temporal_eventizer", "TemporalEventizer"),
     "BoundedEpisode": ("sara_engine.ingest.episode_segmentation", "BoundedEpisode"),
+    "MultimodalEpisodeBridgeResult": (
+        "sara_engine.ingest.episode_segmentation",
+        "MultimodalEpisodeBridgeResult",
+    ),
+    "bridge_verified_bundle_to_episode": (
+        "sara_engine.ingest.episode_segmentation",
+        "bridge_verified_bundle_to_episode",
+    ),
     "EpisodeSegmentationTrace": ("sara_engine.ingest.episode_segmentation", "EpisodeSegmentationTrace"),
     "EpisodeSegmenter": ("sara_engine.ingest.episode_segmentation", "EpisodeSegmenter"),
     "FrequentSequence": ("sara_engine.ingest.frequent_sequence", "FrequentSequence"),

@@ -7,7 +7,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Target version: `1.1.0`
 - v1.1 release gate: `15/15` checks passing
 - Research product completion gate: `14/14` checks passing
-- Full test suite: `1392` tests passing in the Python 3.10 project environment
+- Full test suite: `1398` tests passing in the Python 3.10 project environment
 - Current release posture: ready for v1.1 release, with physical joule measurements intentionally placed on indefinite hold and excluded from active release blocking
 
 ## Core Policy And Runtime Constraints
@@ -383,6 +383,9 @@ The external gate separates manifest quality from promotion coverage and emits m
 Added `eval-phase23-structural-fusion` and a bounded modality-provenance verifier. Supported evidence is verified, missing modalities remain provisional, cross-modal contradictions abstain, temporal misalignment abstains, and no fusion result can directly mutate durable structural state.
 The verifier is connected to multimodal Event Memory admission; only verified structural fusion can promote, while contradiction and missing-modality decisions are frozen.
 Added `eval-phase23-external-multimodal` to validate independent source scope, rights and revision metadata, source/hash/near-duplicate uniqueness, required decision coverage, verifier behavior, and Event Memory admission integrity. Missing data is converted into managed collection targets by `build-phase23-multimodal-collection-request` and remains blocked rather than being synthesized.
+Added a bounded cross-modal relation hypothesis ledger. Receipt-bound observations remain provisional until repeated verified support from distinct source identities is present; duplicates and reused modality references cannot inflate independence, contradictions freeze the hypothesis, and review eligibility never grants durable mutation. The RISA adapter deliberately preserves these records as unverified hypotheses.
+Phase 23 structural-fusion fixtures now test the 32 ms asynchronous binding boundary from both sides and symmetric audio/vision modality dropout. In-window evidence may verify, out-of-window evidence abstains, and either missing modality remains provisional.
+Receipt-backed verified bundles now project into deterministic bounded multimodal Event Memory episodes and verified RISA `cross_modal_member` subgraph edges. Rejected, incomplete, single-modality, or budget-exceeded inputs remain disconnected, and both projections explicitly prohibit direct durable mutation.
 
 ### Phase 24: Causal And Counterfactual Structure
 

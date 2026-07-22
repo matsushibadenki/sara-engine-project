@@ -27,7 +27,12 @@ from .candidate_proposals import (
     make_verified_relation,
 )
 from .change_detection import ChangePoint, ScalarChangeDetector
-from .episode_segmentation import BoundedEpisode, EpisodeSegmenter
+from .episode_segmentation import (
+    BoundedEpisode,
+    EpisodeSegmenter,
+    MultimodalEpisodeBridgeResult,
+    bridge_verified_bundle_to_episode,
+)
 from .frequent_sequence import FrequentSequence, FrequentSequenceMiner
 from .prediction_gain import PredictionGainEstimator
 from .proposal_lineage import ProposalLineageLedgerEntry, build_lineage_ledger_entry
@@ -50,6 +55,7 @@ class EventMemoryIngestResult:
     candidate_event_verifications: Tuple[ProposalVerificationResult, ...]
     relation_verifications: Tuple[ProposalVerificationResult, ...]
     multimodal_bundle_admissions: Tuple[MultimodalBundleAdmissionResult, ...]
+    multimodal_episode_bridges: Tuple[MultimodalEpisodeBridgeResult, ...]
     traces: Dict[str, Any]
     schema: str = "sara-event-memory-ingest-result-v1"
 
@@ -69,6 +75,9 @@ class EventMemoryIngestResult:
             "relation_verifications": [item.to_dict() for item in self.relation_verifications],
             "multimodal_bundle_admissions": [
                 item.to_dict() for item in self.multimodal_bundle_admissions
+            ],
+            "multimodal_episode_bridges": [
+                item.to_dict() for item in self.multimodal_episode_bridges
             ],
             "traces": dict(self.traces),
         }
@@ -211,6 +220,19 @@ class EventMemoryIngestPipeline:
             )
             for bundle in multimodal_bundles
         )
+        multimodal_episode_bridges = tuple(
+            bridge_verified_bundle_to_episode(
+                bundle,
+                admission,
+                max_events_per_episode=self.episode_segmenter.max_events_per_episode,
+            )
+            for bundle, admission in zip(multimodal_bundles, bundle_admission_results)
+        )
+        multimodal_episodes = tuple(
+            item.episode
+            for item in multimodal_episode_bridges
+            if item.connected and item.episode is not None
+        )
 
         ledger = tuple(
             self._build_ledger_entries(
@@ -271,6 +293,12 @@ class EventMemoryIngestPipeline:
                 ),
                 "results": [item.to_dict() for item in bundle_admission_results],
             },
+            "multimodal_episode_bridge": {
+                "connected_count": len(multimodal_episodes),
+                "blocked_count": len(multimodal_episode_bridges) - len(multimodal_episodes),
+                "results": [item.to_dict() for item in multimodal_episode_bridges],
+                "durable_mutation_allowed": False,
+            },
             "persistent_self_state": persistent_self_state_trace,
         }
         return EventMemoryIngestResult(
@@ -278,7 +306,7 @@ class EventMemoryIngestPipeline:
             observed_events=tuple(sorted(observed_events, key=lambda item: (item.local_time_ms, item.record_id))),
             accepted_candidate_events=accepted_candidate_events,
             rejected_candidate_events=rejected_candidate_events,
-            episodes=episodes,
+            episodes=episodes + multimodal_episodes,
             frequent_sequences=frequent_sequences,
             candidate_relations=candidate_relations,
             verified_relations=verified_relations,
@@ -286,6 +314,7 @@ class EventMemoryIngestPipeline:
             candidate_event_verifications=candidate_verifications,
             relation_verifications=relation_verifications,
             multimodal_bundle_admissions=bundle_admission_results,
+            multimodal_episode_bridges=multimodal_episode_bridges,
             traces=traces,
         )
 

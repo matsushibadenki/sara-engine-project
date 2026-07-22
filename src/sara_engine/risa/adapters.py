@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 
 from sara_engine.memory.event_state_cache import EventStateCandidate
 
 from .kernel import SARAAlignedRisaKernel
 from .models import RisaObservation
+from .subgraph_reasoning import SubgraphEdge
 
 
 def _normalize_token(value: str, fallback: str) -> str:
@@ -101,6 +103,141 @@ def observation_from_bundle_admission(
         resonance_score=float(candidate.resonance_score),
         credit_longevity=float(candidate.credit_longevity),
         event_energy=float(candidate.credit_score),
+    )
+
+
+@dataclass(frozen=True)
+class BundleSubgraphProjection:
+    edges: Tuple[SubgraphEdge, ...]
+    projected: bool
+    reason: str
+    event_cost: int
+    durable_mutation_allowed: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema": "sara-bundle-subgraph-projection-v1",
+            "edges": [
+                {
+                    "source": item.source,
+                    "target": item.target,
+                    "relation_type": item.relation_type,
+                    "confidence": item.confidence,
+                    "evidence_count": item.evidence_count,
+                    "context_tags": list(item.context_tags),
+                    "verified": item.verified,
+                }
+                for item in self.edges
+            ],
+            "projected": bool(self.projected),
+            "reason": self.reason,
+            "event_cost": int(self.event_cost),
+            "durable_mutation_allowed": False,
+        }
+
+
+def subgraph_from_bundle_admission(
+    result: Any,
+    *,
+    max_edges: int = 8,
+) -> BundleSubgraphProjection:
+    """Expose an admitted bundle as bounded verified RISA subgraph edges."""
+    limit = max(1, int(max_edges))
+    candidate = getattr(result, "candidate", None)
+    predecessors = tuple(
+        str(item)
+        for item in getattr(candidate, "causal_predecessors", ()) or ()
+        if str(item).strip()
+    )
+    event_cost = len(predecessors)
+    receipt = getattr(candidate, "verification_receipt", None)
+    receipt_valid = bool(
+        receipt is not None
+        and callable(getattr(receipt, "is_valid", None))
+        and receipt.is_valid()
+        and getattr(receipt, "verifier_id", "")
+        == "multimodal-event-memory-admission"
+        and getattr(receipt, "verified", False)
+        and getattr(receipt, "decision", "")
+        == str(getattr(result, "promotion_decision", ""))
+        and getattr(receipt, "source_revision", "")
+        == str(getattr(candidate, "source_revision", ""))
+        and str(getattr(candidate, "source_ref", ""))
+        in set(getattr(receipt, "source_refs", ()) or ())
+    )
+    verified_boundary = bool(
+        candidate is not None
+        and getattr(result, "promotion_allowed", False)
+        and getattr(candidate, "verified", False)
+        and getattr(candidate, "observed", False)
+        and getattr(candidate, "source_backed", False)
+        and receipt_valid
+    )
+    if not verified_boundary:
+        return BundleSubgraphProjection(
+            edges=(),
+            projected=False,
+            reason="bundle_not_verified_for_subgraph",
+            event_cost=event_cost,
+        )
+    if not predecessors or len(predecessors) > limit:
+        return BundleSubgraphProjection(
+            edges=(),
+            projected=False,
+            reason="subgraph_edge_budget_exceeded",
+            event_cost=event_cost,
+        )
+    target = f"event:{_normalize_token(getattr(candidate, 'entry_id', ''), 'bundle')}"
+    context_tags = tuple(
+        sorted(
+            {
+                "cross_modal_bundle",
+                f"source_revision:{_normalize_token(getattr(candidate, 'source_revision', ''), 'unknown')}",
+                f"promotion:{_normalize_token(getattr(result, 'promotion_decision', ''), 'unknown')}",
+            }
+        )
+    )
+    edges = tuple(
+        SubgraphEdge(
+            source=f"event:{_normalize_token(predecessor, 'modality_event')}",
+            target=target,
+            relation_type="cross_modal_member",
+            confidence=float(getattr(candidate, "confidence", 0.0)),
+            evidence_count=1,
+            context_tags=context_tags,
+            verified=True,
+        )
+        for predecessor in predecessors
+    )
+    return BundleSubgraphProjection(
+        edges=edges,
+        projected=True,
+        reason="verified_bundle_subgraph_projected",
+        event_cost=event_cost,
+    )
+
+
+def observation_from_cross_modal_hypothesis(hypothesis: Any) -> RisaObservation:
+    """Expose a reviewable hypothesis without marking it as verified knowledge."""
+    relations = tuple(str(item) for item in getattr(hypothesis, "modality_relations", ()))
+    source_refs = tuple(str(item) for item in getattr(hypothesis, "source_refs", ()))
+    return RisaObservation(
+        timestamp=0,
+        event_id=str(getattr(hypothesis, "hypothesis_id", "")),
+        actor=_normalize_token(str(getattr(hypothesis, "claim_key", "")), "cross_modal"),
+        action="hypothesize_cross_modal_relation",
+        observed_effects=[_normalize_token(item, "modality_relation") for item in relations],
+        context_tags=[
+            f"state:{getattr(hypothesis, 'state', 'provisional_hypothesis')}",
+            f"support:{int(getattr(hypothesis, 'support_count', 0))}",
+            f"distinct_sources:{int(getattr(hypothesis, 'distinct_source_count', 0))}",
+            "durable_mutation_allowed:false",
+        ],
+        source_ref="|".join(source_refs),
+        verified=False,
+        resonance_score=float(getattr(hypothesis, "confidence", 0.0)),
+        credit_longevity=0.0,
+        event_energy=0.0,
     )
 
 

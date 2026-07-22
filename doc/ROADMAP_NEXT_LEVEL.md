@@ -43,7 +43,7 @@ observe
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1392 passed` in the project Python 3.10 environment after Phase 21 atomic structural-edit staging.
+- [Done] Full Python test suite: `1398 passed` in the project Python 3.10 environment after Phase 23 cross-modal hypothesis hardening.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -135,12 +135,17 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Added `eval-phase23-external-multimodal`, which audits independent provenance, rights metadata, source and near-duplicate uniqueness, decision-family coverage, verifier accuracy, and Event Memory admission integrity.
 - Added `build-phase23-multimodal-collection-request`; missing evidence now produces managed aligned, missing-modality, contradiction, and temporal-misalignment targets instead of relaxing the gate.
 - The independent Phase 23 gate is connected to Level-2 promotion review, capability-matrix provenance, evidence-bound human approval, and scale-up readiness.
+- Added a bounded cross-modal hypothesis ledger. A verified bundle first becomes `provisional_hypothesis`; at least two verified observations from distinct source identities are required for `eligible_for_review`.
+- Reused modality source references, duplicate observations, stale receipts, mismatched claim keys, missing provenance, and state-budget overflow are rejected before support is counted.
+- Contradictory structural evidence freezes the hypothesis. Even review-eligible hypotheses retain `durable_mutation_allowed=false` and enter the RISA adapter as `verified=false`.
+- The Phase 23 benchmark now covers provisional-to-review transition, contradiction freeze, and the non-promoting RISA hypothesis boundary.
+- Added explicit asynchronous boundary cases at 31 ms and 33 ms around the 32 ms structural binding limit.
+- Added symmetric modality-dropout coverage: both missing audio and missing vision remain provisional rather than being verified or durably admitted.
+- Connected receipt-backed verified bundles to bounded Event Memory episodes with deterministic multi-source hashes; rejected bundles, incomplete evidence, single-modality inputs, and episode-budget overflow remain isolated.
+- Added a bounded RISA subgraph projection for verified bundle members. The projection preserves verified evidence edges and source-revision context without directly mutating durable graph state; unverified and edge-budget-exceeded inputs return an empty projection.
 
 ### [Next]
 
-- Represent cross-modal relations as hypotheses first, not immediate concepts.
-- Add asynchronous binding windows and modality dropout tests.
-- Connect verified bundles to RISA subgraphs and Event Memory episodes.
 - Collect the five-case minimum across at least two independent recording/source domains and pass the external Phase 23 gate.
 
 ### Acceptance Gate

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Any, Dict, List, Sequence, Tuple
 
 from .candidate_proposals import CandidateEvent, ObservedEvent
@@ -56,6 +57,136 @@ class EpisodeSegmentationTrace:
             "max_gap_ms": int(self.max_gap_ms),
             "max_events_per_episode": int(self.max_events_per_episode),
         }
+
+
+@dataclass(frozen=True)
+class MultimodalEpisodeBridgeResult:
+    episode: BoundedEpisode | None
+    connected: bool
+    reason: str
+    event_cost: int
+    durable_mutation_allowed: bool = False
+    schema: str = "sara-multimodal-episode-bridge-v1"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema": self.schema,
+            "episode": self.episode.to_dict() if self.episode is not None else None,
+            "connected": bool(self.connected),
+            "reason": self.reason,
+            "event_cost": int(self.event_cost),
+            "durable_mutation_allowed": False,
+        }
+
+
+def bridge_verified_bundle_to_episode(
+    bundle: Any,
+    admission: Any,
+    *,
+    max_events_per_episode: int = 12,
+) -> MultimodalEpisodeBridgeResult:
+    """Project one admitted bundle into a bounded Event Memory episode."""
+    limit = max(1, int(max_events_per_episode))
+    child_records = tuple(getattr(bundle, "child_records", ()) or ())
+    candidate = getattr(admission, "candidate", None)
+    event_cost = len(child_records)
+    receipt = getattr(candidate, "verification_receipt", None)
+    receipt_valid = bool(
+        receipt is not None
+        and callable(getattr(receipt, "is_valid", None))
+        and receipt.is_valid()
+        and getattr(receipt, "verifier_id", "")
+        == "multimodal-event-memory-admission"
+        and getattr(receipt, "verified", False)
+        and getattr(receipt, "decision", "")
+        == str(getattr(admission, "promotion_decision", ""))
+        and getattr(receipt, "source_revision", "")
+        == str(getattr(candidate, "source_revision", ""))
+        and str(getattr(candidate, "source_ref", ""))
+        in set(getattr(receipt, "source_refs", ()) or ())
+    )
+    verified_boundary = bool(
+        candidate is not None
+        and getattr(admission, "promotion_allowed", False)
+        and getattr(candidate, "verified", False)
+        and getattr(candidate, "observed", False)
+        and getattr(candidate, "source_backed", False)
+        and str(getattr(candidate, "entry_id", ""))
+        == str(getattr(bundle, "event_id", ""))
+        and receipt_valid
+    )
+    if not verified_boundary:
+        return MultimodalEpisodeBridgeResult(
+            episode=None,
+            connected=False,
+            reason="bundle_not_verified_for_episode",
+            event_cost=event_cost,
+        )
+    if not child_records or len(child_records) > limit:
+        return MultimodalEpisodeBridgeResult(
+            episode=None,
+            connected=False,
+            reason="episode_event_budget_exceeded",
+            event_cost=event_cost,
+        )
+    if not all(
+        getattr(item, "observed", False)
+        and str(getattr(item, "event_id", "")).strip()
+        and str(getattr(item, "source_ref", "")).strip()
+        for item in child_records
+    ):
+        return MultimodalEpisodeBridgeResult(
+            episode=None,
+            connected=False,
+            reason="episode_evidence_incomplete",
+            event_cost=event_cost,
+        )
+    modalities = tuple(
+        sorted({str(getattr(item, "modality", "")) for item in child_records})
+    )
+    if len(modalities) < 2:
+        return MultimodalEpisodeBridgeResult(
+            episode=None,
+            connected=False,
+            reason="episode_requires_multiple_modalities",
+            event_cost=event_cost,
+        )
+    ordered = tuple(
+        sorted(
+            child_records,
+            key=lambda item: (
+                float(getattr(item, "timestamp_ms", 0.0)),
+                str(getattr(item, "event_id", "")),
+            ),
+        )
+    )
+    source_rows = tuple(
+        sorted(
+            f"{getattr(item, 'modality', '')}|{getattr(item, 'source_ref', '')}|"
+            f"{getattr(item, 'event_id', '')}"
+            for item in ordered
+        )
+    )
+    source_hash = sha256("\n".join(source_rows).encode("utf-8")).hexdigest()
+    episode = BoundedEpisode(
+        episode_id=f"multimodal::{getattr(bundle, 'event_id', '')}",
+        source_ref=str(getattr(candidate, "source_ref", "")),
+        source_hash=source_hash,
+        start_time_ms=int(min(float(getattr(item, "timestamp_ms", 0.0)) for item in ordered)),
+        end_time_ms=int(max(float(getattr(item, "timestamp_ms", 0.0)) for item in ordered)),
+        observed_event_ids=tuple(str(getattr(item, "event_id", "")) for item in ordered),
+        candidate_event_ids=(),
+        parent_ids=tuple(str(getattr(item, "event_id", "")) for item in ordered),
+        modalities=modalities,
+        event_count=len(ordered),
+        schema="sara-bounded-multimodal-episode-v1",
+    )
+    return MultimodalEpisodeBridgeResult(
+        episode=episode,
+        connected=True,
+        reason="verified_bundle_episode_connected",
+        event_cost=event_cost,
+    )
 
 
 @dataclass(frozen=True)

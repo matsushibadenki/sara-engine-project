@@ -232,3 +232,46 @@ def test_event_memory_pipeline_requires_and_issues_multimodal_structural_receipt
     assert admission.promotion_allowed is True
     assert admission.trace["structural_receipt_valid"] is True
     assert admission.candidate.verification_receipt.is_valid() is True
+    assert result.multimodal_episode_bridges[0].connected is True
+    assert result.multimodal_episode_bridges[0].durable_mutation_allowed is False
+    assert result.episodes[0].schema == "sara-bounded-multimodal-episode-v1"
+    assert result.episodes[0].modalities == ("audio", "vision")
+
+
+def test_event_memory_pipeline_blocks_unverified_bundle_episode():
+    binder = SparseTemporalBinder(window_ms=32.0)
+    bundle = binder.bundle_events(
+        (
+            binder.normalize_event(
+                modality="vision",
+                timestamp_ms=1.0,
+                source_id="vision",
+                sparse_signature=(1, 2),
+                label="dog",
+                claim_key="dog_barking",
+                source_ref="fixture:vision",
+            ),
+            binder.normalize_event(
+                modality="audio",
+                timestamp_ms=2.0,
+                source_id="audio",
+                sparse_signature=(3, 4),
+                label="silence",
+                claim_key="dog_silent",
+                source_ref="fixture:audio",
+            ),
+        )
+    )[0]
+
+    result = EventMemoryIngestPipeline().ingest_streams(
+        (),
+        source_ref="fixture:session",
+        source_hash="fixture-hash",
+        multimodal_bundles=(bundle,),
+        expected_modalities=("vision", "audio"),
+    )
+
+    assert result.multimodal_bundle_admissions[0].promotion_allowed is False
+    assert result.multimodal_episode_bridges[0].connected is False
+    assert result.multimodal_episode_bridges[0].reason == "bundle_not_verified_for_episode"
+    assert result.episodes == ()
