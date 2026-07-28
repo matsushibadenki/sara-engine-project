@@ -13,6 +13,7 @@ def test_rust_core_exports_expected_sparse_runtime_symbols():
         "build_direct_synapses",
         "batch_tokens_to_sdr",
         "apply_homeostatic_scaling",
+        "tokenize_sara_bpe_pretokens",
         "SpikeEngine",
         "SpikeWTARouter",
         "LIFNetwork",
@@ -64,6 +65,33 @@ def test_rust_core_rejects_invalid_runtime_parameters():
         sara_rust_core.batch_tokens_to_sdr([[1]], 0, 0.1, 1)
     with pytest.raises(ValueError):
         sara_rust_core.apply_homeostatic_scaling([{}], [float("nan")], 1.0, 0.1)
+    with pytest.raises(ValueError):
+        sara_rust_core.tokenize_sara_bpe_pretokens(
+            ["ab"], {"<unk>": 1}, [("a", "b"), ("a", "b")], 1
+        )
+
+
+def test_rust_scalar_bpe_uses_python_defined_pretoken_boundaries():
+    sara_rust_core = pytest.importorskip(
+        "sara_engine.sara_rust_core",
+        reason="Rust extension is optional unless the package is built with maturin.",
+    )
+
+    assert sara_rust_core.tokenize_sara_bpe_pretokens(
+        ["abab", " 日本", "x"],
+        {
+            "<unk>": 1,
+            "a": 7,
+            "b": 8,
+            "ab": 9,
+            " ": 10,
+            "日": 11,
+            "本": 12,
+            " 日本": 13,
+        },
+        [("a", "b"), (" ", "日"), (" 日", "本")],
+        1,
+    ) == [9, 9, 13, 1]
 
 
 def test_spike_attention_uses_explicit_python_fallback_for_missing_rust_attention():

@@ -65,6 +65,9 @@ _LAZY_EXPORTS: Dict[str, Tuple[str, str]] = {
     "StructuralPlasticityManager": ("sara_engine.learning.structural_plasticity", "StructuralPlasticityManager"),
     "StructuralPlasticityResult": ("sara_engine.learning.structural_plasticity", "StructuralPlasticityResult"),
     "StructuralRouteState": ("sara_engine.learning.structural_plasticity", "StructuralRouteState"),
+    "RepetitionConsolidationConfig": ("sara_engine.learning.repetition_consolidation", "RepetitionConsolidationConfig"),
+    "RepetitionDependentConsolidator": ("sara_engine.learning.repetition_consolidation", "RepetitionDependentConsolidator"),
+    "CandidateRepetitionReranker": ("sara_engine.learning.repetition_candidate_reranker", "CandidateRepetitionReranker"),
 }
 
 __all__ = list(_LAZY_EXPORTS.keys())

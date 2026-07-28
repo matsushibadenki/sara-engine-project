@@ -1310,7 +1310,20 @@ def main():
     parser_scale_up_readiness.add_argument("--promotion-gate", default=workspace_path("evaluation", "next_level_promotion_gate.json"))
     parser_scale_up_readiness.add_argument("--external-gate", default=workspace_path("evaluation", "continual_horizon_external_gate.json"))
     parser_scale_up_readiness.add_argument("--multimodal-gate", default=workspace_path("evaluation", "phase23_external_multimodal_gate.json"))
+    parser_scale_up_readiness.add_argument("--preregistration-path", default=workspace_path("evaluation", "scale_up_preregistration.json"))
     parser_scale_up_readiness.add_argument("--output-path", default=workspace_path("evaluation", "scale_up_experiment_readiness.json"))
+
+    parser_scale_up_preregistration = subparsers.add_parser(
+        "register-scale-up-preregistration",
+        help="Register an immutable managed Phase 29 experiment protocol.",
+    )
+    parser_scale_up_preregistration.add_argument("--draft-path", required=True)
+    parser_scale_up_preregistration.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation", "scale_up_preregistration.json"
+        ),
+    )
 
     parser_phase27_runtime = subparsers.add_parser(
         "eval-phase27-portable-runtime",
@@ -1318,6 +1331,64 @@ def main():
     )
     parser_phase27_runtime.add_argument("--output-path", default=workspace_path("evaluation", "phase27_portable_runtime_readiness.json"))
     parser_phase27_runtime.add_argument("--rust-report-path", default=workspace_path("evaluation", "rust_core_benchmark.json"))
+    parser_phase27_runtime.add_argument("--tokenizer-report-path", default=workspace_path("evaluation", "phase27_tokenizer_acceleration_benchmark.json"))
+
+    parser_phase27_tokenizer = subparsers.add_parser(
+        "eval-phase27-tokenizer-acceleration",
+        help="Evaluate bounded exact tokenization without production promotion.",
+    )
+    parser_phase27_tokenizer.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase27_tokenizer_conformance_cases.jsonl",
+        ),
+    )
+    parser_phase27_tokenizer.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase27_tokenizer_acceleration_benchmark.json",
+        ),
+    )
+
+    parser_phase31_repetition = subparsers.add_parser(
+        "eval-phase31-repetition-consolidation",
+        help="Evaluate bounded repetition-dependent memory consolidation.",
+    )
+    parser_phase31_repetition.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase31_repetition_consolidation_cases.jsonl",
+        ),
+    )
+    parser_phase31_repetition.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase31_repetition_consolidation_benchmark.json",
+        ),
+    )
+
+    parser_phase31_reranking = subparsers.add_parser(
+        "eval-phase31-repetition-reranking",
+        help="Evaluate candidate-only repetition reranking.",
+    )
+    parser_phase31_reranking.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase31_repetition_reranking_cases.jsonl",
+        ),
+    )
+    parser_phase31_reranking.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase31_repetition_reranking_benchmark.json",
+        ),
+    )
 
     parser_level2_matrix = subparsers.add_parser(
         "eval-level2-capability-matrix",
@@ -3099,6 +3170,20 @@ def main():
             str(args.external_gate),
             "--multimodal-gate",
             str(args.multimodal_gate),
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-scale-up-preregistration":
+        command = [
+            sys.executable,
+            "scripts/eval/scale_up_preregistration.py",
+            "--draft-path",
+            str(args.draft_path),
             "--output-path",
             str(args.output_path),
         ]
@@ -3113,6 +3198,44 @@ def main():
             str(args.output_path),
             "--rust-report-path",
             str(args.rust_report_path),
+            "--tokenizer-report-path",
+            str(args.tokenizer_report_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase27-tokenizer-acceleration":
+        command = [
+            sys.executable,
+            "scripts/eval/phase27_tokenizer_acceleration_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase31-repetition-consolidation":
+        command = [
+            sys.executable,
+            "scripts/eval/phase31_repetition_consolidation_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase31-repetition-reranking":
+        command = [
+            sys.executable,
+            "scripts/eval/phase31_repetition_reranking_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--output-path",
+            str(args.output_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)

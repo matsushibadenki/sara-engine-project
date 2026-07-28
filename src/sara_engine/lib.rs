@@ -702,6 +702,77 @@ fn apply_homeostatic_scaling(
     Ok(weights)
 }
 
+// =====================================================================
+// [10] Exact scalar BPE reference
+// =====================================================================
+
+fn tokenize_bpe_pretoken(
+    pretoken: &str,
+    vocab: &HashMap<String, usize>,
+    merge_ranks: &HashMap<(String, String), usize>,
+    unknown_id: usize,
+) -> Vec<usize> {
+    let mut symbols: Vec<String> = pretoken.chars().map(|value| value.to_string()).collect();
+    while symbols.len() > 1 {
+        let mut best_pair: Option<(String, String)> = None;
+        let mut best_rank = usize::MAX;
+        for index in 0..(symbols.len() - 1) {
+            let pair = (symbols[index].clone(), symbols[index + 1].clone());
+            if let Some(rank) = merge_ranks.get(&pair) {
+                if *rank < best_rank {
+                    best_rank = *rank;
+                    best_pair = Some(pair);
+                }
+            }
+        }
+        let Some(best_pair) = best_pair else {
+            break;
+        };
+
+        let mut merged = Vec::with_capacity(symbols.len());
+        let mut index = 0;
+        while index < symbols.len() {
+            if index + 1 < symbols.len()
+                && symbols[index] == best_pair.0
+                && symbols[index + 1] == best_pair.1
+            {
+                merged.push(format!("{}{}", best_pair.0, best_pair.1));
+                index += 2;
+            } else {
+                merged.push(symbols[index].clone());
+                index += 1;
+            }
+        }
+        symbols = merged;
+    }
+    symbols
+        .iter()
+        .map(|symbol| *vocab.get(symbol).unwrap_or(&unknown_id))
+        .collect()
+}
+
+/// Applies the frozen SARA BPE merge snapshot to Python-defined pretokens.
+#[pyfunction]
+fn tokenize_sara_bpe_pretokens(
+    pretokens: Vec<String>,
+    vocab: HashMap<String, usize>,
+    merges: Vec<(String, String)>,
+    unknown_id: usize,
+) -> PyResult<Vec<usize>> {
+    let mut merge_ranks = HashMap::with_capacity(merges.len());
+    for (rank, pair) in merges.into_iter().enumerate() {
+        if merge_ranks.insert(pair, rank).is_some() {
+            return Err(value_error("merges must not contain duplicate pairs"));
+        }
+    }
+    Ok(pretokens
+        .iter()
+        .flat_map(|pretoken| {
+            tokenize_bpe_pretoken(pretoken, &vocab, &merge_ranks, unknown_id)
+        })
+        .collect())
+}
+
 #[pymodule]
 fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calculate_sdr_overlap, m)?)?;
@@ -709,6 +780,7 @@ fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(build_direct_synapses, m)?)?;
     m.add_function(wrap_pyfunction!(batch_tokens_to_sdr, m)?)?;
     m.add_function(wrap_pyfunction!(apply_homeostatic_scaling, m)?)?;
+    m.add_function(wrap_pyfunction!(tokenize_sara_bpe_pretokens, m)?)?;
     m.add_class::<SpikeEngine>()?;
     m.add_class::<SpikeWTARouter>()?;
     m.add_class::<LIFNetwork>()?;
@@ -841,6 +913,44 @@ mod tests {
         assert!(scaled[0][&1] > 2.0);
         assert!(scaled[1][&2] < 2.0);
         assert!(scaled.iter().flat_map(|m| m.values()).all(|w| (0.0..=5.0).contains(w)));
+    }
+
+    #[test]
+    fn scalar_bpe_matches_ranked_merges_for_unicode_pretokens() {
+        let vocab = HashMap::from([
+            ("<unk>".to_string(), 1usize),
+            ("a".to_string(), 7usize),
+            ("b".to_string(), 8usize),
+            ("ab".to_string(), 9usize),
+            ("日".to_string(), 10usize),
+            ("本".to_string(), 11usize),
+            ("日本".to_string(), 12usize),
+        ]);
+        let token_ids = tokenize_sara_bpe_pretokens(
+            vec!["abab".to_string(), "日本".to_string(), "x".to_string()],
+            vocab,
+            vec![
+                ("a".to_string(), "b".to_string()),
+                ("日".to_string(), "本".to_string()),
+            ],
+            1,
+        )
+        .unwrap();
+        assert_eq!(token_ids, vec![9, 9, 12, 1]);
+    }
+
+    #[test]
+    fn scalar_bpe_rejects_duplicate_merge_pairs() {
+        let result = tokenize_sara_bpe_pretokens(
+            vec!["ab".to_string()],
+            HashMap::from([("<unk>".to_string(), 1usize)]),
+            vec![
+                ("a".to_string(), "b".to_string()),
+                ("a".to_string(), "b".to_string()),
+            ],
+            1,
+        );
+        assert!(result.is_err());
     }
 
     #[test]

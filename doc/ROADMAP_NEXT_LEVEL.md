@@ -36,6 +36,8 @@ observe
 - Prediction error is not treated as a numeric gradient; it becomes an auditable typed edit proposal.
 - Unknown, unsupported, contradictory, or oscillating hypotheses must abstain or freeze.
 - Dense ANN/LLM components may be offline comparison references, but not hidden runtime dependencies.
+- Any time-dependent effective interaction must remain a bounded local sparse cache derived from event/state history. It must not become a hidden dense weight matrix, a backpropagation path, or durable knowledge without the normal verification boundary.
+- Tokenizer acceleration must preserve token IDs, boundaries, ordering, special-token behavior, normalization, and decode semantics exactly. A faster but semantically different tokenizer is a separate experiment, not an implementation optimization.
 - Physical joule measurement remains `[Later]` and indefinitely pending. No proxy may be promoted to a physical-energy claim.
 - All artifacts remain under `data/`, `workspace/`, or `models/`.
 
@@ -167,12 +169,13 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Source conflict and unsupported counterfactuals abstain, branch depth/count are bounded, and durable mutation remains blocked.
 - Causal output is connected to Event Memory admission: only `causes_verified` is eligible, while temporal candidates and abstentions are rejected as unverified.
 - Intervention and contrastive evidence can now promote `causes_candidate`; callers no longer need to pre-label evidence as `causes_verified`.
+- Counterfactual results now contain deterministic branch records with bounded depth, branch count, event cost, and serialized state bytes. Each branch retains supporting event paths, context tags, alternative explanations, and a non-durable rollback action.
+- Added explicit counterfactual rollback. Rollback returns a separate `rolled_back` result, preserves the original staged records unchanged, and consumes budget reserved during branch staging.
+- Every causal answer now exposes supporting source/event paths and alternative explanations. Source conflict and unstable feedback both freeze causal promotion before Event Memory admission.
 
 ### [Next]
 
-- Add counterfactual branch records with bounded depth and explicit rollback.
-- Return supporting event paths and alternative explanations with every causal answer.
-- Freeze causal promotion under source conflict or unstable feedback.
+- Repeat causal and counterfactual evaluation with independent intervention records and delayed feedback revisions.
 
 ### Acceptance Gate
 
@@ -194,11 +197,15 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Unexpected outcomes now produce an explicit rollback requirement and are excluded from Event Memory admission.
 - `SaraAgent` now exposes the bounded plan, verified outcome, causal reasoning, and Event Memory admission path.
 - Successful outcome text requires a source-backed observation receipt before it can become a memory candidate.
+- Added an equal-event-envelope action-selection ablation. The control and structural-feedback arms scan and pay for the same candidate and feedback events; the control masks feedback content while the structural arm may use only verified, stable, source-backed feedback.
+- Action-selection traces now retain the selected concept, evidence reference, structural prediction, expected outcome, feedback sources, per-action scores, and side-effect status. Malformed candidates, policy-ineligible actions, and event/state budget overflow abstain.
+- The observed-only fixture records a positive structural-feedback selection change under equal four-event budgets without promoting it to an independent action-quality claim.
+- Added a bounded transactional tool-state adapter. Accepted plans may stage only allow-listed, verified, source-backed JSON state edits under edit, event, and state-byte ceilings; tool goal, expected outcome, and rollback action must match the plan.
+- Expected outcomes commit the staged operational state atomically. Unexpected outcomes, late staged-edit failures, malformed values, and budget violations reject or roll back to the exact pre-transaction digest. External side effects remain disabled.
 
 ### [Next]
 
-- Compare action selection with and without structural feedback under equal event budgets.
-- Add tool-execution adapters with transactional rollback; the current loop remains side-effect-free.
+- Repeat the transactional boundary with an isolated reversible tool sandbox and independently recorded action/outcome traces before enabling any external side effect.
 
 ### Acceptance Gate
 
@@ -217,11 +224,16 @@ Every major mechanism must pass this ladder before it can affect production defa
 - The review links Phase 21-25 report artifacts, records negative results, emits reproducible next actions, and never self-promotes production defaults.
 - Physical joule measurement remains excluded and independent long-horizon/multimodal evidence remains visible as unresolved.
 - Added evidence-bound human approval manifests; any report change invalidates stale approval.
+- Added stable experiment fingerprints over hypothesis, evidence status, negative results, next tests, and promotion state. Repeated unchanged failures are detected from the bounded research-journal window.
+- Duplicate successful internal benchmark reruns are suppressed when the same blocked experiment recurs, while required independent-data collection actions remain active. Changed evidence or failure content creates a new experiment fingerprint.
+- Identical journal entries are no longer appended repeatedly; legacy entries remain readable and the first fingerprinted migration record is preserved.
+- Added per-phase metric snapshots with separate numeric-metric, data-provenance, and benchmark-implementation fingerprints. The research journal retains the bounded prior snapshot needed for comparison.
+- Drift classification distinguishes `stable`, `data_drift`, `code_change`, `code_regression`, `mixed_drift`, and unexplained deterministic-repeat degradation. Data changes alone are not mislabeled as code regressions.
+- A detected code or nondeterministic regression blocks Level-2 promotion pending review; baseline and stable runs remain non-promoting unless all independent evidence and human approval gates also pass.
 
 ### [Next]
 
-- Detect repeated failed experiments and suppress duplicate work.
-- Track metric drift across benchmark runs and distinguish data drift from code regression.
+- Repeat drift classification across independently collected revisions and reviewed implementation changes before assigning production thresholds.
 
 ### Acceptance Gate
 
@@ -234,24 +246,73 @@ Every major mechanism must pass this ladder before it can affect production defa
 
 **Goal:** make the verified SARA runtime portable across Python, Rust, and constrained edge targets without changing semantics.
 
+### Adopted Design Reference
+
+- Use [Gigatoken](https://github.com/marcelroed/gigatoken/) as an external implementation reference for semantics-preserving CPU tokenization, not as a production dependency or an inherited performance claim.
+- Adopt its relevant principles: direct Rust byte-stream processing, reduced Python crossings, safe-boundary parallelism, branch-minimized pretokenization, and reuse of frequent `pretoken -> token IDs` results.
+- Preserve Gigatoken's negative engineering lesson that extra classification buffers and multiple full passes may lose to one-pass processing through increased memory traffic. Every optimization must be measured end to end rather than accepted from operation counts.
+- Do not transfer published GB/s or speedup values to SARA. Hardware, tokenizer family, corpus, input size, thread count, cache state, and Python/API boundary must be frozen locally.
+
 ### [Done]
 
 - Added the canonical sparse IR v1 representation, deterministic event ordering, replay digest, and same-version state migration checks.
+- Hardened canonical IR ingestion with finite/range validation, unique event identities, unknown-field rejection, bounded event/tag/text sizes, version-bound idempotent migration, and canonical JSON serialization.
+- Added managed positive and negative conformance vectors with a frozen replay digest so a future Rust implementation must match the Python contract rather than merely match another mutable run.
 - Added `eval-phase27-portable-runtime` as an observed-only readiness gate; it explicitly does not claim Python/Rust equivalence.
 - The gate surfaces existing Rust sparse-primitive output-equivalence evidence separately while keeping canonical IR replay equivalence unresolved.
+- Added a frozen Python tokenizer snapshot contract, tokenizer fingerprint, and bounded exact pretoken cache with entry, byte, and per-entry token ceilings. Source-tokenizer mutation cannot alter an existing adapter snapshot.
+- Added multilingual conformance fixtures covering English, Japanese, Simplified Chinese, mixed scripts, whitespace, punctuation, emoji/combining marks, and long-entry bypass.
+- Added `eval-phase27-tokenizer-acceleration`; it verifies token IDs, decode output, canonical sparse-spike replay digests, repeated-input equivalence, malformed UTF-8 rejection, cache reuse, eviction, and state ceilings without changing production defaults.
+- Added a deterministic Rust scalar BPE merge reference that consumes Python-defined pretokens, preserves the frozen vocabulary/merge/unknown-token contract, rejects duplicate merge pairs, and matches Python token IDs across all eight multilingual conformance cases.
+- The initial cache timing remains diagnostic and preserves slower first-pass latency as a negative result rather than promoting acceleration. Rust scalar equivalence is observed, but no Rust performance or production-path claim is made; Gigatoken remains explicitly unobserved.
 
 ### [Later]
 
 - Add Python/Rust replay equivalence for Event Memory, RISA proposals, and predictive feedback.
+- Extend the Rust scalar correctness reference into an optional accelerated candidate only after equal-budget cold/warm timing, boundary-call, RSS, and downstream replay measurements are implemented.
+- Freeze separate tokenizer identities for the custom `SaraTokenizer` BPE format and the standard `tokenizers` JSON used by `SpikeTokenizer`; never silently reinterpret one format as the other.
+- Add TTL/generation invalidation to the existing fingerprint-keyed bounded pretoken cache; retain its entry, logical-byte, token-count, eviction, and long-tail bypass ceilings.
+- Preserve input order under safe-boundary parallelism and reject boundaries that split UTF-8 sequences, special tokens, normalization units, or pretokenizer-dependent spans.
+- Permit CPU SWAR/SIMD byte scanning and ARM64/x86 specialization because these are sparse preprocessing operations, not matrix computation. A deterministic scalar path remains the correctness reference and fallback.
+- Keep direct-file acceleration restricted to managed source paths and deterministic document separators. Interactive short-text inference must retain a low-overhead path rather than paying batch setup cost.
 - Add low-memory, ARM64, and optional neuromorphic capability profiles.
 - Measure latency, state bytes, event count, and deterministic replay across targets.
 - Keep hardware energy claims separate from software portability evidence.
+
+### Tokenizer Acceleration Minimum Experiment
+
+Use a frozen four-arm comparison:
+
+1. current Python `SaraTokenizer`;
+2. Python tokenizer with the same bounded pretoken cache policy;
+3. Rust implementation using the exact same vocabulary, merges, and pretokenization contract;
+4. optional Gigatoken compatibility mode only for tokenizer formats it can validate exactly.
+
+- Require exact token IDs, token boundaries/byte offsets where available, ordering, special-token placement, unknown-token behavior, and decode round trips before recording any performance result.
+- Cover English, Japanese, Simplified Chinese, mixed-script text, whitespace variants, punctuation, emoji, combining marks, malformed UTF-8 rejection, very long tokens, repeated hot pretokens, and long-tail cache pollution.
+- Measure cold and warm cache separately for single short requests, small batches, and managed multi-document streams.
+- Freeze source bytes, tokenizer fingerprint, normalization, document separators, core/thread count, affinity when available, environment fingerprint, cache budget, warm-up count, repetitions, and run order.
+- Report input MB/s, tokens/s, p50/p95 latency, Python-boundary calls, cache hit/useful-reuse/eviction rates, peak cache bytes, peak RSS, and end-to-end `text -> token IDs -> sparse spike events` latency and event count.
+- Keep Semantic Echo token-boundary accuracy, multilingual endpoint coverage, abstention, and downstream sparse-event decisions in the equivalence gate. Throughput cannot compensate for a semantic regression.
+
+### Tokenizer Acceleration Failure Conditions
+
+- Reject an optimization after any token ID, boundary, special-token, normalization, ordering, or decode mismatch.
+- Reject it if improvement appears only after using more threads, more cache bytes, different input splitting, different tokenizer semantics, or a different measured boundary.
+- Reject the cache if construction, lookup, hashing, or eviction cost harms preregistered short-text latency, or if long-tail input exceeds its state ceiling.
+- Reject parallel splitting if output depends on chunk size, worker count, document order, or Unicode boundary placement.
+- Keep an unsupported tokenizer family on the deterministic reference path. Do not silently approximate Janome, SentencePiece, WordPiece, or custom SARA behavior.
+- Do not treat tokenizer throughput as SNN reasoning accuracy, model-token throughput, end-to-end agent latency, or physical-energy evidence.
 
 ### Acceptance Gate
 
 - Canonical event traces replay to equivalent decisions across supported runtimes.
 - State migrations are explicit, reversible, and reject incompatible versions.
 - Unsupported hardware capabilities fail clearly without corrupting state.
+- Accelerated tokenization is byte-for-byte and token-for-token equivalent on all frozen multilingual conformance cases.
+- The selected accelerated path improves preregistered end-to-end tokenization and spike-event latency under equal thread/cache/input budgets without exceeding bounded state or RSS ceilings.
+- Scalar fallback, cache invalidation, and safe-boundary replay remain deterministic across cold/warm runs and supported CPU profiles.
+- Gigatoken remains optional until its compatibility mode passes the same local conformance and downstream Semantic Echo checks; no headline benchmark is adopted as SARA evidence.
 
 ## Phase 28: Level-2 Promotion Review
 
@@ -275,6 +336,12 @@ Every major mechanism must pass this ladder before it can affect production defa
 ## Phase 29: Scale-Up Experimental Validation
 
 **Goal:** after ROADMAP_NEXT_LEVEL evidence and human review are complete, test whether the bounded mechanisms remain useful at a larger but controlled scale.
+
+### [Done]
+
+- Added an immutable managed preregistration contract for the scale-up protocol. It requires at least four uniquely fingerprinted domains, frozen fixture and environment fingerprints, the three fixed comparison profiles, 1,000/10,000 episode buckets, five fixed unique replicate seeds, equal source/fixture/episode ordering and state/event budgets, all eight metric thresholds, and a CPU-only non-energy policy.
+- Added `register-scale-up-preregistration`; identical registration is idempotent, while any attempt to replace an existing protocol is rejected and requires a new experiment identity.
+- Upgraded `eval-scale-up-readiness` so all three evidence gates, a managed preregistration path, and an exact canonical protocol fingerprint must pass before `ready_to_execute` can become true. The command remains planning-only and does not execute the experiment.
 
 ### [Next]
 
@@ -301,6 +368,118 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Runtime remains sparse, bounded, CPU-first, and backpropagation-free.
 - All negative results and unresolved evidence gaps are visible.
 
+## Phase 30: Temporal Effective Interaction
+
+**Goal:** test whether SARA can improve temporal-task accuracy by deriving short-lived local effective interactions from recent sparse activity without discarding spike timing or introducing a dense ANN runtime.
+
+### Research Hypothesis
+
+- Treat an effective interaction as an observable, temporary cache value over an already active sparse edge:
+
+```text
+g_ij(t) = f(
+  bounded pre/post spike history,
+  firing order and interval,
+  delay and phase relation,
+  short-term excitation/fatigue state,
+  verified structural context
+)
+```
+
+- `g_ij(t)` is not durable knowledge and is not assumed to be a biological synaptic weight. It expires, is recomputed only for locally active edges, and cannot bypass source-aware verification or Event Memory admission.
+- The intended benefit is preservation and reuse of temporal evidence, not conversion of the runtime into an ANN. ANN-like accuracy, wall-clock latency, event cost, temporal representation quality, and physical energy are separate claims and must be measured separately.
+- RISA may provide verified context for selecting eligible sparse relations, but unverified correlation, synchrony, or repeated co-activation cannot become a durable RISA relation through this cache.
+
+### [Later]
+
+- Reuse Phase 19 fixed/multi-timescale/liquid dynamics as the state-only controls instead of duplicating them; Phase 30 must prove that materializing a cache adds value beyond those temporal states.
+- Add a bounded recent-event state containing timestamp, order, interval, delay, phase bucket, excitation/fatigue, expiry, and provenance reference.
+- Materialize an effective interaction only after a local active-edge reuse threshold is met. Otherwise compute directly from temporal state so cache-construction cost cannot dominate one-shot events.
+- Invalidate or freeze cached interactions after context revision, contradiction, temporal-distribution shift, expiry, or unstable oscillation.
+- Keep fixed sparse synapses as the production control. No dense matrix calculation, backpropagation, GPU dependency, or ANN inference layer is permitted in the candidate runtime.
+- Add deterministic replay and exact cache invalidation traces to the canonical sparse IR portability contract before any cross-runtime claim.
+
+### Minimum Experiment
+
+- Use frozen tasks where timing is necessary: firing-order reversal, equal-count/different-interval sequences, delayed response, phase/synchrony discrimination, irregular event gaps, and context revision.
+
+The frozen ablation compares four equal-budget arms:
+
+1. fixed sparse SNN;
+2. history-averaged static interaction that intentionally removes fine timing;
+3. temporal state without materialized effective-interaction cache;
+4. temporal state with bounded local effective-interaction cache.
+
+- Include shuffled-time, phase-shifted, duplicate-event, stale-cache, contradiction, unseen-context, and no-reuse negative controls.
+- Freeze data, active-edge ceiling, event/state/cache-byte budgets, timestamp resolution, replicate seeds, environment fingerprint, and thresholds before execution.
+- Report accuracy or F1, calibration and abstention, timing-sensitivity delta, revision recovery, stale-cache harm, cache hit/useful-reuse rate, construction and invalidation event cost, state/cache bytes, deterministic replay, and wall-clock latency.
+- Compare with an offline ANN reference only as a labeled accuracy/latency control under the existing fairness rules. It must not become a runtime dependency or evidence of physical-energy efficiency.
+
+### Failure Conditions
+
+- Reject the hypothesis if improvement disappears against the temporal-state-only arm; this means the cache added no value beyond state dynamics.
+- Reject it if gains come from additional data, active edges, state bytes, events, latency allowance, or replicate selection rather than the mechanism.
+- Reject it if history averaging performs equally on timing-required cases, because the fixture did not demonstrate a temporal requirement.
+- Reject it if cache construction/invalidation costs exceed useful reuse, stale cache increases harmful decisions, or revision recovery exceeds its preregistered bound.
+- Reject it if state or active interactions become dense or unbounded, replay becomes nondeterministic, or a transient interaction leaks into durable RISA/Event Memory state without verification.
+- Do not convert software event counts or latency into a physical-energy claim.
+
+### Acceptance Gate
+
+- The cache arm improves preregistered timing-required metrics over fixed, history-averaged, and temporal-state-only controls under equal budgets and at least five fixed replicates.
+- Shuffled-time and phase-shift controls cause the expected bounded degradation or abstention, proving that the mechanism uses temporal structure rather than event counts alone.
+- Context revision invalidates stale interactions within a bounded number of events without erasing unrelated verified state.
+- Construction cost is amortized by useful local reuse, while cache size, active-edge count, event cost, state bytes, and latency remain under frozen ceilings.
+- Independent temporal workloads and human review are required before changing production defaults. Physical energy and general ANN-parity claims remain unresolved.
+
+## Phase 31: Repetition-Dependent Memory Consolidation
+
+**Goal:** reproduce the bounded phenomenon that repeated, successfully recalled, and appropriately spaced sparse activity becomes easier to retrieve, while preventing repetition from being mistaken for truth.
+
+### Research Hypothesis
+
+- Maintain a sparse local state per eligible memory containing retrieval strength, consolidation stability, last activation time, repetition count, bounded source evidence, and contradiction history.
+- Apply saturating local potentiation to repeated support, a larger consolidation gain for spaced retrieval, slow stability-dependent forgetting, and local depression after contradiction.
+- Keep retrieval strength separate from verification strength. Repeating one source may improve accessibility, but only newly verified independent sources may increase verification strength.
+- This is an observed-only memory mechanism. It uses no backpropagation, dense matrix operation, GPU path, or automatic durable-knowledge admission.
+
+### [Done]
+
+- Added a deterministic bounded sparse consolidation trace with explicit memory, source, identifier-byte, and event ceilings. Updates are local to one memory and use no backpropagation, dense matrix operation, or GPU path.
+- Added saturating retrieval potentiation, spaced successful-recall consolidation, stability-dependent projected forgetting, contradiction-driven depression, and deterministic weakest-trace eviction.
+- Retrieval strength and verification strength are separate. Exact source references are stored only as bounded SHA-256 identities; repeating one verified source cannot increase verification, while newly verified distinct sources can.
+- Added eight frozen controls and `eval-phase31-repetition-consolidation`. The observed-only report covers one-shot, massed, spaced, delayed forgetting, contradiction, duplicate-source, distinct-source, saturation, long-tail capacity, event-budget, local-isolation, and deterministic-replay checks.
+- Added an explicit-default-off `CandidateRepetitionReranker` over the verified Event State Cache retrieval-result contract. Only traces with nonzero verified-source evidence are eligible; the adapter cannot admit entries or mutate durable cache fields.
+- Added six frozen delayed-recall and interference controls plus `eval-phase31-repetition-reranking`. The disabled and candidate arms use identical source events/state and are charged for the same bounded candidate scan; spaced verified recall can reorder close verified candidates, while unverified repetition and interference receive zero boost.
+- Production Event Memory, RISA admission, and retrieval ranking remain unchanged.
+
+### [Later]
+
+- Run independent delayed-recall and interference workloads with equal event/state budgets before choosing thresholds.
+- Test the default-off adapter with actual independently collected Event Memory and sleep-replay outputs without allowing retrieval strength to bypass verification receipts.
+- Add persistence and cross-runtime replay only after the state schema and invalidation policy are reviewed.
+
+### Minimum Experiment
+
+- Compare equal-count one-shot, massed-repetition, and spaced-retrieval schedules under the same state and event budgets.
+- Verify that spaced successful recall produces higher final stability than massed repetition, repeated support saturates, and an unused trace weakens after a delayed clock advance.
+- Verify that contradiction lowers retrieval strength, one repeatedly verified source cannot inflate verification strength, and distinct verified sources can increase it only up to a fixed ceiling.
+- Report retrieval strength, stability, verification strength, source count, event count, evictions, deterministic snapshots, and state-budget integrity.
+
+### Failure Conditions
+
+- Reject the mechanism if massed repetition grows without saturation, spaced retrieval has no advantage, unused memories do not forget, or contradiction strengthens a trace.
+- Reject it if duplicate source evidence increases verification strength, if retrieval strength directly grants durable knowledge, or if state/source/event counts exceed their ceilings.
+- Reject it if results depend on dictionary iteration order, wall-clock time, global dense updates, backpropagation, or a GPU.
+- Do not treat synthetic repetition fixtures as evidence of human-equivalent memory, improved reasoning accuracy, or physical-energy efficiency.
+
+### Acceptance Gate
+
+- All frozen positive and negative controls pass deterministically under equal budgets.
+- Retrieval and verification remain separate in the public state and evaluation report.
+- Sparse state stays bounded during long-tail pollution and unrelated memories are not globally rewritten by a local repetition.
+- Production integration remains blocked pending independent delayed-recall workloads, interference testing, provenance review, and explicit human approval.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -309,7 +488,10 @@ Every major mechanism must pass this ladder before it can affect production defa
 4. [Done] Add multimodal structural contradiction and missing-modality cases.
 5. [Next] Collect independent 10/30/100 horizon and multimodal evidence.
 6. [Later] Complete Python/Rust canonical replay equivalence.
-7. [Later] Reopen physical-energy evidence only by explicit operator decision.
+7. [Later] Run the exact-tokenization four-arm conformance and bounded-cache ablation before selecting any accelerated tokenizer path.
+8. [Later] Prototype Phase 30 temporal effective interactions only after preregistering the four-arm equal-budget ablation.
+9. [Done] Implement the observed-only Phase 31 repetition-dependent consolidation contract without connecting it to production recall.
+10. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
 
@@ -327,6 +509,14 @@ Every major mechanism must pass this ladder before it can affect production defa
 - `workspace/evaluation/next_level_promotion_gate.json`
 - `workspace/evaluation/next_level_human_approval.json`
 - `workspace/evaluation/scale_up_experiment_readiness.json`
+- `data/processed/benchmark_fixtures/phase27_tokenizer_conformance_cases.jsonl`
+- `workspace/evaluation/phase27_tokenizer_acceleration_benchmark.json`
+- `data/processed/benchmark_fixtures/phase30_temporal_effective_interaction_cases.jsonl`
+- `workspace/evaluation/phase30_temporal_effective_interaction_benchmark.json`
+- `data/processed/benchmark_fixtures/phase31_repetition_consolidation_cases.jsonl`
+- `workspace/evaluation/phase31_repetition_consolidation_benchmark.json`
+- `data/processed/benchmark_fixtures/phase31_repetition_reranking_cases.jsonl`
+- `workspace/evaluation/phase31_repetition_reranking_benchmark.json`
 
 ## Review Rule
 

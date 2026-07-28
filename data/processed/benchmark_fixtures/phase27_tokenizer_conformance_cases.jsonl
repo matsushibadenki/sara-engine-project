@@ -1,0 +1,8 @@
+{"case_id":"english_reuse","language":"en","text":" alpha beta alpha","repetitions":4}
+{"case_id":"japanese","language":"ja","text":"猫 は静かに走る。猫は止まる。","repetitions":3}
+{"case_id":"simplified_chinese","language":"zh-Hans","text":"神经网络处理稀疏事件。","repetitions":3}
+{"case_id":"mixed_script","language":"mixed","text":"SARAはCPU-firstで处理event⚡を保持する。","repetitions":3}
+{"case_id":"whitespace","language":"mixed","text":"  alpha\tbeta\n猫　神经  ","repetitions":2}
+{"case_id":"emoji_combining","language":"mixed","text":"café ☕️ neuron🧠 spike⚡","repetitions":3}
+{"case_id":"punctuation","language":"mixed","text":"Hello,世界!?「SARA」。","repetitions":2}
+{"case_id":"long_token_bypass","language":"ja","text":"超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超超","repetitions":2}

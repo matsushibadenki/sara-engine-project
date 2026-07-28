@@ -45,6 +45,17 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             predicted_outcome="target_present",
             alternative_outcome="target_absent",
         )
+        branch_result = reasoner.branch_counterfactual(
+            inference,
+            intervention="remove_cause",
+            predicted_outcome="target_present",
+            alternative_outcome="target_absent",
+            context_tags=(f"case:{row['case_id']}",),
+        )
+        rollback = reasoner.rollback_counterfactual(
+            branch_result,
+            reason="benchmark_transaction_cleanup",
+        )
         admission = memory_cache.admit(
             causal_event_state_candidate(
                 inference,
@@ -57,17 +68,48 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "counterfactual_expected_abstain": bool(row["counterfactual_expected_abstain"]),
             "inference": inference.to_dict(),
             "counterfactual": branch,
+            "counterfactual_branch_result": branch_result.to_dict(),
+            "counterfactual_rollback": rollback.to_dict(),
             "event_memory_admission": admission.to_dict(),
         }
     checks = {
         "relation_classification": all(item["inference"]["relation_type"] == item["expected_relation"] for item in cases.values()),
         "temporal_order_not_verified_causal": cases["temporal_only"]["inference"]["relation_type"] == "causes_candidate",
         "source_conflict_abstention": cases["source_conflict"]["inference"]["abstained"] is True,
+        "unstable_feedback_freeze": (
+            cases["unstable_feedback"]["inference"]["reason"]
+            == "unstable_feedback_freeze"
+        ),
         "unsupported_counterfactual_abstention": all(
             item["counterfactual"]["abstained"] == item["counterfactual_expected_abstain"]
             for item in cases.values()
         ),
         "verified_branch_bounded": cases["intervention_verified"]["counterfactual"]["branch_count"] == 2,
+        "branch_records_bounded_and_traceable": (
+            cases["intervention_verified"]["counterfactual_branch_result"]["branch_count"] == 2
+            and cases["intervention_verified"]["counterfactual_branch_result"]["depth"] <= 3
+            and cases["intervention_verified"]["counterfactual_branch_result"]["event_cost"] <= 16
+            and cases["intervention_verified"]["counterfactual_branch_result"]["serialized_state_bytes"] <= 4096
+            and all(
+                item["supporting_paths"]
+                and "room:a" in item["context_tags"]
+                and item["durable_mutation_allowed"] is False
+                for item in cases["intervention_verified"]["counterfactual_branch_result"]["branches"]
+            )
+        ),
+        "explicit_rollback_isolated": (
+            cases["intervention_verified"]["counterfactual_branch_result"]["rolled_back"] is False
+            and cases["intervention_verified"]["counterfactual_rollback"]["rolled_back"] is True
+            and all(
+                item["status"] == "rolled_back"
+                for item in cases["intervention_verified"]["counterfactual_rollback"]["branches"]
+            )
+        ),
+        "support_paths_and_alternatives_present": all(
+            item["inference"]["supporting_paths"]
+            and item["inference"]["alternatives"]
+            for item in cases.values()
+        ),
         "durable_mutation_blocked": all(
             not item["inference"]["durable_mutation_allowed"]
             and not item["counterfactual"]["durable_mutation_allowed"]
@@ -77,7 +119,12 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             cases["intervention_verified"]["event_memory_admission"]["accepted"]
             and all(
                 not cases[case_id]["event_memory_admission"]["accepted"]
-                for case_id in ("temporal_only", "source_conflict", "unsupported_counterfactual")
+                for case_id in (
+                    "temporal_only",
+                    "source_conflict",
+                    "unsupported_counterfactual",
+                    "unstable_feedback",
+                )
             )
         ),
     }
@@ -90,6 +137,10 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "case_count": len(cases),
             "verified_causal_case": float(checks["verified_branch_bounded"]),
             "causal_event_memory_admission": float(checks["event_memory_only_verified_causal"]),
+            "counterfactual_branch_record_integrity": float(
+                checks["branch_records_bounded_and_traceable"]
+                and checks["explicit_rollback_isolated"]
+            ),
         },
         "checks": checks,
         "cases": cases,

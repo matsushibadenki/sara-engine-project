@@ -15,6 +15,11 @@ if SRC_PATH not in sys.path:
     sys.path.insert(0, SRC_PATH)
 
 from sara_engine.agent.bounded_agent_loop import BoundedAgentLoop  # noqa: E402
+from sara_engine.agent.transactional_tools import (  # noqa: E402
+    BoundedTransactionalToolAdapter,
+    ToolStateEdit,
+    TransactionalToolRequest,
+)
 from sara_engine.memory.event_state_cache import VerifiedHierarchicalEventStateCache  # noqa: E402
 from sara_engine.utils.project_paths import ensure_parent_directory, processed_data_path, workspace_path  # noqa: E402
 
@@ -60,7 +65,78 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             observation_evidence=observation_evidence,
         )
         admission = cache.admit(candidate).to_dict() if candidate is not None else None
-        cases[str(row["case_id"])] = {"decision": decision.to_dict(), "outcome": outcome, "event_memory_admission": admission}
+        action_selection_case = row.get("action_selection", {})
+        action_selection = None
+        if isinstance(action_selection_case, Mapping) and action_selection_case:
+            action_selection = loop.compare_action_selection(
+                candidates=action_selection_case.get("candidates", ()),
+                structural_feedback=action_selection_case.get(
+                    "structural_feedback", ()
+                ),
+                event_budget_per_arm=int(
+                    action_selection_case.get("event_budget_per_arm", 1)
+                ),
+            ).to_dict()
+        tool_commit = None
+        tool_rollback = None
+        if str(row["case_id"]) == "safe_plan":
+            adapter = BoundedTransactionalToolAdapter(
+                allowed_tools=("bounded_state_edit",),
+                max_edits=4,
+                max_event_cost=8,
+                max_state_bytes=1024,
+            )
+            request = TransactionalToolRequest(
+                request_id="phase25-safe-plan-tool",
+                tool_name="bounded_state_edit",
+                goal=decision.goal,
+                expected_outcome=decision.expected_outcome,
+                rollback_action=decision.rollback_action,
+                source_ref="fixture:safe-plan-tool",
+                edits=(
+                    ToolStateEdit("set", "door_state", "open"),
+                    ToolStateEdit("set", "last_action", "use_key"),
+                ),
+                observed=True,
+                verified=True,
+                event_cost=4,
+            )
+            commit_state = {"door_state": "closed", "last_action": "none"}
+            rollback_state = dict(commit_state)
+            committed = adapter.execute(
+                commit_state,
+                plan=decision,
+                request=request,
+                observed_outcome="door_open",
+            )
+            rolled_back = adapter.execute(
+                rollback_state,
+                plan=decision,
+                request=request,
+                observed_outcome="alarm_triggered",
+            )
+            tool_commit = {
+                "result": committed.to_dict(),
+                "state": commit_state,
+            }
+            tool_rollback = {
+                "result": rolled_back.to_dict(),
+                "state": rollback_state,
+            }
+        cases[str(row["case_id"])] = {
+            "decision": decision.to_dict(),
+            "outcome": outcome,
+            "event_memory_admission": admission,
+            "action_selection": action_selection,
+            "tool_commit": tool_commit,
+            "tool_rollback": tool_rollback,
+        }
+    safe_selection = cases["safe_plan"]["action_selection"]
+    safe_selection_fixture = next(
+        row["action_selection"]
+        for row in rows
+        if str(row["case_id"]) == "safe_plan"
+    )
     checks = {
         "safe_plan_accepted": cases["safe_plan"]["decision"]["accepted"] is True,
         "missing_rollback_rejected": cases["missing_rollback"]["decision"]["accepted"] is False,
@@ -76,6 +152,51 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             cases["unexpected_outcome"]["outcome"]["rollback_required"] is True
             and cases["unexpected_outcome"]["event_memory_admission"] is None
         ),
+        "action_selection_equal_event_budget": bool(
+            safe_selection
+            and safe_selection["equal_event_budget"]
+            and safe_selection["control"]["charged_event_budget"]
+            == safe_selection["structural_feedback"]["charged_event_budget"]
+            == safe_selection["event_envelope_cost"]
+        ),
+        "structural_feedback_improves_action_selection": bool(
+            safe_selection
+            and safe_selection["control"]["selected_action"]
+            == safe_selection_fixture["expected_control_action"]
+            and safe_selection["structural_feedback"]["selected_action"]
+            == safe_selection_fixture["expected_structural_action"]
+            and safe_selection["control"]["selected_action"]
+            != safe_selection["structural_feedback"]["selected_action"]
+        ),
+        "action_selection_trace_complete": bool(
+            safe_selection
+            and all(
+                arm["trace"].get("concept")
+                and arm["trace"].get("evidence_ref")
+                and arm["trace"].get("structural_prediction")
+                and arm["trace"].get("expected_outcome")
+                and arm["trace"].get("side_effects_executed") is False
+                for arm in (
+                    safe_selection["control"],
+                    safe_selection["structural_feedback"],
+                )
+            )
+        ),
+        "transactional_tool_commit_verified": (
+            cases["safe_plan"]["tool_commit"]["result"]["committed"] is True
+            and cases["safe_plan"]["tool_commit"]["state"]["door_state"] == "open"
+            and cases["safe_plan"]["tool_commit"]["result"]["trace"][
+                "side_effects_executed"
+            ]
+            is False
+        ),
+        "transactional_tool_rollback_exact": (
+            cases["safe_plan"]["tool_rollback"]["result"]["rolled_back"] is True
+            and cases["safe_plan"]["tool_rollback"]["result"]["before_digest"]
+            == cases["safe_plan"]["tool_rollback"]["result"]["restored_digest"]
+            and cases["safe_plan"]["tool_rollback"]["state"]
+            == {"door_state": "closed", "last_action": "none"}
+        ),
         "durable_mutation_blocked": all(
             not item["decision"]["durable_mutation_allowed"] and not item["outcome"]["durable_mutation_allowed"]
             for item in cases.values()
@@ -86,7 +207,20 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
         "passed": all(checks.values()),
         "observed_only": True,
         "external_device_required": False,
-        "metrics": {"case_count": len(cases), "safe_plan_acceptance": float(checks["safe_plan_accepted"])},
+        "metrics": {
+            "case_count": len(cases),
+            "safe_plan_acceptance": float(checks["safe_plan_accepted"]),
+            "equal_budget_action_selection": float(
+                checks["action_selection_equal_event_budget"]
+            ),
+            "structural_feedback_action_selection_gain": float(
+                checks["structural_feedback_improves_action_selection"]
+            ),
+            "transactional_tool_boundary": float(
+                checks["transactional_tool_commit_verified"]
+                and checks["transactional_tool_rollback_exact"]
+            ),
+        },
         "checks": checks,
         "cases": cases,
     }

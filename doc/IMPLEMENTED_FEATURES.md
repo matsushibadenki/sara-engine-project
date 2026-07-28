@@ -391,25 +391,44 @@ Receipt-backed verified bundles now project into deterministic bounded multimoda
 
 Added a bounded causal reasoner and observed-only benchmark. Temporal order produces only a causal candidate, verified causality requires intervention and contrastive evidence, source conflict abstains, unsupported counterfactuals abstain, and branch mutation remains non-durable.
 Verified causal output is connected to Event Memory admission; candidate-only or abstained causal claims are rejected as unverified.
+Counterfactual evaluation now emits deterministic bounded branch records carrying source/event paths, context boundaries, alternative explanations, rollback actions, event cost, and serialized-state size. Explicit rollback produces an isolated rolled-back result without modifying the staged record, while unstable feedback freezes causal promotion alongside source conflict.
 
 ### Phase 25: Verifiable Agent Loop
 
 Added a bounded agent-loop decision layer around sparse plan verification. It rejects invalid or stale plans, missing rollback, and excessive risk; it requires expected outcomes and keeps all action/outcome mutations non-durable until independently verified.
 Verified observed outcomes are converted into source-backed Event Memory candidates; rejected plans and mismatched observations are not admitted.
 Unexpected outcomes now emit a rollback requirement and remain non-durable.
+The Phase 25 benchmark now compares masked-control and structural-feedback action selection over the same charged event envelope. Only verified stable source-backed feedback can affect structural scores, traces preserve concept/evidence/prediction/outcome lineage, and malformed or budget-exceeded comparisons abstain without side effects.
+Added an allow-listed transactional tool-state adapter for verified plans. JSON-compatible edits are staged under hard edit/event/state budgets, expected outcomes commit atomically, and unexpected outcomes or late staging failures preserve the exact pre-transaction digest; external side effects remain disabled pending isolated-sandbox evidence.
 
 ### Phase 26: Self-Evaluation And Research Memory
 
 Added `eval-next-level-promotion-review`, which links Phase 21-25 evidence, records negative results and next tests in a managed journal, and emits a separate promotion gate. It never self-promotes production defaults and keeps human approval required.
+The next-level research journal now fingerprints experiments and detects repeated unchanged failures. It suppresses redundant reruns of already-passing internal benchmarks without suppressing unresolved independent-data collection, preserves changed experiments, and avoids appending identical journal rows repeatedly.
+Per-phase metric snapshots now separate numeric metrics, input provenance fingerprints, and benchmark implementation digests. Promotion review classifies stable, data, code, mixed, and unexplained drift; code or nondeterministic regression blocks promotion without treating ordinary data revision as a code failure.
 
 ### Phase 29: Scale-Up Experimental Validation
 
 Added `eval-scale-up-readiness`, a planning-only gate for future 1,000/10,000 episode experiments across four domains and five replicates. It does not run large workloads until promotion and independent-data gates pass.
+Added an immutable managed Phase 29 preregistration contract and `register-scale-up-preregistration`. It freezes unique per-domain source fingerprints, fixture/environment fingerprints, comparison profiles, episode buckets, five unique replicate seeds, equal source/fixture/episode ordering and state/event budgets, all metric thresholds, and the CPU-only non-energy execution policy behind a canonical protocol fingerprint. Identical registration is idempotent; changed registration cannot overwrite the existing experiment identity.
+Scale-up readiness now requires the promotion, independent horizon, and independent multimodal gates plus a valid managed preregistration. Missing, stale, unequal-budget, unmanaged, or post-fingerprint-modified protocols remain blocked, and the readiness command still performs no large run.
+
+### Phase 31: Repetition-Dependent Memory Consolidation
+
+Added a bounded sparse repetition-dependent consolidation trace. Repeated support strengthens retrieval with a saturating local rule, spaced successful recall increases stability more than massed repetition, stability extends the projected forgetting half-life, and contradiction locally depresses the trace.
+Retrieval strength remains separate from verification strength. Source references are represented by bounded SHA-256 identities; repeating one verified source does not increase verification, while newly verified distinct sources can increase it up to a fixed ceiling.
+Added `eval-phase31-repetition-consolidation` with eight frozen controls plus capacity, event-budget, local-isolation, and deterministic-replay probes. The mechanism is observed-only and is not connected to production Event Memory ranking, RISA admission, or durable knowledge.
+Added a default-off candidate reranker for verified Event State Cache retrieval results. A trace must contain verified-source evidence before repetition can affect candidate score; unverified repetition and interference remain ineligible, and reranking does not mutate durable cache fields.
+Added `eval-phase31-repetition-reranking` with delayed verified recall, massed control, unverified repetition, contradiction, and interference fixtures under an equal charged candidate-scan budget. This remains an observed-only result and does not change the production retrieval path.
 
 ### Phase 27: Portable Sparse Runtime
 
 Added canonical sparse IR v1 utilities with deterministic ordering, replay digest, and explicit same-version migration validation. The readiness benchmark keeps Python/Rust equivalence unclaimed until a native cross-runtime replay test exists.
+Canonical IR ingestion now rejects non-finite or out-of-range confidence, duplicate event identities, unknown fields, invalid indices, oversized traces, and source-state version mismatch. Canonical JSON and a managed positive/negative conformance fixture freeze the expected Python replay digest for the future Rust implementation.
 Existing Rust sparse-primitive output-equivalence evidence is surfaced separately and is not treated as canonical IR equivalence.
+Added an optional frozen Python tokenizer snapshot with a semantic fingerprint and bounded exact pretoken cache. The cache enforces entry, logical-byte, and per-entry token ceilings, deterministic LRU eviction, strict UTF-8 decoding, and isolation from later source-tokenizer mutation.
+Added `eval-phase27-tokenizer-acceleration` with multilingual conformance, token/decode/spike-digest equivalence, malformed-input rejection, reuse/eviction/bypass checks, and cold/repeated timing. The initial timing is diagnostic, preserves slower-cache observations as negative results, and does not claim accelerated production or Gigatoken equivalence.
+Added a Rust scalar BPE merge reference behind Python-defined pretoken boundaries. It consumes the same frozen vocabulary, ordered merges, and unknown-token ID, rejects duplicate merge pairs, and matches Python token IDs on all eight multilingual Phase 27 fixtures. This establishes a correctness reference only; the production tokenizer, Rust performance, and Gigatoken compatibility remain unclaimed.
 
 ### Phase 28: Level-2 Promotion Review
 

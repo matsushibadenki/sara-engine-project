@@ -58,5 +58,7 @@ from .causal_reasoning import (
     BoundedCausalReasoner as BoundedCausalReasoner,
     CausalEvidence as CausalEvidence,
     CausalInference as CausalInference,
+    CounterfactualBranchRecord as CounterfactualBranchRecord,
+    CounterfactualBranchResult as CounterfactualBranchResult,
     causal_event_state_candidate as causal_event_state_candidate,
 )

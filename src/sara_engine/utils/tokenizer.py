@@ -18,7 +18,13 @@ except ImportError:
 
 
 class SaraTokenizer:
-    def __init__(self, vocab_size: int = 4096, model_path: str = workspace_path("tokenizers", "sara_vocab.json")):
+    def __init__(
+        self,
+        vocab_size: int = 4096,
+        model_path: str = workspace_path("tokenizers", "sara_vocab.json"),
+        *,
+        load_existing: bool = True,
+    ):
         self.vocab_size = vocab_size
         self.model_path = model_path
         self.vocab: Dict[str, int] = {}
@@ -32,7 +38,7 @@ class SaraTokenizer:
         for token in self.special_tokens:
             self._add_token(token)
 
-        if os.path.exists(self.model_path):
+        if load_existing and os.path.exists(self.model_path):
             self.load()
 
     def pre_tokenize(self, text: str) -> List[str]:
@@ -103,7 +109,7 @@ class SaraTokenizer:
             v_out[w_out] = v_in[word]
         return v_out
 
-    def train(self, corpus: List[str]):
+    def train(self, corpus: List[str], *, save: bool = True):
         """BPEアルゴリズムを用いた語彙の学習"""
         word_freqs: Dict[str, int] = {}
         for text in corpus:
@@ -131,7 +137,16 @@ class SaraTokenizer:
             if self.next_id >= self.vocab_size:
                 break
 
-        self.save()
+        if save:
+            self.save()
+
+    def pretokenizer_identity(self) -> str:
+        """Return the deterministic pretokenizer contract identity."""
+        return (
+            "janome-space-prefix-v1"
+            if _HAS_JANOME
+            else "regex-space-prefix-v1"
+        )
 
     def _tokenize_word(self, word: str) -> List[str]:
         """学習されたBPEマージルールに従って1単語をサブワードに分割"""
