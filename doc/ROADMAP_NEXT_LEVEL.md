@@ -41,6 +41,19 @@ observe
 - Physical joule measurement remains `[Later]` and indefinitely pending. No proxy may be promoted to a physical-energy claim.
 - All artifacts remain under `data/`, `workspace/`, or `models/`.
 
+## Adopted Kimi K3 Design References
+
+The user-provided *Kimi K3: Open Frontier Intelligence Technical Report* was reviewed as an external Transformer-system reference. SARA does not inherit its architecture, benchmark scores, scaling claims, or hardware assumptions. The following principles are adopted only after translation into sparse, local, bounded mechanisms:
+
+- **Bounded state dynamics:** Kimi Delta Attention lower-bounds log-decay and SiTU-GLU smoothly caps activations. SARA may reuse the principle of finite decay/activation ranges for local temporal state, fatigue, and plasticity, but not KDA's dense recurrent matrices, learned projections, backpropagation, or Tensor Core implementation.
+- **Selective access across depth:** Attention Residuals retrieves selected prior-layer representations instead of uniformly compressing every layer into one residual stream. SARA will test a block-bounded sparse analogue that selects a small number of prior event/state summaries by local overlap, resonance, and verified context. Dense attention and softmax over all layers are excluded.
+- **Quantile-calibrated sparse routing:** Kimi K3's Quantile Balancing separates dispatch bias from expert mixture weights, applies the update only to the next step, and estimates large-batch quantiles with fixed-cost histograms. SARA will test whether bounded sparse histograms can calibrate WTA expert thresholds without gradients while preserving fixed Top-k routing and deterministic event budgets.
+- **State-aware immutable checkpointing:** Kimi K3 decouples fine prefix-hash boundaries from coarse physical storage, uses chained hashes, restores read-only checkpoints into private copy-on-write state, and invalidates dependent cache groups atomically. SARA will translate this into canonical sparse-event checkpoints whose reuse requires matching state-schema, source revision, tokenizer/runtime identity, and all required state groups.
+- **Replay instead of snapshot proliferation:** Kimi K3 caches compact projected inputs and replays an accepted speculative prefix instead of snapshotting a large recurrent state at every draft position. SARA will evaluate compact canonical event/input replay for rollback, while retaining exact digest validation against the pre-action state.
+- **Resumable long-horizon agents:** partial rollouts, pause/resume, fork-for-judging, and periodic snapshots are relevant to Phase 25. Any SARA adoption must preserve isolated reversible state, bounded staleness, deterministic tool-call/result pairing, and no external side effects before approval.
+
+The following Kimi K3 mechanisms remain comparison-only and are not SARA runtime candidates: dense KDA/MLA attention, full or block softmax AttnRes, LatentMoE projections, Muon optimization, RL/distillation gradients, quantization-aware backpropagation, GPU kernels, expert-parallel communication, and reported model/benchmark scaling results.
+
 ## Current Baseline
 
 - [Done] v1.1 release gate: `15/15`.
@@ -202,6 +215,12 @@ Every major mechanism must pass this ladder before it can affect production defa
 - The observed-only fixture records a positive structural-feedback selection change under equal four-event budgets without promoting it to an independent action-quality claim.
 - Added a bounded transactional tool-state adapter. Accepted plans may stage only allow-listed, verified, source-backed JSON state edits under edit, event, and state-byte ceilings; tool goal, expected outcome, and rollback action must match the plan.
 - Expected outcomes commit the staged operational state atomically. Unexpected outcomes, late staged-edit failures, malformed values, and budget violations reject or roll back to the exact pre-transaction digest. External side effects remain disabled.
+- Added immutable resumable candidate execution with explicit `pause`, `resume`, `fork_for_judging`, and `snapshot` transitions. Resume requires exact goal, plan, source revision, state digest, remaining event budget, and sandbox checkpoint identity.
+- Judging forks are read-only copy-on-write views and cannot mutate their source trajectory. The observed-only Phase 25 benchmark verifies exact resume, judging-fork isolation, and stale-revision rejection.
+- Added indexed typed pairing for bounded parallel tool calls. Calls require canonical zero-based indexes, unique IDs, declared JSON result types, and fixed event/state ceilings; missing, duplicate, reordered, failed, tool-mismatched, or type-mismatched results block commit.
+- The transactional adapter revalidates the complete paired batch immediately before its existing atomic commit path. The observed-only Phase 25 benchmark verifies exact pairing commit and byte-equivalent state preservation after reordered-result rejection.
+- Added deterministic partial-rollout scheduling with fixed event slices, equal-turn candidate selection, bounded trajectory/state capacity, and a queue-coverable pause-staleness ceiling.
+- Every paused trajectory retains and revalidates its goal, plan, source revision, state digest, remaining event budget, and sandbox checkpoint identity. The observed-only Phase 25 benchmark verifies `A -> B -> A` scheduling, bounded wait ticks, exact budget completion, and stale-source rejection.
 
 ### [Next]
 
@@ -277,6 +296,9 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Keep direct-file acceleration restricted to managed source paths and deterministic document separators. Interactive short-text inference must retain a low-overhead path rather than paying batch setup cost.
 - Add low-memory, ARM64, and optional neuromorphic capability profiles.
 - Measure latency, state bytes, event count, and deterministic replay across targets.
+- Add immutable canonical sparse-event checkpoints at semantic boundaries. Decouple chained-hash lookup granularity from physical checkpoint storage, restore hits into private copy-on-write state, and require all declared state groups to agree on one boundary.
+- Atomically invalidate sibling checkpoints when any required group, source revision, tokenizer/runtime fingerprint, or state schema becomes incompatible. A partial multi-group hit must never be replayable.
+- Compare full-state-per-step rollback with compact canonical-input replay. Compact replay is acceptable only when it reconstructs the accepted state and pre-action digest exactly under rejected, truncated, reordered, and duplicated-event controls.
 - Keep hardware energy claims separate from software portability evidence.
 
 ### Tokenizer Acceleration Minimum Experiment
@@ -398,6 +420,7 @@ g_ij(t) = f(
 - Invalidate or freeze cached interactions after context revision, contradiction, temporal-distribution shift, expiry, or unstable oscillation.
 - Keep fixed sparse synapses as the production control. No dense matrix calculation, backpropagation, GPU dependency, or ANN inference layer is permitted in the candidate runtime.
 - Add deterministic replay and exact cache invalidation traces to the canonical sparse IR portability contract before any cross-runtime claim.
+- Replace unbounded decay parameterizations in the candidate with an explicitly finite scalar range and compare smooth saturation with hard clipping. The bounds must be preregistered and cannot be chosen after observing task scores.
 
 ### Minimum Experiment
 
@@ -480,6 +503,51 @@ The frozen ablation compares four equal-budget arms:
 - Sparse state stays bounded during long-tail pollution and unrelated memories are not globally rewritten by a local repetition.
 - Production integration remains blocked pending independent delayed-recall workloads, interference testing, provenance review, and explicit human approval.
 
+## Phase 32: Sparse Depth Retrieval and Quantile-Calibrated Routing
+
+**Goal:** test whether SARA can improve sparse information flow across processing depth and prevent expert collapse without importing dense Transformer attention or gradient-based MoE training.
+
+### Research Hypothesis
+
+- Partition a processing trace into a small fixed number of depth blocks. Each block emits a bounded sparse summary containing active event IDs, source/verification references, residual error type, and local state digest.
+- At a later block, select at most `k` prior summaries using sparse overlap, resonance, recency, and verified-context compatibility. The selected summaries become read-only candidate inputs; they do not mutate durable knowledge.
+- Maintain an expert-specific dispatch threshold separate from expert output strength. Estimate threshold corrections from bounded histograms of observed sparse routing margins and apply them only to the next routing window.
+- Histogram counts are additive and deterministic, but calibration remains local and CPU-first. No dense token-by-expert score matrix, auxiliary loss, gradient, GPU collective, or dynamic expert replication is allowed.
+
+### [Later]
+
+- Add a block-bounded sparse depth-state store with explicit block, summary-width, selected-summary, event, and serialized-byte ceilings.
+- Add a scalar deterministic routing calibrator over sparse candidate margins. Freeze bin range, bin count, target load, update interval, tie policy, and next-window-only activation before evaluation.
+- Keep the existing fixed WTA plus homeostasis router as the production control. Depth retrieval and quantile calibration begin as independent default-off candidates.
+- Reuse canonical sparse IR digests for each block summary and reject stale source revisions, incompatible schemas, missing state groups, or checkpoint identity mismatches.
+
+### Minimum Experiment
+
+Compare four equal-budget arms:
+
+1. sequential sparse residual accumulation with existing homeostasis;
+2. block summaries without selective retrieval;
+3. selective sparse depth retrieval with existing homeostasis;
+4. selective sparse depth retrieval plus histogram-calibrated routing.
+
+- Include delayed dependency, irrelevant intermediate blocks, contradictory prior state, stale checkpoint, repeated dominant expert, dying expert, sparse candidate omission, histogram overflow, tie, and distribution-shift controls.
+- Report task accuracy or abstention, retained dependency recall, contradictory-state rejection, expert load range/Gini, dead-expert count, route churn, calibration lag, histogram/state bytes, event cost, deterministic replay, and CPU latency.
+- Test block counts and histogram bins selected before execution. A gain obtained only by increasing selected summaries, active experts, state bytes, or event cost is invalid.
+
+### Failure Conditions
+
+- Reject sparse depth retrieval if it does not beat the block-summary control, retrieves unsupported or stale state, or collapses into selecting every prior block.
+- Reject quantile calibration if load improves by changing expert output weights, current-window routes, Top-k count, or available candidate edges rather than the next-window dispatch threshold.
+- Reject it if a sparse candidate that never appears is treated as observed, histogram bounds silently clip material mass, route ordering becomes nondeterministic, or calibration oscillates after distribution shift.
+- Do not transfer Kimi K3's MoE balance, scaling efficiency, throughput, or accuracy claims to SARA.
+
+### Acceptance Gate
+
+- Selective depth retrieval improves a preregistered delayed-dependency metric over sequential and block-only controls while preserving contradiction abstention.
+- Histogram calibration reduces expert-load imbalance and dead-expert incidence over existing homeostasis without degrading held-out task quality beyond the frozen tolerance.
+- State, histogram, selected-summary, active-expert, event, and latency ceilings all pass across at least five fixed replicates.
+- Independent workloads and human review are required before either candidate can alter production routing.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -491,7 +559,8 @@ The frozen ablation compares four equal-budget arms:
 7. [Later] Run the exact-tokenization four-arm conformance and bounded-cache ablation before selecting any accelerated tokenizer path.
 8. [Later] Prototype Phase 30 temporal effective interactions only after preregistering the four-arm equal-budget ablation.
 9. [Done] Implement the observed-only Phase 31 repetition-dependent consolidation contract without connecting it to production recall.
-10. [Later] Reopen physical-energy evidence only by explicit operator decision.
+10. [Later] Preregister the Phase 32 four-arm sparse depth-routing experiment before implementing either candidate.
+11. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
 
@@ -517,6 +586,8 @@ The frozen ablation compares four equal-budget arms:
 - `workspace/evaluation/phase31_repetition_consolidation_benchmark.json`
 - `data/processed/benchmark_fixtures/phase31_repetition_reranking_cases.jsonl`
 - `workspace/evaluation/phase31_repetition_reranking_benchmark.json`
+- `data/processed/benchmark_fixtures/phase32_sparse_depth_routing_cases.jsonl`
+- `workspace/evaluation/phase32_sparse_depth_routing_benchmark.json`
 
 ## Review Rule
 

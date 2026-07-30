@@ -17,6 +17,17 @@ __all__ = [
     "ToolStateEdit",
     "TransactionalToolRequest",
     "TransactionalToolResult",
+    "CandidateExecution",
+    "CandidateExecutionError",
+    "IndexedToolCall",
+    "IndexedToolResult",
+    "IndexedToolResultPairingGate",
+    "ToolPairingValidation",
+    "BoundedPartialRolloutScheduler",
+    "PartialRolloutDispatch",
+    "PartialRolloutError",
+    "PartialRolloutSliceResult",
+    "RolloutResumeContext",
 ]
 
 
@@ -34,4 +45,27 @@ def __getattr__(name: str):
         from . import transactional_tools
 
         return getattr(transactional_tools, name)
+    if name in {"CandidateExecution", "CandidateExecutionError"}:
+        from . import candidate_execution
+
+        return getattr(candidate_execution, name)
+    if name in {
+        "IndexedToolCall",
+        "IndexedToolResult",
+        "IndexedToolResultPairingGate",
+        "ToolPairingValidation",
+    }:
+        from . import tool_result_pairing
+
+        return getattr(tool_result_pairing, name)
+    if name in {
+        "BoundedPartialRolloutScheduler",
+        "PartialRolloutDispatch",
+        "PartialRolloutError",
+        "PartialRolloutSliceResult",
+        "RolloutResumeContext",
+    }:
+        from . import partial_rollout
+
+        return getattr(partial_rollout, name)
     raise AttributeError(name)

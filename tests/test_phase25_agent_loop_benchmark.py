@@ -31,6 +31,14 @@ def test_phase25_agent_loop_benchmark_passes():
     assert report["checks"]["action_selection_trace_complete"] is True
     assert report["checks"]["transactional_tool_commit_verified"] is True
     assert report["checks"]["transactional_tool_rollback_exact"] is True
+    assert report["checks"]["candidate_execution_resumable"] is True
+    assert report["checks"]["judging_fork_read_only"] is True
+    assert report["checks"]["stale_candidate_resume_blocked"] is True
+    assert report["checks"]["typed_tool_pairing_commits_exact_batch"] is True
+    assert report["checks"]["reordered_tool_pairing_blocks_commit"] is True
+    assert report["checks"]["partial_rollout_round_robin"] is True
+    assert report["checks"]["partial_rollout_staleness_bounded"] is True
+    assert report["checks"]["stale_partial_rollout_resume_blocked"] is True
 
 
 def test_phase25_agent_loop_rejects_goal_change():

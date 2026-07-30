@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import json
 import math
 from typing import Any, Dict, Mapping, MutableMapping, Sequence, Tuple
@@ -10,6 +10,11 @@ from typing import Any, Dict, Mapping, MutableMapping, Sequence, Tuple
 from sara_engine.memory.verification_receipt import evidence_digest
 
 from .bounded_agent_loop import AgentPlanDecision
+from .tool_result_pairing import (
+    IndexedToolCall,
+    IndexedToolResult,
+    IndexedToolResultPairingGate,
+)
 
 
 def _json_bytes(value: Mapping[str, Any]) -> bytes:
@@ -196,6 +201,55 @@ class BoundedTransactionalToolAdapter:
                 "side_effects_executed": False,
                 "operational_state_committed": True,
             },
+        )
+
+    def execute_paired(
+        self,
+        state: MutableMapping[str, Any],
+        *,
+        plan: AgentPlanDecision,
+        request: TransactionalToolRequest,
+        observed_outcome: str,
+        calls: Sequence[IndexedToolCall],
+        results: Sequence[IndexedToolResult],
+        pairing_gate: IndexedToolResultPairingGate | None = None,
+    ) -> TransactionalToolResult:
+        """Revalidate a parallel result batch before entering the commit path."""
+
+        gate = pairing_gate or IndexedToolResultPairingGate(
+            max_calls=self.max_edits,
+            max_event_cost=self.max_event_cost,
+            max_state_bytes=self.max_state_bytes,
+        )
+        pairing = gate.validate(calls, results)
+        if not pairing.commit_allowed:
+            before = dict(state)
+            before_digest = evidence_digest(before)
+            return self._result(
+                request=request,
+                executed=False,
+                committed=False,
+                rolled_back=False,
+                decision="reject_tool_result_pairing",
+                before_digest=before_digest,
+                after_digest=before_digest,
+                restored_digest=before_digest,
+                state_bytes=len(_json_bytes(before)) if _json_value(before) else 0,
+                trace={
+                    "errors": list(pairing.errors),
+                    "pairing": pairing.to_dict(),
+                    "side_effects_executed": False,
+                },
+            )
+        result = self.execute(
+            state,
+            plan=plan,
+            request=request,
+            observed_outcome=observed_outcome,
+        )
+        return replace(
+            result,
+            trace={**result.trace, "pairing": pairing.to_dict()},
         )
 
     def _validate(

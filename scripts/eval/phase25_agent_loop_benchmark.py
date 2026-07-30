@@ -15,6 +15,19 @@ if SRC_PATH not in sys.path:
     sys.path.insert(0, SRC_PATH)
 
 from sara_engine.agent.bounded_agent_loop import BoundedAgentLoop  # noqa: E402
+from sara_engine.agent.candidate_execution import (  # noqa: E402
+    CandidateExecution,
+    CandidateExecutionError,
+)
+from sara_engine.agent.tool_result_pairing import (  # noqa: E402
+    IndexedToolCall,
+    IndexedToolResult,
+)
+from sara_engine.agent.partial_rollout import (  # noqa: E402
+    BoundedPartialRolloutScheduler,
+    PartialRolloutError,
+    RolloutResumeContext,
+)
 from sara_engine.agent.transactional_tools import (  # noqa: E402
     BoundedTransactionalToolAdapter,
     ToolStateEdit,
@@ -79,6 +92,9 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             ).to_dict()
         tool_commit = None
         tool_rollback = None
+        candidate_execution = None
+        tool_pairing = None
+        partial_rollout = None
         if str(row["case_id"]) == "safe_plan":
             adapter = BoundedTransactionalToolAdapter(
                 allowed_tools=("bounded_state_edit",),
@@ -123,6 +139,198 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
                 "result": rolled_back.to_dict(),
                 "state": rollback_state,
             }
+            paired_calls = (
+                IndexedToolCall(
+                    index=0,
+                    call_id="phase25-inspect-lock",
+                    tool_name="inspect_lock",
+                    arguments={"door": "front"},
+                    expected_result_type="object",
+                ),
+                IndexedToolCall(
+                    index=1,
+                    call_id="phase25-inspect-key",
+                    tool_name="inspect_key",
+                    arguments={"key": "brass"},
+                    expected_result_type="bool",
+                ),
+            )
+            paired_results = (
+                IndexedToolResult(
+                    index=0,
+                    call_id="phase25-inspect-lock",
+                    tool_name="inspect_lock",
+                    value={"state": "closed"},
+                ),
+                IndexedToolResult(
+                    index=1,
+                    call_id="phase25-inspect-key",
+                    tool_name="inspect_key",
+                    value=True,
+                ),
+            )
+            paired_commit_state = dict(rollback_state)
+            paired_reject_state = dict(rollback_state)
+            paired_commit = adapter.execute_paired(
+                paired_commit_state,
+                plan=decision,
+                request=request,
+                observed_outcome="door_open",
+                calls=paired_calls,
+                results=paired_results,
+            )
+            paired_reject = adapter.execute_paired(
+                paired_reject_state,
+                plan=decision,
+                request=request,
+                observed_outcome="door_open",
+                calls=paired_calls,
+                results=tuple(reversed(paired_results)),
+            )
+            tool_pairing = {
+                "valid": {
+                    "result": paired_commit.to_dict(),
+                    "state": paired_commit_state,
+                },
+                "reordered": {
+                    "result": paired_reject.to_dict(),
+                    "state": paired_reject_state,
+                },
+            }
+            active_execution = CandidateExecution.create(
+                execution_id="phase25-safe-plan-candidate",
+                goal=decision.goal,
+                plan={
+                    "structural_prediction": decision.structural_prediction,
+                    "expected_outcome": decision.expected_outcome,
+                    "rollback_action": decision.rollback_action,
+                },
+                source_revision="fixture:safe-plan-r1",
+                state=rollback_state,
+                event_budget=8,
+                sandbox_checkpoint_identity="phase25-sandbox-checkpoint-1",
+                max_state_bytes=1024,
+            )
+            paused_execution = active_execution.pause()
+            judging_fork = paused_execution.fork_for_judging(
+                execution_id="phase25-safe-plan-judge"
+            )
+            resumed_execution = paused_execution.resume(
+                goal=paused_execution.goal,
+                plan=paused_execution.plan,
+                source_revision=paused_execution.source_revision,
+                state_digest=paused_execution.state_digest,
+                event_budget_remaining=paused_execution.event_budget_remaining,
+                sandbox_checkpoint_identity=(
+                    paused_execution.sandbox_checkpoint_identity
+                ),
+            )
+            stale_resume_blocked = False
+            try:
+                paused_execution.resume(
+                    goal=paused_execution.goal,
+                    plan=paused_execution.plan,
+                    source_revision="fixture:safe-plan-r2",
+                    state_digest=paused_execution.state_digest,
+                    event_budget_remaining=paused_execution.event_budget_remaining,
+                    sandbox_checkpoint_identity=(
+                        paused_execution.sandbox_checkpoint_identity
+                    ),
+                )
+            except CandidateExecutionError:
+                stale_resume_blocked = True
+            candidate_execution = {
+                "active": active_execution.snapshot(),
+                "paused": paused_execution.snapshot(),
+                "judging_fork": judging_fork.snapshot(),
+                "resumed": resumed_execution.snapshot(),
+                "stale_resume_blocked": stale_resume_blocked,
+            }
+            rollout_scheduler = BoundedPartialRolloutScheduler(
+                max_trajectories=2,
+                max_slice_events=1,
+                max_staleness_ticks=2,
+                max_total_state_bytes=2048,
+            )
+            for suffix in ("a", "b"):
+                rollout_scheduler.register(
+                    CandidateExecution.create(
+                        execution_id=f"phase25-rollout-{suffix}",
+                        goal=decision.goal,
+                        plan={
+                            "structural_prediction": (
+                                decision.structural_prediction
+                            ),
+                            "expected_outcome": decision.expected_outcome,
+                        },
+                        source_revision="fixture:safe-plan-r1",
+                        state={"partial_observations": 0},
+                        event_budget=2,
+                        sandbox_checkpoint_identity=(
+                            f"phase25-rollout-checkpoint-{suffix}"
+                        ),
+                        max_state_bytes=512,
+                    )
+                )
+            rollout_records = []
+            for observation_count in (1, 1):
+                dispatch = rollout_scheduler.dispatch_next({})
+                slice_result = rollout_scheduler.complete_slice(
+                    dispatch_token=dispatch.dispatch_token,
+                    state={"partial_observations": observation_count},
+                    event_cost=1,
+                )
+                rollout_records.append(
+                    {
+                        "dispatch": dispatch.to_dict(),
+                        "result": slice_result.to_dict(),
+                    }
+                )
+            rollout_a = rollout_scheduler.execution("phase25-rollout-a")
+            dispatch = rollout_scheduler.dispatch_next(
+                {
+                    "phase25-rollout-a": (
+                        RolloutResumeContext.from_execution(rollout_a)
+                    )
+                }
+            )
+            slice_result = rollout_scheduler.complete_slice(
+                dispatch_token=dispatch.dispatch_token,
+                state={"partial_observations": 2},
+                event_cost=1,
+            )
+            rollout_records.append(
+                {
+                    "dispatch": dispatch.to_dict(),
+                    "result": slice_result.to_dict(),
+                }
+            )
+            rollout_b = rollout_scheduler.execution("phase25-rollout-b")
+            stale_rollout_blocked = False
+            try:
+                rollout_scheduler.dispatch_next(
+                    {
+                        "phase25-rollout-b": RolloutResumeContext(
+                            goal=rollout_b.goal,
+                            plan=rollout_b.plan,
+                            source_revision="fixture:safe-plan-r2",
+                            state_digest=rollout_b.state_digest,
+                            event_budget_remaining=(
+                                rollout_b.event_budget_remaining
+                            ),
+                            sandbox_checkpoint_identity=(
+                                rollout_b.sandbox_checkpoint_identity
+                            ),
+                        )
+                    }
+                )
+            except PartialRolloutError:
+                stale_rollout_blocked = True
+            partial_rollout = {
+                "records": rollout_records,
+                "stale_resume_blocked": stale_rollout_blocked,
+                "scheduler": rollout_scheduler.snapshot(),
+            }
         cases[str(row["case_id"])] = {
             "decision": decision.to_dict(),
             "outcome": outcome,
@@ -130,6 +338,9 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "action_selection": action_selection,
             "tool_commit": tool_commit,
             "tool_rollback": tool_rollback,
+            "candidate_execution": candidate_execution,
+            "tool_pairing": tool_pairing,
+            "partial_rollout": partial_rollout,
         }
     safe_selection = cases["safe_plan"]["action_selection"]
     safe_selection_fixture = next(
@@ -197,6 +408,75 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             and cases["safe_plan"]["tool_rollback"]["state"]
             == {"door_state": "closed", "last_action": "none"}
         ),
+        "candidate_execution_resumable": (
+            cases["safe_plan"]["candidate_execution"]["paused"]["status"] == "paused"
+            and cases["safe_plan"]["candidate_execution"]["resumed"]["status"]
+            == "active"
+            and cases["safe_plan"]["candidate_execution"]["paused"]["state_digest"]
+            == cases["safe_plan"]["candidate_execution"]["resumed"]["state_digest"]
+        ),
+        "judging_fork_read_only": (
+            cases["safe_plan"]["candidate_execution"]["judging_fork"]["read_only"]
+            is True
+            and cases["safe_plan"]["candidate_execution"]["judging_fork"][
+                "parent_execution_id"
+            ]
+            == cases["safe_plan"]["candidate_execution"]["paused"]["execution_id"]
+        ),
+        "stale_candidate_resume_blocked": cases["safe_plan"][
+            "candidate_execution"
+        ]["stale_resume_blocked"],
+        "typed_tool_pairing_commits_exact_batch": (
+            cases["safe_plan"]["tool_pairing"]["valid"]["result"]["committed"]
+            is True
+            and cases["safe_plan"]["tool_pairing"]["valid"]["result"]["trace"][
+                "pairing"
+            ]["commit_allowed"]
+            is True
+            and cases["safe_plan"]["tool_pairing"]["valid"]["state"]["door_state"]
+            == "open"
+        ),
+        "reordered_tool_pairing_blocks_commit": (
+            cases["safe_plan"]["tool_pairing"]["reordered"]["result"]["executed"]
+            is False
+            and cases["safe_plan"]["tool_pairing"]["reordered"]["result"][
+                "decision"
+            ]
+            == "reject_tool_result_pairing"
+            and "reordered_tool_results"
+            in cases["safe_plan"]["tool_pairing"]["reordered"]["result"]["trace"][
+                "errors"
+            ]
+            and cases["safe_plan"]["tool_pairing"]["reordered"]["state"]
+            == {"door_state": "closed", "last_action": "none"}
+        ),
+        "partial_rollout_round_robin": (
+            [
+                item["dispatch"]["execution"]["execution_id"]
+                for item in cases["safe_plan"]["partial_rollout"]["records"]
+            ]
+            == [
+                "phase25-rollout-a",
+                "phase25-rollout-b",
+                "phase25-rollout-a",
+            ]
+        ),
+        "partial_rollout_staleness_bounded": (
+            max(
+                item["result"]["staleness_ticks"]
+                for item in cases["safe_plan"]["partial_rollout"]["records"]
+            )
+            <= cases["safe_plan"]["partial_rollout"]["scheduler"][
+                "max_staleness_ticks"
+            ]
+            and cases["safe_plan"]["partial_rollout"]["records"][-1]["result"][
+                "status"
+            ]
+            == "completed"
+        ),
+        "stale_partial_rollout_resume_blocked": cases["safe_plan"][
+            "partial_rollout"
+        ]["stale_resume_blocked"],
         "durable_mutation_blocked": all(
             not item["decision"]["durable_mutation_allowed"] and not item["outcome"]["durable_mutation_allowed"]
             for item in cases.values()
@@ -219,6 +499,20 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "transactional_tool_boundary": float(
                 checks["transactional_tool_commit_verified"]
                 and checks["transactional_tool_rollback_exact"]
+            ),
+            "resumable_candidate_boundary": float(
+                checks["candidate_execution_resumable"]
+                and checks["judging_fork_read_only"]
+                and checks["stale_candidate_resume_blocked"]
+            ),
+            "indexed_typed_tool_pairing": float(
+                checks["typed_tool_pairing_commits_exact_batch"]
+                and checks["reordered_tool_pairing_blocks_commit"]
+            ),
+            "bounded_partial_rollout": float(
+                checks["partial_rollout_round_robin"]
+                and checks["partial_rollout_staleness_bounded"]
+                and checks["stale_partial_rollout_resume_blocked"]
             ),
         },
         "checks": checks,
