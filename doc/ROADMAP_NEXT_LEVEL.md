@@ -62,8 +62,11 @@ The multi-synapse discussion is adopted as a research question, not as a claim t
 - A recent computational study found that contact-specific nonlinear transmission across parallel synapses can increase classification capacity in its tested models ([PLOS Computational Biology, 2025](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1012285)).
 - Nearby inputs on one thin dendritic branch can integrate differently from separated inputs, supporting branch-local computational subunits rather than one global sum ([Nature Neuroscience, 2004](https://www.nature.com/articles/nn1253)).
 - Timing-dependent cooperation and distance-dependent competition can organize synaptic clusters in a biophysical model ([Nature Communications, 2021](https://www.nature.com/articles/s41467-021-23557-3)), but another controlled modeling study found that small random clusters need not materially change somatic responses ([Nature Communications, 2020](https://www.nature.com/articles/s41467-020-15147-6)).
+- The TwinProp preprint reports that a detailed pyramidal-cell simulation lost substantial 4-bit parity accuracy when voltage-dependent dendritic mechanisms, morphology, or NMDA-mediated integration were ablated. It also reports broader recruitment of dendritic compartments as task dimensionality increased ([bioRxiv preprint, 2026](https://www.biorxiv.org/content/10.64898/2026.06.08.730984v1.full)). This is useful as a capacity-probe and causal-ablation reference, but it is not peer-reviewed evidence for a biologically plausible learning rule.
 
 SARA therefore adopts only the testable principle that one sparse outer relation may contain a bounded set of typed contacts and branch-local interactions. It does not assume that more contacts, biological realism, or moving computation inside edges will improve accuracy, reduce total complexity, or save physical energy. Existing `Synapse`, `DendriticTree`, dendritic-feedback, and structural-plasticity code are implementation references and controls, not evidence that this hypothesis has passed.
+
+TwinProp's training path remains comparison-only: it fits a DNN digital twin, differentiates through that twin, optimizes synaptic strengths and locations with Adam and repeated restarts on GPUs, and validates the result in a detailed NEURON simulation. SARA will not adopt that optimizer, the dense twin, detailed ion-channel simulation, PCA as a runtime mechanism, thousands of contacts per case, or the reported DNN-decoder upper bounds. The transferable question is narrower: whether deterministic bounded branch-local coincidence and a slow local interaction state add value over equal-budget linear contacts when all arms use the same minimal spike-count/threshold readout.
 
 ## Current Baseline
 
@@ -595,6 +598,9 @@ outer relation A -> B
 - Reuse Phase 30 temporal state for delay/phase controls, Phase 31 consolidation for repetition controls, and the existing structural-plasticity controller for outer-route controls rather than duplicating their claims.
 - Add separate contact and outer-route budgets. Contact growth must require observed local reuse plus verified prediction-gain support; contradiction, inactivity, resource pressure, or unstable oscillation must prune or freeze locally.
 - Keep the existing single-contact sparse route as the production default. Structured edges remain default-off until both the mechanism ablation and the outer-graph simplification test pass.
+- Preserve the immutable `phase33-structured-edge-observed-v1` protocol. Register TwinProp-derived controls only as a new follow-up experiment identity after the existing five-arm run; do not alter its frozen fixture, thresholds, seeds, or fingerprint.
+- Add a TwinProp-inspired follow-up with intact bounded branches, passive/linear branches, topology-collapsed aggregation, no slow coincidence state, and point-neuron controls. Use identical input events, contact/state budgets, fixed readout, replicate seeds, and tuning allowance in every arm.
+- Compare deterministic contact placement with a preregistered location-shuffle control, and sweep task interaction order. Measure branch participation, branch-event overlap, local-state saturation, event cost, and serialized bytes using sparse scalar counters; do not import dense voltage PCA into the runtime.
 
 ### Minimum Experiment
 
@@ -617,6 +623,13 @@ Use tasks where one scalar edge is deliberately ambiguous: same pre/post pair wi
 
 Report held-out accuracy/F1, calibration and abstention, timing/order sensitivity, contradiction recovery, contact-failure tolerance, outer nodes/routes/depth, contacts per pair, branch slots, active internal interactions, total state bytes, event cost, latency, add/prune churn, deterministic replay, and an iso-quality total-complexity frontier.
 
+**TwinProp-inspired follow-up after the immutable Phase 33 experiment:**
+
+- Freeze a new experiment identity rather than extending `phase33-structured-edge-observed-v1`.
+- Use the same minimal SARA readout in all arms. A deep decoder may be reported only as an offline reference and cannot supply state, features, tuning feedback, or acceptance evidence.
+- Test whether the intact bounded-branch arm increasingly recruits distinct branch slots as interaction order rises, while remaining within fixed contact, local-state, event, byte, and latency ceilings.
+- Treat a gain that depends on gradient-selected contact locations, extra restarts, unequal tuning, a dense analysis path, or larger hidden input expansion as a failed transfer.
+
 ### Failure Conditions
 
 - Reject structured edges if branch interaction does not beat typed independent contacts, or if multiple linear contacts perform equally; the extra microstructure is then unnecessary.
@@ -624,6 +637,7 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - Reject any accounting result that relabels intermediate outer nodes as hidden edge contacts without reducing the preregistered total-complexity measure.
 - Reject the candidate if contacts become dense or unbounded, duplicate contacts collapse into an implicit larger scalar weight, source/role provenance cannot be isolated per contact, or local contact plasticity creates durable semantic structure directly.
 - Reject nondeterministic branch assignment, unstable contact churn, failure to recover after contradiction, or dependence on dictionary order, wall-clock timing, gradients, matrices, or GPU execution.
+- Reject the TwinProp-inspired transfer if passive, topology-collapsed, no-slow-state, and intact arms cannot be separated under the same fixed readout, or if shuffled placement performs equivalently to the claimed structured placement.
 - Do not infer human-like dendritic computation, general parameter efficiency, ANN parity, or physical-energy savings from synthetic fixtures.
 
 ### Acceptance Gate
@@ -647,7 +661,8 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 10. [Later] Preregister the Phase 32 four-arm sparse depth-routing experiment before implementing either candidate.
 11. [Done] Implement the immutable Phase 33 structured-edge preregistration contract and managed CLI.
 12. [Done] Freeze the Phase 33 observed-only fixture and CPU environment fingerprints, then register the immutable protocol before candidate execution.
-13. [Later] Reopen physical-energy evidence only by explicit operator decision.
+13. [Later] Run the immutable Phase 33 experiment before registering the TwinProp-inspired follow-up as a separate protocol.
+14. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
 
@@ -681,6 +696,9 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - `workspace/evaluation/phase33_structured_edge_preregistration.json`
 - `workspace/evaluation/phase33_structured_edge_benchmark.json`
 - `workspace/evaluation/phase33_edge_simplification_ablation.json`
+- `data/processed/benchmark_fixtures/phase33_twinprop_ablation_cases.jsonl`
+- `workspace/evaluation/phase33_twinprop_ablation_preregistration.json`
+- `workspace/evaluation/phase33_twinprop_ablation_benchmark.json`
 
 ## Review Rule
 
