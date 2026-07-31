@@ -28,6 +28,9 @@ from sara_engine.agent.partial_rollout import (  # noqa: E402
     PartialRolloutError,
     RolloutResumeContext,
 )
+from sara_engine.agent.reversible_tool_sandbox import (  # noqa: E402
+    IsolatedReversibleToolSandbox,
+)
 from sara_engine.agent.transactional_tools import (  # noqa: E402
     BoundedTransactionalToolAdapter,
     ToolStateEdit,
@@ -95,6 +98,7 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
         candidate_execution = None
         tool_pairing = None
         partial_rollout = None
+        reversible_sandbox = None
         if str(row["case_id"]) == "safe_plan":
             adapter = BoundedTransactionalToolAdapter(
                 allowed_tools=("bounded_state_edit",),
@@ -138,6 +142,36 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             tool_rollback = {
                 "result": rolled_back.to_dict(),
                 "state": rollback_state,
+            }
+            caller_state = {
+                "door_state": "closed",
+                "last_action": "none",
+            }
+            sandbox = IsolatedReversibleToolSandbox(
+                caller_state,
+                sandbox_id="phase25-safe-plan-sandbox",
+                allowed_tools=("bounded_state_edit",),
+                max_operations=4,
+                max_edits=4,
+                max_event_cost=8,
+                max_state_bytes=1024,
+            )
+            sandbox_checkpoint = sandbox.checkpoint()
+            sandbox_execution = sandbox.execute(
+                plan=decision,
+                request=request,
+                observed_outcome="door_open",
+            )
+            sandbox_committed_state = sandbox.state
+            sandbox_rollback = sandbox.rollback(sandbox_checkpoint)
+            reversible_sandbox = {
+                "caller_state": caller_state,
+                "initial_checkpoint": sandbox_checkpoint.to_dict(),
+                "execution": sandbox_execution.to_dict(),
+                "committed_state": sandbox_committed_state,
+                "rollback": sandbox_rollback.to_dict(),
+                "restored_state": sandbox.state,
+                "snapshot": sandbox.snapshot(),
             }
             paired_calls = (
                 IndexedToolCall(
@@ -341,6 +375,7 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "candidate_execution": candidate_execution,
             "tool_pairing": tool_pairing,
             "partial_rollout": partial_rollout,
+            "reversible_sandbox": reversible_sandbox,
         }
     safe_selection = cases["safe_plan"]["action_selection"]
     safe_selection_fixture = next(
@@ -477,6 +512,36 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
         "stale_partial_rollout_resume_blocked": cases["safe_plan"][
             "partial_rollout"
         ]["stale_resume_blocked"],
+        "reversible_sandbox_commit_isolated": (
+            cases["safe_plan"]["reversible_sandbox"]["execution"]["tool_result"][
+                "committed"
+            ]
+            is True
+            and cases["safe_plan"]["reversible_sandbox"]["execution"][
+                "external_side_effects_executed"
+            ]
+            is False
+            and cases["safe_plan"]["reversible_sandbox"]["committed_state"][
+                "door_state"
+            ]
+            == "open"
+            and cases["safe_plan"]["reversible_sandbox"]["caller_state"]
+            == {"door_state": "closed", "last_action": "none"}
+        ),
+        "reversible_sandbox_rollback_exact": (
+            cases["safe_plan"]["reversible_sandbox"]["rollback"][
+                "byte_equivalent_restoration"
+            ]
+            is True
+            and cases["safe_plan"]["reversible_sandbox"]["rollback"][
+                "restored_digest"
+            ]
+            == cases["safe_plan"]["reversible_sandbox"]["initial_checkpoint"][
+                "state_digest"
+            ]
+            and cases["safe_plan"]["reversible_sandbox"]["restored_state"]
+            == cases["safe_plan"]["reversible_sandbox"]["caller_state"]
+        ),
         "durable_mutation_blocked": all(
             not item["decision"]["durable_mutation_allowed"] and not item["outcome"]["durable_mutation_allowed"]
             for item in cases.values()
@@ -513,6 +578,10 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
                 checks["partial_rollout_round_robin"]
                 and checks["partial_rollout_staleness_bounded"]
                 and checks["stale_partial_rollout_resume_blocked"]
+            ),
+            "isolated_reversible_sandbox": float(
+                checks["reversible_sandbox_commit_isolated"]
+                and checks["reversible_sandbox_rollback_exact"]
             ),
         },
         "checks": checks,

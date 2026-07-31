@@ -54,6 +54,17 @@ The user-provided *Kimi K3: Open Frontier Intelligence Technical Report* was rev
 
 The following Kimi K3 mechanisms remain comparison-only and are not SARA runtime candidates: dense KDA/MLA attention, full or block softmax AttnRes, LatentMoE projections, Muon optimization, RL/distillation gradients, quantization-aware backpropagation, GPU kernels, expert-parallel communication, and reported model/benchmark scaling results.
 
+## Adopted Multi-Contact and Dendritic Design References
+
+The multi-synapse discussion is adopted as a research question, not as a claim that biological detail automatically improves SARA. Primary studies support four relevant premises:
+
+- Reconstructed rat neocortical neuron pairs showed multiple anatomical contacts and a correlation between putative contact count and functional release sites ([Journal of Neuroscience, 2010](https://pubmed.ncbi.nlm.nih.gov/20107071/)).
+- A recent computational study found that contact-specific nonlinear transmission across parallel synapses can increase classification capacity in its tested models ([PLOS Computational Biology, 2025](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1012285)).
+- Nearby inputs on one thin dendritic branch can integrate differently from separated inputs, supporting branch-local computational subunits rather than one global sum ([Nature Neuroscience, 2004](https://www.nature.com/articles/nn1253)).
+- Timing-dependent cooperation and distance-dependent competition can organize synaptic clusters in a biophysical model ([Nature Communications, 2021](https://www.nature.com/articles/s41467-021-23557-3)), but another controlled modeling study found that small random clusters need not materially change somatic responses ([Nature Communications, 2020](https://www.nature.com/articles/s41467-020-15147-6)).
+
+SARA therefore adopts only the testable principle that one sparse outer relation may contain a bounded set of typed contacts and branch-local interactions. It does not assume that more contacts, biological realism, or moving computation inside edges will improve accuracy, reduce total complexity, or save physical energy. Existing `Synapse`, `DendriticTree`, dendritic-feedback, and structural-plasticity code are implementation references and controls, not evidence that this hypothesis has passed.
+
 ## Current Baseline
 
 - [Done] v1.1 release gate: `15/15`.
@@ -221,10 +232,12 @@ Every major mechanism must pass this ladder before it can affect production defa
 - The transactional adapter revalidates the complete paired batch immediately before its existing atomic commit path. The observed-only Phase 25 benchmark verifies exact pairing commit and byte-equivalent state preservation after reordered-result rejection.
 - Added deterministic partial-rollout scheduling with fixed event slices, equal-turn candidate selection, bounded trajectory/state capacity, and a queue-coverable pause-staleness ceiling.
 - Every paused trajectory retains and revalidates its goal, plan, source revision, state digest, remaining event budget, and sandbox checkpoint identity. The observed-only Phase 25 benchmark verifies `A -> B -> A` scheduling, bounded wait ticks, exact budget completion, and stale-source rejection.
+- Added an isolated reversible tool sandbox that owns a canonical private JSON state rather than a caller mapping. Verified tool commits advance only the sandbox revision; external side effects and durable mutation remain disabled.
+- Sandbox checkpoints bind sandbox ID, revision, and state digest. Restore rejects foreign, future, or tampered checkpoints and the observed-only Phase 25 benchmark verifies private commit, caller-state isolation, and byte-equivalent rollback.
 
 ### [Next]
 
-- Repeat the transactional boundary with an isolated reversible tool sandbox and independently recorded action/outcome traces before enabling any external side effect.
+- Repeat the isolated reversible sandbox boundary with independently recorded action/outcome traces before enabling any external side effect.
 
 ### Acceptance Gate
 
@@ -548,6 +561,78 @@ Compare four equal-budget arms:
 - State, histogram, selected-summary, active-expert, event, and latency ceilings all pass across at least five fixed replicates.
 - Independent workloads and human review are required before either candidate can alter production routing.
 
+## Phase 33: Structured Edge Microcircuits
+
+**Goal:** test whether a bounded microstructure inside each active sparse relation can represent timing, polarity, context, and local cooperation more efficiently than adding outer nodes, layers, and routes.
+
+### Research Hypothesis
+
+- Replace the assumption that one active pair has exactly one scalar connection with a bounded contact bundle:
+
+```text
+outer relation A -> B
+  contact 0: excitatory, branch 1, delay bucket 0, fast plasticity
+  contact 1: inhibitory, branch 1, delay bucket 2, fatigue state
+  contact 2: excitatory, branch 3, verified role/context, slow plasticity
+```
+
+- Each contact remains a local scalar-state event processor. A fixed small number of contacts may share a branch compartment, where coincidence, order, inhibition, and fatigue are combined before one bounded signal reaches the postsynaptic node.
+- Contact-to-contact influence is an explicit sparse micrograph with hard contact, branch, internal-interaction, event, and byte ceilings. No dense vector-valued edge, per-edge MLP, HyperNetwork, backpropagation, matrix multiplication, GPU dependency, or recursively nested unbounded graph is permitted.
+- Separate three kinds of change: contact-state plasticity, contact add/prune within an existing outer relation, and outer-graph rewiring. A local contact may not create a new durable outer relation or semantic role without the existing provenance, contradiction, and Event Memory/RISA admission boundaries.
+- The central claim is an efficiency hypothesis, not a biological claim: richer bounded edges may allow fewer outer nodes/routes at the same held-out quality. Total contacts and internal interactions count as graph complexity and may not be hidden by reporting only the smaller outer graph.
+
+### [Done]
+
+- Added an immutable Phase 33 preregistration contract that freezes all five mechanism arms, three outer-graph simplification levels, 17 positive/negative case families, five unique replicate seeds, total-resource accounting, thresholds, and CPU-only/default-off execution policy.
+- Added canonical protocol fingerprinting, managed-workspace enforcement, idempotent identical registration, immutable conflict rejection, and the `register-phase33-structured-edge-preregistration` CLI. This registers protocols only; it does not execute the candidate runtime.
+- Added the frozen 17-case observed-only Phase 33 fixture and managed draft builder. The registered fixture fingerprint is `b8ef6e09c3da69aaa3e0dc626f8f4b630ad4b0a53acf62ad255647b9e8e0c230`; the current CPU/Python environment fingerprint is `20f6d07671c8afb52b54ecf1d617fc46ebdafb37965d4e00981c59e7481bc193`.
+- Registered immutable experiment `phase33-structured-edge-observed-v1` with protocol fingerprint `63168395ac7f5235d4173072fb52823712b89895e16610856ced77adf70d64ff`. A repeated registration preserves the identical manifest. This synthetic fixture registration is a protocol milestone, not accuracy, simplification, biological, independent-data, or energy evidence.
+
+### [Later]
+
+- Preregister the state schema for contact identity, polarity, branch slot, delay bucket, short-term state, plasticity class, typed role/context, source revision, expiry, and contradiction state.
+- Build a deterministic bounded contact-bundle runtime. Replace random branch assignment in the legacy dendritic prototype with a frozen tie rule and canonical replay order.
+- Reuse Phase 30 temporal state for delay/phase controls, Phase 31 consolidation for repetition controls, and the existing structural-plasticity controller for outer-route controls rather than duplicating their claims.
+- Add separate contact and outer-route budgets. Contact growth must require observed local reuse plus verified prediction-gain support; contradiction, inactivity, resource pressure, or unstable oscillation must prune or freeze locally.
+- Keep the existing single-contact sparse route as the production default. Structured edges remain default-off until both the mechanism ablation and the outer-graph simplification test pass.
+
+### Minimum Experiment
+
+Run two preregistered experiment families.
+
+**Mechanism ablation under one equal total-resource envelope:**
+
+1. one scalar contact per outer relation;
+2. multiple contacts with linear summation;
+3. typed contacts with independent delay, polarity, and short-term state but no contact interaction;
+4. typed contacts grouped into bounded branch compartments with local interaction;
+5. branch compartments plus bounded contact add/prune.
+
+**Outer-graph simplification sweep:**
+
+- Compare the best structured-edge candidate with the scalar control while reducing outer nodes, routes, and processing depth in fixed steps.
+- Match total source events, contact plus route state bytes, executed local interactions, latency ceiling, and replicate seeds. A smaller outer graph is not simpler if hidden contact/internal-interaction cost increases beyond the frozen total budget.
+
+Use tasks where one scalar edge is deliberately ambiguous: same pre/post pair with different delay-dependent meanings, excitatory/inhibitory context switching, same spike count with different order, branch-local coincidence, partial contact failure, repeated support, delayed contradiction, and outer-route deletion. Include shuffled contact identity, shuffled branch placement, duplicated contacts, missing contacts, stale source revision, all-linear, all-same-delay, no-reuse, and random-cluster controls.
+
+Report held-out accuracy/F1, calibration and abstention, timing/order sensitivity, contradiction recovery, contact-failure tolerance, outer nodes/routes/depth, contacts per pair, branch slots, active internal interactions, total state bytes, event cost, latency, add/prune churn, deterministic replay, and an iso-quality total-complexity frontier.
+
+### Failure Conditions
+
+- Reject structured edges if branch interaction does not beat typed independent contacts, or if multiple linear contacts perform equally; the extra microstructure is then unnecessary.
+- Reject the simplification claim if quality is preserved only by increasing total contacts, internal interactions, state bytes, events, latency, data, or tuning trials.
+- Reject any accounting result that relabels intermediate outer nodes as hidden edge contacts without reducing the preregistered total-complexity measure.
+- Reject the candidate if contacts become dense or unbounded, duplicate contacts collapse into an implicit larger scalar weight, source/role provenance cannot be isolated per contact, or local contact plasticity creates durable semantic structure directly.
+- Reject nondeterministic branch assignment, unstable contact churn, failure to recover after contradiction, or dependence on dictionary order, wall-clock timing, gradients, matrices, or GPU execution.
+- Do not infer human-like dendritic computation, general parameter efficiency, ANN parity, or physical-energy savings from synthetic fixtures.
+
+### Acceptance Gate
+
+- Branch-local structured contacts improve the preregistered ambiguous-relation metric over scalar, linear-multi-contact, and typed-independent-contact controls under the same total resource envelope and at least five fixed replicates.
+- At least one preregistered outer-graph reduction point preserves held-out quality and abstention within tolerance while reducing the total, fully counted complexity measure rather than only outer node count.
+- Missing, duplicated, reordered, stale, contradictory, and capacity-exceeded contacts fail safely; replay and add/prune decisions are deterministic.
+- Gains transfer to independent temporal and structural workloads. Human review is required before changing outer topology or production routing defaults.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -560,7 +645,9 @@ Compare four equal-budget arms:
 8. [Later] Prototype Phase 30 temporal effective interactions only after preregistering the four-arm equal-budget ablation.
 9. [Done] Implement the observed-only Phase 31 repetition-dependent consolidation contract without connecting it to production recall.
 10. [Later] Preregister the Phase 32 four-arm sparse depth-routing experiment before implementing either candidate.
-11. [Later] Reopen physical-energy evidence only by explicit operator decision.
+11. [Done] Implement the immutable Phase 33 structured-edge preregistration contract and managed CLI.
+12. [Done] Freeze the Phase 33 observed-only fixture and CPU environment fingerprints, then register the immutable protocol before candidate execution.
+13. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
 
@@ -588,6 +675,12 @@ Compare four equal-budget arms:
 - `workspace/evaluation/phase31_repetition_reranking_benchmark.json`
 - `data/processed/benchmark_fixtures/phase32_sparse_depth_routing_cases.jsonl`
 - `workspace/evaluation/phase32_sparse_depth_routing_benchmark.json`
+- `data/processed/benchmark_fixtures/phase33_structured_edge_cases.jsonl`
+- `workspace/evaluation/phase33_structured_edge_environment.json`
+- `workspace/evaluation/phase33_structured_edge_preregistration_draft.json`
+- `workspace/evaluation/phase33_structured_edge_preregistration.json`
+- `workspace/evaluation/phase33_structured_edge_benchmark.json`
+- `workspace/evaluation/phase33_edge_simplification_ablation.json`
 
 ## Review Rule
 

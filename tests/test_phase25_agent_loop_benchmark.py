@@ -39,6 +39,8 @@ def test_phase25_agent_loop_benchmark_passes():
     assert report["checks"]["partial_rollout_round_robin"] is True
     assert report["checks"]["partial_rollout_staleness_bounded"] is True
     assert report["checks"]["stale_partial_rollout_resume_blocked"] is True
+    assert report["checks"]["reversible_sandbox_commit_isolated"] is True
+    assert report["checks"]["reversible_sandbox_rollback_exact"] is True
 
 
 def test_phase25_agent_loop_rejects_goal_change():

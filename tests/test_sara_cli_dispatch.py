@@ -1210,6 +1210,78 @@ def test_dendritic_feedback_gate_dispatches_to_eval_script(monkeypatch):
     assert "workspace/evaluation/test_dendritic_gate.txt" in args
 
 
+def test_phase33_preregistration_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "register-phase33-structured-edge-preregistration",
+            "--draft-path",
+            "workspace/evaluation/phase33_draft.json",
+            "--output-path",
+            "workspace/evaluation/phase33_registered.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase33_structured_edge_preregistration.py",
+    ]
+    assert "--draft-path" in args
+    assert "workspace/evaluation/phase33_draft.json" in args
+    assert "--output-path" in args
+    assert "workspace/evaluation/phase33_registered.json" in args
+
+
+def test_phase33_draft_builder_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "build-phase33-structured-edge-preregistration-draft",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/phase33_cases.jsonl",
+            "--draft-path",
+            "workspace/evaluation/phase33_draft.json",
+            "--environment-path",
+            "workspace/evaluation/phase33_environment.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase33_structured_edge_draft.py",
+    ]
+    assert "--fixture-path" in args
+    assert "data/processed/benchmark_fixtures/phase33_cases.jsonl" in args
+    assert "--draft-path" in args
+    assert "workspace/evaluation/phase33_draft.json" in args
+    assert "--environment-path" in args
+    assert "workspace/evaluation/phase33_environment.json" in args
+
+
 def test_build_own_latent_manifest_dispatches_to_eval_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock()

@@ -1390,6 +1390,44 @@ def main():
         ),
     )
 
+    parser_phase33_preregistration = subparsers.add_parser(
+        "register-phase33-structured-edge-preregistration",
+        help="Register an immutable managed Phase 33 experiment protocol.",
+    )
+    parser_phase33_preregistration.add_argument("--draft-path", required=True)
+    parser_phase33_preregistration.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_structured_edge_preregistration.json",
+        ),
+    )
+    parser_phase33_draft = subparsers.add_parser(
+        "build-phase33-structured-edge-preregistration-draft",
+        help="Freeze the Phase 33 fixture and CPU environment fingerprints.",
+    )
+    parser_phase33_draft.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase33_structured_edge_cases.jsonl",
+        ),
+    )
+    parser_phase33_draft.add_argument(
+        "--draft-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_structured_edge_preregistration_draft.json",
+        ),
+    )
+    parser_phase33_draft.add_argument(
+        "--environment-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_structured_edge_environment.json",
+        ),
+    )
+
     parser_level2_matrix = subparsers.add_parser(
         "eval-level2-capability-matrix",
         help="Build the Level-2 capability matrix without promotion.",
@@ -3236,6 +3274,32 @@ def main():
             str(args.fixture_path),
             "--output-path",
             str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase33-structured-edge-preregistration":
+        command = [
+            sys.executable,
+            "scripts/eval/phase33_structured_edge_preregistration.py",
+            "--draft-path",
+            str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase33-structured-edge-preregistration-draft":
+        command = [
+            sys.executable,
+            "scripts/eval/phase33_structured_edge_draft.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--draft-path",
+            str(args.draft_path),
+            "--environment-path",
+            str(args.environment_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)

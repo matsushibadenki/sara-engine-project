@@ -28,6 +28,11 @@ __all__ = [
     "PartialRolloutError",
     "PartialRolloutSliceResult",
     "RolloutResumeContext",
+    "IsolatedReversibleToolSandbox",
+    "ReversibleToolSandboxError",
+    "SandboxCheckpoint",
+    "SandboxExecutionResult",
+    "SandboxRollbackResult",
 ]
 
 
@@ -68,4 +73,14 @@ def __getattr__(name: str):
         from . import partial_rollout
 
         return getattr(partial_rollout, name)
+    if name in {
+        "IsolatedReversibleToolSandbox",
+        "ReversibleToolSandboxError",
+        "SandboxCheckpoint",
+        "SandboxExecutionResult",
+        "SandboxRollbackResult",
+    }:
+        from . import reversible_tool_sandbox
+
+        return getattr(reversible_tool_sandbox, name)
     raise AttributeError(name)
