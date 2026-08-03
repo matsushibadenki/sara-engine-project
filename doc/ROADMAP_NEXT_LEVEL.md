@@ -54,6 +54,20 @@ The user-provided *Kimi K3: Open Frontier Intelligence Technical Report* was rev
 
 The following Kimi K3 mechanisms remain comparison-only and are not SARA runtime candidates: dense KDA/MLA attention, full or block softmax AttnRes, LatentMoE projections, Muon optimization, RL/distillation gradients, quantization-aware backpropagation, GPU kernels, expert-parallel communication, and reported model/benchmark scaling results.
 
+## Adopted Memory Caching Design Reference
+
+The *Memory Caching: RNNs with Growing Memory* preprint is adopted as a long-context memory research reference ([arXiv, 2026](https://arxiv.org/abs/2602.24281)). Its central observation is relevant to SARA: one fixed recurrent state must increasingly compress the past, while caching selected segment-level memory checkpoints can preserve direct access to older information. The paper also makes the cost explicit: retrieving from every cached segment costs `O(NL)`, and segmentation trades recall resolution against compute and storage.
+
+SARA adopts only the bounded, auditable translation:
+
+- form immutable sparse checkpoint summaries at verified semantic boundaries rather than caching every token or a dense hidden-state matrix;
+- compare equal-size segments with logarithmic multi-resolution retention instead of assuming either is universally better;
+- retrieve at most fixed `k` checkpoints by deterministic sparse overlap, resonance, recency, source revision, and contradiction compatibility;
+- preserve checkpoint identity, provenance, source revision, state-schema/runtime fingerprint, event range, and canonical digest through selection and replay;
+- enforce hard checkpoint-count, summary-width, byte, selected-checkpoint, event-cost, age, and latency ceilings, with deterministic eviction or merge rules.
+
+The paper's Residual/Gated Residual Memory, Memory Soup, learned projection/softmax router, dense Top-k scoring, matrix-valued memories, MLP memory modules, gradient-based test-time updates, AdamW training, GPU/TPU execution, model sizes, benchmark gains, and throughput claims remain comparison-only. SARA must not average or interpolate checkpoint parameters because that would obscure source isolation and contradictions. A cache hit supplies read-only candidate evidence; it cannot create durable knowledge or bypass RISA/Event Memory verification.
+
 ## Adopted Multi-Contact and Dendritic Design References
 
 The multi-synapse discussion is adopted as a research question, not as a claim that biological detail automatically improves SARA. Primary studies support four relevant premises:
@@ -72,7 +86,7 @@ TwinProp's training path remains comparison-only: it fits a DNN digital twin, di
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1398 passed` in the project Python 3.10 environment after Phase 23 cross-modal hypothesis hardening.
+- [Done] Full Python test suite: `1537 passed` in the managed Python 3.10 environment after the Phase 34 immutable preregistration contract and CLI were added.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -590,17 +604,22 @@ outer relation A -> B
 - Added canonical protocol fingerprinting, managed-workspace enforcement, idempotent identical registration, immutable conflict rejection, and the `register-phase33-structured-edge-preregistration` CLI. This registers protocols only; it does not execute the candidate runtime.
 - Added the frozen 17-case observed-only Phase 33 fixture and managed draft builder. The registered fixture fingerprint is `b8ef6e09c3da69aaa3e0dc626f8f4b630ad4b0a53acf62ad255647b9e8e0c230`; the current CPU/Python environment fingerprint is `20f6d07671c8afb52b54ecf1d617fc46ebdafb37965d4e00981c59e7481bc193`.
 - Registered immutable experiment `phase33-structured-edge-observed-v1` with protocol fingerprint `63168395ac7f5235d4173072fb52823712b89895e16610856ced77adf70d64ff`. A repeated registration preserves the identical manifest. This synthetic fixture registration is a protocol milestone, not accuracy, simplification, biological, independent-data, or energy evidence.
+- Added a deterministic evaluation-only structured-edge runtime and `eval-phase33-structured-edge` CLI. The registered five arms, three simplification labels, five seeds, and 17 cases now execute as 1,275 conditions without durable or production mutation.
+- Executed the immutable observed-only benchmark with matching fixture/environment/protocol fingerprints. All execution-integrity, replay, state, event, latency, CPU-only, no-matrix, no-backpropagation, and no-GPU checks passed. Branch-local fixture conformance exceeded typed-independent conformance, while linear multi-contact did not exceed the scalar control. These are designed fixture-mechanism observations, not independent accuracy or outer-graph simplification evidence; `promotion_ready` remains false.
+- Added a separate 14-case TwinProp-inspired follow-up fixture and immutable preregistration contract. It freezes intact bounded branches, passive linear branches, topology-collapsed aggregation, no slow coincidence state, and point-neuron control under one fixed non-trainable spike-count readout, five seeds, equal tuning/resource budgets, structured-versus-shuffled placement, and interaction orders 2/3/4.
+- Registered `phase33-twinprop-ablation-observed-v1` with protocol fingerprint `faa897ae9d52f0315aa2f9261e365591407197145b823a342306c314c93d39e4`, fixture fingerprint `5848945a009898fe1b5dc0a8985c636c575e664e5ddf29697b86fd1e5d96323f`, and environment fingerprint `8ebd79239d50c3645572e89fe710683d08b01e9c669fe3c875b82e6d2c0df821`. Re-registration preserved the identical manifest, and the parent Phase 33 fingerprint remains unchanged. Registration itself did not carry a result or accuracy claim.
+- Added a bounded sparse TwinProp-inspired evaluation runtime and `eval-phase33-twinprop-ablation` CLI, then executed all 350 registered conditions. Execution integrity, fingerprints, fixed-readout equality, deterministic replay, abstention, state/event/latency ceilings, and CPU/no-gradient/no-matrix/no-GPU/no-digital-twin boundaries passed.
+- On the designed mechanism fixture, the intact arm reached `1.0` conformance, while passive, topology-collapsed, and no-slow-state arms each reached `0.8571`, and the point-neuron control reached `0.7857`. Intact-minus-each-primary-ablation was `0.1429`; active branches increased from `1, 1, 2` across interaction orders `2, 3, 4`; structured-minus-shuffled readout was `1.0`. The preregistered mechanism gate passed, but these are synthetic causal controls rather than independent task accuracy, biological learning, simplification, or energy evidence, so `promotion_ready` remains false.
 
 ### [Later]
 
 - Preregister the state schema for contact identity, polarity, branch slot, delay bucket, short-term state, plasticity class, typed role/context, source revision, expiry, and contradiction state.
-- Build a deterministic bounded contact-bundle runtime. Replace random branch assignment in the legacy dendritic prototype with a frozen tie rule and canonical replay order.
+- Extend the deterministic evaluation runtime to independent workloads before considering any production integration. Replace random branch assignment in the legacy dendritic prototype only through a separately reviewed migration with a frozen tie rule and canonical replay order.
 - Reuse Phase 30 temporal state for delay/phase controls, Phase 31 consolidation for repetition controls, and the existing structural-plasticity controller for outer-route controls rather than duplicating their claims.
 - Add separate contact and outer-route budgets. Contact growth must require observed local reuse plus verified prediction-gain support; contradiction, inactivity, resource pressure, or unstable oscillation must prune or freeze locally.
 - Keep the existing single-contact sparse route as the production default. Structured edges remain default-off until both the mechanism ablation and the outer-graph simplification test pass.
-- Preserve the immutable `phase33-structured-edge-observed-v1` protocol. Register TwinProp-derived controls only as a new follow-up experiment identity after the existing five-arm run; do not alter its frozen fixture, thresholds, seeds, or fingerprint.
-- Add a TwinProp-inspired follow-up with intact bounded branches, passive/linear branches, topology-collapsed aggregation, no slow coincidence state, and point-neuron controls. Use identical input events, contact/state budgets, fixed readout, replicate seeds, and tuning allowance in every arm.
-- Compare deterministic contact placement with a preregistered location-shuffle control, and sweep task interaction order. Measure branch participation, branch-event overlap, local-state saturation, event cost, and serialized bytes using sparse scalar counters; do not import dense voltage PCA into the runtime.
+- Transfer the registered mechanism, unchanged and default-off, to independent temporal and structural workloads with provenance and near-duplicate controls before any production review.
+- Keep branch participation, branch-event overlap, local-state saturation, event cost, and serialized-byte measurement as sparse scalar counters; do not import dense voltage PCA into the runtime.
 
 ### Minimum Experiment
 
@@ -647,6 +666,57 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - Missing, duplicated, reordered, stale, contradictory, and capacity-exceeded contacts fail safely; replay and add/prune decisions are deterministic.
 - Gains transfer to independent temporal and structural workloads. Human review is required before changing outer topology or production routing defaults.
 
+## Phase 34: Bounded Sparse Memory Checkpoint Caching
+
+**Goal:** test whether bounded, selectively retrieved sparse state checkpoints improve long-delay recall beyond one continuously compressed recurrent state without approaching an unbounded token cache.
+
+### Research Hypothesis
+
+- At verified semantic boundaries, emit a read-only sparse checkpoint containing the event range, active structural IDs, source and verification references, contradiction state, schema/runtime identity, and canonical digest.
+- Keep online recurrent state as the primary path. Cached checkpoints are optional retrieval candidates and cannot overwrite current state, admit durable knowledge, or restore a mutable historical graph directly.
+- Compare fixed-size segmentation with logarithmic multi-resolution retention under the same total checkpoint and byte budget. Recent history may retain finer resolution, but older segments may be merged only by a deterministic provenance-preserving rule.
+- Select at most fixed `k` checkpoints using scalar sparse overlap, resonance, recency, verified-context compatibility, and source-revision validity. No learned projection, softmax, dense query-by-checkpoint matrix, gradient, GPU, or scan of an unbounded cache is allowed.
+- Reuse Phase 27 canonical checkpoint identity and Phase 32 sparse-selection primitives, but keep time-segment caching separate from depth-block retrieval so each mechanism can be ablated independently.
+
+### [Done]
+
+- Preregistered the immutable four-arm protocol as `phase34-memory-checkpoint-cache-observed-v1` before implementing any cache candidate. The 16-case observed-only fixture fingerprint is `b2065c2c1371bb7d073a80b2ba285ef50cdb140004864d3b04c1c5b696c9ca27`, the CPU environment fingerprint is `efb0c0f4b3ac0a2aaa5b6718abb7c3dfe85572dbd21f0a5f396a0f35ad755b25`, and the protocol fingerprint is `1e3d73dadd5d5ed49daf97617fc99403c8f6d2104143789afb9be142fe2b548e`. A second registration returned `identical_registration_preserved`.
+- Frozen semantic boundaries, equal four-event segments, logarithmic retention tiers `[1, 2, 4, 8]`, oldest-first provenance-preserving merges, fixed `k=2`, deterministic scalar overlap/verification/recency scoring, stale and contradiction exclusion, and checkpoint/count/byte/event/latency ceilings. Parameter averaging, learned routing, softmax, dense summaries, unbounded scans, backpropagation, matrices, GPU execution, durable admission, and production mutation are forbidden by validation.
+
+### [Later]
+
+- Add a default-off bounded checkpoint store with exact source revision, event interval, parent digest, state-group identity, expiry, and contradiction invalidation.
+- Add deterministic read-only retrieval that returns evidence references rather than materialized mutable historical state. Missing state groups and partial or stale checkpoint hits must abstain.
+- Keep current Event Memory and recurrent state as production controls. Do not connect checkpoint retrieval to durable admission or production ranking before independent evidence and human review.
+
+### Minimum Experiment
+
+Compare four equal-budget arms:
+
+1. current recurrent/Event Memory retrieval with no checkpoint cache;
+2. bounded equal-size segment checkpoints with retrieval over all retained checkpoints;
+3. bounded logarithmic multi-resolution checkpoints with retrieval over all retained checkpoints;
+4. bounded equal-size checkpoints with deterministic sparse Top-k selection.
+
+- Use delayed key/value recall, long irrelevant intervals, repeated keys with revised values, contradiction, source replacement, duplicate and near-duplicate segments, missing segment, stale runtime/schema digest, reordered replay, cache overflow, and long-tail pollution controls.
+- Freeze source events, boundary schedule, maximum retained checkpoints, selected `k`, summary width, serialized bytes, event cost, latency, seeds, environment, and tuning allowance. Arms that retrieve all retained checkpoints must still obey the same fixed selection/event ceiling.
+- Report delayed recall or justified abstention, revision uptake, contradiction rejection, selection precision/recall, useful checkpoint rate, cache hit/eviction/merge counts, retained temporal resolution, state bytes, event cost, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject checkpoint caching if it does not beat the no-cache recurrent control on preregistered delayed recall, or if equal-size/logarithmic/Top-k differences disappear under the same total budget.
+- Reject it if quality depends on checkpoint count or selected `k` growing with sequence length, scanning every historical checkpoint, hidden dense summaries, extra tuning, or increased source-event budget.
+- Reject any merge, averaging, or retrieval that loses source/event identity, mixes contradictory revisions, restores stale state, mutates durable knowledge, or makes replay depend on dictionary order or wall-clock time.
+- Reject the selector if it chooses unsupported segments, misses an exact verified checkpoint without abstaining, cannot recover after revision, or costs more than useful retrieval saves.
+- Do not transfer the paper's language-model accuracy, parameter-scale, GPU throughput, subquadratic complexity, or long-context claims to SARA.
+
+### Acceptance Gate
+
+- One checkpoint arm improves independent delayed-recall quality over the current recurrent/Event Memory control while preserving revision, contradiction, and abstention integrity.
+- The selected design remains within fixed checkpoint-count, selection, byte, event, latency, and replay ceilings across at least five preregistered replicates and the longest horizon.
+- Fixed versus logarithmic segmentation and retrieve-all versus sparse Top-k have interpretable, reproducible trade-offs rather than gains caused by unequal retained information.
+- Promotion remains blocked until independent workloads, provenance review, and explicit human approval confirm that cached evidence cannot bypass durable-knowledge boundaries.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -661,8 +731,13 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 10. [Later] Preregister the Phase 32 four-arm sparse depth-routing experiment before implementing either candidate.
 11. [Done] Implement the immutable Phase 33 structured-edge preregistration contract and managed CLI.
 12. [Done] Freeze the Phase 33 observed-only fixture and CPU environment fingerprints, then register the immutable protocol before candidate execution.
-13. [Later] Run the immutable Phase 33 experiment before registering the TwinProp-inspired follow-up as a separate protocol.
-14. [Later] Reopen physical-energy evidence only by explicit operator decision.
+13. [Done] Execute all 1,275 immutable Phase 33 observed-only conditions with matching fingerprints and bounded deterministic replay; retain `promotion_ready=false` because simplification and independent evidence are absent.
+14. [Done] Register the TwinProp-inspired follow-up as immutable experiment `phase33-twinprop-ablation-observed-v1` without modifying the completed parent registration.
+15. [Done] Execute all 350 registered TwinProp-inspired conditions with the fixed readout and equal resource/tuning budgets; retain `promotion_ready=false` because evidence is synthetic and observed-only.
+16. [Later] Evaluate the frozen structured-edge mechanism on independent temporal and structural workloads before production review.
+17. [Done] Preregister the Phase 34 four-arm bounded checkpoint-caching experiment before implementing any cache candidate.
+18. [Later] Implement and execute the registered Phase 34 candidate without changing its frozen protocol or production defaults.
+19. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
 
@@ -697,8 +772,15 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - `workspace/evaluation/phase33_structured_edge_benchmark.json`
 - `workspace/evaluation/phase33_edge_simplification_ablation.json`
 - `data/processed/benchmark_fixtures/phase33_twinprop_ablation_cases.jsonl`
+- `workspace/evaluation/phase33_twinprop_ablation_environment.json`
+- `workspace/evaluation/phase33_twinprop_ablation_preregistration_draft.json`
 - `workspace/evaluation/phase33_twinprop_ablation_preregistration.json`
 - `workspace/evaluation/phase33_twinprop_ablation_benchmark.json`
+- `data/processed/benchmark_fixtures/phase34_memory_checkpoint_cache_cases.jsonl`
+- `workspace/evaluation/phase34_memory_checkpoint_cache_environment.json`
+- `workspace/evaluation/phase34_memory_checkpoint_cache_preregistration_draft.json`
+- `workspace/evaluation/phase34_memory_checkpoint_cache_preregistration.json`
+- `workspace/evaluation/phase34_memory_checkpoint_cache_benchmark.json`
 
 ## Review Rule
 

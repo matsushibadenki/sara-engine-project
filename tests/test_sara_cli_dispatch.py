@@ -1282,6 +1282,181 @@ def test_phase33_draft_builder_dispatches_to_eval_script(monkeypatch):
     assert "workspace/evaluation/phase33_environment.json" in args
 
 
+def test_phase33_benchmark_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-phase33-structured-edge",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/phase33_cases.jsonl",
+            "--preregistration-path",
+            "workspace/evaluation/phase33_registered.json",
+            "--output-path",
+            "workspace/evaluation/phase33_benchmark.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    mock_run.assert_called_once()
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase33_structured_edge_benchmark.py",
+    ]
+    assert "data/processed/benchmark_fixtures/phase33_cases.jsonl" in args
+    assert "workspace/evaluation/phase33_registered.json" in args
+    assert "workspace/evaluation/phase33_benchmark.json" in args
+
+
+def test_phase33_twinprop_draft_dispatches_to_separate_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "build-phase33-twinprop-ablation-preregistration-draft",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/twinprop.jsonl",
+            "--draft-path",
+            "workspace/evaluation/twinprop_draft.json",
+            "--environment-path",
+            "workspace/evaluation/twinprop_environment.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase33_twinprop_ablation_draft.py",
+    ]
+    assert "data/processed/benchmark_fixtures/twinprop.jsonl" in args
+    assert "workspace/evaluation/twinprop_draft.json" in args
+    assert "workspace/evaluation/twinprop_environment.json" in args
+
+
+def test_phase33_twinprop_registration_dispatches_to_separate_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "register-phase33-twinprop-ablation-preregistration",
+            "--draft-path",
+            "workspace/evaluation/twinprop_draft.json",
+            "--output-path",
+            "workspace/evaluation/twinprop_registered.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase33_twinprop_ablation_preregistration.py",
+    ]
+    assert "workspace/evaluation/twinprop_draft.json" in args
+    assert "workspace/evaluation/twinprop_registered.json" in args
+
+
+def test_phase34_memory_cache_draft_dispatches_to_separate_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "build-phase34-memory-checkpoint-cache-preregistration-draft",
+        "--fixture-path", "data/processed/benchmark_fixtures/phase34.jsonl",
+        "--draft-path", "workspace/evaluation/phase34_draft.json",
+        "--environment-path", "workspace/evaluation/phase34_environment.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/phase34_memory_checkpoint_cache_draft.py"]
+    assert "data/processed/benchmark_fixtures/phase34.jsonl" in args
+    assert "workspace/evaluation/phase34_draft.json" in args
+    assert "workspace/evaluation/phase34_environment.json" in args
+
+
+def test_phase34_memory_cache_registration_dispatches_to_separate_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "register-phase34-memory-checkpoint-cache-preregistration",
+        "--draft-path", "workspace/evaluation/phase34_draft.json",
+        "--output-path", "workspace/evaluation/phase34_registered.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/phase34_memory_checkpoint_cache_preregistration.py"]
+    assert "workspace/evaluation/phase34_draft.json" in args
+    assert "workspace/evaluation/phase34_registered.json" in args
+
+
+def test_phase33_twinprop_benchmark_dispatches_to_registered_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-phase33-twinprop-ablation",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/twinprop.jsonl",
+            "--preregistration-path",
+            "workspace/evaluation/twinprop_registered.json",
+            "--output-path",
+            "workspace/evaluation/twinprop_benchmark.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase33_twinprop_ablation_benchmark.py",
+    ]
+    assert "data/processed/benchmark_fixtures/twinprop.jsonl" in args
+    assert "workspace/evaluation/twinprop_registered.json" in args
+    assert "workspace/evaluation/twinprop_benchmark.json" in args
+
+
 def test_build_own_latent_manifest_dispatches_to_eval_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock()

@@ -1427,6 +1427,130 @@ def main():
             "phase33_structured_edge_environment.json",
         ),
     )
+    parser_phase33_benchmark = subparsers.add_parser(
+        "eval-phase33-structured-edge",
+        help="Run the immutable observed-only Phase 33 structured-edge benchmark.",
+    )
+    parser_phase33_benchmark.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase33_structured_edge_cases.jsonl",
+        ),
+    )
+    parser_phase33_benchmark.add_argument(
+        "--preregistration-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_structured_edge_preregistration.json",
+        ),
+    )
+    parser_phase33_benchmark.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_structured_edge_benchmark.json",
+        ),
+    )
+    parser_phase33_twinprop_draft = subparsers.add_parser(
+        "build-phase33-twinprop-ablation-preregistration-draft",
+        help="Freeze the separate TwinProp-inspired Phase 33 follow-up draft.",
+    )
+    parser_phase33_twinprop_draft.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase33_twinprop_ablation_cases.jsonl",
+        ),
+    )
+    parser_phase33_twinprop_draft.add_argument(
+        "--draft-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_twinprop_ablation_preregistration_draft.json",
+        ),
+    )
+    parser_phase33_twinprop_draft.add_argument(
+        "--environment-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_twinprop_ablation_environment.json",
+        ),
+    )
+    parser_phase33_twinprop_registration = subparsers.add_parser(
+        "register-phase33-twinprop-ablation-preregistration",
+        help="Register the immutable separate TwinProp-inspired follow-up.",
+    )
+    parser_phase33_twinprop_registration.add_argument("--draft-path", required=True)
+    parser_phase33_twinprop_registration.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_twinprop_ablation_preregistration.json",
+        ),
+    )
+    parser_phase34_cache_draft = subparsers.add_parser(
+        "build-phase34-memory-checkpoint-cache-preregistration-draft",
+        help="Freeze the bounded Phase 34 memory checkpoint cache draft.",
+    )
+    parser_phase34_cache_draft.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase34_memory_checkpoint_cache_cases.jsonl",
+        ),
+    )
+    parser_phase34_cache_draft.add_argument(
+        "--draft-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_checkpoint_cache_preregistration_draft.json",
+        ),
+    )
+    parser_phase34_cache_draft.add_argument(
+        "--environment-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_checkpoint_cache_environment.json",
+        ),
+    )
+    parser_phase34_cache_registration = subparsers.add_parser(
+        "register-phase34-memory-checkpoint-cache-preregistration",
+        help="Register the immutable bounded Phase 34 cache experiment.",
+    )
+    parser_phase34_cache_registration.add_argument("--draft-path", required=True)
+    parser_phase34_cache_registration.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_checkpoint_cache_preregistration.json",
+        ),
+    )
+    parser_phase33_twinprop_benchmark = subparsers.add_parser(
+        "eval-phase33-twinprop-ablation",
+        help="Execute the registered observed-only TwinProp-inspired ablation.",
+    )
+    parser_phase33_twinprop_benchmark.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase33_twinprop_ablation_cases.jsonl",
+        ),
+    )
+    parser_phase33_twinprop_benchmark.add_argument(
+        "--preregistration-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_twinprop_ablation_preregistration.json",
+        ),
+    )
+    parser_phase33_twinprop_benchmark.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase33_twinprop_ablation_benchmark.json",
+        ),
+    )
 
     parser_level2_matrix = subparsers.add_parser(
         "eval-level2-capability-matrix",
@@ -3300,6 +3424,86 @@ def main():
             str(args.draft_path),
             "--environment-path",
             str(args.environment_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase33-structured-edge":
+        command = [
+            sys.executable,
+            "scripts/eval/phase33_structured_edge_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase33-twinprop-ablation-preregistration-draft":
+        command = [
+            sys.executable,
+            "scripts/eval/phase33_twinprop_ablation_draft.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--draft-path",
+            str(args.draft_path),
+            "--environment-path",
+            str(args.environment_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase33-twinprop-ablation-preregistration":
+        command = [
+            sys.executable,
+            "scripts/eval/phase33_twinprop_ablation_preregistration.py",
+            "--draft-path",
+            str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase34-memory-checkpoint-cache-preregistration-draft":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_checkpoint_cache_draft.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--draft-path",
+            str(args.draft_path),
+            "--environment-path",
+            str(args.environment_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase34-memory-checkpoint-cache-preregistration":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_checkpoint_cache_preregistration.py",
+            "--draft-path",
+            str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase33-twinprop-ablation":
+        command = [
+            sys.executable,
+            "scripts/eval/phase33_twinprop_ablation_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--output-path",
+            str(args.output_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
