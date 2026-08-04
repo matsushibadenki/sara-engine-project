@@ -1551,6 +1551,130 @@ def main():
             "phase34_memory_checkpoint_cache_benchmark.json",
         ),
     )
+    parser_phase34_separation_draft = subparsers.add_parser(
+        "build-phase34-memory-cache-separation-preregistration-draft",
+        help="Freeze the five-seed Phase 34 cache-separation follow-up.",
+    )
+    parser_phase34_separation_draft.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase34_memory_cache_separation_cases.jsonl",
+        ),
+    )
+    parser_phase34_separation_draft.add_argument(
+        "--draft-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_separation_preregistration_draft.json",
+        ),
+    )
+    parser_phase34_separation_draft.add_argument(
+        "--environment-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_separation_environment.json",
+        ),
+    )
+    parser_phase34_separation_registration = subparsers.add_parser(
+        "register-phase34-memory-cache-separation-preregistration",
+        help="Register the immutable five-seed Phase 34 separation follow-up.",
+    )
+    parser_phase34_separation_registration.add_argument("--draft-path", required=True)
+    parser_phase34_separation_registration.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_separation_preregistration.json",
+        ),
+    )
+    parser_phase34_separation_benchmark = subparsers.add_parser(
+        "eval-phase34-memory-cache-separation",
+        help="Execute the registered 240-condition Phase 34 separation follow-up.",
+    )
+    parser_phase34_separation_benchmark.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase34_memory_cache_separation_cases.jsonl",
+        ),
+    )
+    parser_phase34_separation_benchmark.add_argument(
+        "--preregistration-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_separation_preregistration.json",
+        ),
+    )
+    parser_phase34_separation_benchmark.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_separation_benchmark.json",
+        ),
+    )
+    parser_phase34_factorial_draft = subparsers.add_parser(
+        "build-phase34-memory-cache-factorial-preregistration-draft",
+        help="Freeze the Phase 34 retention-by-selection factorial draft.",
+    )
+    parser_phase34_factorial_draft.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase34_memory_cache_factorial_cases.jsonl",
+        ),
+    )
+    parser_phase34_factorial_draft.add_argument(
+        "--draft-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_factorial_preregistration_draft.json",
+        ),
+    )
+    parser_phase34_factorial_draft.add_argument(
+        "--environment-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_factorial_environment.json",
+        ),
+    )
+    parser_phase34_factorial_registration = subparsers.add_parser(
+        "register-phase34-memory-cache-factorial-preregistration",
+        help="Register the immutable Phase 34 factorial experiment.",
+    )
+    parser_phase34_factorial_registration.add_argument("--draft-path", required=True)
+    parser_phase34_factorial_registration.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_factorial_preregistration.json",
+        ),
+    )
+    parser_phase34_factorial_benchmark = subparsers.add_parser(
+        "eval-phase34-memory-cache-factorial",
+        help="Execute the registered 300-condition Phase 34 factorial.",
+    )
+    parser_phase34_factorial_benchmark.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase34_memory_cache_factorial_cases.jsonl",
+        ),
+    )
+    parser_phase34_factorial_benchmark.add_argument(
+        "--preregistration-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_factorial_preregistration.json",
+        ),
+    )
+    parser_phase34_factorial_benchmark.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_cache_factorial_benchmark.json",
+        ),
+    )
     parser_phase33_twinprop_benchmark = subparsers.add_parser(
         "eval-phase33-twinprop-ablation",
         help="Execute the registered observed-only TwinProp-inspired ablation.",
@@ -3523,6 +3647,86 @@ def main():
         command = [
             sys.executable,
             "scripts/eval/phase34_memory_checkpoint_cache_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase34-memory-cache-separation-preregistration-draft":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_separation_draft.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--draft-path",
+            str(args.draft_path),
+            "--environment-path",
+            str(args.environment_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase34-memory-cache-separation-preregistration":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_separation_preregistration.py",
+            "--draft-path",
+            str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase34-memory-cache-separation":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_separation_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase34-memory-cache-factorial-preregistration-draft":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_factorial_draft.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--draft-path",
+            str(args.draft_path),
+            "--environment-path",
+            str(args.environment_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase34-memory-cache-factorial-preregistration":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_factorial_preregistration.py",
+            "--draft-path",
+            str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase34-memory-cache-factorial":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_factorial_benchmark.py",
             "--fixture-path",
             str(args.fixture_path),
             "--preregistration-path",

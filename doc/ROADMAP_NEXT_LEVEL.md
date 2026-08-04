@@ -86,7 +86,7 @@ TwinProp's training path remains comparison-only: it fits a DNN digital twin, di
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1560 passed` in the managed Python 3.10 environment after the Phase 34 bounded runtime, four-arm benchmark, and managed CLI were added.
+- [Done] Full Python test suite: `1592 passed` in the managed Python 3.10 environment after the 300-condition Phase 34 factorial runtime, benchmark, and managed CLI were added.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -689,10 +689,20 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - Executed all 64 registered conditions and wrote `phase34_memory_checkpoint_cache_benchmark.json` with matching protocol, fixture, and environment fingerprints. All execution, deterministic replay, CPU-only, state/checkpoint/selection/event ceilings, stale/contradiction safety, non-durable mutation, and non-production-path checks passed.
 - On the frozen synthetic fixture, the best checkpoint arm improved delayed-recall conformance from `0.5` for the recurrent/Event Memory control to `1.0`; revision uptake, contradiction/abstention integrity, selection precision/recall, and deterministic replay were `1.0`. Maximum observed checkpoint state was `3,367` bytes, event cost was `9`, and process CPU latency was `0.236 ms` in the recorded run.
 - Retained `mechanism_gate_passed=false` and `promotion_ready=false`: equal-size retrieve-all, logarithmic retrieve-all, and equal-size sparse Top-k produced identical fixture quality/resource summaries, so no segmentation or selector trade-off was demonstrated. The immutable registration also omitted replicate seeds despite the stated five-replicate acceptance gate; correcting that requires a new experiment identity rather than altering this registration. Independent evidence remains absent.
+- Registered the immutable follow-up `phase34-memory-cache-separation-observed-v1` without modifying the completed parent. It freezes five seeds (`107`, `223`, `311`, `419`, `521`), 12 capacity-pressure families, all five expected pairwise/safety relations, 240 future conditions, and the original `8`-checkpoint, `k=2`, byte/event/latency envelope. The fixture fingerprint is `28ae6c656a2b42ad7fe494b4b68a90061ccd7ac4ce99b8f2c9b4b142e0229dd1`, environment fingerprint is `b7e07483ea4b3ca97007efc4ea6049ff32ad1f08b4274e258235af0dd8c4995b`, and protocol fingerprint is `6b5f8394120936cab157c93c2917ea7bc3b75b98da74321e9be19f63aeaf8e06`. A second registration returned `identical_registration_preserved`.
+- The follow-up is bound to parent protocol `1e3d73dadd5d5ed49daf97617fc99403c8f6d2104143789afb9be142fe2b548e` and parent report `996b974dc534b3c3ad8e4a68e5f7fd907f1840341d0b3f4a02d38351baed0429`. It freezes old-target overflow, multi-resolution retention, recent fine resolution, boundary bursts, relevance pollution, recency traps, deterministic ties, post-merge revision/contradiction/staleness, incompatible state groups, and missing targets before implementing the follow-up runtime.
+- Executed all 240 registered follow-up conditions across the five fixed seeds. Protocol/fixture/environment identity, deterministic replay, all resource ceilings, CPU-only execution, safety integrity, non-durable mutation, and production isolation passed. The recorded maxima were `1,252` state bytes, `136` event cost, and `0.05 ms` process CPU latency.
+- Preserved the negative mechanism result: logarithmic old-target recall beat equal retention by `1.0`, and the pairwise relation rate was `0.833333`, but recent-resolution delta was only `0.088542` against the frozen `0.1` threshold and Top-k pollution precision delta was `0.0`. The pollution cases evicted the relevant checkpoint before retrieval, so they confound retention with selection and cannot support a Top-k claim.
+- Retained `threshold_gate_passed=false`, `mechanism_gate_passed=false`, and `promotion_ready=false`. The registration and failed relations were not rewritten. A future selector experiment must keep the relevant checkpoint inside an identical retained set for retrieve-all and Top-k arms, or separately cross retention policy with selection policy; it requires another explicit preregistration and review.
+- Following explicit review, registered the new immutable factorial experiment `phase34-memory-cache-factorial-observed-v1`. It compares the recurrent control plus `equal/logarithmic retention × retrieve-all/Top-k`, uses five new fixed seeds and 12 selection/retention/safety families, and freezes 300 future conditions. The fixture fingerprint is `59bfab2a7022f1fa73900f57cae1e19c92f69649237018774dea1899636abc0f`, environment fingerprint is `885be0b0831909024bbe349907210a33d0714fd6b3b744683e032c4216a87807`, and protocol fingerprint is `3eca1c4aec95c374be3c0ba9637df93e0df852bcd75114b3253a9d5494eb47ed`; idempotent re-registration was preserved.
+- The factorial contract requires identical retained-set digests within each retention pair, freezes retention state before selection, reports retention and selection bytes separately, and forbids query-visible admission. Selection fixtures are rejected during draft validation if the target is outside the equal-retention set, directly preventing the confound found in the failed separation follow-up.
+- Executed all 300 registered factorial conditions across five seeds. Protocol/fixture/environment identity, deterministic replay, resource ceilings, query-blind retention, retained-set equality within both selection pairs, safety integrity, non-durable mutation, and production isolation passed. Maximum observed total state was `1,696` bytes, event cost was `144`, and process CPU latency was `0.202 ms` in the managed run.
+- Under byte-identical retained sets, sparse Top-k improved selection precision by `0.875` with recall difference `0.0`; the selection-by-retention interaction was `0.0`. Logarithmic retention improved old-target recall by `1.0`, while equal retention improved recent temporal resolution by `0.1`. All preregistered synthetic mechanism thresholds passed.
+- Retained `promotion_ready=false`: the factorial identifies a Top-k selection effect on frozen synthetic fixtures but provides no independent workload evidence, production provenance review, or human approval for integration. The standalone cache remains default-off and disconnected from production Event Memory ranking and durable admission.
 
 ### [Later]
 
-- Register a new follow-up identity with at least five fixed seeds and cases that force fixed/logarithmic/Top-k separation; do not rewrite the completed Phase 34 registration or claim selector benefit from the current tied arms.
+- Evaluate the frozen factorial mechanism on an independent long-horizon workload with the same retained-set identity checks before any integration review. Do not tune the selector on that evidence or connect it to production defaults.
 - Keep current Event Memory and recurrent state as production controls. Do not connect checkpoint retrieval to durable admission or production ranking before independent evidence and human review.
 
 ### Minimum Experiment
@@ -743,7 +753,12 @@ Compare four equal-budget arms:
 16. [Later] Evaluate the frozen structured-edge mechanism on independent temporal and structural workloads before production review.
 17. [Done] Preregister the Phase 34 four-arm bounded checkpoint-caching experiment before implementing any cache candidate.
 18. [Done] Implement and execute all 64 registered Phase 34 conditions without changing the frozen protocol or production defaults; retain `promotion_ready=false` because cache-arm trade-offs, five replicates, and independent evidence are absent.
-19. [Later] Reopen physical-energy evidence only by explicit operator decision.
+19. [Done] Register the separate five-seed, 12-family Phase 34 cache-arm separation follow-up before implementing its runtime.
+20. [Done] Execute all 240 registered separation conditions; preserve the failed recent-resolution and Top-k gates as negative evidence and keep production promotion closed.
+21. [Done] Register the explicitly reviewed 300-condition retention-by-selection factorial with identical retained sets inside each selection comparison.
+22. [Done] Execute all 300 registered factorial conditions; identify the synthetic Top-k main effect while retaining `promotion_ready=false` and production isolation.
+23. [Later] Collect independent long-horizon factorial evidence with retained-set identity and no selector retuning before production review.
+24. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
 
@@ -787,6 +802,16 @@ Compare four equal-budget arms:
 - `workspace/evaluation/phase34_memory_checkpoint_cache_preregistration_draft.json`
 - `workspace/evaluation/phase34_memory_checkpoint_cache_preregistration.json`
 - `workspace/evaluation/phase34_memory_checkpoint_cache_benchmark.json`
+- `data/processed/benchmark_fixtures/phase34_memory_cache_separation_cases.jsonl`
+- `workspace/evaluation/phase34_memory_cache_separation_environment.json`
+- `workspace/evaluation/phase34_memory_cache_separation_preregistration_draft.json`
+- `workspace/evaluation/phase34_memory_cache_separation_preregistration.json`
+- `workspace/evaluation/phase34_memory_cache_separation_benchmark.json`
+- `data/processed/benchmark_fixtures/phase34_memory_cache_factorial_cases.jsonl`
+- `workspace/evaluation/phase34_memory_cache_factorial_environment.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_preregistration_draft.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_preregistration.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_benchmark.json`
 
 ## Review Rule
 

@@ -1450,6 +1450,156 @@ def test_phase34_memory_cache_benchmark_dispatches_to_registered_script(monkeypa
     assert "workspace/evaluation/phase34_benchmark.json" in args
 
 
+def test_phase34_separation_draft_dispatches_to_separate_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "build-phase34-memory-cache-separation-preregistration-draft",
+        "--fixture-path", "data/processed/benchmark_fixtures/separation.jsonl",
+        "--draft-path", "workspace/evaluation/separation_draft.json",
+        "--environment-path", "workspace/evaluation/separation_environment.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_separation_draft.py",
+    ]
+    assert "data/processed/benchmark_fixtures/separation.jsonl" in args
+    assert "workspace/evaluation/separation_draft.json" in args
+
+
+def test_phase34_separation_registration_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "register-phase34-memory-cache-separation-preregistration",
+        "--draft-path", "workspace/evaluation/separation_draft.json",
+        "--output-path", "workspace/evaluation/separation_registered.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_separation_preregistration.py",
+    ]
+    assert "workspace/evaluation/separation_draft.json" in args
+    assert "workspace/evaluation/separation_registered.json" in args
+
+
+def test_phase34_separation_benchmark_dispatches_to_registered_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "eval-phase34-memory-cache-separation",
+        "--fixture-path", "data/processed/benchmark_fixtures/separation.jsonl",
+        "--preregistration-path", "workspace/evaluation/separation_registered.json",
+        "--output-path", "workspace/evaluation/separation_benchmark.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_separation_benchmark.py",
+    ]
+    assert "data/processed/benchmark_fixtures/separation.jsonl" in args
+    assert "workspace/evaluation/separation_registered.json" in args
+    assert "workspace/evaluation/separation_benchmark.json" in args
+
+
+def test_phase34_factorial_draft_dispatches_to_separate_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "build-phase34-memory-cache-factorial-preregistration-draft",
+        "--fixture-path", "data/processed/benchmark_fixtures/factorial.jsonl",
+        "--draft-path", "workspace/evaluation/factorial_draft.json",
+        "--environment-path", "workspace/evaluation/factorial_environment.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_factorial_draft.py",
+    ]
+    assert "data/processed/benchmark_fixtures/factorial.jsonl" in args
+    assert "workspace/evaluation/factorial_draft.json" in args
+
+
+def test_phase34_factorial_registration_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "register-phase34-memory-cache-factorial-preregistration",
+        "--draft-path", "workspace/evaluation/factorial_draft.json",
+        "--output-path", "workspace/evaluation/factorial_registered.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_factorial_preregistration.py",
+    ]
+    assert "workspace/evaluation/factorial_draft.json" in args
+    assert "workspace/evaluation/factorial_registered.json" in args
+
+
+def test_phase34_factorial_benchmark_dispatches_to_registered_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "eval-phase34-memory-cache-factorial",
+        "--fixture-path", "data/processed/benchmark_fixtures/factorial.jsonl",
+        "--preregistration-path", "workspace/evaluation/factorial_registered.json",
+        "--output-path", "workspace/evaluation/factorial_benchmark.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_factorial_benchmark.py",
+    ]
+    assert "data/processed/benchmark_fixtures/factorial.jsonl" in args
+    assert "workspace/evaluation/factorial_registered.json" in args
+    assert "workspace/evaluation/factorial_benchmark.json" in args
+
+
 def test_phase33_twinprop_benchmark_dispatches_to_registered_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock(return_value=Mock(returncode=0))

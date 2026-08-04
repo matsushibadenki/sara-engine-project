@@ -1,6 +1,6 @@
 # SARA Engine
 
-SARA (Spiking Architecture for Reasoning and Adaptation) Engine is a CPU-first spiking AI framework for learning, inference, continual memory, and lightweight agent workflows without backpropagation-heavy runtime assumptions.
+SARA (Spiking Architecture for Reasoning and Adaptation) Engine is a CPU-first spiking AI framework (SNN AI framework) for learning, inference, continual memory, and lightweight agent workflows without backpropagation-heavy runtime assumptions.
 
 The project combines an event-driven Rust core with Python model, evaluation, and CLI layers. It prioritizes biological plausibility, bounded runtime state, managed output paths, and release-gated operation suitable for local and edge-oriented deployment.
 
