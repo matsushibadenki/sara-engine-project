@@ -1600,6 +1600,34 @@ def test_phase34_factorial_benchmark_dispatches_to_registered_script(monkeypatch
     assert "workspace/evaluation/factorial_benchmark.json" in args
 
 
+def test_phase34_factorial_independent_gate_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "gate-phase34-memory-cache-factorial-independent",
+        "--preregistration-path", "workspace/evaluation/factorial_registered.json",
+        "--factorial-report-path", "workspace/evaluation/factorial_benchmark.json",
+        "--external-gate-path", "workspace/evaluation/external_gate.json",
+        "--output-path", "workspace/evaluation/factorial_independent_gate.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_factorial_independent_gate.py",
+    ]
+    assert "workspace/evaluation/factorial_registered.json" in args
+    assert "workspace/evaluation/factorial_benchmark.json" in args
+    assert "workspace/evaluation/external_gate.json" in args
+    assert "workspace/evaluation/factorial_independent_gate.json" in args
+
+
 def test_phase33_twinprop_benchmark_dispatches_to_registered_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock(return_value=Mock(returncode=0))

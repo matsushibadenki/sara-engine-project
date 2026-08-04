@@ -86,7 +86,7 @@ TwinProp's training path remains comparison-only: it fits a DNN digital twin, di
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1592 passed` in the managed Python 3.10 environment after the 300-condition Phase 34 factorial runtime, benchmark, and managed CLI were added.
+- [Done] Full Python test suite: `1596 passed` in the managed Python 3.10 environment after the Phase 34 independent-execution readiness gate and managed collection blockers were added.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -699,10 +699,12 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - Executed all 300 registered factorial conditions across five seeds. Protocol/fixture/environment identity, deterministic replay, resource ceilings, query-blind retention, retained-set equality within both selection pairs, safety integrity, non-durable mutation, and production isolation passed. Maximum observed total state was `1,696` bytes, event cost was `144`, and process CPU latency was `0.202 ms` in the managed run.
 - Under byte-identical retained sets, sparse Top-k improved selection precision by `0.875` with recall difference `0.0`; the selection-by-retention interaction was `0.0`. Logarithmic retention improved old-target recall by `1.0`, while equal retention improved recent temporal resolution by `0.1`. All preregistered synthetic mechanism thresholds passed.
 - Retained `promotion_ready=false`: the factorial identifies a Top-k selection effect on frozen synthetic fixtures but provides no independent workload evidence, production provenance review, or human approval for integration. The standalone cache remains default-off and disconnected from production Event Memory ranking and durable admission.
+- Added a managed independent-execution gate bound to the immutable factorial protocol and report. It refuses to count the synthetic 10/30/100 fixture as external evidence, forbids selector retuning and query-aware retention, and requires every external domain to reach horizons 10, 30, and 100 before execution.
+- The current external manifest passes source-quality checks with two domains, but their observed horizons cover only `0-2` and `3-5`. Independent factorial execution is therefore blocked with six explicit domain/horizon collection targets, `independent_execution_ready=false`, and `promotion_ready=false`; no records were fabricated to fill the gap.
 
 ### [Later]
 
-- Evaluate the frozen factorial mechanism on an independent long-horizon workload with the same retained-set identity checks before any integration review. Do not tune the selector on that evidence or connect it to production defaults.
+- Collect unique observed external records through horizons 10, 30, and 100 for both current domains, rerun the external horizon gate, then execute the frozen factorial without selector retuning. Do not use the synthetic horizon fixture as independent evidence.
 - Keep current Event Memory and recurrent state as production controls. Do not connect checkpoint retrieval to durable admission or production ranking before independent evidence and human review.
 
 ### Minimum Experiment
@@ -757,8 +759,9 @@ Compare four equal-budget arms:
 20. [Done] Execute all 240 registered separation conditions; preserve the failed recent-resolution and Top-k gates as negative evidence and keep production promotion closed.
 21. [Done] Register the explicitly reviewed 300-condition retention-by-selection factorial with identical retained sets inside each selection comparison.
 22. [Done] Execute all 300 registered factorial conditions; identify the synthetic Top-k main effect while retaining `promotion_ready=false` and production isolation.
-23. [Later] Collect independent long-horizon factorial evidence with retained-set identity and no selector retuning before production review.
-24. [Later] Reopen physical-energy evidence only by explicit operator decision.
+23. [Done] Add the independent factorial readiness gate and freeze six missing domain/horizon collection targets without fabricating evidence.
+24. [Next] Collect independent long-horizon factorial evidence with retained-set identity and no selector retuning before production review.
+25. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
 
@@ -812,6 +815,7 @@ Compare four equal-budget arms:
 - `workspace/evaluation/phase34_memory_cache_factorial_preregistration_draft.json`
 - `workspace/evaluation/phase34_memory_cache_factorial_preregistration.json`
 - `workspace/evaluation/phase34_memory_cache_factorial_benchmark.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_independent_gate.json`
 
 ## Review Rule
 
