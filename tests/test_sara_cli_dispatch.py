@@ -1424,6 +1424,32 @@ def test_phase34_memory_cache_registration_dispatches_to_separate_script(monkeyp
     assert "workspace/evaluation/phase34_registered.json" in args
 
 
+def test_phase34_memory_cache_benchmark_dispatches_to_registered_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "eval-phase34-memory-checkpoint-cache",
+        "--fixture-path", "data/processed/benchmark_fixtures/phase34.jsonl",
+        "--preregistration-path", "workspace/evaluation/phase34_registered.json",
+        "--output-path", "workspace/evaluation/phase34_benchmark.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_checkpoint_cache_benchmark.py",
+    ]
+    assert "data/processed/benchmark_fixtures/phase34.jsonl" in args
+    assert "workspace/evaluation/phase34_registered.json" in args
+    assert "workspace/evaluation/phase34_benchmark.json" in args
+
+
 def test_phase33_twinprop_benchmark_dispatches_to_registered_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock(return_value=Mock(returncode=0))

@@ -1526,6 +1526,31 @@ def main():
             "phase34_memory_checkpoint_cache_preregistration.json",
         ),
     )
+    parser_phase34_cache_benchmark = subparsers.add_parser(
+        "eval-phase34-memory-checkpoint-cache",
+        help="Execute the registered observed-only Phase 34 cache ablation.",
+    )
+    parser_phase34_cache_benchmark.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures",
+            "phase34_memory_checkpoint_cache_cases.jsonl",
+        ),
+    )
+    parser_phase34_cache_benchmark.add_argument(
+        "--preregistration-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_checkpoint_cache_preregistration.json",
+        ),
+    )
+    parser_phase34_cache_benchmark.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation",
+            "phase34_memory_checkpoint_cache_benchmark.json",
+        ),
+    )
     parser_phase33_twinprop_benchmark = subparsers.add_parser(
         "eval-phase33-twinprop-ablation",
         help="Execute the registered observed-only TwinProp-inspired ablation.",
@@ -3488,6 +3513,20 @@ def main():
             "scripts/eval/phase34_memory_checkpoint_cache_preregistration.py",
             "--draft-path",
             str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase34-memory-checkpoint-cache":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_checkpoint_cache_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--preregistration-path",
+            str(args.preregistration_path),
             "--output-path",
             str(args.output_path),
         ]

@@ -86,7 +86,7 @@ TwinProp's training path remains comparison-only: it fits a DNN digital twin, di
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1537 passed` in the managed Python 3.10 environment after the Phase 34 immutable preregistration contract and CLI were added.
+- [Done] Full Python test suite: `1560 passed` in the managed Python 3.10 environment after the Phase 34 bounded runtime, four-arm benchmark, and managed CLI were added.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -682,11 +682,17 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 
 - Preregistered the immutable four-arm protocol as `phase34-memory-checkpoint-cache-observed-v1` before implementing any cache candidate. The 16-case observed-only fixture fingerprint is `b2065c2c1371bb7d073a80b2ba285ef50cdb140004864d3b04c1c5b696c9ca27`, the CPU environment fingerprint is `efb0c0f4b3ac0a2aaa5b6718abb7c3dfe85572dbd21f0a5f396a0f35ad755b25`, and the protocol fingerprint is `1e3d73dadd5d5ed49daf97617fc99403c8f6d2104143789afb9be142fe2b548e`. A second registration returned `identical_registration_preserved`.
 - Frozen semantic boundaries, equal four-event segments, logarithmic retention tiers `[1, 2, 4, 8]`, oldest-first provenance-preserving merges, fixed `k=2`, deterministic scalar overlap/verification/recency scoring, stale and contradiction exclusion, and checkpoint/count/byte/event/latency ceilings. Parameter averaging, learned routing, softmax, dense summaries, unbounded scans, backpropagation, matrices, GPU execution, durable admission, and production mutation are forbidden by validation.
+- Implemented a standalone, default-off bounded checkpoint store. Admission requires an observed and verified semantic boundary plus exact event interval, source references and revision, state-group identity, parent digest, runtime/schema identities, and optional expiry. Contradicted, future, malformed, over-width, or provenance-free candidates fail closed.
+- Implemented deterministic equal-retention eviction and logarithmic oldest-compatible merging without parameter averaging. Merges preserve the full bounded union of source references and parent digests; an incompatible or over-width pair is not merged.
+- Implemented fixed `k=2` sparse retrieval with registered overlap/verification/recency weights and deterministic tie ordering. Retrieval excludes stale, expired, and contradictory evidence and returns immutable evidence references with `restores_mutable_state=false`; it cannot restore historical mutable state or mutate durable knowledge.
+- Added exact checkpoint identity validation, deterministic expiry/revision invalidation, byte/event ceilings, transactional rollback on byte-budget failure, canonical state round trips, and tamper rejection. The component remains disconnected from production Event Memory ranking and durable admission.
+- Executed all 64 registered conditions and wrote `phase34_memory_checkpoint_cache_benchmark.json` with matching protocol, fixture, and environment fingerprints. All execution, deterministic replay, CPU-only, state/checkpoint/selection/event ceilings, stale/contradiction safety, non-durable mutation, and non-production-path checks passed.
+- On the frozen synthetic fixture, the best checkpoint arm improved delayed-recall conformance from `0.5` for the recurrent/Event Memory control to `1.0`; revision uptake, contradiction/abstention integrity, selection precision/recall, and deterministic replay were `1.0`. Maximum observed checkpoint state was `3,367` bytes, event cost was `9`, and process CPU latency was `0.236 ms` in the recorded run.
+- Retained `mechanism_gate_passed=false` and `promotion_ready=false`: equal-size retrieve-all, logarithmic retrieve-all, and equal-size sparse Top-k produced identical fixture quality/resource summaries, so no segmentation or selector trade-off was demonstrated. The immutable registration also omitted replicate seeds despite the stated five-replicate acceptance gate; correcting that requires a new experiment identity rather than altering this registration. Independent evidence remains absent.
 
 ### [Later]
 
-- Add a default-off bounded checkpoint store with exact source revision, event interval, parent digest, state-group identity, expiry, and contradiction invalidation.
-- Add deterministic read-only retrieval that returns evidence references rather than materialized mutable historical state. Missing state groups and partial or stale checkpoint hits must abstain.
+- Register a new follow-up identity with at least five fixed seeds and cases that force fixed/logarithmic/Top-k separation; do not rewrite the completed Phase 34 registration or claim selector benefit from the current tied arms.
 - Keep current Event Memory and recurrent state as production controls. Do not connect checkpoint retrieval to durable admission or production ranking before independent evidence and human review.
 
 ### Minimum Experiment
@@ -736,7 +742,7 @@ Compare four equal-budget arms:
 15. [Done] Execute all 350 registered TwinProp-inspired conditions with the fixed readout and equal resource/tuning budgets; retain `promotion_ready=false` because evidence is synthetic and observed-only.
 16. [Later] Evaluate the frozen structured-edge mechanism on independent temporal and structural workloads before production review.
 17. [Done] Preregister the Phase 34 four-arm bounded checkpoint-caching experiment before implementing any cache candidate.
-18. [Later] Implement and execute the registered Phase 34 candidate without changing its frozen protocol or production defaults.
+18. [Done] Implement and execute all 64 registered Phase 34 conditions without changing the frozen protocol or production defaults; retain `promotion_ready=false` because cache-arm trade-offs, five replicates, and independent evidence are absent.
 19. [Later] Reopen physical-energy evidence only by explicit operator decision.
 
 ## Required Managed Outputs
