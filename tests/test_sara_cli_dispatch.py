@@ -139,6 +139,34 @@ def test_build_replay_data_dispatches_to_replay_builder(monkeypatch):
     )
 
 
+def test_collect_continual_horizon_external_dispatches_bounded_collector(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "collect-continual-horizon-external",
+            "--target-horizon",
+            "10",
+            "--timeout-seconds",
+            "5",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    command = mock_run.call_args.args[0]
+    assert command[1] == "scripts/data/collect_continual_horizon_external.py"
+    assert command[command.index("--target-horizon") + 1] == "10"
+    assert command[command.index("--timeout-seconds") + 1] == "5.0"
+
+
 def test_build_autobot_dataset_dispatches_to_builder_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock()
@@ -1572,6 +1600,217 @@ def test_phase34_factorial_registration_dispatches_to_script(monkeypatch):
     ]
     assert "workspace/evaluation/factorial_draft.json" in args
     assert "workspace/evaluation/factorial_registered.json" in args
+
+
+def test_phase34_independent_adapter_draft_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "build-phase34-independent-adapter-preregistration-draft",
+        "--manifest-path", "data/processed/autobot/external.jsonl",
+        "--case-plan-path", "workspace/evaluation/independent_plan.json",
+        "--draft-path", "workspace/evaluation/independent_draft.json",
+        "--environment-path", "workspace/evaluation/independent_environment.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_factorial_independent_adapter_draft.py",
+    ]
+    assert "data/processed/autobot/external.jsonl" in args
+    assert "workspace/evaluation/independent_plan.json" in args
+
+
+def test_phase34_independent_adapter_registration_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "register-phase34-independent-adapter-preregistration",
+        "--draft-path", "workspace/evaluation/independent_draft.json",
+        "--output-path", "workspace/evaluation/independent_registered.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_factorial_independent_adapter_preregistration.py",
+    ]
+    assert "workspace/evaluation/independent_registered.json" in args
+
+
+def test_phase34_independent_adapter_benchmark_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "eval-phase34-independent-adapter-v2",
+        "--manifest-path", "data/processed/autobot/external.jsonl",
+        "--case-plan-path", "workspace/evaluation/independent_plan.json",
+        "--preregistration-path", "workspace/evaluation/independent_registered.json",
+        "--output-path", "workspace/evaluation/independent_benchmark.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_memory_cache_factorial_independent_adapter_benchmark.py",
+    ]
+    assert "workspace/evaluation/independent_benchmark.json" in args
+
+
+def test_phase34_independent_provenance_review_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "review-phase34-independent-provenance",
+        "--raw-path", "data/raw/architecture_migration/source_rows.jsonl",
+        "--manifest-path", "data/processed/autobot/external.jsonl",
+        "--output-path", "workspace/evaluation/provenance.json",
+        "--timeout-seconds", "5",
+        "--offline-only",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_independent_provenance_review.py",
+    ]
+    assert "--offline-only" in args
+    assert "workspace/evaluation/provenance.json" in args
+
+
+def test_phase34_cpython_snapshot_registration_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "register-phase34-cpython-snapshot",
+        "--case-plan-path", "workspace/evaluation/plan.json",
+        "--output-path", "workspace/evaluation/cpython_registration.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_cpython_snapshot_preregistration.py",
+    ]
+    assert "workspace/evaluation/cpython_registration.json" in args
+
+
+def test_phase34_cpython_snapshot_collection_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "collect-phase34-cpython-snapshot",
+        "--preregistration-path", "workspace/evaluation/cpython_registration.json",
+        "--raw-path", "data/raw/phase34_cpython_snapshot/source_rows.jsonl",
+        "--manifest-path", "data/processed/autobot/cpython_snapshot.jsonl",
+        "--report-path", "workspace/evaluation/cpython_collection.json",
+        "--timeout-seconds", "5",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/data/collect_phase34_cpython_snapshot.py",
+    ]
+    assert "data/processed/autobot/cpython_snapshot.jsonl" in args
+    assert "workspace/evaluation/cpython_collection.json" in args
+
+
+def test_phase34_transcribed_excerpt_review_request_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "build-phase34-transcribed-excerpt-review-request",
+        "--raw-path", "data/raw/architecture_migration/source_rows.jsonl",
+        "--provenance-path", "workspace/evaluation/provenance.json",
+        "--output-path", "workspace/evaluation/manual_review.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_transcribed_excerpt_review_request.py",
+    ]
+    assert "workspace/evaluation/manual_review.json" in args
+
+
+def test_phase34_cpython_git_snapshot_commands_dispatch_to_registered_scripts(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "register-phase34-cpython-git-snapshot",
+        "--case-plan-path", "workspace/evaluation/plan.json",
+        "--output-path", "workspace/evaluation/git_registration.json",
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+    assert exc_info.value.code == 0
+    assert mock_run.call_args.args[0][:2] == [
+        sys.executable,
+        "scripts/eval/phase34_cpython_git_snapshot_preregistration.py",
+    ]
+
+    mock_run.reset_mock()
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "collect-phase34-cpython-git-snapshot",
+        "--preregistration-path", "workspace/evaluation/git_registration.json",
+        "--raw-path", "data/raw/phase34_cpython_git_snapshot/source_rows.jsonl",
+        "--manifest-path", "data/processed/autobot/git_snapshot.jsonl",
+        "--report-path", "workspace/evaluation/git_collection.json",
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+    assert exc_info.value.code == 0
+    assert mock_run.call_args.args[0][:2] == [
+        sys.executable,
+        "scripts/data/collect_phase34_cpython_git_snapshot.py",
+    ]
 
 
 def test_phase34_factorial_benchmark_dispatches_to_registered_script(monkeypatch):

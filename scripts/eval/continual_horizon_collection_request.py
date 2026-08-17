@@ -35,14 +35,25 @@ def build_targets(gate: Mapping[str, Any]) -> Dict[str, Any]:
     promotion_checks = gate.get("promotion_checks", {})
     blocked = not bool(gate.get("promotion_allowed", False))
     domains = [str(item) for item in gate.get("source_domains", []) if str(item)]
+    domain_horizons = gate.get("domain_horizons", {})
+    if not isinstance(domain_horizons, Mapping):
+        domain_horizons = {}
     target_rows = []
     if blocked:
         for domain in domains or ["new_independent_domain"]:
+            observed = domain_horizons.get(domain, [])
+            maximum = max(
+                (int(value) for value in observed if type(value) is int),
+                default=-1,
+            ) if isinstance(observed, list) else -1
+            missing_buckets = [bucket for bucket in (10, 30, 100) if maximum < bucket]
+            if not missing_buckets:
+                continue
             target_rows.append(
                 {
                     "target_id": f"phase22:{domain}",
                     "source_domain": domain,
-                    "required_horizon_buckets": [10, 30, 100],
+                    "required_horizon_buckets": missing_buckets,
                     "minimum_records_per_bucket": 1,
                     "required_fields": [
                         "source_ref",

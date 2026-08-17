@@ -50,3 +50,21 @@ def test_collection_request_is_empty_after_promotion():
 
     assert targets["target_count"] == 0
     assert targets["targets"] == []
+
+
+def test_collection_request_omits_already_observed_horizon_buckets():
+    module = _load_module()
+    targets = module.build_targets(
+        {
+            "promotion_allowed": False,
+            "promotion_checks": {"required_horizon_buckets_present": False},
+            "source_domains": ["one.example", "two.example"],
+            "domain_horizons": {
+                "one.example": list(range(11)),
+                "two.example": list(range(31)),
+            },
+        }
+    )
+
+    assert targets["targets"][0]["required_horizon_buckets"] == [30, 100]
+    assert targets["targets"][1]["required_horizon_buckets"] == [100]

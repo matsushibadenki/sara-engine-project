@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import sys
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence
 from urllib.parse import urlparse
 
@@ -47,18 +48,22 @@ def build_manifest(rows: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
             continue
         qualified.append({**row, "source_domain": domain})
     qualified.sort(key=lambda row: (str(row["source_domain"]), str(row["source_url"]), str(row["material_hash"])))
-    return [
-        {
+    domain_indices: Dict[str, int] = defaultdict(int)
+    manifest = []
+    for row in qualified:
+        domain = str(row["source_domain"])
+        horizon_index = domain_indices[domain]
+        domain_indices[domain] += 1
+        manifest.append({
             **row,
             "schema": "sara-architecture-migration-source-row-v1",
-            "source_site": ".".join(str(row["source_domain"]).split(".")[-2:]),
-            "migration_horizon_index": index,
+            "source_site": ".".join(domain.split(".")[-2:]),
+            "migration_horizon_index": horizon_index,
             "provenance_digest": hashlib.sha256(
                 f"{row['source_url']}|{row['material_hash']}|{row.get('manifest_id', '')}".encode("utf-8")
             ).hexdigest(),
-        }
-        for index, row in enumerate(qualified)
-    ]
+        })
+    return manifest
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

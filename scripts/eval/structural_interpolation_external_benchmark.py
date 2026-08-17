@@ -62,7 +62,8 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
                     verified=bool(row.get("observed_only", False)) and str(row.get("compliance_level", "")) == "allow",
                 )
             )
-    result = StructuralInterpolationEngine(max_proposals=16).propose(evidence, current_segment=999)
+    engine = StructuralInterpolationEngine(max_proposals=16)
+    result = engine.propose(evidence, current_segment=999)
     proposals = result.proposals
     expected_domains = set(by_domain)
     proposal_domains = {proposal.source_node.removeprefix("domain:") for proposal in proposals}
@@ -71,9 +72,20 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
         "independent_external_rows_present": bool(evidence),
         "minimum_records_per_domain": bool(source_counts) and min(source_counts.values()) >= 3,
         "domain_proposals_complete": proposal_domains == expected_domains,
-        "source_hashes_preserved": all(len(proposal.source_hashes) == source_counts[proposal.source_node] for proposal in proposals),
+        "bounded_source_hashes_preserved": all(
+            len(proposal.source_hashes)
+            == min(source_counts[proposal.source_node], engine.max_evidence_per_relation)
+            for proposal in proposals
+        ),
+        "overflow_evidence_accounted": result.rejected_count
+        == sum(
+            max(0, count - engine.max_evidence_per_relation)
+            for count in source_counts.values()
+        ),
         "revision_metadata_preserved": all(bool(proposal.source_revisions) for proposal in proposals),
-        "horizon_order_preserved": all(values == sorted(values) for values in domain_horizons.values()),
+        "horizon_order_preserved": all(
+            values == list(range(len(values))) for values in domain_horizons.values()
+        ),
         "durable_mutation_blocked": all(not proposal.durable_mutation_allowed for proposal in proposals),
         "observed_only_scope": all(item.verified for item in evidence),
     }
@@ -88,6 +100,8 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "proposal_count": len(proposals),
             "min_records_per_domain": min(source_counts.values()) if source_counts else 0,
             "total_event_cost": sum(item.metabolic_cost for item in evidence),
+            "accepted_evidence_count": sum(proposal.evidence_count for proposal in proposals),
+            "rejected_evidence_count": result.rejected_count,
         },
         "checks": checks,
         "domain_horizons": domain_horizons,

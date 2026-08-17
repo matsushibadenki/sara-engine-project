@@ -68,7 +68,9 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
         "unique_source_refs": bool(refs) and all(refs) and len(set(refs)) == len(refs),
         "source_revisions_present": bool(revisions) and all(revisions),
         "collection_times_present": bool(collection_times) and all(collection_times),
-        "ordered_horizons_per_domain": all(values == sorted(values) for values in horizons.values()),
+        "contiguous_horizons_per_domain": all(
+            values == list(range(len(values))) for values in horizons.values()
+        ),
         "observed_allow_only": all(
             bool(row.get("observed_only", False)) and str(row.get("compliance_level", "")) == "allow"
             for row in eligible
@@ -94,6 +96,10 @@ def build_report(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
             "min_records_per_domain": min((len(items) for items in by_domain.values()), default=0),
             "unique_source_revision_count": len(set(revisions)),
             "horizon_span": max((int(row.get("migration_horizon_index", -1)) for row in eligible), default=-1),
+            "minimum_domain_horizon_span": min(
+                (max(values, default=-1) for values in horizons.values()),
+                default=-1,
+            ),
             "observed_horizon_value_count": len(horizon_values),
         },
         "checks": checks,

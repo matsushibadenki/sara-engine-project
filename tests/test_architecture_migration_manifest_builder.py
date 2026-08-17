@@ -26,4 +26,14 @@ def test_manifest_builder_normalizes_external_provenance_for_gate():
     assert all(row["schema"] == "sara-architecture-migration-source-row-v1" for row in manifest)
     assert {row["source_site"] for row in manifest} == {"alpha.test", "beta.test"}
     assert all(len(row["provenance_digest"]) == 64 for row in manifest)
+    assert [
+        row["migration_horizon_index"]
+        for row in manifest
+        if row["source_domain"] == "alpha.test"
+    ] == [0, 1, 2]
+    assert [
+        row["migration_horizon_index"]
+        for row in manifest
+        if row["source_domain"] == "beta.test"
+    ] == [0, 1, 2]
     assert gate.build_report(manifest)["passed"] is True

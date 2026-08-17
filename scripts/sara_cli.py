@@ -32,6 +32,7 @@ from sara_engine.utils.project_paths import (
     interim_data_path,
     model_path,
     processed_data_path,
+    raw_data_path,
     workspace_path,
 )
 from scripts.utils.manage_db import SaraCorpusDB
@@ -1182,6 +1183,25 @@ def main():
         default=workspace_path("evaluation", "continual_horizon_external_gate_summary.txt"),
     )
 
+    parser_continual_horizon_collect = subparsers.add_parser(
+        "collect-continual-horizon-external",
+        help="Collect reviewed first-party documents through a bounded horizon.",
+    )
+    parser_continual_horizon_collect.add_argument("--target-horizon", type=int, default=10)
+    parser_continual_horizon_collect.add_argument(
+        "--raw-path",
+        default=raw_data_path("architecture_migration", "source_rows.jsonl"),
+    )
+    parser_continual_horizon_collect.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "architecture_migration_latent_manifest.jsonl"),
+    )
+    parser_continual_horizon_collect.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "continual_horizon_external_collection.json"),
+    )
+    parser_continual_horizon_collect.add_argument("--timeout-seconds", type=float, default=20.0)
+
     parser_continual_horizon_request = subparsers.add_parser(
         "build-continual-horizon-collection-request",
         help="Build managed independent-data targets from the blocked Phase 22 gate.",
@@ -1706,6 +1726,170 @@ def main():
             "evaluation",
             "phase34_memory_cache_factorial_independent_gate.json",
         ),
+    )
+    parser_phase34_independent_adapter_draft = subparsers.add_parser(
+        "build-phase34-independent-adapter-preregistration-draft",
+        help="Freeze the provenance-bound Phase 34 independent adapter plan.",
+    )
+    parser_phase34_independent_adapter_draft.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "architecture_migration_latent_manifest.jsonl"),
+    )
+    parser_phase34_independent_adapter_draft.add_argument(
+        "--case-plan-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_case_plan.json"),
+    )
+    parser_phase34_independent_adapter_draft.add_argument(
+        "--draft-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_adapter_v2_preregistration_draft.json"),
+    )
+    parser_phase34_independent_adapter_draft.add_argument(
+        "--environment-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_adapter_v2_environment.json"),
+    )
+    parser_phase34_independent_adapter_registration = subparsers.add_parser(
+        "register-phase34-independent-adapter-preregistration",
+        help="Register the immutable Phase 34 independent adapter contract.",
+    )
+    parser_phase34_independent_adapter_registration.add_argument("--draft-path", required=True)
+    parser_phase34_independent_adapter_registration.add_argument(
+        "--output-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_adapter_v2_preregistration.json"),
+    )
+    parser_phase34_independent_adapter_benchmark = subparsers.add_parser(
+        "eval-phase34-independent-adapter-v2",
+        help="Execute the registered Phase 34 independent source-identity adapter.",
+    )
+    parser_phase34_independent_adapter_benchmark.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "architecture_migration_latent_manifest.jsonl"),
+    )
+    parser_phase34_independent_adapter_benchmark.add_argument(
+        "--case-plan-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_case_plan.json"),
+    )
+    parser_phase34_independent_adapter_benchmark.add_argument(
+        "--preregistration-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_adapter_v2_preregistration.json"),
+    )
+    parser_phase34_independent_adapter_benchmark.add_argument(
+        "--output-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_adapter_v2_benchmark.json"),
+    )
+    parser_phase34_provenance_review = subparsers.add_parser(
+        "review-phase34-independent-provenance",
+        help="Recheck sampled Phase 34 source identities against stored and live provenance.",
+    )
+    parser_phase34_provenance_review.add_argument(
+        "--raw-path",
+        default=raw_data_path("architecture_migration", "source_rows.jsonl"),
+    )
+    parser_phase34_provenance_review.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "architecture_migration_latent_manifest.jsonl"),
+    )
+    parser_phase34_provenance_review.add_argument(
+        "--output-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_provenance_review.json"),
+    )
+    parser_phase34_provenance_review.add_argument("--timeout-seconds", type=float, default=20.0)
+    parser_phase34_provenance_review.add_argument("--offline-only", action="store_true")
+    parser_phase34_cpython_snapshot_registration = subparsers.add_parser(
+        "register-phase34-cpython-snapshot",
+        help="Register the immutable commit-pinned Phase 34 CPython source snapshot.",
+    )
+    parser_phase34_cpython_snapshot_registration.add_argument(
+        "--case-plan-path",
+        default=workspace_path(
+            "evaluation", "phase34_memory_cache_factorial_independent_case_plan.json"
+        ),
+    )
+    parser_phase34_cpython_snapshot_registration.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation", "phase34_cpython_v3_14_6_snapshot_preregistration.json"
+        ),
+    )
+    parser_phase34_cpython_snapshot_collection = subparsers.add_parser(
+        "collect-phase34-cpython-snapshot",
+        help="Collect and verify the registered commit-pinned CPython snapshot.",
+    )
+    parser_phase34_cpython_snapshot_collection.add_argument(
+        "--preregistration-path",
+        default=workspace_path(
+            "evaluation", "phase34_cpython_v3_14_6_snapshot_preregistration.json"
+        ),
+    )
+    parser_phase34_cpython_snapshot_collection.add_argument(
+        "--raw-path",
+        default=raw_data_path("phase34_cpython_snapshot", "source_rows.jsonl"),
+    )
+    parser_phase34_cpython_snapshot_collection.add_argument(
+        "--manifest-path",
+        default=processed_data_path(
+            "autobot", "phase34_cpython_v3_14_6_snapshot_manifest.jsonl"
+        ),
+    )
+    parser_phase34_cpython_snapshot_collection.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation", "phase34_cpython_v3_14_6_snapshot_collection.json"
+        ),
+    )
+    parser_phase34_cpython_snapshot_collection.add_argument(
+        "--timeout-seconds", type=float, default=20.0
+    )
+    parser_phase34_excerpt_review_request = subparsers.add_parser(
+        "build-phase34-transcribed-excerpt-review-request",
+        help="Build the evidence-bound human review request for six historical excerpts.",
+    )
+    parser_phase34_excerpt_review_request.add_argument(
+        "--raw-path",
+        default=raw_data_path("architecture_migration", "source_rows.jsonl"),
+    )
+    parser_phase34_excerpt_review_request.add_argument(
+        "--provenance-path",
+        default=workspace_path(
+            "evaluation", "phase34_memory_cache_factorial_independent_provenance_review.json"
+        ),
+    )
+    parser_phase34_excerpt_review_request.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_human_review_request.json"
+        ),
+    )
+    parser_phase34_cpython_git_registration = subparsers.add_parser(
+        "register-phase34-cpython-git-snapshot",
+        help="Register the shallow-Git fallback for the fixed CPython snapshot.",
+    )
+    parser_phase34_cpython_git_registration.add_argument(
+        "--case-plan-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_case_plan.json"),
+    )
+    parser_phase34_cpython_git_registration.add_argument(
+        "--output-path",
+        default=workspace_path("evaluation", "phase34_cpython_v3_14_6_git_snapshot_preregistration.json"),
+    )
+    parser_phase34_cpython_git_collection = subparsers.add_parser(
+        "collect-phase34-cpython-git-snapshot",
+        help="Collect the registered CPython snapshot through one shallow Git fetch.",
+    )
+    parser_phase34_cpython_git_collection.add_argument(
+        "--preregistration-path",
+        default=workspace_path("evaluation", "phase34_cpython_v3_14_6_git_snapshot_preregistration.json"),
+    )
+    parser_phase34_cpython_git_collection.add_argument(
+        "--raw-path",
+        default=raw_data_path("phase34_cpython_git_snapshot", "source_rows.jsonl"),
+    )
+    parser_phase34_cpython_git_collection.add_argument(
+        "--manifest-path",
+        default=processed_data_path("autobot", "phase34_cpython_v3_14_6_git_snapshot_manifest.jsonl"),
+    )
+    parser_phase34_cpython_git_collection.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "phase34_cpython_v3_14_6_git_snapshot_collection.json"),
     )
     parser_phase33_twinprop_benchmark = subparsers.add_parser(
         "eval-phase33-twinprop-ablation",
@@ -3385,6 +3569,24 @@ def main():
         result = subprocess.run(command)
         sys.exit(result.returncode)
 
+    elif args.command == "collect-continual-horizon-external":
+        command = [
+            sys.executable,
+            "scripts/data/collect_continual_horizon_external.py",
+            "--target-horizon",
+            str(args.target_horizon),
+            "--raw-path",
+            str(args.raw_path),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
+            "--timeout-seconds",
+            str(args.timeout_seconds),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
     elif args.command == "build-continual-horizon-collection-request":
         command = [
             sys.executable,
@@ -3781,6 +3983,140 @@ def main():
             str(args.external_gate_path),
             "--output-path",
             str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase34-independent-adapter-preregistration-draft":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_factorial_independent_adapter_draft.py",
+            "--manifest-path",
+            str(args.manifest_path),
+            "--case-plan-path",
+            str(args.case_plan_path),
+            "--draft-path",
+            str(args.draft_path),
+            "--environment-path",
+            str(args.environment_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase34-independent-adapter-preregistration":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_factorial_independent_adapter_preregistration.py",
+            "--draft-path",
+            str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase34-independent-adapter-v2":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_memory_cache_factorial_independent_adapter_benchmark.py",
+            "--manifest-path",
+            str(args.manifest_path),
+            "--case-plan-path",
+            str(args.case_plan_path),
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "review-phase34-independent-provenance":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_independent_provenance_review.py",
+            "--raw-path",
+            str(args.raw_path),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--output-path",
+            str(args.output_path),
+            "--timeout-seconds",
+            str(args.timeout_seconds),
+        ]
+        if args.offline_only:
+            command.append("--offline-only")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase34-cpython-snapshot":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_cpython_snapshot_preregistration.py",
+            "--case-plan-path",
+            str(args.case_plan_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "collect-phase34-cpython-snapshot":
+        command = [
+            sys.executable,
+            "scripts/data/collect_phase34_cpython_snapshot.py",
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--raw-path",
+            str(args.raw_path),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
+            "--timeout-seconds",
+            str(args.timeout_seconds),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase34-transcribed-excerpt-review-request":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_transcribed_excerpt_review_request.py",
+            "--raw-path",
+            str(args.raw_path),
+            "--provenance-path",
+            str(args.provenance_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase34-cpython-git-snapshot":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_cpython_git_snapshot_preregistration.py",
+            "--case-plan-path",
+            str(args.case_plan_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "collect-phase34-cpython-git-snapshot":
+        command = [
+            sys.executable,
+            "scripts/data/collect_phase34_cpython_git_snapshot.py",
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--raw-path",
+            str(args.raw_path),
+            "--manifest-path",
+            str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)

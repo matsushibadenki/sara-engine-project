@@ -118,3 +118,21 @@ def test_factorial_safety_cases_fail_closed_for_all_arms():
             result = runtime.evaluate(rows[family], seed=313)
             assert result["decision"] == decision
             assert result["safety_integrity"] == 1.0
+
+
+def test_external_source_refs_are_preserved_without_changing_legacy_results():
+    row = dict(_rows()[0])
+    legacy = MemoryCacheFactorialRuntime(ARMS[2], FactorialLimits()).evaluate(
+        row, seed=109
+    )
+    source_refs = [f"https://source.example/{index}" for index in range(len(row["checkpoint_stream"]))]
+    row["checkpoint_source_refs"] = source_refs
+    external = MemoryCacheFactorialRuntime(ARMS[2], FactorialLimits()).evaluate(
+        row, seed=109
+    )
+
+    assert "external_provenance_supplied" not in legacy
+    assert external["external_provenance_supplied"] is True
+    assert set(external["retained_source_refs"]).issubset(set(source_refs))
+    assert set(external["selected_source_refs"]).issubset(set(source_refs))
+    assert external["retention_bytes"] > legacy["retention_bytes"]

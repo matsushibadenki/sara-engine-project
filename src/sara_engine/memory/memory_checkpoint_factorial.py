@@ -35,6 +35,7 @@ class MemoryCacheFactorialRuntime:
     def evaluate(self, case: Mapping[str, Any], *, seed: int) -> Dict[str, Any]:
         stream = case.get("checkpoint_stream")
         query_ids = case.get("query_ids")
+        supplied_source_refs = case.get("checkpoint_source_refs")
         horizon = case.get("horizon_events")
         if (
             not isinstance(stream, list)
@@ -43,14 +44,32 @@ class MemoryCacheFactorialRuntime:
             or not 1 <= len(query_ids) <= self.limits.max_summary_ids
             or type(horizon) is not int
             or not 1 <= horizon <= self.limits.max_events
+            or (
+                supplied_source_refs is not None
+                and (
+                    not isinstance(supplied_source_refs, list)
+                    or len(supplied_source_refs) != len(stream)
+                    or any(not isinstance(item, str) or not item for item in supplied_source_refs)
+                )
+            )
         ):
             return self._invalid_result(case, seed)
-        generated = self._seeded_stream(tuple(str(item) for item in stream), seed)
+        stream_ids = tuple(str(item) for item in stream)
+        generated = self._seeded_stream(stream_ids, seed)
+        source_ref_by_summary = (
+            {
+                summary_id: str(source_ref)
+                for summary_id, source_ref in zip(stream_ids, supplied_source_refs)
+            }
+            if supplied_source_refs is not None
+            else None
+        )
         profile, selection = self._factors()
         retained, merges, evictions = self._retain(
             generated,
             profile=profile,
             negative_mode=str(case.get("negative_mode", "none")),
+            source_ref_by_summary=source_ref_by_summary,
         )
         retained_payload = {
             "profile": profile,
@@ -97,6 +116,11 @@ class MemoryCacheFactorialRuntime:
                 "start": segment["start"],
                 "end": segment["end"],
                 "summary_ids": list(segment["summary_ids"]),
+                **(
+                    {"source_refs": list(segment["source_refs"])}
+                    if supplied_source_refs is not None
+                    else {}
+                ),
             }
             for segment in selected
         ]
@@ -114,7 +138,7 @@ class MemoryCacheFactorialRuntime:
             and total_state_bytes <= self.limits.max_state_bytes
             and event_cost <= self.limits.max_event_cost
         )
-        return {
+        result = {
             "case_id": str(case.get("case_id", "")),
             "family": str(case.get("family", "")),
             "factor_focus": str(case.get("factor_focus", "")),
@@ -141,6 +165,23 @@ class MemoryCacheFactorialRuntime:
             "durable_mutation": False,
             "production_path_changed": False,
         }
+        if supplied_source_refs is not None:
+            result["retained_source_refs"] = sorted(
+                {
+                    source_ref
+                    for segment in retained
+                    for source_ref in segment["source_refs"]
+                }
+            )
+            result["selected_source_refs"] = sorted(
+                {
+                    source_ref
+                    for segment in selected
+                    for source_ref in segment["source_refs"]
+                }
+            )
+            result["external_provenance_supplied"] = True
+        return result
 
     def _factors(self) -> Tuple[str, str]:
         if self.arm == "recurrent_event_memory_control":
@@ -155,6 +196,7 @@ class MemoryCacheFactorialRuntime:
         *,
         profile: str,
         negative_mode: str,
+        source_ref_by_summary: Mapping[str, str] | None = None,
     ) -> Tuple[List[Dict[str, Any]], int, int]:
         segments: List[Dict[str, Any]] = []
         merges = 0
@@ -166,7 +208,11 @@ class MemoryCacheFactorialRuntime:
                     "start": index,
                     "end": index + 1,
                     "summary_ids": [summary_id],
-                    "source_refs": [f"stream:{index}"],
+                    "source_refs": [
+                        source_ref_by_summary.get(summary_id, f"stream:{index}")
+                        if source_ref_by_summary is not None
+                        else f"stream:{index}"
+                    ],
                     "state_group_id": (
                         f"group:{index}"
                         if negative_mode == "incompatible_groups"

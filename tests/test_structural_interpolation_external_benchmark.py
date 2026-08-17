@@ -15,7 +15,9 @@ def test_structural_interpolation_external_manifest_passes():
     module = _load_module()
     report = module.build_report(module._load(module.DEFAULT_MANIFEST))
     assert report["passed"] is True
-    assert report["metrics"]["record_count"] == 6
+    assert report["metrics"]["record_count"] == 202
     assert report["metrics"]["source_domain_count"] == 2
     assert report["metrics"]["proposal_count"] == 2
+    assert report["metrics"]["accepted_evidence_count"] == 16
+    assert report["metrics"]["rejected_evidence_count"] == 186
     assert all(report["checks"].values())

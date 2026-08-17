@@ -22,11 +22,16 @@ def test_continual_horizon_external_gate_accepts_existing_independent_manifest()
     report = module.build_report(module._load(str(manifest)))
 
     assert report["passed"] is True
-    assert report["promotion_allowed"] is False
-    assert report["metrics"]["eligible_record_count"] == 6
+    assert report["promotion_allowed"] is True
+    assert report["metrics"]["eligible_record_count"] == 202
     assert report["metrics"]["source_domain_count"] == 2
-    assert report["promotion_checks"]["required_horizon_buckets_present"] is False
-    assert report["next_actions"]
+    assert report["metrics"]["min_records_per_domain"] == 101
+    assert report["metrics"]["minimum_domain_horizon_span"] == 100
+    assert report["horizon_bucket_coverage"]["10"] is True
+    assert report["horizon_bucket_coverage"]["30"] is True
+    assert report["horizon_bucket_coverage"]["100"] is True
+    assert report["promotion_checks"]["required_horizon_buckets_present"] is True
+    assert report["next_actions"] == []
 
 
 def test_continual_horizon_external_gate_rejects_duplicate_hash():
@@ -59,3 +64,28 @@ def test_continual_horizon_external_gate_rejects_duplicate_hash():
 
     assert report["passed"] is False
     assert report["checks"]["unique_material_hashes"] is False
+
+
+def test_continual_horizon_external_gate_rejects_sparse_or_global_domain_indices():
+    module = _load_module()
+    rows = []
+    for domain, indices in (("one.example", (0, 1, 2)), ("two.example", (3, 4, 5))):
+        for index in indices:
+            rows.append(
+                {
+                    "evidence_scope": "independent_external",
+                    "source_domain": domain,
+                    "material_hash": f"hash-{domain}-{index}",
+                    "source_ref": f"https://{domain}/{index}",
+                    "source_revision": f"rev-{index}",
+                    "collection_time": "2026-07-19",
+                    "migration_horizon_index": index,
+                    "observed_only": True,
+                    "compliance_level": "allow",
+                }
+            )
+
+    report = module.build_report(rows)
+
+    assert report["passed"] is False
+    assert report["checks"]["contiguous_horizons_per_domain"] is False

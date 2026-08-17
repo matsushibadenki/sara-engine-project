@@ -700,11 +700,41 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - Under byte-identical retained sets, sparse Top-k improved selection precision by `0.875` with recall difference `0.0`; the selection-by-retention interaction was `0.0`. Logarithmic retention improved old-target recall by `1.0`, while equal retention improved recent temporal resolution by `0.1`. All preregistered synthetic mechanism thresholds passed.
 - Retained `promotion_ready=false`: the factorial identifies a Top-k selection effect on frozen synthetic fixtures but provides no independent workload evidence, production provenance review, or human approval for integration. The standalone cache remains default-off and disconnected from production Event Memory ranking and durable admission.
 - Added a managed independent-execution gate bound to the immutable factorial protocol and report. It refuses to count the synthetic 10/30/100 fixture as external evidence, forbids selector retuning and query-aware retention, and requires every external domain to reach horizons 10, 30, and 100 before execution.
-- The current external manifest passes source-quality checks with two domains, but their observed horizons cover only `0-2` and `3-5`. Independent factorial execution is therefore blocked with six explicit domain/horizon collection targets, `independent_execution_ready=false`, and `promotion_ready=false`; no records were fabricated to fill the gap.
+- Before external collection, the six-record manifest passed source-quality checks but used global ranges `0-2` and `3-5`; the readiness gate correctly kept independent execution and promotion blocked rather than fabricating the missing horizon evidence.
+- Corrected `migration_horizon_index` from a misleading global sequence to a contiguous per-domain sequence. The external gate now rejects skipped, duplicated, or cross-domain global indices instead of treating a sorted copy as evidence of an ordered horizon.
+- Added a bounded transactional external collector and CLI for reviewed first-party sources. It restricts collection to HTTPS Python documentation and canonical RFC Editor documents, revalidates redirects, caps each response at 2 MB and stored normalized content at 12,000 characters, records retrieval time/revision/content and response hashes, rejects duplicate references or content, and does not replace the current manifest unless every requested domain reaches the target.
+- Collected 16 new authoritative documents without changing the original six content hashes. The corrected manifest now contains 22 unique observed records: `docs.python.org` and `www.rfc-editor.org` each cover contiguous horizons `0-10`. The source-quality gate remains PASS, horizon-10 coverage is now complete, and the independent factorial blocker decreased from six domain/horizon targets to four (`30` and `100` for each domain). `independent_execution_ready=false` and `promotion_ready=false` remain unchanged.
+- Revalidated the expanded manifest against bounded structural interpolation. The runtime still accepts at most eight items per relation: 16 records entered the two proposals and the six over-capacity records were explicitly accounted as rejected, so external collection did not silently widen structural state.
+- Expanded the reviewed first-party catalog by 20 Python 3.14 library documents and 20 stable RFC Editor documents, then transactionally collected all 40 additions. The independent manifest now contains 62 unique records and both domains cover contiguous horizons `0-30`. Horizon-30 coverage passes; only horizon 100 remains missing for each domain.
+- Revalidated structural capacity after the horizon-30 expansion without widening runtime limits. The two proposals still accept exactly 16 records under the eight-items-per-relation ceiling, and all 46 overflow records are explicitly reported as rejected. The external quality and structural interpolation gates remain PASS, while independent factorial execution and promotion remain blocked.
+- Added an explicit horizon-100 catalog stage with 70 further Python 3.14 documents and 70 further RFC Editor documents. The catalog now contains 196 unique reviewed URLs across immutable stages `16/40/140`; a request beyond horizon 100 fails closed.
+- Collected all 140 horizon-100 additions transactionally after replacing one unavailable Python documentation URL detected by the fail-closed fetch report. The independent manifest now contains 202 unique observed records, with both domains covering every per-domain index from `0` through `100`.
+- The external horizon gate now passes all 10/30/100 buckets and the Phase 34 independent readiness gate reports `independent_execution_ready=true`, zero missing collection targets, and no blockers. This authorizes only the next independent evaluation step; `promotion_ready=false`, production isolation, no selector retuning, and no query-aware retention remain fixed.
+- Revalidated bounded structural interpolation on all 202 records. Exactly 16 records remain admitted to the two bounded proposals and all 186 overflow records are explicitly rejected; no runtime capacity was widened to accommodate the new evidence.
+- Built a deterministic provenance-bound independent adapter plan before executing any independent arm. The frozen plan contains 42 source-identity cases (`2 domains × 3 horizons × 7 families`), five unchanged parent arms, five unchanged seeds, and 1,050 future conditions. Stream positions use a fixed integer rule, signature decoys use scalar sparse Jaccard with a material-hash tie break, and every case is bound to the completed source-manifest and case-plan fingerprints.
+- Registered adapter v1, then rejected it before execution during registration audit because its declaration to reuse parent budgets and thresholds did not bind every concrete value in the immutable validator. The v1 registration was not modified or executed.
+- Registered the corrected immutable `phase34-memory-cache-factorial-independent-adapter-v2` with protocol fingerprint `7e4ce13ff7e0aded273a657133263ebf9c52e7d5285c3d2a341a87233bd44ec1`, source-manifest fingerprint `b5e3f13a527fa39ef647944744a52908fc73f83614a95ef92d2b179d6006f801`, and case-plan fingerprint `b0f72e3bd963ba851d341e9b2b2ac5e60846ef3052e536bf18fbfeb971a18f9f`. Identical re-registration was preserved.
+- The v2 contract fixes every parent budget and threshold by value, limits claims to exact source-hash identity recall, and explicitly forbids semantic/language-understanding/ANN-parity/energy claims, selector retuning, query-aware retention, matrices, gradients, GPU dependence, durable admission, and production mutation. Registration is not an independent result; execution remains pending.
+- Implemented the registered v2 adapter without changing its case plan, arms, seeds, budgets, or thresholds. Independent cases pass their real source URLs into retained and selected checkpoint state, so provenance contributes to state bytes and retained-set digests; legacy synthetic cases retain their prior `stream:index` behavior.
+- Executed all 1,050 registered conditions with every source, case-plan, environment, parent-report, external-gate, readiness-gate, and protocol fingerprint matching. Execution integrity, deterministic replay, retained-set identity, source-ref containment, query-blind retention, resource ceilings, CPU/no-gradient/no-matrix/no-GPU boundaries, synthetic fail-closed controls, and production isolation all passed.
+- The preregistered exact source-identity gate passed: Top-k selection precision improved by `0.875` with recall difference `0.0`; logarithmic old-identity recall improved by `1.0`; equal retention's recent-resolution advantage was `0.145833`; interaction was `0.0`; safety and retained-set identity were `1.0`. Maximum state was `5,432` bytes, event cost was `116`, and process CPU latency was `0.694 ms` in the recorded run.
+- Positive exact-identity recall was `0.75` for recurrent/equal-retention arms and `1.0` for both logarithmic arms at each domain and horizon 10/30/100. The frozen plan sampled 66 unique materials and source refs from the 202-record qualification corpus; it did not test every document.
+- Retained `promotion_ready=false`. These results establish bounded exact source-hash identity retrieval under real external provenance, not semantic delayed recall, language understanding, general memory accuracy, ANN parity, or energy savings. Missing/stale/contradiction controls remain synthetic and are reported separately from independent evidence.
+- Added a read-only provenance review that rebinds the 66 sampled identities to raw content, processed manifest, case plan, adapter registration, and benchmark fingerprints before performing live source checks. All offline hashes, refs, revisions, collection metadata, observed/allow flags, and benchmark bindings passed.
+- Re-fetched all 60 automatically collected sampled URLs. All 30 RFC Editor documents reproduced their normalized content hash, response-body hash, and revision. All 30 Python `/3.14/` documentation pages were reachable but had changed normalized content, response body, and revision, demonstrating that the version-series URLs are mutable rather than immutable release snapshots.
+- Preserved the provenance failure: `automated_provenance_passed=false` and `provenance_review_complete=false`. The six historical transcribed excerpts also remain explicit manual-review targets. The executed v2 source fingerprint and result were not rewritten after observing drift, and semantic-workload preregistration remains blocked.
+- Verified that the official `docs.python.org/3.14/archives/` artifacts are also mutable series archives rather than release-numbered immutable snapshots. They cannot repair the recorded drift claim.
+- Identified a new preregistration candidate without changing v2: official CPython tag `v3.14.6` peels to commit `c63aec69bd59c55314c06c23f4c22c03de76fe45`, and commit-addressed `Doc/library/*.rst` sources are retrievable. The commit plus the exact 30-file list must be frozen under a new source-snapshot identity before collection.
+- Registered the exact 30-file Raw HTTP snapshot contract before collection with protocol fingerprint `566b4232402240d8a1fd08793fc820d41698e27a52d4c79d08007a239642ddb5`. Both collection attempts failed closed on GitHub HTTP `429`; no partial raw or manifest output was written and the failed transport result was not used to rewrite the contract.
+- Registered a separate shallow-Git fallback before execution with protocol fingerprint `277e12a24c1e9d2270e8085efffc488ef5280b92ed1e8b18659a83fce3e2efc8`. It preserves the same CPython repository, commit, case-plan-derived 30-file allowlist, byte limits, and claim boundaries while making the acquisition transport explicit.
+- Collected all 30 preregistered Git blobs from commit `c63aec69bd59c55314c06c23f4c22c03de76fe45`. All records are commit-pinned, unique, UTF-8, and untruncated; the raw snapshot fingerprint is `d33c78a975c47a366a60b8e0cbb857f8a25ba4505472540ddf3ca6e0b5b04b17` and the manifest fingerprint is `75c9e11df10a091a37025cdf0e0c3afd3d4c7314b18f728662626f2a14eb08a3`.
+- Generated an evidence-bound human review request for the six historical transcribed excerpts. Every target is bound to its stored content hash and cited source, but `review_complete=false`; no excerpt was silently replaced, reclassified, or approved by automation.
+- Verification passed for all 92 targeted snapshot, review-request, and CLI tests. The full suite recorded `1634 passed` plus one pre-existing Phase 33 process-latency gate failure under aggregate test load; the unchanged Phase 33 test passed immediately in isolation with `max_latency_ms_observed=0.582`, so its threshold was not relaxed and it is not counted as a Phase 34 failure.
 
 ### [Later]
 
-- Collect unique observed external records through horizons 10, 30, and 100 for both current domains, rerun the external horizon gate, then execute the frozen factorial without selector retuning. Do not use the synthetic horizon fixture as independent evidence.
+- Preserve the failed live-provenance and Raw HTTP transport results. Do not replace sources inside executed adapter v2 or treat the successful Git snapshot as a rewrite of that experiment.
+- Complete human source-alignment review for the six transcribed excerpts using the hash-bound request. Add a separately preregistered semantic delayed-recall workload only after the manual-review gate passes.
 - Keep current Event Memory and recurrent state as production controls. Do not connect checkpoint retrieval to durable admission or production ranking before independent evidence and human review.
 
 ### Minimum Experiment
@@ -735,13 +765,129 @@ Compare four equal-budget arms:
 - Fixed versus logarithmic segmentation and retrieve-all versus sparse Top-k have interpretable, reproducible trade-offs rather than gains caused by unequal retained information.
 - Promotion remains blocked until independent workloads, provenance review, and explicit human approval confirm that cached evidence cannot bypass durable-knowledge boundaries.
 
+## Phase 35: Emergent Overlapping Spatiotemporal Expert Fields
+
+**Goal:** test whether expertise can be represented as a bounded, overlapping, time-varying sparse activation field rather than a fixed expert module selected by a router.
+
+### Research Hypothesis
+
+- Treat an expert as an observation over the active sparse subgraph at time `t`, not as a persistent model object:
+
+```text
+F(x, t) = active nodes + active relations + phase bucket + bounded history state
+```
+
+- The same node may participate in several fields, and one field may move across language, retrieval, temporal integration, reasoning, and response stages. Field identity is reconstructed from canonical event traces; it is not stored as a dense per-node membership vector.
+- Start with a fixed total node/contact/route budget. Boundary-free specialization must first emerge through local spike timing, eligibility traces, homeostasis, excitation/inhibition balance, fatigue, and phase-dependent routing. Unbounded neuron creation, dynamic model replication, or hidden parameter growth is not part of the initial hypothesis.
+- Separate three claims that must not be conflated: variable-cardinality routing among fixed experts, overlapping boundary-free activation fields, and structural rewiring after repeated field reuse. Structural growth/pruning is a later ablation and cannot supply the initial field result.
+- Reuse Phase 30 temporal state, Phase 32 sparse routing/load controls, Phase 33 structured-edge accounting, and existing structural-plasticity safety gates. Do not create parallel mechanisms with different provenance or resource accounting.
+
+### Evidence Boundary
+
+- [NeurIPS 2024 SEMM](https://proceedings.neurips.cc/paper_files/paper/2024/hash/137101016144540ed3191dc2b02f09a5-Abstract-Conference.html) shows that spiking expert/router sequences can implement dynamic sparse conditional computation, and [SpikingMoE](https://arxiv.org/abs/2605.23188) reports input-dependent spike-driven routing. Both retain explicit expert modules; neither demonstrates boundary-free emergent expert fields.
+- [Expert Choice](https://research.google/blog/mixture-of-experts-with-expert-choice-routing/) supports testing variable expert cardinality, while [Soft MoE](https://arxiv.org/abs/2308.00951) motivates a continuous-routing control. Their dense token-expert score matrices, soft assignments, gradient optimization, Transformer accuracy, GPU efficiency, and scaling claims are comparison-only and are not SARA runtime candidates.
+- The term `expert field` is an operational evaluation label, not a biological assertion. A visualization of overlapping activity is not evidence of useful specialization.
+
+### [Later]
+
+- Begin only after the Phase 32 fixed-expert routing/control experiment is preregistered and executed. Phase 32 supplies the fixed-boundary, fixed-Top-k, variable-cardinality, load-collapse, and deterministic-budget controls.
+- Preregister a fixed-budget, five-seed experiment before implementing a field candidate. Freeze node/contact/route counts, spike/event budget, phase buckets, active-set ceiling, state bytes, latency, homeostatic updates, EI bounds, tuning attempts, and canonical tie order.
+- Keep production routing unchanged and the field mechanism default-off. Do not persist semantic expert labels or allow a field observation to bypass Event Memory, Concept Review, contradiction, expiry, or durable-admission boundaries.
+- Add structural add/prune only in a separately registered follow-up after the fixed-structure field mechanism passes. Total created and removed contacts, churn, recovery, and outer-graph complexity must remain explicitly bounded.
+
+### Minimum Experiment
+
+Compare five equal-resource arms:
+
+1. existing fixed experts with fixed deterministic Top-k routing;
+2. fixed experts with bounded variable-cardinality routing but unchanged expert boundaries;
+3. boundary-free sparse activation clusters with timing/phase removed;
+4. overlapping spatiotemporal fields with phase, delay, fatigue, and bounded history;
+5. the same field arm with node identity or phase assignment canonically shuffled.
+
+- Use single-specialty tasks, cross-specialty composition, ambiguous shared features, staged language→retrieval→reasoning→response sequences, same spike count with different order/phase, repeated co-activation, abrupt context switch, sparse candidate omission, contradiction, missing evidence, stale source revision, irrelevant bursts, dominant-region collapse, dying-region recovery, all-active, and no-reuse controls.
+- Freeze source events and task labels before execution. A field may be observed only from local event traces available at that time; offline task labels cannot influence routing, field formation, homeostasis, or rewiring.
+- Report held-out task quality/abstention, fixed-control delta, variable-cardinality delta, active node/contact count, field overlap Jaccard, participation entropy, load range/Gini, always-active and dead-node rates, temporal field-transition consistency, phase/order sensitivity, contradiction recovery, churn, state bytes, event cost, CPU latency, and deterministic replay.
+- Report field statistics from sparse scalar counters and canonical sets. No dense node-by-field membership matrix, softmax, learned router, backpropagation, GPU collective, or post-hoc cluster-count search is allowed.
+
+### Failure Conditions
+
+- Reject the hypothesis if the spatiotemporal field arm does not beat both fixed-boundary controls on preregistered cross-specialty or staged tasks, or if removing phase/history does not reduce the claimed temporal advantage.
+- Reject it if gains come from more active nodes, contacts, events, state bytes, latency, tuning trials, or variable total capacity; if every task activates the same region; or if fields fragment into one field per example.
+- Reject specialization inferred only from attractive activation plots, task-label leakage, post-hoc choice of field count, dense similarity computation, nondeterministic clustering, or an observer that costs more than the routed computation.
+- Reject it if shared nodes destroy single-specialty accuracy, dominant activity suppresses reusable shared structure, dead/always-active nodes do not recover under frozen homeostasis, or contradiction and revision changes cannot dissolve stale fields.
+- Reject the structural follow-up if rewiring merely recreates fixed experts, grows without saturation, changes durable semantic structure without review, or hides complexity inside contacts while reporting only outer nodes.
+- Do not transfer SEMM, SpikingMoE, Expert Choice, or Soft MoE accuracy, energy, hardware, routing-balance, or scaling results to SARA.
+
+### Acceptance Gate
+
+- Under identical total resources and at least five preregistered seeds, the intact field arm improves a frozen cross-specialty/staged metric over fixed Top-k, variable-cardinality fixed experts, phase-removed fields, and shuffled controls while preserving single-specialty quality and abstention.
+- Field overlap and temporal movement are reproducible under canonical replay, are input-dependent rather than globally dominant, and remain within active-set, EI, homeostasis, state, event, and latency ceilings.
+- Collapse, dying-region, all-active, missing, stale, contradictory, order-shuffled, and distribution-shift controls fail safely and recover without unbounded activity or structural churn.
+- A separately preregistered independent workload and human review are required before any production-routing or structural-plasticity integration.
+
+## Phase 36: Evidence-Preserving Learning-System Evolution
+
+**Goal:** allow a new learning mechanism to reinterpret previously observed evidence without requiring its internal state to remain representation-compatible with the retired mechanism.
+
+### Research Hypothesis
+
+- Treat learned runtime state as a versioned, replaceable interpretation rather than the durable source of knowledge. Preserve a canonical architecture-independent chain:
+
+```text
+observed event -> episode -> relation/concept/theory revision -> supporting and contradicting evidence
+```
+
+- Each interpretation records its learning-system ID, state/schema version, source-event range, evidence links, assumptions, verification receipts, expiry, and canonical digest. Higher-level concepts must retain bounded reverse links to representative support, counterexamples, and revision history so a successor can replay the basis of a claim.
+- Use three explicit migration paths instead of pretending that all representations are directly compatible: schema migration for provably equivalent state, evidence replay/recompilation for changed learning rules, and a time-bounded read-only overlap period in which the successor may query the predecessor with its evidence and uncertainty.
+- Preserve observations and provenance as immutable records, but allow semantic interpretations to be revised. A predecessor answer is candidate evidence about prior behavior, not ground truth, and may not bypass contradiction, verification, RISA, or Event Memory admission.
+- Represent learning methods as reviewed, versioned strategy descriptors with declared inputs, local update rules, budgets, compatibility range, and rollback contract. The meta-level may propose and compare candidates in an isolated default-off sandbox; it may not rewrite production code, relax gates, promote itself, or delete the last replayable predecessor.
+- A multi-method ecosystem is a separate follow-up claim. Retaining several learning methods is acceptable only when each has measurable complementary value and bounded routing/state cost; indefinite accumulation of obsolete systems is not self-evolution.
+
+### [Later]
+
+- Begin the base migration experiment only after Phase 27 canonical replay/state-migration equivalence and an independent Phase 22 continual-horizon workload are available. Reuse Phase 31 consolidation and Phase 34 checkpoint provenance rather than creating a second memory hierarchy.
+- Freeze the architecture registry, strategy descriptors, knowledge tiers, evidence-link retention policy, migration budget, predecessor-query budget, overlap duration, retirement rules, rollback point, and human approval before executing a successor candidate.
+- Test a multi-learning-method routing follow-up only after Phase 32 supplies fixed routing controls; use Phase 35 fields only if that phase independently passes its own acceptance gate.
+- Keep all candidates sandboxed, default-off, CPU-only, sparse, bounded, and backpropagation-free. No autonomous production mutation or predecessor retirement is authorized by benchmark success alone.
+
+### Minimum Experiment
+
+Compare five frozen successor-migration arms over identical source histories and declared migration ceilings:
+
+1. predecessor-only control with no learning-system change;
+2. direct typed state/schema migration, allowed only for declared compatible versions;
+3. a bounded translator from predecessor state to successor state;
+4. successor reconstruction from canonical evidence and hierarchical reverse links;
+5. evidence reconstruction plus a bounded read-only predecessor-query overlap period.
+
+- Run unchanged knowledge, revised facts, contradictions, delayed evidence, missing raw episodes, lossy concept summaries, corrupted adapter output, incompatible dimensions/coding schemes, Vector-to-spike-style representation change, predecessor error, rollback, repeated migrations, partial migration, and retirement/recovery cases.
+- Include shuffled evidence links, removed counterexamples, stale receipts, unsupported predecessor answers, and equal-content/different-representation controls. A separate ablation compares full replay, provenance-preserving tiered replay, and concept-only replay under fixed byte/event/latency ceilings.
+- Report verified recall and abstention before/during/after migration, revision uptake, contradiction rejection, evidence-chain coverage, interpretation equivalence, newly verified relation discovery, inherited-error rate, adapter-only dependence, predecessor-query rate, rollback fidelity, unrecoverable-knowledge rate, state bytes, replay events, CPU latency, and deterministic replay.
+- A new interpretation is accepted by evidence-grounded behavioral equivalence and revision integrity, not byte equality with the predecessor's hidden state. Newly discovered relations count only after independent verification and normal durable-admission review.
+
+### Failure Conditions
+
+- Reject the migration if any accepted claim cannot trace back to observed evidence or an explicitly marked predecessor-only assertion, or if a translator launders stale, contradictory, unsupported, or corrupted predecessor state into verified knowledge.
+- Reject it if reconstruction quality depends on retaining every raw event without a declared bound, scanning all history, unbounded predecessor queries, dense cross-representation matrices, gradients, GPU execution, hidden external models, or increasing migration resources with every generation.
+- Reject retirement if the successor loses protected knowledge, revision behavior, abstention, counterexamples, provenance, or rollback capability; if unresolved cases cannot fall back safely; or if the predecessor cannot be restored from its frozen checkpoint and strategy descriptor.
+- Reject the multi-method follow-up if routing benefit disappears against the best single-method control, methods duplicate one another, obsolete systems accumulate without saturation, or resource accounting omits dormant state and migration maintenance.
+- Do not call a system self-evolving merely because it changes state schemas, translates vectors, replays data, or produces a different activation pattern. The experiment must demonstrate a preregistered improvement in the learning process on future held-out experience.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and independent histories, one successor path improves a frozen future-learning metric over the predecessor while preserving verified prior knowledge, contradiction/revision integrity, abstention, evidence traceability, and bounded deterministic replay.
+- Architecture-incompatible cases select evidence reconstruction or safe abstention rather than an undeclared adapter; compatible migrations remain idempotent, reversible, and digest-bound.
+- The overlap period has a measured exit condition: predecessor queries decrease below the frozen ceiling, unresolved protected cases are zero or explicitly retained, and retirement plus rollback both pass without deleting source evidence.
+- Production adoption, strategy retirement, and any meta-level proposal loop each require separate human review. A successful migration benchmark cannot authorize self-modification or erase a prior generation.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
 2. [Done] Build the observed-only 10/30/100-episode continual horizon benchmark.
 3. [Done] Connect the horizon benchmark to Event Memory retention profiles.
 4. [Done] Add multimodal structural contradiction and missing-modality cases.
-5. [Next] Collect independent 10/30/100 horizon and multimodal evidence.
+5. [Done] Implement and execute the registered Phase 34 independent adapter v2 across all 1,050 conditions; retain `promotion_ready=false` because the result is exact source identity rather than semantic recall. Continue multimodal evidence collection separately.
 6. [Later] Complete Python/Rust canonical replay equivalence.
 7. [Later] Run the exact-tokenization four-arm conformance and bounded-cache ablation before selecting any accelerated tokenizer path.
 8. [Later] Prototype Phase 30 temporal effective interactions only after preregistering the four-arm equal-budget ablation.
@@ -760,8 +906,12 @@ Compare four equal-budget arms:
 21. [Done] Register the explicitly reviewed 300-condition retention-by-selection factorial with identical retained sets inside each selection comparison.
 22. [Done] Execute all 300 registered factorial conditions; identify the synthetic Top-k main effect while retaining `promotion_ready=false` and production isolation.
 23. [Done] Add the independent factorial readiness gate and freeze six missing domain/horizon collection targets without fabricating evidence.
-24. [Next] Collect independent long-horizon factorial evidence with retained-set identity and no selector retuning before production review.
-25. [Later] Reopen physical-energy evidence only by explicit operator decision.
+24. [Done] Execute registered adapter v2 across all 1,050 conditions with retained-set identity and no selector retuning; all integrity and identity thresholds passed under the frozen exact-identity scope.
+25. [Done] Register and collect the exact 30-file CPython `v3.14.6` snapshot at commit `c63aec69bd59c55314c06c23f4c22c03de76fe45`; preserve the Raw HTTP 429 failure and the successful shallow-Git acquisition as separate immutable contracts.
+26. [Next] Complete human source-alignment review for the six hash-bound transcribed excerpts before preregistering semantic delayed recall.
+27. [Later] Reopen physical-energy evidence only by explicit operator decision.
+28. [Later] After Phase 32 fixed-expert controls execute, preregister the Phase 35 emergent overlapping spatiotemporal expert-field experiment before implementing any boundary-free routing candidate.
+29. [Later] After Phase 27 replay/migration equivalence and independent Phase 22 histories exist, preregister the Phase 36 evidence-preserving learning-system evolution experiment before implementing any representation translator or predecessor-retirement path.
 
 ## Required Managed Outputs
 
@@ -816,6 +966,25 @@ Compare four equal-budget arms:
 - `workspace/evaluation/phase34_memory_cache_factorial_preregistration.json`
 - `workspace/evaluation/phase34_memory_cache_factorial_benchmark.json`
 - `workspace/evaluation/phase34_memory_cache_factorial_independent_gate.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_independent_case_plan.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_independent_adapter_v2_environment.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_independent_adapter_v2_preregistration_draft.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_independent_adapter_v2_preregistration.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_independent_adapter_v2_benchmark.json`
+- `workspace/evaluation/phase34_memory_cache_factorial_independent_provenance_review.json`
+- `workspace/evaluation/phase34_cpython_v3_14_6_snapshot_preregistration.json`
+- `workspace/evaluation/phase34_cpython_v3_14_6_git_snapshot_preregistration.json`
+- `data/raw/phase34_cpython_git_snapshot/source_rows.jsonl`
+- `data/processed/autobot/phase34_cpython_v3_14_6_git_snapshot_manifest.jsonl`
+- `workspace/evaluation/phase34_cpython_v3_14_6_git_snapshot_collection.json`
+- `workspace/evaluation/phase34_transcribed_excerpt_human_review_request.json`
+- `data/raw/architecture_migration/source_rows.jsonl`
+- `data/processed/autobot/architecture_migration_latent_manifest.jsonl`
+- `workspace/evaluation/continual_horizon_external_collection.json`
+- `data/processed/benchmark_fixtures/phase36_learning_system_evolution_cases.jsonl`
+- `workspace/evaluation/phase36_learning_system_evolution_preregistration.json`
+- `workspace/evaluation/phase36_learning_system_evolution_benchmark.json`
+- `workspace/evaluation/phase36_learning_system_retirement_review.json`
 
 ## Review Rule
 

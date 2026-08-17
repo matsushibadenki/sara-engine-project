@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections import defaultdict
 from pathlib import Path
 
 
@@ -46,7 +47,7 @@ SOURCE_ROWS = [
     {
         "record_id": "arch-migration-ietf-001",
         "content": "The Hypertext Transfer Protocol is a stateless application-level protocol for distributed, collaborative, hypertext information systems. RFC 9110 describes the overall architecture of HTTP, establishes common terminology, and defines aspects of the protocol shared by all versions.",
-        "source_url": "https://www.ietf.org/rfc/rfc9110.html#abstract",
+        "source_url": "https://www.rfc-editor.org/rfc/rfc9110.html#abstract",
         "source_revision": "RFC 9110, June 2022",
         "license_hint": "IETF Trust Legal Provisions; https://trustee.ietf.org/license-info/",
         "task_type": "migration",
@@ -54,7 +55,7 @@ SOURCE_ROWS = [
     {
         "record_id": "arch-migration-ietf-002",
         "content": "HTTP provides a uniform interface for interacting with a resource regardless of its type, nature, or implementation by sending messages that manipulate or transfer representations. Each message is either a request or a response, and the client examines received responses to determine what to do next.",
-        "source_url": "https://www.ietf.org/rfc/rfc9110.html#section-1.3",
+        "source_url": "https://www.rfc-editor.org/rfc/rfc9110.html#section-1.3",
         "source_revision": "RFC 9110, June 2022",
         "license_hint": "IETF Trust Legal Provisions; https://trustee.ietf.org/license-info/",
         "task_type": "delayed",
@@ -62,7 +63,7 @@ SOURCE_ROWS = [
     {
         "record_id": "arch-migration-ietf-003",
         "content": "The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RECOMMENDED, NOT RECOMMENDED, MAY, and OPTIONAL are to be interpreted as described in BCP 14 when, and only when, they appear in all capitals. An implementation is conformant if it complies with the requirements associated with the roles it partakes in.",
-        "source_url": "https://www.ietf.org/rfc/rfc9110.html#section-2.2",
+        "source_url": "https://www.rfc-editor.org/rfc/rfc9110.html#section-2.2",
         "source_revision": "RFC 9110, June 2022",
         "license_hint": "IETF Trust Legal Provisions; https://trustee.ietf.org/license-info/",
         "task_type": "migration",
@@ -79,6 +80,7 @@ def _signature(content: str, width: int = 4096) -> list[int]:
 def build_rows() -> tuple[list[dict], list[dict]]:
     raw_rows: list[dict] = []
     manifest_rows: list[dict] = []
+    domain_indices: dict[str, int] = defaultdict(int)
     for index, item in enumerate(SOURCE_ROWS):
         content = item["content"]
         source_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -96,6 +98,9 @@ def build_rows() -> tuple[list[dict], list[dict]]:
             "content_origin": "transcribed_source_excerpt",
         }
         raw_rows.append(raw)
+        domain = raw["source_domain"]
+        horizon_index = domain_indices[domain]
+        domain_indices[domain] += 1
         manifest_rows.append(
             {
                 "schema": "sara-own-latent-manifest-row-v1",
@@ -117,7 +122,7 @@ def build_rows() -> tuple[list[dict], list[dict]]:
                 "sparse_signature": _signature(content),
                 "evidence_scope": "independent_external",
                 "collection_time": COLLECTION_TIME,
-                "migration_horizon_index": index,
+                "migration_horizon_index": horizon_index,
             }
         )
     return raw_rows, manifest_rows

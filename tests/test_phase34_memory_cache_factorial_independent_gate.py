@@ -29,7 +29,7 @@ def _read(name: str):
     return json.loads((PROJECT_ROOT / "workspace" / "evaluation" / name).read_text())
 
 
-def test_current_external_coverage_blocks_independent_factorial_execution():
+def test_current_external_coverage_allows_independent_factorial_execution():
     module = _load_script()
     report = module.build_report(
         _read("phase34_memory_cache_factorial_preregistration.json"),
@@ -37,14 +37,14 @@ def test_current_external_coverage_blocks_independent_factorial_execution():
         _read("continual_horizon_external_gate.json"),
     )
 
-    assert report["independent_execution_ready"] is False
+    assert report["independent_execution_ready"] is True
     assert report["promotion_ready"] is False
     assert report["selector_retuning_allowed"] is False
     assert report["query_aware_retention_allowed"] is False
     assert report["metrics"]["source_domain_count"] == 2
-    assert report["metrics"]["missing_horizon_target_count"] == 6
-    assert "external_horizon_promotion_allowed" in report["blockers"]
-    assert "every_domain_has_10_30_100" in report["blockers"]
+    assert report["metrics"]["missing_horizon_target_count"] == 0
+    assert report["blockers"] == []
+    assert report["missing_collection_targets"] == []
 
 
 def test_complete_external_coverage_allows_execution_but_not_promotion():
