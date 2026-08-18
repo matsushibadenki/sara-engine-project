@@ -118,6 +118,8 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Oscillation and contradiction freeze with rollback state.
 - Event Memory admission and reactivation boundary.
 - Bounded verified subgraph composition and relation-signature structural analogy.
+- Audited the current analogy boundary: `StructuralAnalogyEngine` compares only the Jaccard overlap of verified relation-type sets. It does not learn reusable role mappings, share local changes across structures, propose an unseen target/relation, or establish emergent knowledge.
+- Audited the current structural-delta boundary: `BoundedStructuralEditTransaction` safely stages `create_provisional_node`, `strengthen_relation`, and `cut_relation` against a snapshot digest, but it does not persist a canonical replayable delta, reconstruct a target from `base + delta`, compare edit sequences, or learn reusable transformations.
 - Phase 21 fixture and CLI benchmark for supported composition, unsupported abstention, analogy, and durable-mutation blocking.
 - Added source-backed `create_provisional_node` feedback proposals; unknown nodes remain review-only and cannot enter the durable graph directly.
 - Added bounded multi-edit staging with deterministic graph snapshots, exact-digest rollback validation, edit/node/edge budgets, and byte-equivalent restoration after any late edit failure.
@@ -881,6 +883,124 @@ Compare five frozen successor-migration arms over identical source histories and
 - The overlap period has a measured exit condition: predecessor queries decrease below the frozen ceiling, unresolved protected cases are zero or explicitly retained, and retirement plus rollback both pass without deleting source evidence.
 - Production adoption, strategy retirement, and any meta-level proposal loop each require separate human review. A successful migration benchmark cannot authorize self-modification or erase a prior generation.
 
+## Phase 37: Structural Invariant Sharing and Generative Transfer
+
+**Goal:** test whether bounded, evidence-linked structural patterns can provide the cross-example sharing needed to propose useful relations that were never stored as edges, without introducing dense shared weights or uncontrolled graph-wide propagation.
+
+### Research Hypothesis
+
+- Exact edges are episodic/relational memory; they are not by themselves evidence of knowledge-like generalization. Define a reusable knowledge candidate as a typed structural invariant with explicit role slots, topology, direction, temporal/causal constraints, context, applicability conditions, supporting exemplars, counterexamples, revision, and provenance.
+- Canonically normalize a small verified subgraph into anonymous roles such as `role:source`, `role:mediator`, and `role:target`. Structurally equivalent examples may update one bounded pattern record even when their node labels differ. Node identity and task labels must not define the pattern fingerprint.
+- A local observation may update only the matching pattern's bounded support, exception, recency, and reliability counters. Its influence reaches another case only when a bounded sparse role match activates that pattern; there is no unconditional graph-wide broadcast.
+- Applying a shared pattern produces a provisional relation hypothesis with the matched roles, supporting and contradicting exemplars, context mismatch trace, confidence decomposition, and canonical digest. It cannot create a durable edge without the existing independent verification, contradiction, RISA review, and Event Memory admission path.
+- Keep five capabilities distinct in reports: exact relation retrieval, verified path composition, similarity scoring, proposal of an unstored relation, and later verification of that proposal. Only the last two can support a claim of structural generative transfer; an attractive motif visualization or high analogy score cannot.
+- Structural sharing is the sparse auditable analogue to parameter sharing only if one verified pattern change predictably affects several later eligible cases. This is a testable functional analogy, not a claim that RISA reproduces ANN representations or biological knowledge.
+
+### [Later]
+
+- Begin only after the Phase 21 independent held-out composition/analogy benchmark is available. Reuse Phase 22 revision/contradiction histories, Phase 31 consolidation limits, and Phase 33 structured-edge resource accounting.
+- Preregister canonical role assignment, motif width/depth, candidate index, maximum patterns, exemplars/counterexamples per pattern, match threshold, propagation fan-out, expiry, revision behavior, tie order, state/event/latency ceilings, seeds, and tuning attempts before implementing the candidate.
+- Keep the candidate default-off and separate from the current `StructuralAnalogyEngine`. Do not silently upgrade an analogy score into a relation proposal or alter production RISA graph state.
+- Start with fixed nodes and relations. Pattern-driven structural add/prune is a later follow-up and must not provide the initial transfer result.
+
+### Minimum Experiment
+
+Compare six equal-source and equal-resource arms:
+
+1. exact verified-edge retrieval only;
+2. existing bounded verified-path composition;
+3. current relation-type-set Jaccard analogy;
+4. canonical typed-motif sharing without context or exception state;
+5. canonical typed-motif sharing with context, time/order, counterexamples, and revision state;
+6. the intact candidate with role assignment, evidence links, or topology canonically shuffled.
+
+- Include label-renamed isomorphic structures, identical relation types with different topology, unseen nodes, held-out domains, multi-edge role transfer, support/function analogies, temporal order reversal, causal-direction reversal, context change, bird/penguin-style exceptions, rare counterexamples, revised evidence, contradiction, missing roles, adversarial hubs, duplicated evidence, stale sources, and no-transfer controls.
+- Freeze all examples and split by structural family and source before execution. Near-isomorphic variants, node aliases, source revisions, or one template rendered with different labels may not cross the train/evaluation boundary.
+- Require the candidate to predict a withheld relation type and endpoint role from the visible partial structure. The answer key and withheld edge may be used only by the evaluator after the proposal is frozen.
+- Report verified novel-relation precision/recall, justified abstention, cross-domain transfer, exception preservation, direction/order sensitivity, role-map consistency, evidence-chain completeness, inherited-error rate, revision recovery, pattern reuse distribution, participation entropy, pattern count/growth, propagation fan-out, state bytes, event cost, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject structural sharing if it does not beat exact retrieval, path composition, and current Jaccard analogy on preregistered withheld-relation cases, or if the shuffled-role/topology control retains the gain.
+- Reject it if it copies the most frequent relation, depends on node names or task labels, leaks withheld edges, scans every stored subgraph, performs dense all-pairs similarity, uses gradients/GPU/external models, or broadcasts an update to unrelated structures.
+- Reject it if exceptions are erased, contradictions spread, causal/temporal direction is ignored, hub nodes dominate matches, or a stale pattern continues proposing after its support is revised or expires.
+- Reject it if patterns collapse into one global template, fragment into one pattern per example, grow without saturation, hide unbounded exemplars, or cost more state/events/latency than the verified transfer benefit.
+- Do not call a proposal knowledge merely because it was not an explicit edge. A deterministic rule hard-coded for the fixture, a composed stored path, or an unsupported guess is not emergent structural knowledge.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and independent structurally held-out histories, the intact context/exception-aware arm improves verified withheld-relation quality over all three existing baselines and the context-free candidate while preserving abstention and rare exceptions.
+- Removing role identity, topology, time/order, counterexamples, or evidence links causes the corresponding preregistered degradation, demonstrating that gains come from reusable structure rather than label leakage or frequency bias.
+- One bounded pattern is reused across multiple independent node sets and at least one held-out domain, with every proposal tracing to supporting and contradicting evidence and no direct durable mutation.
+- Revision, contradiction, expiry, and source replacement deterministically retract or recalibrate affected proposals without changing unrelated patterns; state, fan-out, event, and CPU-latency ceilings hold at the longest horizon.
+- Production integration requires a separate independent workload, provenance review, and human approval. Until then the result remains an observed-only structural-transfer candidate, not a general intelligence or ANN-parity claim.
+
+## Phase 38: Canonical Structural Delta and Transformation Memory
+
+**Goal:** test whether RISA can represent experience as exact reconstructible `base structure + typed delta`, then reuse recurring deltas as evidence-linked transformation knowledge without losing exceptions, provenance, or rollback safety.
+
+### Research Hypothesis
+
+- Separate three layers and keep their identities explicit:
+
+```text
+Layer 3: transformation patterns over deltas
+Layer 2: canonical invariant structures with anonymous roles
+Layer 1: concrete observed episodes and entities
+```
+
+- A canonical structure record contains schema version, typed nodes/events/concepts, directed relations, anonymous role assignments, temporal/order constraints, context, confidence components, supporting/contradicting evidence links, revision, expiry, and a canonical digest. Entity labels remain in concrete bindings rather than defining the invariant fingerprint.
+- A structural delta is an immutable ordered sequence of typed edit operations with a base digest, target digest, preconditions, affected role paths, source evidence, revision, inverse/rollback information, event cost, and its own digest. The initial operator vocabulary is frozen before implementation and may include `ADD_NODE`, `REMOVE_NODE`, `ADD_RELATION`, `REMOVE_RELATION`, `CHANGE_ROLE`, `CHANGE_VALUE`, `GENERALIZE`, `SPECIALIZE`, `REORDER_TIME`, `MERGE`, and `SPLIT`.
+- `target = apply(base, delta)` must reconstruct the exact canonical target and digest. Removal creates an evidence-preserving revision/tombstone operation rather than erasing historical provenance. Failed preconditions, missing bases, stale revisions, cycles, or budget overflow fail closed.
+- Compare deltas only after canonical role normalization. Repeated independently sourced deltas may form a provisional transformation pattern containing applicability conditions, support, counterexamples, temporal ordering, uncertainty, revision, and expiry. A transformation pattern proposes a future delta; it does not directly mutate the durable graph.
+- Treat a concept candidate as the invariant remaining after bounded concrete bindings and justified exceptions are removed, and treat learning as improving a frozen description account for future observations. This is an operational research definition, not proof that shortest encoding equals semantic truth.
+- Translate the MDL idea into explicit scalar accounting rather than gradient optimization:
+
+```text
+total_description_cost = structure_cost + delta_cost + exception_cost + codebook_cost
+```
+
+  The operator codebook, scalar costs, decoder/runtime bytes, maximum base candidates, chain depth, and tie order are preregistered. A smaller score is invalid if exact reconstruction, evidence traceability, revision integrity, or held-out reasoning quality decreases.
+
+### [Later]
+
+- Freeze the Phase 37 canonical role and invariant schema before implementing Phase 38. Static invariant sharing and transformation sharing must remain separate ablation arms so gains cannot be reassigned after observing results.
+- Preregister the structure/delta schemas, operator semantics and inverses, canonical ordering, base-selection rule, chain/branch limits, materialization schedule, code-length table, codebook/decoder accounting, maximum patterns, exemplars/exceptions, retention/expiry, seeds, resource ceilings, and tuning attempts.
+- Reuse the current structural-edit transaction as the non-durable safety boundary, Phase 22 revision histories, Phase 31 bounded consolidation, Phase 33 contact/resource accounting, and Phase 36 schema-migration rules. Do not create an unversioned parallel graph format.
+- Keep snapshot storage and production RISA behavior unchanged. The delta codec, transformation store, base selector, and materializer remain default-off until independent evaluation and human review.
+
+### Minimum Experiment
+
+Compare six equal-source arms under separately reported storage and inference budgets:
+
+1. complete canonical structure snapshots with no deltas;
+2. base snapshot plus an unshared chronological edit log;
+3. base snapshot plus canonical typed deltas with no cross-case reuse;
+4. shared invariant structures plus per-instance deltas and explicit exceptions;
+5. invariant structures plus reusable transformation patterns over deltas;
+6. the intact transformation arm with base identity, role mapping, edit order, or evidence links canonically shuffled.
+
+- Include repeated THROW role substitutions; bird, penguin, ostrich, and emu exceptions; support/function transformations across domains; add/remove relation; role/value change; generalize/specialize; temporal reorder; merge/split; repeated independent transformation families; non-compressible random structures; ambiguous bases; equivalent-cost bases; long delta chains; branching and merge conflicts; duplicated evidence; stale revisions; contradiction; source replacement; missing base; corrupted delta; invalid inverse; cycle; and budget-exceeded controls.
+- Freeze train/evaluation splits by source, structural family, and transformation family. A target structure, equivalent delta, renamed template, or descendant revision may not cross the isolation boundary.
+- Evaluate both directions independently: exact materialization from `base + delta`, and prediction of a withheld delta/target-role change from visible context. The target and evaluator labels remain unavailable until the proposal is frozen.
+- Report exact reconstruction and digest match, rollback fidelity, provenance/tombstone preservation, base-selection stability, delta-chain depth, materialization cost, total description cost including codebook/decoder, compression ratio, exception share, pattern reuse, withheld-transformation precision/recall, abstention, revision recovery, inherited-error rate, state bytes, event cost, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject the codec if any valid target cannot be reconstructed exactly, operation order is ambiguous, an inverse fails to restore the base, a remove loses evidence, or replay depends on dictionary order, wall-clock time, or an undeclared schema migration.
+- Reject compression if savings disappear after codebook, index, decoder, checkpoint, exception, and materialization state are counted; if the selected base requires an unbounded/global search; or if long chains merely defer snapshot cost and latency.
+- Reject transformation learning if patterns collapse exceptions, confuse generalization with deletion, ignore causal/temporal direction, copy the most common delta, leak target structures, or retain stale transformations after contradiction/revision.
+- Reject it if patterns grow one per example, all deltas collapse into one transformation, graph edits become dense, or implementation uses gradients, matrices, GPU execution, hidden external models, post-hoc operator costs, or target-aware base selection.
+- Do not claim learning from a lower description cost alone. A compact but semantically wrong representation, a hard-coded fixture codec, or loss of rare verified knowledge is a failure.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and independent structurally held-out histories, canonical deltas achieve exact digest reconstruction and rollback for every valid case while malformed, stale, contradictory, cyclic, and over-budget cases fail safely.
+- At least one shared structure-plus-delta arm reduces total accounted description cost versus complete snapshots without reducing verified recall, abstention, exception preservation, revision integrity, evidence traceability, or deterministic replay.
+- The transformation-pattern arm improves withheld transformation/target-role quality over unshared typed deltas and static invariant sharing, and loses that advantage when role, order, base, or evidence bindings are shuffled.
+- Repeated transformations reuse bounded patterns across independent entities and at least one held-out domain; pattern count, chain depth, exceptions, state, events, and CPU latency saturate within frozen ceilings.
+- Production integration requires independent provenance review, explicit human approval, and a separate migration plan proving that existing graph snapshots remain readable and recoverable.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -912,6 +1032,8 @@ Compare five frozen successor-migration arms over identical source histories and
 27. [Later] Reopen physical-energy evidence only by explicit operator decision.
 28. [Later] After Phase 32 fixed-expert controls execute, preregister the Phase 35 emergent overlapping spatiotemporal expert-field experiment before implementing any boundary-free routing candidate.
 29. [Later] After Phase 27 replay/migration equivalence and independent Phase 22 histories exist, preregister the Phase 36 evidence-preserving learning-system evolution experiment before implementing any representation translator or predecessor-retirement path.
+30. [Later] After independent Phase 21 structural baselines execute, preregister the Phase 37 structural-invariant sharing experiment before implementing any shared-pattern store or unstored-relation proposal path.
+31. [Later] After the Phase 37 canonical role schema is frozen, preregister the Phase 38 canonical structural-delta and transformation-memory experiment before implementing any persistent delta codec, MDL selector, or shared transformation store.
 
 ## Required Managed Outputs
 
@@ -985,6 +1107,13 @@ Compare five frozen successor-migration arms over identical source histories and
 - `workspace/evaluation/phase36_learning_system_evolution_preregistration.json`
 - `workspace/evaluation/phase36_learning_system_evolution_benchmark.json`
 - `workspace/evaluation/phase36_learning_system_retirement_review.json`
+- `data/processed/benchmark_fixtures/phase37_structural_invariant_sharing_cases.jsonl`
+- `workspace/evaluation/phase37_structural_invariant_sharing_preregistration.json`
+- `workspace/evaluation/phase37_structural_invariant_sharing_benchmark.json`
+- `data/processed/benchmark_fixtures/phase38_structural_delta_cases.jsonl`
+- `workspace/evaluation/phase38_structural_delta_preregistration.json`
+- `workspace/evaluation/phase38_structural_delta_codec_conformance.json`
+- `workspace/evaluation/phase38_transformation_memory_benchmark.json`
 
 ## Review Rule
 
