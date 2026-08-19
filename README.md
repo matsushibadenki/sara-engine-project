@@ -58,6 +58,8 @@ Three different maturity levels must not be confused:
 
 If anonymous reuse is implemented later, a latent assembly will count as useful structure only when it recurs across independent contexts, improves held-out prediction or compression, survives deterministic replay, has a targeted ablation effect, and stays within state and event budgets. Opaque activity alone is not evidence of an emergent concept.
 
+Structural validation may also begin below the level of a separate intelligent judge. A later observed-only experiment will replay candidate structures and measure local prediction error, resonance, branch competition, inhibition, fatigue, and homeostatic stability. This dynamical layer may rank or quarantine candidates cheaply, but stability is not truth: repeated misinformation can be stable and rare evidence can be correct. Provenance, contradiction, causal intervention, policy, rollback, durable admission, and external side effects therefore remain behind the explicit verifier.
+
 ## Learning And Plasticity
 
 Implemented and experimental learning paths include local STDP-family updates, reward modulation, predictive error traces, direct memory updates, structural plasticity, replay, and consolidation. Repetition-dependent memory work models the observation that repeated, spaced, and successfully retrieved experiences may become more stable, while contradictions and excessive repetition must not receive automatic reinforcement.
@@ -70,6 +72,7 @@ Several biologically inspired ideas are intentionally isolated until evidence is
 - evidence-preserving migration between evolving learning systems;
 - explicit structure-plus-delta memory compared with differences derived from shared/non-shared active resources;
 - usage-driven anonymous latent structures and emergent hierarchies.
+- two-layer structural validation combining local replay dynamics with an explicit evidence and safety boundary.
 
 These are research candidates, not descriptions of the production runtime.
 
@@ -90,7 +93,7 @@ Current high-level state:
 | [Done] | Repetition-dependent consolidation contract | Observed-only; not connected to production recall |
 | [Done] | Structured-edge and checkpoint-cache registered experiments | Observed-only; promotion remains closed where gates or independent evidence are missing |
 | [Next] | Human source-alignment review for six hash-bound Phase 34 excerpts | Required before semantic delayed-recall preregistration |
-| [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, and anonymous local reuse | Must follow the dependency and preregistration order in the roadmap |
+| [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, anonymous local reuse, and dynamical structural validation | Must follow the dependency and preregistration order in the roadmap |
 | [Later] | Physical energy claims | Proxy metrics are not joule measurements; reopening requires an explicit operator decision |
 
 For the authoritative status, dependencies, negative results, and acceptance gates, see [doc/ROADMAP_NEXT_LEVEL.md](doc/ROADMAP_NEXT_LEVEL.md).

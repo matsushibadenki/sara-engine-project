@@ -1061,6 +1061,70 @@ Compare six equal-source and equal-resource arms:
 - Collapse, dead-unit, all-active, collision, rare-exception, contradiction, revision, expiry, capacity, and distribution-shift controls recover or abstain within fixed state, event, hierarchy, and CPU-latency ceilings.
 - Production integration or semantic naming requires separate independent evidence, provenance review, and explicit human approval. The accepted claim remains bounded anonymous structural reuse, not biological equivalence or discovery of an objectively new human concept.
 
+## Phase 40: Dynamical Structural Validation
+
+**Goal:** test whether bounded replay, local prediction error, resonance, competition, inhibition, and homeostasis can cheaply rank or quarantine structural candidates by their prospective stability, while retaining explicit evidence and safety verification wherever dynamical stability is not equivalent to truth.
+
+### Adopted Research References And Evidence Boundary
+
+- Rao and Ballard's predictive-coding model uses feedback predictions and feedforward residual errors as a computational account of visual cortical responses: <https://doi.org/10.1038/4580>.
+- Turrigiano et al. reported activity-dependent synaptic scaling in cultured neocortical neurons and proposed a stabilizing role during Hebbian modification: <https://doi.org/10.1038/36103>.
+- Wilson and McNaughton reported increased reactivation during post-task sleep of hippocampal cells that co-activated during behavior: <https://doi.org/10.1126/science.8036517>.
+- These references motivate local error, bounded competition/homeostasis, and replay controls. They do not establish that biological stability is a general truth test or that SARA can remove its verifier.
+- Existing SARA predictive feedback, resonance credit, contradiction freeze, relation-stability scoring, repetition consolidation, idle replay, and homeostatic mechanisms are useful components and controls. They currently execute as separate explicit mechanisms and do not prove that a coupled dynamical circuit validates a structure.
+
+### Research Hypothesis
+
+- Represent each eligible structure candidate as a bounded replayable sparse activation trace with context, temporal order, expected next events, alternatives, source identities, revision, and expiry. Replaying it against an observation produces local match, residual-error, latency, and branch-competition events rather than a semantic true or false label.
+- Shared prefixes may resonate while incompatible continuations compete locally. Bounded inhibitory selection may suppress a poorly supported continuation for the current context, but losing branches remain recoverable as exceptions, alternatives, or dormant candidates rather than being physically deleted.
+- Update only locally active candidate/transition state using frozen prediction-error and timing rules. Apply fatigue, synaptic-style scaling, source-diversity caps, and total-activity ceilings so raw repetition or one dominant source cannot capture all capacity.
+- Treat prospective dynamical stability as one candidate-quality signal: reproducible low residual error, calibrated prediction, context-appropriate branch selection, bounded recovery after revision, and resistance to exact-replay perturbation. High activation, frequency, synchrony, or survival alone is insufficient.
+- Preserve a two-layer validation contract:
+  1. a low-cost dynamical layer ranks, abstains, sleeps, or quarantines candidates;
+  2. the existing explicit layer checks provenance, source independence, contradiction, causal/intervention requirements, policy, rollback, and external side effects before durable admission or action.
+- A dynamical candidate cannot emit causes_verified, enter durable Event Memory, retire evidence, or authorize a tool action by stability alone. The explicit verifier remains mandatory for irreversible or safety-relevant boundaries.
+- If Phase 39 later produces anonymous assemblies, Phase 40 may replay their canonical activation traces without naming them. This is an optional downstream arm; Phase 40 must first work with explicit frozen structures so anonymous emergence and dynamical validation are not confounded.
+
+### [Later]
+
+- Preregister after the Phase 30 temporal-state contract is frozen and the independent Phase 31 replay/consolidation workload exists. Reuse Phase 24/25 explicit verification as the fixed safety control.
+- Freeze trace schema, replay schedule, prediction horizon, error calculation, resonance and competition gates, inhibitory capacity, fatigue/scaling bounds, branch-retention rule, source cap, revision/expiry behavior, state/event/latency ceilings, seeds, tuning attempts, and deterministic tie order before candidate implementation.
+- Keep all dynamical decisions default-off, observed-only, non-durable, and unable to change production RISA, Event Memory, causal status, or tool state.
+- Add the Phase 39 anonymous-assembly arm only after Phase 39 passes independently. Do not use a positive Phase 40 result to claim anonymous structure discovery.
+
+### Minimum Experiment
+
+Compare six equal-source, equal-replay, and equal-resource arms:
+
+1. frequency/support ranking without prediction error;
+2. the current explicit verifier/stability controls without dynamical replay;
+3. local replay with prediction error but no competition or homeostasis;
+4. replay plus bounded continuation competition/inhibition;
+5. replay plus competition, fatigue, homeostasis, source-diversity caps, and recoverable minority branches;
+6. the intact dynamical arm followed by the unchanged explicit evidence/safety verifier.
+
+- Include stable recurring transitions, equal-prefix context-dependent branches, genuinely stochastic alternatives, rare but verified exceptions, delayed outcomes, one-source duplication, repeated misinformation, coordinated synchronized false patterns, source revisions, abrupt environment reversal, missing observations, irrelevant bursts, causal correlation without intervention, independent counterevidence, capacity pressure, and all-novel streams.
+- Add canonical shuffles of timing, continuation identity, context, source identity, prediction/observation pairing, inhibition targets, and replay order. Include an explicit no-replay control and a control in which the same events occur with the wrong temporal order.
+- Freeze train/evaluation histories by source, revision, and hidden generator. Duplicate text, paraphrased copies, descendant revisions, or replayed copies of one source cannot count as independent support.
+- Report held-out next-event/relation quality, calibration and abstention, residual error, stable false-positive rate, rare-branch retention, branch diversity, source-independence sensitivity, contradiction quarantine, reversal/revision recovery, replay gain, replay-induced harm, oscillation/collapse rate, active/dormant candidate counts, targeted ablation delta, state bytes, event cost, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject dynamical validation if raw frequency performs equally, shuffled timing/context/source controls retain the gain, or synchronized repeated misinformation becomes more stable than independently supported evidence.
+- Reject it if competition erases valid context branches or rare verified exceptions, if homeostasis prevents learning or merely rescales scores without changing prospective behavior, or if replay amplifies stale/contradicted candidates.
+- Reject it if the candidate requires semantic truth labels, global all-pairs structure comparison, dense matrices, gradients, GPU execution, an external model, unbounded replay, or a scan over all stored structures.
+- Reject it if state becomes oscillatory, winner-take-all collapse is permanent, revision recovery exceeds the frozen horizon, deterministic replay fails, or events/state/latency exceed ceilings.
+- Reject any proposal to remove the explicit verifier when provenance, causal intervention, policy, rollback, durable mutation, or external side effects are involved.
+- Do not interpret stability, synchrony, resonance, prediction success, or biological inspiration as proof of truth, understanding, intelligence, or brain equivalence.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and source-held-out histories, the intact local-dynamics arm improves a frozen prospective prediction/calibration metric over frequency, prediction-error-only, and shuffled controls under equal budgets.
+- The hybrid arm preserves or improves explicit-verifier precision and abstention while reducing its candidate workload or total event cost; it must never admit a candidate rejected by the unchanged explicit safety boundary.
+- Context-dependent alternatives and rare verified exceptions remain recoverable, repeated single-source misinformation does not gain verification strength, and revisions/environment reversals recover within frozen horizons.
+- Targeted removal of the responsible replay/competition path removes the corresponding predictive advantage, while unrelated structures remain stable and total state/event/CPU cost stays bounded.
+- Production integration requires independent temporal workloads, adversarial misinformation evidence, provenance review, and explicit human approval. The accepted claim is bounded dynamical candidate screening, not truth without verification.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -1095,6 +1159,7 @@ Compare six equal-source and equal-resource arms:
 30. [Later] After independent Phase 21 structural baselines execute, preregister the Phase 37 structural-invariant sharing experiment before implementing any shared-pattern store or unstored-relation proposal path.
 31. [Later] After the Phase 37 canonical role schema is frozen, preregister the Phase 38 canonical structural-delta and transformation-memory experiment before implementing any persistent delta codec, MDL selector, or shared transformation store.
 32. [Later] After Phase 30 temporal state and Phase 37 explicit-motif controls are frozen, preregister the Phase 39 anonymous local-reuse experiment before implementing any unlabeled allocator, assembly observer, or emergent hierarchy candidate.
+33. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
 
 ## Required Managed Outputs
 
@@ -1179,6 +1244,10 @@ Compare six equal-source and equal-resource arms:
 - `workspace/evaluation/phase39_anonymous_structure_reuse_preregistration.json`
 - `workspace/evaluation/phase39_anonymous_structure_reuse_benchmark.json`
 - `workspace/evaluation/phase39_anonymous_structure_ablation.json`
+- `data/processed/benchmark_fixtures/phase40_dynamical_structural_validation_cases.jsonl`
+- `workspace/evaluation/phase40_dynamical_structural_validation_preregistration.json`
+- `workspace/evaluation/phase40_dynamical_structural_validation_benchmark.json`
+- `workspace/evaluation/phase40_dynamical_structural_validation_ablation.json`
 
 ## Review Rule
 
