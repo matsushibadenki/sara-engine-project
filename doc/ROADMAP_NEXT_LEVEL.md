@@ -953,6 +953,7 @@ Layer 1: concrete observed episodes and entities
 - A structural delta is an immutable ordered sequence of typed edit operations with a base digest, target digest, preconditions, affected role paths, source evidence, revision, inverse/rollback information, event cost, and its own digest. The initial operator vocabulary is frozen before implementation and may include `ADD_NODE`, `REMOVE_NODE`, `ADD_RELATION`, `REMOVE_RELATION`, `CHANGE_ROLE`, `CHANGE_VALUE`, `GENERALIZE`, `SPECIALIZE`, `REORDER_TIME`, `MERGE`, and `SPLIT`.
 - `target = apply(base, delta)` must reconstruct the exact canonical target and digest. Removal creates an evidence-preserving revision/tombstone operation rather than erasing historical provenance. Failed preconditions, missing bases, stale revisions, cycles, or budget overflow fail closed.
 - Compare deltas only after canonical role normalization. Repeated independently sourced deltas may form a provisional transformation pattern containing applicability conditions, support, counterexamples, temporal ordering, uncertainty, revision, and expiry. A transformation pattern proposes a future delta; it does not directly mutate the durable graph.
+- Treat explicit canonical deltas as one candidate representation, not the definition of difference. If Phase 39 supplies a valid anonymous resource-reuse representation, compare hand-applied edit deltas with differences derived from shared and non-shared active resource sets; do not assume in advance that a separate delta object is superior.
 - Treat a concept candidate as the invariant remaining after bounded concrete bindings and justified exceptions are removed, and treat learning as improving a frozen description account for future observations. This is an operational research definition, not proof that shortest encoding equals semantic truth.
 - Translate the MDL idea into explicit scalar accounting rather than gradient optimization:
 
@@ -1001,6 +1002,65 @@ Compare six equal-source arms under separately reported storage and inference bu
 - Repeated transformations reuse bounded patterns across independent entities and at least one held-out domain; pattern count, chain depth, exceptions, state, events, and CPU latency saturate within frozen ceilings.
 - Production integration requires independent provenance review, explicit human approval, and a separate migration plan proving that existing graph snapshots remain readable and recoverable.
 
+## Phase 39: Usage-Driven Anonymous Latent Structure Reuse
+
+**Goal:** test whether concept-like reusable structures can arise from repeated local sparse resource reuse, without asking the learner to classify examples, name a concept, perform global graph-isomorphism search, or receive the evaluator's latent labels.
+
+### Current Evidence Boundary
+
+- The existing `SparseOwnLatentPredictor` is sparse and locally counted, but `update(...)` receives an explicit `label` and `latent_terms`; its benchmark therefore demonstrates bounded supervised latent recovery, not anonymous concept emergence.
+- The current RISA Kernel creates `pattern:{action}->{effect}` and `concept:shared_{action}_{effect}` from normalized human-readable action/effect fields. Reuse is present, but the candidate structure and abstraction boundary are substantially specified by the input schema.
+- Existing sparse signatures, resonance, structural plasticity, Phase 35 fields, and Phase 37 motifs are useful controls and implementation references. None currently proves that an unnamed high-order structure self-organized from reuse.
+
+### Research Hypothesis
+
+- Encode each observed episode as a bounded set of local typed event/relation fragments. For each fragment, route only among a bounded candidate neighborhood of existing anonymous units using locally available type, timing, phase, context, and recent-activity state. Reuse a unit when it passes the frozen local gate; allocate a new unit only when no candidate passes.
+- Do not run a separate command that says two complete experiences are isomorphic or belong to one class. Experiences become related only because some of their fragments activate the same anonymous units. Their shared and differing portions are then observable from overlapping and non-overlapping active resource sets.
+- Allow units to participate in multiple overlapping assemblies. A concept candidate is an observer-visible, repeatedly reused assembly or transition pattern, not a stored class label and not a permanently disjoint cluster.
+- Apply bounded homeostasis, fatigue, excitation/inhibition balance, capacity pressure, inactivity decay, and deterministic tie rules so frequent inputs cannot capture every unit and rare structures are not forced into dominant assemblies.
+- Permit a bounded higher level to consume canonical traces of lower-level assembly reuse as events. Higher-order structures may form only when reuse and held-out predictive/compressive value pass frozen thresholds; hierarchy depth, width, promotion count, and state are capped rather than chosen after seeing the evaluation.
+- Anonymous pattern IDs such as `latent:3817` need not receive a human semantic name. They must still be auditable through supporting/counterexample event references, activation and allocation traces, revision history, ablation effect, uncertainty, expiry, and resource cost.
+- Human-designed primitives remain a possible inductive bias and must be reported. A system using typed time, causal, role, or spatial events may discover unnamed combinations of those primitives, but it may not claim completely assumption-free structure discovery.
+
+### [Later]
+
+- Preregister Phase 39 after the Phase 30 temporal-state contract and the Phase 37 explicit-motif controls are frozen. Phase 39 is an alternative mechanism arm, not an automatic successor to explicit canonical matching.
+- Freeze input primitives, candidate-neighborhood construction, reuse/allocation thresholds, local update rules, homeostasis/fatigue/EI parameters, capacity and eviction, assembly observation rule, hierarchy limits, state/event/latency budgets, seeds, tuning attempts, and canonical replay order before implementing the candidate.
+- Use Phase 35 spatiotemporal fields only as a reusable control if Phase 35 passes independently. Do not transfer its expert-field result into a concept-emergence claim.
+- Keep anonymous units, assemblies, and optional human labels default-off and outside durable RISA state. Naming or interpreting a pattern is a read-only review action and cannot change its routing or evaluation result.
+
+### Minimum Experiment
+
+Compare six equal-source and equal-resource arms:
+
+1. the existing label/latent-term-supervised `SparseOwnLatentPredictor` reference;
+2. Phase 37 explicit canonical-role motif matching;
+3. an unlabeled offline/global clustering reference, excluded from runtime candidacy;
+4. local anonymous resource reuse without homeostasis, fatigue, or EI balance;
+5. local anonymous spatiotemporal reuse with bounded homeostasis, fatigue, EI balance, overlap, and optional capped hierarchy;
+6. the intact local-reuse arm with event order, phase, unit identity, or neighborhood assignment canonically shuffled.
+
+- Include different surface forms with the same hidden generator, similar words with different generators, repeated local fragments, unseen combinations, overlapping factors, known human concepts, evaluator-hidden synthetic factors, unnamed multi-timescale combinations, temporal order and interval changes, causal-direction reversal, spatial/role interactions, rare exceptions, abrupt context shifts, irrelevant bursts, forced hash collisions, dominant-frequency pressure, all-new/no-reuse streams, capacity saturation, dead-unit recovery, revision, contradiction, expiry, and source replacement.
+- Hidden-factor IDs may be used only by the post-hoc evaluator and never by allocation, reuse, local updates, hierarchy formation, stopping, pruning, or hyperparameter choice. Real-data results without known ground truth are reported as predictive/reuse observations, not proof that a human-unknown concept was discovered.
+- Freeze train/evaluation histories by source and hidden generator. Surface paraphrases, renamed copies, descendant revisions, or the same generator seed may not cross the boundary.
+- Report held-out next-state/relation quality and abstention, cross-context transfer, post-hoc hidden-factor recovery, reuse selectivity, assembly overlap and stability, exception preservation, pattern participation entropy, dominant/dead/always-active unit rates, allocation/reuse/eviction counts, hierarchy depth/width, revision recovery, evidence-chain completeness, ablation delta, state bytes, event cost, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject emergence if gains require labels, latent terms, task IDs, evaluator-hidden factors, human concept names, offline cluster assignments, global all-pairs comparison, dense embeddings/matrices, gradients, GPU execution, or an external model in the runtime path.
+- Reject it if apparent structures are explained by token/hash collisions, raw frequency, source identity, fixed input slots, a predeclared hierarchy, or post-hoc selection of unit count, threshold, pattern count, or depth.
+- Reject the candidate if every experience allocates a new assembly, one assembly captures nearly everything, units become permanently dead/active, overlaps are nondiscriminative, hierarchy grows without saturation, or resource cost scales as a scan over all prior experiences.
+- Reject a latent pattern if it lacks prospective held-out utility, disappears under exact replay, cannot be causally connected to output by ablation, erases rare exceptions, or continues influencing proposals after its supporting evidence is contradicted, revised, expired, or removed.
+- Do not call an opaque ID knowledge merely because humans cannot name it. Uninterpretable noise, collisions, or evaluator-selected clusters are not human-unknown concepts.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and structurally/source-held-out histories, the intact anonymous-reuse arm improves a frozen future prediction or withheld-relation metric over the no-homeostasis local arm and shuffled controls while remaining competitive with explicit-motif and supervised references under equal runtime budgets.
+- At least one anonymous assembly is reused across independent entities and contexts, predicts held-out outcomes, survives deterministic replay, and loses the corresponding advantage under targeted unit/connection ablation; no training-time semantic label identifies it.
+- Known hidden generators are recovered post hoc above frozen chance/control levels without being visible to learning, while negative random/non-compressible streams do not produce equally strong assemblies.
+- Collapse, dead-unit, all-active, collision, rare-exception, contradiction, revision, expiry, capacity, and distribution-shift controls recover or abstain within fixed state, event, hierarchy, and CPU-latency ceilings.
+- Production integration or semantic naming requires separate independent evidence, provenance review, and explicit human approval. The accepted claim remains bounded anonymous structural reuse, not biological equivalence or discovery of an objectively new human concept.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -1034,6 +1094,7 @@ Compare six equal-source arms under separately reported storage and inference bu
 29. [Later] After Phase 27 replay/migration equivalence and independent Phase 22 histories exist, preregister the Phase 36 evidence-preserving learning-system evolution experiment before implementing any representation translator or predecessor-retirement path.
 30. [Later] After independent Phase 21 structural baselines execute, preregister the Phase 37 structural-invariant sharing experiment before implementing any shared-pattern store or unstored-relation proposal path.
 31. [Later] After the Phase 37 canonical role schema is frozen, preregister the Phase 38 canonical structural-delta and transformation-memory experiment before implementing any persistent delta codec, MDL selector, or shared transformation store.
+32. [Later] After Phase 30 temporal state and Phase 37 explicit-motif controls are frozen, preregister the Phase 39 anonymous local-reuse experiment before implementing any unlabeled allocator, assembly observer, or emergent hierarchy candidate.
 
 ## Required Managed Outputs
 
@@ -1114,6 +1175,10 @@ Compare six equal-source arms under separately reported storage and inference bu
 - `workspace/evaluation/phase38_structural_delta_preregistration.json`
 - `workspace/evaluation/phase38_structural_delta_codec_conformance.json`
 - `workspace/evaluation/phase38_transformation_memory_benchmark.json`
+- `data/processed/benchmark_fixtures/phase39_anonymous_structure_reuse_cases.jsonl`
+- `workspace/evaluation/phase39_anonymous_structure_reuse_preregistration.json`
+- `workspace/evaluation/phase39_anonymous_structure_reuse_benchmark.json`
+- `workspace/evaluation/phase39_anonymous_structure_ablation.json`
 
 ## Review Rule
 
