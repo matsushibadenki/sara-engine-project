@@ -92,7 +92,7 @@ Current high-level state:
 | [Done] | RISA structural interpolation, predictive structural feedback, contradiction freeze, and Event Memory boundary checks | Explicit typed structures; not anonymous concept emergence |
 | [Done] | Repetition-dependent consolidation contract | Observed-only; not connected to production recall |
 | [Done] | Structured-edge and checkpoint-cache registered experiments | Observed-only; promotion remains closed where gates or independent evidence are missing |
-| [Next] | Human source-alignment review for six hash-bound Phase 34 excerpts | Required before semantic delayed-recall preregistration |
+| [Next] | Preregister the Phase 34 semantic delayed-recall workload | Human alignment passed; semantic fixtures, thresholds, and claim boundaries must be frozen before implementation |
 | [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, anonymous local reuse, and dynamical structural validation | Must follow the dependency and preregistration order in the roadmap |
 | [Later] | Physical energy claims | Proxy metrics are not joule measurements; reopening requires an explicit operator decision |
 

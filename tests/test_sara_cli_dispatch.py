@@ -1777,6 +1777,87 @@ def test_phase34_transcribed_excerpt_review_request_dispatches_to_script(monkeyp
     assert "workspace/evaluation/manual_review.json" in args
 
 
+def test_phase34_transcribed_excerpt_review_gate_dispatches_human_decision(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "review-phase34-transcribed-excerpts",
+        "--request-path", "workspace/evaluation/review_request.json",
+        "--ledger-path", "workspace/evaluation/review_decisions.json",
+        "--report-path", "workspace/evaluation/review_gate.json",
+        "--record-id", "arch-migration-python-001",
+        "--authoritative-section-locator", "argparse/module",
+        "--authoritative-text-hash", "a" * 64,
+        "--alignment-decision", "aligned",
+        "--semantic-distortion", "not-found",
+        "--reviewer", "human-reviewer",
+        "--reviewed-at", "2026-08-20T10:00:00+09:00",
+        "--notes", "Compared with the cited section.",
+        "--attest-human-review",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_transcribed_excerpt_review_gate.py",
+    ]
+    assert "--attest-human-review" in args
+    assert "workspace/evaluation/review_decisions.json" in args
+    assert "workspace/evaluation/review_gate.json" in args
+
+
+def test_phase34_review_support_commands_dispatch_registered_collection(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "register-phase34-review-support",
+        "--request-path", "workspace/evaluation/review_request.json",
+        "--output-path", "workspace/evaluation/review_support_registration.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_review_support_preregistration.py",
+    ]
+    assert "workspace/evaluation/review_support_registration.json" in args
+
+    mock_run.reset_mock()
+    monkeypatch.setattr(sys, "argv", [
+        "sara_cli.py",
+        "collect-phase34-review-support",
+        "--request-path", "workspace/evaluation/review_request.json",
+        "--preregistration-path", "workspace/evaluation/review_support_registration.json",
+        "--raw-path", "data/raw/phase34_review_support/test_rows.jsonl",
+        "--packet-path", "workspace/evaluation/review_packet.json",
+        "--report-path", "workspace/evaluation/review_collection.json",
+    ])
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/data/collect_phase34_review_support.py",
+    ]
+    assert "data/raw/phase34_review_support/test_rows.jsonl" in args
+    assert "workspace/evaluation/review_packet.json" in args
+
+
 def test_phase34_cpython_git_snapshot_commands_dispatch_to_registered_scripts(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock(return_value=Mock(returncode=0))

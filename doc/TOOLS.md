@@ -52,6 +52,11 @@ Run commands from the repository root unless a script says otherwise.
 - `python scripts/sara_cli.py eval-idle-replay`: run the observed-only bounded idle replay benchmark.
 - `python scripts/sara_cli.py eval-internal-maintenance-efficiency`: run the observed-only bounded internal maintenance-efficiency benchmark.
 - `python scripts/sara_cli.py eval-operator-llm-assistant-readiness`: validate the optional local LLM operator-assistant proposal gate without calling an LLM runtime.
+- `python scripts/sara_cli.py build-phase34-transcribed-excerpt-review-request`: rebuild the immutable hash-bound request for the six historical excerpt reviews without approving them.
+- `python scripts/sara_cli.py review-phase34-transcribed-excerpts`: inspect the Phase 34 human-review gate, or record one explicitly attested human source-alignment decision with `--record-id`, authoritative locator/hash, alignment/distortion result, reviewer, and timezone-aware review time.
+  - Decisions are stored separately from the request and historical evidence. Existing non-identical decisions require `--replace-existing`; six aligned, no-distortion decisions authorize only semantic delayed-recall preregistration and never production promotion.
+- `python scripts/sara_cli.py register-phase34-review-support`: register the fixed CPython/RFC source set that supports the six Phase 34 human comparisons; run this before collection.
+- `python scripts/sara_cli.py collect-phase34-review-support`: collect only the preregistered official sources and build a read-only comparison packet containing source hashes and top paragraph candidates without making an alignment decision.
 - `python scripts/sara_cli.py prune`: prune low-value memory weights.
 - `python scripts/sara_cli.py clean`: clean interim and processed data outputs.
 

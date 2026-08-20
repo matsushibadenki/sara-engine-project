@@ -731,12 +731,20 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - Registered a separate shallow-Git fallback before execution with protocol fingerprint `277e12a24c1e9d2270e8085efffc488ef5280b92ed1e8b18659a83fce3e2efc8`. It preserves the same CPython repository, commit, case-plan-derived 30-file allowlist, byte limits, and claim boundaries while making the acquisition transport explicit.
 - Collected all 30 preregistered Git blobs from commit `c63aec69bd59c55314c06c23f4c22c03de76fe45`. All records are commit-pinned, unique, UTF-8, and untruncated; the raw snapshot fingerprint is `d33c78a975c47a366a60b8e0cbb857f8a25ba4505472540ddf3ca6e0b5b04b17` and the manifest fingerprint is `75c9e11df10a091a37025cdf0e0c3afd3d4c7314b18f728662626f2a14eb08a3`.
 - Generated an evidence-bound human review request for the six historical transcribed excerpts. Every target is bound to its stored content hash and cited source, but `review_complete=false`; no excerpt was silently replaced, reclassified, or approved by automation.
+- Added a separate hash-bound human decision ledger and fail-closed review gate. Each decision must bind the immutable request fingerprint, record ID, stored excerpt hash, cited source, authoritative section locator/text hash, alignment result, distortion result, reviewer identity, timezone-aware review time, notes, and explicit human attestation. Conflicting replacement requires an explicit flag, while request/raw/v2 evidence mutation remains forbidden.
+- Added `review-phase34-transcribed-excerpts` for read-only gate evaluation or one-at-a-time human decision recording. The initial managed gate correctly reports zero decisions, six pending targets, `review_gate_passed=false`, and `promotion_ready=false`; automation did not create a decision ledger or impersonate human approval.
+- Preregistered the separate three-document human-review support snapshot before collection with protocol fingerprint `16fb51aec626a39cd5f584d9050ec32c87baa84734691a14d1bbe47c3d416f1e`. It binds the immutable review request to CPython commit `c63aec69bd59c55314c06c23f4c22c03de76fe45` copies of `argparse.rst` and `pathlib.rst`, plus RFC 9110, without altering the executed adapter, historical excerpts, or review request.
+- Collected all three registered official documents and built a six-target comparison packet. The source snapshot fingerprint is `32b115d179bd495717ebabd139cfa5d1eb0dca5dd7fe2928c7f1b26dd224e495`; the packet fingerprint is `ae6fe43432f09e019d70ce12323c23dc9063c49ac6820ce16ee15b8bb81d8b3e`.
+- The packet reports exact-substring status, the three highest sparse token-overlap paragraphs, paragraph hashes, fixed source revisions, and human decision placeholders. All six historical excerpts were non-exact strings against the frozen sources and top paragraph Jaccard ranged from `0.522727` to `0.970588`; these are navigation aids, not automated semantic-alignment or distortion decisions.
+- The project owner explicitly approved all six hash-bound comparisons. The separate decision ledger records six `aligned` decisions, six `semantic_omission_or_distortion_found=false` results, explicit human attestations, authoritative locators/text hashes, and timezone-aware review time without mutating the request, raw evidence, or executed v2 fingerprints.
+- The human-review gate now reports `review_complete=true`, `review_gate_passed=true`, `semantic_delayed_recall_preregistration_ready=true`, and `promotion_ready=false`. Its ledger fingerprint is `ec3ffe44777f332bcc07da428a0385a9904bc98eb403ff627db8dc89711b124f` and report fingerprint is `687bb140373fc0d2e695b6b2a1aff403df2dc505b292f7063fb48e7a60a58aac`.
+- Verification passed for all 95 targeted review-support, human-review, review-request, and CLI dispatch tests.
 - Verification passed for all 92 targeted snapshot, review-request, and CLI tests. The full suite recorded `1634 passed` plus one pre-existing Phase 33 process-latency gate failure under aggregate test load; the unchanged Phase 33 test passed immediately in isolation with `max_latency_ms_observed=0.582`, so its threshold was not relaxed and it is not counted as a Phase 34 failure.
 
 ### [Later]
 
 - Preserve the failed live-provenance and Raw HTTP transport results. Do not replace sources inside executed adapter v2 or treat the successful Git snapshot as a rewrite of that experiment.
-- Complete human source-alignment review for the six transcribed excerpts using the hash-bound request. Add a separately preregistered semantic delayed-recall workload only after the manual-review gate passes.
+- Preregister a separate semantic delayed-recall workload bound to the passed human-review gate before implementing or executing any semantic adapter. Do not reuse exact-identity thresholds as semantic-quality thresholds.
 - Keep current Event Memory and recurrent state as production controls. Do not connect checkpoint retrieval to durable admission or production ranking before independent evidence and human review.
 
 ### Minimum Experiment
@@ -1152,7 +1160,7 @@ Compare six equal-source, equal-replay, and equal-resource arms:
 23. [Done] Add the independent factorial readiness gate and freeze six missing domain/horizon collection targets without fabricating evidence.
 24. [Done] Execute registered adapter v2 across all 1,050 conditions with retained-set identity and no selector retuning; all integrity and identity thresholds passed under the frozen exact-identity scope.
 25. [Done] Register and collect the exact 30-file CPython `v3.14.6` snapshot at commit `c63aec69bd59c55314c06c23f4c22c03de76fe45`; preserve the Raw HTTP 429 failure and the successful shallow-Git acquisition as separate immutable contracts.
-26. [Next] Complete human source-alignment review for the six hash-bound transcribed excerpts before preregistering semantic delayed recall.
+26. [Done] Complete human source-alignment review for the six hash-bound transcribed excerpts before preregistering semantic delayed recall.
 27. [Later] Reopen physical-energy evidence only by explicit operator decision.
 28. [Later] After Phase 32 fixed-expert controls execute, preregister the Phase 35 emergent overlapping spatiotemporal expert-field experiment before implementing any boundary-free routing candidate.
 29. [Later] After Phase 27 replay/migration equivalence and independent Phase 22 histories exist, preregister the Phase 36 evidence-preserving learning-system evolution experiment before implementing any representation translator or predecessor-retirement path.
@@ -1160,6 +1168,7 @@ Compare six equal-source, equal-replay, and equal-resource arms:
 31. [Later] After the Phase 37 canonical role schema is frozen, preregister the Phase 38 canonical structural-delta and transformation-memory experiment before implementing any persistent delta codec, MDL selector, or shared transformation store.
 32. [Later] After Phase 30 temporal state and Phase 37 explicit-motif controls are frozen, preregister the Phase 39 anonymous local-reuse experiment before implementing any unlabeled allocator, assembly observer, or emergent hierarchy candidate.
 33. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
+34. [Next] Preregister the separate Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
 
 ## Required Managed Outputs
 
@@ -1226,6 +1235,12 @@ Compare six equal-source, equal-replay, and equal-resource arms:
 - `data/processed/autobot/phase34_cpython_v3_14_6_git_snapshot_manifest.jsonl`
 - `workspace/evaluation/phase34_cpython_v3_14_6_git_snapshot_collection.json`
 - `workspace/evaluation/phase34_transcribed_excerpt_human_review_request.json`
+- `workspace/evaluation/phase34_transcribed_excerpt_human_review_decisions.json`
+- `workspace/evaluation/phase34_transcribed_excerpt_human_review_gate.json`
+- `workspace/evaluation/phase34_transcribed_excerpt_review_support_preregistration.json`
+- `data/raw/phase34_review_support/source_rows.jsonl`
+- `workspace/evaluation/phase34_transcribed_excerpt_review_comparison_packet.json`
+- `workspace/evaluation/phase34_transcribed_excerpt_review_support_collection.json`
 - `data/raw/architecture_migration/source_rows.jsonl`
 - `data/processed/autobot/architecture_migration_latent_manifest.jsonl`
 - `workspace/evaluation/continual_horizon_external_collection.json`

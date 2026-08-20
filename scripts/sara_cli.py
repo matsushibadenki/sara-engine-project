@@ -1859,6 +1859,96 @@ def main():
             "evaluation", "phase34_transcribed_excerpt_human_review_request.json"
         ),
     )
+    parser_phase34_excerpt_review_gate = subparsers.add_parser(
+        "review-phase34-transcribed-excerpts",
+        help="Record a human source-alignment decision or evaluate the Phase 34 review gate.",
+    )
+    parser_phase34_excerpt_review_gate.add_argument(
+        "--request-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_human_review_request.json"
+        ),
+    )
+    parser_phase34_excerpt_review_gate.add_argument(
+        "--ledger-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_human_review_decisions.json"
+        ),
+    )
+    parser_phase34_excerpt_review_gate.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_human_review_gate.json"
+        ),
+    )
+    parser_phase34_excerpt_review_gate.add_argument("--record-id")
+    parser_phase34_excerpt_review_gate.add_argument("--authoritative-section-locator")
+    parser_phase34_excerpt_review_gate.add_argument("--authoritative-text-hash")
+    parser_phase34_excerpt_review_gate.add_argument(
+        "--alignment-decision",
+        choices=("aligned", "misaligned", "unresolved"),
+    )
+    parser_phase34_excerpt_review_gate.add_argument(
+        "--semantic-distortion",
+        choices=("found", "not-found", "unresolved"),
+    )
+    parser_phase34_excerpt_review_gate.add_argument("--reviewer")
+    parser_phase34_excerpt_review_gate.add_argument("--reviewed-at")
+    parser_phase34_excerpt_review_gate.add_argument("--notes", default="")
+    parser_phase34_excerpt_review_gate.add_argument(
+        "--attest-human-review", action="store_true"
+    )
+    parser_phase34_excerpt_review_gate.add_argument(
+        "--replace-existing", action="store_true"
+    )
+    parser_phase34_review_support_registration = subparsers.add_parser(
+        "register-phase34-review-support",
+        help="Register the immutable three-source support snapshot for Phase 34 human review.",
+    )
+    parser_phase34_review_support_registration.add_argument(
+        "--request-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_human_review_request.json"
+        ),
+    )
+    parser_phase34_review_support_registration.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_review_support_preregistration.json"
+        ),
+    )
+    parser_phase34_review_support_collection = subparsers.add_parser(
+        "collect-phase34-review-support",
+        help="Collect the registered official sources and build the human comparison packet.",
+    )
+    parser_phase34_review_support_collection.add_argument(
+        "--request-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_human_review_request.json"
+        ),
+    )
+    parser_phase34_review_support_collection.add_argument(
+        "--preregistration-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_review_support_preregistration.json"
+        ),
+    )
+    parser_phase34_review_support_collection.add_argument(
+        "--raw-path",
+        default=raw_data_path("phase34_review_support", "source_rows.jsonl"),
+    )
+    parser_phase34_review_support_collection.add_argument(
+        "--packet-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_review_comparison_packet.json"
+        ),
+    )
+    parser_phase34_review_support_collection.add_argument(
+        "--report-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_review_support_collection.json"
+        ),
+    )
     parser_phase34_cpython_git_registration = subparsers.add_parser(
         "register-phase34-cpython-git-snapshot",
         help="Register the shallow-Git fallback for the fixed CPython snapshot.",
@@ -4089,6 +4179,68 @@ def main():
             str(args.provenance_path),
             "--output-path",
             str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "review-phase34-transcribed-excerpts":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_transcribed_excerpt_review_gate.py",
+            "--request-path",
+            str(args.request_path),
+            "--ledger-path",
+            str(args.ledger_path),
+            "--report-path",
+            str(args.report_path),
+        ]
+        optional_values = (
+            ("--record-id", args.record_id),
+            ("--authoritative-section-locator", args.authoritative_section_locator),
+            ("--authoritative-text-hash", args.authoritative_text_hash),
+            ("--alignment-decision", args.alignment_decision),
+            ("--semantic-distortion", args.semantic_distortion),
+            ("--reviewer", args.reviewer),
+            ("--reviewed-at", args.reviewed_at),
+        )
+        for flag, value in optional_values:
+            if value is not None:
+                command.extend([flag, str(value)])
+        if args.notes:
+            command.extend(["--notes", str(args.notes)])
+        if args.attest_human_review:
+            command.append("--attest-human-review")
+        if args.replace_existing:
+            command.append("--replace-existing")
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase34-review-support":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_review_support_preregistration.py",
+            "--request-path",
+            str(args.request_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "collect-phase34-review-support":
+        command = [
+            sys.executable,
+            "scripts/data/collect_phase34_review_support.py",
+            "--request-path",
+            str(args.request_path),
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--raw-path",
+            str(args.raw_path),
+            "--packet-path",
+            str(args.packet_path),
+            "--report-path",
+            str(args.report_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
