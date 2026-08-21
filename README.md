@@ -94,7 +94,7 @@ Current high-level state:
 | [Done] | Structured-edge and checkpoint-cache registered experiments | Observed-only; promotion remains closed where gates or independent evidence are missing |
 | [Done] | Phase 34 semantic delayed-recall preregistration | Six aligned propositions, three languages, three horizons, 270 cases, and semantic-specific thresholds are immutable; no semantic result yet |
 | [Next] | Implement and execute the registered Phase 34 semantic adapter | Must preserve evaluator-label isolation, fixed selectors/resources, production isolation, and the six-proposition claim boundary |
-| [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, anonymous local reuse, dynamical validation, and structural factorization/compositional search | Must follow the dependency and preregistration order in the roadmap |
+| [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, anonymous local reuse, dynamical validation, structural factorization/compositional search, and predictive cross-modal structure boundaries | Must follow the dependency and preregistration order in the roadmap; tactile claims require separate independent evidence |
 | [Later] | Physical energy claims | Proxy metrics are not joule measurements; reopening requires an explicit operator decision |
 
 For the authoritative status, dependencies, negative results, and acceptance gates, see [doc/ROADMAP_NEXT_LEVEL.md](doc/ROADMAP_NEXT_LEVEL.md).

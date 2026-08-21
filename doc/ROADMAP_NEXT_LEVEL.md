@@ -192,6 +192,7 @@ Every major mechanism must pass this ladder before it can affect production defa
 ### [Next]
 
 - Collect the five-case minimum across at least two independent recording/source domains and pass the external Phase 23 gate.
+- Treat this phase as evidence for safe binding of a declared cross-modal claim, not evidence that a modality-independent structure has been learned. Phase 42 separately tests whether structure transfers prospectively across modalities without label or pairing leakage.
 
 ### Acceptance Gate
 
@@ -1217,6 +1218,68 @@ Compare seven equal-source and equal-resource arms:
 - The learned dictionary reaches a frozen saturation/turnover bound, candidate cascade width remains fixed as the test store grows, and every accepted answer reconstructs an evidence-linked factor trace within byte, event, and CPU-latency ceilings.
 - Anonymous-factor and large-store follow-ups require separate independent evidence and human review. Production reasoning integration remains blocked until the explicit-factor experiment, verifier preservation, and end-to-end provenance review all pass.
 
+## Phase 42: Predictive Cross-Modal Structure Boundary
+
+**Goal:** test whether evidence-linked structures learned in one sensory or symbolic channel can improve prediction in another, while learning a bounded continuum between broadly reusable, modality-family, and modality-specific structure instead of forcing all observations into one common representation.
+
+### Research Hypothesis
+
+- Keep modality-local values and shared relational structure distinct:
+
+```text
+experience
+  = modality-local coordinates and bindings
+  + typed relational/temporal structure
+  + evidence, uncertainty, and revision state
+```
+
+- Raw values such as image position, color, optical flow, audio frequency/phase, tactile pressure/temperature/shear, and text token/syntax identity are not directly interchangeable. Candidate sharing begins only after bounded typed operations such as state, difference, order, boundary, approach/separation, increase/decrease, repetition, phase shift, transition, prediction, and deviation are extracted. This initial vocabulary is a declared control, not a claim that the universal primitives are complete or human-defined names are necessary.
+- Do not assign a structure permanently to `universal` or `modality-specific`. Maintain a sparse evidence-linked applicability map over observed modalities or modality families. A candidate becomes more broadly applicable only when using it improves frozen held-out prediction in independently sourced target channels without exceeding a negative-transfer ceiling. It remains family-level or local when transfer is partial, harmful, or unsupported, and it may be demoted after contradiction or environmental revision.
+- Cross-modal transfer means preservation of a useful relation or trajectory, not reconstruction of identical raw values or subjective equivalence. Examples include repetition followed by deviation, rise/peak/release, approach/contact/rebound, containment, temporal order, periodicity, and prediction-error correction. A text, video, audio, or tactile realization may bind different values while sharing only the tested transformation.
+- Separate three levels operationally: modality-local coordinates, modality-family structure, and cross-family relational structure. The levels form an evidence-weighted abstraction gradient; they are not a fixed ontology. Similar surface rhythm, timestamps, captions, class labels, or paired-example IDs cannot establish sharing.
+- Reuse Phase 23 for evidence-safe binding, Phase 37 for canonical role invariants, and Phase 41 for explicit factor traces. Phase 42 asks a different prospective question: whether a source-derived candidate improves a target modality after the candidate and target adapter are frozen. Successful same-modality reuse or post-hoc structural similarity is insufficient.
+- Keep target adapters local, sparse, bounded, CPU-only, backpropagation-free, and matrix-free. A candidate may route through typed event interfaces, but it cannot use a dense common embedding, an opaque pretrained cross-modal model, all-pairs matching, or a shared answer table as the runtime explanation.
+
+### [Later]
+
+- Begin the base experiment after Phase 23 has independent text/vision/audio evidence and Phase 37 freezes canonical role and order identity. Phase 41 factorization is required only for the later learned-factor follow-up, not for the declared-relation baseline.
+- Preregister source/target modalities, modality families, local coordinate schemas, candidate relation vocabulary, extraction and matching rules, applicability update/demotion rules, uncertainty and abstention thresholds, negative-transfer ceiling, candidate fan-out, state/event/latency budgets, seeds, tuning attempts, independent-source split, and every allowed transfer direction.
+- Stage A uses independently sourced text, visual, and audio sequences. Add tactile transfer only after an independent licensed or consented tactile sensor dataset, typed tactile adapter, provenance review, and tactile-specific negative controls exist. Synthetic pressure traces may test mechanics but cannot support a claim about human touch.
+- Keep all cross-modal candidates provisional and default-off. Phase 23 verification, contradiction freeze, Event Memory admission, and human review remain unchanged; predictive transfer cannot itself authorize durable knowledge.
+
+### Minimum Experiment
+
+Compare seven equal-source and equal-resource arms:
+
+1. independent modality-local predictors with no shared structure;
+2. declared cross-modal claim binding through the current Phase 23 path;
+3. sharing by class label, paired-example ID, or aligned timestamp as an explicit leakage control;
+4. a frozen human-declared relation vocabulary shared across all modalities;
+5. the same vocabulary with one forced universal applicability level;
+6. training-only predictive applicability learning over universal, modality-family, and local levels;
+7. the intact hierarchical candidate with role, order, evidence, or source-to-target mapping canonically shuffled.
+
+- Include same-structure/different-surface and same-surface/different-structure pairs for repetition/deviation, rise/peak/release, approach/contact/rebound, containment, temporal reversal, periodicity/phase slip, delayed response, and uncertainty. Include modality-local controls such as color contrast, lexical syntax, harmonic interval, and tactile texture/pressure responses so universalization has a measurable cost.
+- Split by source, structural family, realization generator, and recording session before extraction. Base evaluation is unpaired: a target example cannot share a caption, soundtrack, object identity, timestamp, template revision, or example ID with the source evidence. Paired examples may appear only in a separately reported diagnostic arm.
+- Freeze source candidates and target adapters before revealing held-out target outcomes. Evaluate every preregistered source-to-target direction separately; do not average away one-way transfer or negative transfer. A relation that transfers among only a subset of channels should remain a modality-family candidate.
+- Report held-out predictive gain per transfer direction, negative-transfer rate and severity, calibrated abstention, applicability-map sparsity and revision, structural-family holdout, order/direction sensitivity, value and modality-identity leakage, shuffled-control delta, round-trip structural consistency, evidence-chain completeness, candidate fan-out, state bytes, event cost, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject a universal-structure claim if gains disappear on unpaired or structurally held-out examples, if the label/pairing control matches the candidate, or if captions, filenames, timestamps, class IDs, source identity, evaluator labels, or generator seeds leak across the boundary.
+- Reject sharing if raw coordinates from unlike modalities are compared as though they had the same meaning, local values cannot be recovered separately, all candidates become universal, every example receives its own structure, or a modality-local control is incorrectly promoted without prospective benefit.
+- Reject the candidate if aggregate improvement hides harmful source-to-target directions, rare exceptions or direction/order information disappear, contradiction and revision cannot demote applicability, or missing modalities are imputed with unjustified certainty.
+- Reject a transfer mechanism that scans every stored candidate, performs dense all-pairs or matrix operations, uses gradients, GPUs, external semantic models, unbounded adapters, or increases candidate fan-out with memory size.
+- Do not claim shared qualia, human sensory equivalence, a complete universal grammar, or modality-independent intelligence from structural prediction. Text/vision/audio evidence does not imply tactile capability, and synthetic tactile fixtures do not establish human-touch transfer.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and independent source/structural-family splits, the hierarchical applicability arm improves frozen held-out prediction over the independent, Phase 23 binding, label/pairing, declared-vocabulary, and forced-universal controls under the same total resource envelope.
+- At least one relation transfers prospectively across three independently sourced modalities, at least one transfers only within a preregistered modality family, and at least one modality-local control remains local; the learned applicability and calibrated abstention must reflect all three outcomes without evaluator-label access.
+- Order/role/mapping shuffling removes the corresponding benefit, while targeted removal of a transferred structure selectively removes its target prediction gain and leaves unrelated local predictions stable. No accepted transfer may depend on an exact paired example.
+- Contradiction, source replacement, and environmental reversal deterministically recalibrate or demote affected applicability without altering unrelated structures; negative transfer, state, event, fan-out, and CPU-latency ceilings hold at the longest registered horizon.
+- Tactile claims require the separate independent tactile gate. Production routing or durable cross-modal knowledge requires a further external workload, provenance review, unchanged explicit verification, and human approval.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -1255,6 +1318,7 @@ Compare seven equal-source and equal-resource arms:
 34. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
 35. [Next] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation, then execute all 6,750 frozen conditions without retuning selectors or changing production paths.
 36. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
+37. [Later] After independent Phase 23 text/vision/audio evidence and the Phase 37 canonical role schema are frozen, preregister the Phase 42 predictive cross-modal boundary experiment; do not add tactile claims until an independent tactile dataset and adapter pass their own gate.
 
 ## Required Managed Outputs
 
@@ -1355,6 +1419,10 @@ Compare seven equal-source and equal-resource arms:
 - `workspace/evaluation/phase41_structural_factorization_preregistration.json`
 - `workspace/evaluation/phase41_structural_factorization_benchmark.json`
 - `workspace/evaluation/phase41_structural_factorization_ablation.json`
+- `data/processed/benchmark_fixtures/phase42_cross_modal_structure_cases.jsonl`
+- `workspace/evaluation/phase42_cross_modal_structure_preregistration.json`
+- `workspace/evaluation/phase42_cross_modal_structure_benchmark.json`
+- `workspace/evaluation/phase42_cross_modal_structure_ablation.json`
 
 ## Review Rule
 
