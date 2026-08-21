@@ -1651,6 +1651,68 @@ def test_phase34_independent_adapter_registration_dispatches_to_script(monkeypat
     assert "workspace/evaluation/independent_registered.json" in args
 
 
+def test_phase34_semantic_delayed_recall_draft_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "build-phase34-semantic-delayed-recall-preregistration-draft",
+            "--fixture-path",
+            "data/processed/benchmark_fixtures/semantic.jsonl",
+            "--draft-path",
+            "workspace/evaluation/semantic_draft.json",
+            "--environment-path",
+            "workspace/evaluation/semantic_environment.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_semantic_delayed_recall_draft.py",
+    ]
+    assert "data/processed/benchmark_fixtures/semantic.jsonl" in args
+    assert "workspace/evaluation/semantic_draft.json" in args
+
+
+def test_phase34_semantic_delayed_recall_registration_dispatches_to_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock(return_value=Mock(returncode=0))
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "register-phase34-semantic-delayed-recall-preregistration",
+            "--draft-path",
+            "workspace/evaluation/semantic_draft.json",
+            "--output-path",
+            "workspace/evaluation/semantic_registered.json",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/phase34_semantic_delayed_recall_preregistration.py",
+    ]
+    assert "workspace/evaluation/semantic_draft.json" in args
+    assert "workspace/evaluation/semantic_registered.json" in args
+
+
 def test_phase34_independent_adapter_benchmark_dispatches_to_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock(return_value=Mock(returncode=0))

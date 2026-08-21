@@ -86,7 +86,7 @@ TwinProp's training path remains comparison-only: it fits a DNN digital twin, di
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1596 passed` in the managed Python 3.10 environment after the Phase 34 independent-execution readiness gate and managed collection blockers were added.
+- [Done] Full Python test suite: `1651 passed` in the managed Python 3.10 environment after the Phase 34 semantic delayed-recall preregistration was added.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -600,6 +600,13 @@ outer relation A -> B
 - Separate three kinds of change: contact-state plasticity, contact add/prune within an existing outer relation, and outer-graph rewiring. A local contact may not create a new durable outer relation or semantic role without the existing provenance, contradiction, and Event Memory/RISA admission boundaries.
 - The central claim is an efficiency hypothesis, not a biological claim: richer bounded edges may allow fewer outer nodes/routes at the same held-out quality. Total contacts and internal interactions count as graph complexity and may not be hidden by reporting only the smaller outer graph.
 
+**Spectral-neuron design translation:**
+
+- *The Spectral Neuron* ([arXiv:2608.08003v2](https://arxiv.org/abs/2608.08003)) is relevant as a design-and-evaluation reference because it keeps response shape and feature influence mathematically inspectable while model capacity grows. Its actual mechanism is not a SARA runtime candidate: it learns dense symmetric matrices with gradient optimization and solves an eigenvalue problem for each input, with the paper itself reporting cubic eigensolver cost.
+- Transfer only the matrix-free principle of **capacity with explicit behavioral guarantees**. For every structured-edge candidate, declare which ordered scalar axes have a justified monotone response within a fixed context, such as verified support, contradiction evidence, staleness, or fatigue. Do not impose monotonicity on timing, phase, context switches, or other axes where a non-monotone response is part of the hypothesis.
+- Give each contact and branch-local scalar rule a preregistered maximum output change per unit input/event perturbation. Compose those local limits into an auditable relation-level influence envelope, and record the actually active contacts/branches and their signed contributions. This is the sparse-event analogue of coefficient transparency, not a spectral or eigenvalue claim.
+- Treat a larger contact/branch count as useful scaling only if held-out quality improves without weakening the frozen response-shape contract, making the influence envelope vacuous, or exceeding the equal total state/event/latency budget. Matrix dimension, eigenspaces, spectral norms, semidefinite constraints, autograd, Adam, and the paper's benchmark gains remain comparison-only.
+
 ### [Done]
 
 - Added an immutable Phase 33 preregistration contract that freezes all five mechanism arms, three outer-graph simplification levels, 17 positive/negative case families, five unique replicate seeds, total-resource accounting, thresholds, and CPU-only/default-off execution policy.
@@ -622,6 +629,7 @@ outer relation A -> B
 - Keep the existing single-contact sparse route as the production default. Structured edges remain default-off until both the mechanism ablation and the outer-graph simplification test pass.
 - Transfer the registered mechanism, unchanged and default-off, to independent temporal and structural workloads with provenance and near-duplicate controls before any production review.
 - Keep branch participation, branch-event overlap, local-state saturation, event cost, and serialized-byte measurement as sparse scalar counters; do not import dense voltage PCA into the runtime.
+- Before the independent transfer, preregister a matrix-free response-shape and influence audit: ordered axes and contexts, per-contact local limits, relation-level bound composition, perturbation sizes, bound-tightness floor, capacity points, and failure thresholds. Constraints must be encoded directly in bounded scalar update rules rather than checked by a dense post-hoc model.
 
 ### Minimum Experiment
 
@@ -644,6 +652,8 @@ Use tasks where one scalar edge is deliberately ambiguous: same pre/post pair wi
 
 Report held-out accuracy/F1, calibration and abstention, timing/order sensitivity, contradiction recovery, contact-failure tolerance, outer nodes/routes/depth, contacts per pair, branch slots, active internal interactions, total state bytes, event cost, latency, add/prune churn, deterministic replay, and an iso-quality total-complexity frontier.
 
+For the matrix-free response-shape and influence audit, sweep one eligible scalar axis at a time while freezing context and all other inputs. Report monotonicity violations, worst observed output change, declared influence envelope, observed-change/envelope ratio, active-contact attribution completeness, and how all five values change as contact/branch capacity grows. Include deliberately ineligible non-monotone timing/context cases so that the audit cannot pass by flattening every response.
+
 **TwinProp-inspired follow-up after the immutable Phase 33 experiment:**
 
 - Freeze a new experiment identity rather than extending `phase33-structured-edge-observed-v1`.
@@ -658,6 +668,7 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - Reject any accounting result that relabels intermediate outer nodes as hidden edge contacts without reducing the preregistered total-complexity measure.
 - Reject the candidate if contacts become dense or unbounded, duplicate contacts collapse into an implicit larger scalar weight, source/role provenance cannot be isolated per contact, or local contact plasticity creates durable semantic structure directly.
 - Reject nondeterministic branch assignment, unstable contact churn, failure to recover after contradiction, or dependence on dictionary order, wall-clock timing, gradients, matrices, or GPU execution.
+- Reject the shape/influence translation if an eligible axis violates its frozen direction, an ineligible temporal/context case is flattened to satisfy the audit, any observed perturbation exceeds its declared envelope, active contributions cannot reconstruct the emitted local signal within tolerance, or the envelope becomes progressively less informative as capacity grows.
 - Reject the TwinProp-inspired transfer if passive, topology-collapsed, no-slow-state, and intact arms cannot be separated under the same fixed readout, or if shuffled placement performs equivalently to the claimed structured placement.
 - Do not infer human-like dendritic computation, general parameter efficiency, ANN parity, or physical-energy savings from synthetic fixtures.
 
@@ -738,13 +749,21 @@ Report held-out accuracy/F1, calibration and abstention, timing/order sensitivit
 - The packet reports exact-substring status, the three highest sparse token-overlap paragraphs, paragraph hashes, fixed source revisions, and human decision placeholders. All six historical excerpts were non-exact strings against the frozen sources and top paragraph Jaccard ranged from `0.522727` to `0.970588`; these are navigation aids, not automated semantic-alignment or distortion decisions.
 - The project owner explicitly approved all six hash-bound comparisons. The separate decision ledger records six `aligned` decisions, six `semantic_omission_or_distortion_found=false` results, explicit human attestations, authoritative locators/text hashes, and timezone-aware review time without mutating the request, raw evidence, or executed v2 fingerprints.
 - The human-review gate now reports `review_complete=true`, `review_gate_passed=true`, `semantic_delayed_recall_preregistration_ready=true`, and `promotion_ready=false`. Its ledger fingerprint is `ec3ffe44777f332bcc07da428a0385a9904bc98eb403ff627db8dc89711b124f` and report fingerprint is `687bb140373fc0d2e695b6b2a1aff403df2dc505b292f7063fb48e7a60a58aac`.
+- Registered the separate immutable semantic workload as `phase34-semantic-delayed-recall-v1` before implementing a semantic adapter. It freezes six human-aligned source propositions, English/Japanese/Simplified-Chinese queries, horizons `10/30/100`, five semantic/safety families, five unseen replicate seeds, the unchanged five parent arms, 270 cases, and 6,750 future conditions. The fixture fingerprint is `b32f5160b312d999383c1f61d96cee278fd95e55b5c42e8546b97ad9d164ccb9`, environment fingerprint is `b8ffdacebf471fbcb9ea344aa81be573154cc2f912e6b264760abd6b62d5f077`, and protocol fingerprint is `8cbeeebfe0297e7343ce0c243b16ac7c9027a70872d53d5df39651a91beafb23`; identical re-registration was preserved.
+- The semantic contract hides expected decisions, proposition IDs, and source bindings from the candidate; exact hash identity and token overlap are explicitly invalid as semantic scores. Only paraphrase recall of the six approved propositions is independent semantic evidence. Lexical-overlap, revision, contradiction, and missing-evidence cases are synthetic controls and cannot expand the claim beyond this source-bound workload.
+- Frozen semantic thresholds are distinct from the executed exact-identity adapter: macro paraphrase accuracy, checkpoint-minus-control delta, lexical-overlap abstention, revision uptake, contradiction/missing abstention, worst-language recall, source traceability, retained-set identity, deterministic replay, and existing byte/event/latency ceilings. General language understanding, general semantic memory, ANN parity, and physical-energy claims remain forbidden.
 - Verification passed for all 95 targeted review-support, human-review, review-request, and CLI dispatch tests.
 - Verification passed for all 92 targeted snapshot, review-request, and CLI tests. The full suite recorded `1634 passed` plus one pre-existing Phase 33 process-latency gate failure under aggregate test load; the unchanged Phase 33 test passed immediately in isolation with `max_latency_ms_observed=0.582`, so its threshold was not relaxed and it is not counted as a Phase 34 failure.
+- Verification after semantic preregistration passed all 152 Phase 34 and CLI regression tests and the complete managed Python 3.10 `tests/` suite with `1651 passed`. The full run used the frozen Python version so existing environment-fingerprint gates remained meaningful.
+
+### [Next]
+
+- Implement the registered semantic adapter and evaluator without changing the fixture, arms, seeds, budgets, thresholds, candidate-visible fields, or claim boundaries. Keep it default-off and disconnected from production retrieval and durable admission.
+- Execute all 6,750 registered conditions only after the evaluator proves that expected decisions and proposition IDs cannot enter candidate state, retention, selection, or tuning.
 
 ### [Later]
 
 - Preserve the failed live-provenance and Raw HTTP transport results. Do not replace sources inside executed adapter v2 or treat the successful Git snapshot as a rewrite of that experiment.
-- Preregister a separate semantic delayed-recall workload bound to the passed human-review gate before implementing or executing any semantic adapter. Do not reuse exact-identity thresholds as semantic-quality thresholds.
 - Keep current Event Memory and recurrent state as production controls. Do not connect checkpoint retrieval to durable admission or production ranking before independent evidence and human review.
 
 ### Minimum Experiment
@@ -1133,6 +1152,71 @@ Compare six equal-source, equal-replay, and equal-resource arms:
 - Targeted removal of the responsible replay/competition path removes the corresponding predictive advantage, while unrelated structures remain stable and total state/event/CPU cost stays bounded.
 - Production integration requires independent temporal workloads, adversarial misinformation evidence, provenance review, and explicit human approval. The accepted claim is bounded dynamical candidate screening, not truth without verification.
 
+## Phase 41: Structural Factorization and Bounded Compositional Search
+
+**Goal:** test whether an unseen problem can be decomposed into a small set of reusable structural factors, solved by bounded typed composition, and grounded back into a verified answer more effectively than exact retrieval, path search, analogy, or flat transformation search.
+
+### Research Hypothesis
+
+- `Structural factor` is an operational SARA term, not a claim that one mathematically unique set of structural primes exists. A factor is a bounded typed relation/subgraph or transformation with anonymous role slots, input/output interfaces, preconditions, postconditions, temporal/context constraints, provenance, revision, and a canonical digest.
+- A candidate qualifies as a reusable factor only when it satisfies all three preregistered properties: it recurs across independent structures, its composition reconstructs or predicts held-out structures within tolerance, and removing it causes a prospective loss that cannot be explained by labels, node identity, or source duplication. Smaller fragments that lose relational or predictive information are not better factors merely because they are shorter.
+- Keep four operations distinct and auditable:
+
+```text
+problem grounding
+  -> bounded structural-factorization hypotheses
+  -> typed factor composition / state transition search
+  -> concrete answer grounding
+  -> evidence and consistency verification
+```
+
+- A problem may admit several valid factorizations. Retain a fixed small beam of alternatives and score them using frozen reconstruction, interface compatibility, evidence, exception, predictive-error, and description-cost terms. Minimum description length is one signal; the shortest decomposition does not override failed prediction, contradiction, or missing evidence.
+- Candidate retrieval must be a bounded sparse cascade: local role/interface signatures and resonance select a fixed candidate set, typed preconditions reduce it further, and only the surviving compositions execute. A future scale claim such as `10^8 stored factors -> 10^3 candidates -> 10 compositions` is valid only after measured sublinear retrieval; it cannot be inferred from a small fixture or an unbounded offline index scan.
+- Separate factor discovery from factor use. The initial experiment uses a frozen dictionary learned or selected only from training histories. Evaluation problems, answers, hidden generators, and evaluator labels cannot create, rename, merge, split, or rank factors. Phase 39 anonymous assemblies may later supply factor candidates, but the base factorization result must first work with Phase 37/38 explicit invariant and transformation controls.
+- Treat structural tokenization as a learned codebook research question: useful units may be unnamed and larger than one edge, but must retain typed interfaces and evidence. Do not replace one human ontology with a fixture-specific ID per example, a dense embedding tokenizer, or an opaque external model.
+- Every proposed solution carries the ordered factors, role bindings, intermediate structures, rejected alternatives, source evidence, uncertainty, and verifier result. A valid composition remains provisional until current RISA contradiction, causal, policy, and durable-admission boundaries pass.
+
+### [Later]
+
+- Begin the explicit-factor experiment only after Phase 37 freezes canonical role/invariant identity and Phase 38 proves exact `base + delta` reconstruction. Reuse Phase 21 composition/path controls and Phase 24/25 verification rather than creating a parallel solver or verifier.
+- Preregister the factor schema, interface/type rules, dictionary construction split, maximum factors, maximum candidates per stage, factorization depth, composition length, alternative-beam width, cycle handling, score terms, tie order, state/event/latency ceilings, seeds, tuning attempts, and source/structural-family split before implementing the solver.
+- Add self-discovered anonymous factors only after Phase 39 passes independently. Compare them against the same explicit dictionary and shuffled-interface controls; do not use semantic labels to name, select, or repair anonymous factors during evaluation.
+- Keep the solver default-off, CPU-only, sparse, bounded, backpropagation-free, matrix-free, and unable to mutate durable structures. Large factor stores require a separately measured sparse-index experiment before any million- or billion-scale claim.
+
+### Minimum Experiment
+
+Compare seven equal-source and equal-resource arms:
+
+1. exact verified-edge and bounded path retrieval;
+2. Phase 37 whole-motif matching without factorization;
+3. Phase 38 flat transformation search without an explicit factor hierarchy;
+4. factorization with a fixed human-declared primitive dictionary;
+5. factorization with a training-only reuse/reconstruction-derived dictionary;
+6. the same learned dictionary with factor interfaces or composition order canonically shuffled;
+7. the intact bounded factorization, sparse candidate cascade, composition, grounding, and unchanged explicit verifier.
+
+- Use problems generated from hidden relation, topology, transformation, temporal, constraint, and exception factors. Hold out entire factor combinations and at least one domain while allowing the individual factors to appear separately in training.
+- Include support-loss/fall, containment/absorption, finite-resource competition, delayed positive feedback with saturation and inhibition, multi-step tool-like state transitions, alternate valid decompositions, irrelevant high-overlap factors, incompatible interfaces, missing factors, cyclic compositions, contradictory evidence, revised transformations, rare exceptions, duplicated sources, adversarial hubs, and random/non-compressible structures.
+- Freeze the hidden generator and answer before dictionary construction, but expose them only to the evaluator. Post-hoc recovery of a hidden factor is diagnostic; evaluation labels may not influence allocation, decomposition, retrieval, composition, or stopping.
+- Report verified held-out solution accuracy/abstention, novel-combination and cross-domain transfer, exact reconstruction, factor reuse distribution, factor ablation delta, decomposition stability, alternate-solution coverage, interface/type rejection, exception retention, revision recovery, evidence-chain completeness, candidate counts at every cascade stage, explored compositions, branching factor, factor/codebook bytes, event cost, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject structural factorization if it does not beat exact/path, whole-motif, and flat-transformation controls on held-out combinations, or if the shuffled-interface/order arm retains the gain.
+- Reject it if the dictionary becomes one factor per experience, one universal factor, a copy of evaluator labels, a hidden answer table, or an unbounded hierarchy; if rare exceptions disappear; or if factors cannot reconstruct their supported structures.
+- Reject it if decomposition quality is selected post hoc, the beam/candidate count grows with memory size, all factors are scanned, node names or task labels leak across splits, evaluation examples update the dictionary, or one source is counted as independent reuse.
+- Reject a composition if interfaces, direction, order, context, preconditions, revisions, or evidence do not match; if shortest-description preference overrides a predictive or contradiction failure; or if concrete grounding invents entities or relations absent from the factor trace.
+- Reject the scale claim if sparse retrieval is not measured against indexed-store growth, or if state, codebook, index, event, and latency costs exclude dormant factors. Dense all-pairs similarity, matrices, gradients, GPUs, and external semantic models are forbidden runtime shortcuts.
+- Do not infer rediscovery of scientific laws, general problem solving, or human-like abstraction from reconstruction of fixture generators. A useful unnamed factor is evidence only of bounded prospective reuse under the frozen workload.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and structurally/source-held-out histories, the intact arm improves verified unseen-combination quality over all three non-factorized baselines and both declared/learned dictionary controls under the same total resource envelope.
+- Multiple independent structures reuse at least one factor, and targeted removal of that factor selectively breaks its held-out compositions while unrelated solutions remain stable. Interface/order shuffling causes the preregistered degradation.
+- Missing, incompatible, cyclic, contradictory, revised, non-compressible, and capacity-exceeded problems abstain or recover deterministically without unbounded search, factor proliferation, or durable mutation.
+- The learned dictionary reaches a frozen saturation/turnover bound, candidate cascade width remains fixed as the test store grows, and every accepted answer reconstructs an evidence-linked factor trace within byte, event, and CPU-latency ceilings.
+- Anonymous-factor and large-store follow-ups require separate independent evidence and human review. Production reasoning integration remains blocked until the explicit-factor experiment, verifier preservation, and end-to-end provenance review all pass.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -1150,7 +1234,7 @@ Compare six equal-source, equal-replay, and equal-resource arms:
 13. [Done] Execute all 1,275 immutable Phase 33 observed-only conditions with matching fingerprints and bounded deterministic replay; retain `promotion_ready=false` because simplification and independent evidence are absent.
 14. [Done] Register the TwinProp-inspired follow-up as immutable experiment `phase33-twinprop-ablation-observed-v1` without modifying the completed parent registration.
 15. [Done] Execute all 350 registered TwinProp-inspired conditions with the fixed readout and equal resource/tuning budgets; retain `promotion_ready=false` because evidence is synthetic and observed-only.
-16. [Later] Evaluate the frozen structured-edge mechanism on independent temporal and structural workloads before production review.
+16. [Later] Evaluate the frozen structured-edge mechanism on independent temporal and structural workloads, including the preregistered matrix-free response-shape and influence audit, before production review.
 17. [Done] Preregister the Phase 34 four-arm bounded checkpoint-caching experiment before implementing any cache candidate.
 18. [Done] Implement and execute all 64 registered Phase 34 conditions without changing the frozen protocol or production defaults; retain `promotion_ready=false` because cache-arm trade-offs, five replicates, and independent evidence are absent.
 19. [Done] Register the separate five-seed, 12-family Phase 34 cache-arm separation follow-up before implementing its runtime.
@@ -1168,7 +1252,9 @@ Compare six equal-source, equal-replay, and equal-resource arms:
 31. [Later] After the Phase 37 canonical role schema is frozen, preregister the Phase 38 canonical structural-delta and transformation-memory experiment before implementing any persistent delta codec, MDL selector, or shared transformation store.
 32. [Later] After Phase 30 temporal state and Phase 37 explicit-motif controls are frozen, preregister the Phase 39 anonymous local-reuse experiment before implementing any unlabeled allocator, assembly observer, or emergent hierarchy candidate.
 33. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
-34. [Next] Preregister the separate Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
+34. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
+35. [Next] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation, then execute all 6,750 frozen conditions without retuning selectors or changing production paths.
+36. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
 
 ## Required Managed Outputs
 
@@ -1177,6 +1263,8 @@ Compare six equal-source, equal-replay, and equal-resource arms:
 - `workspace/evaluation/next_level_structural_benchmark.json`
 - `workspace/evaluation/continual_horizon_benchmark.json`
 - `workspace/evaluation/phase23_structural_fusion_benchmark.json`
+- `data/processed/benchmark_fixtures/phase34_semantic_delayed_recall_cases.jsonl`
+- `workspace/evaluation/phase34_semantic_delayed_recall_preregistration.json`
 - `data/processed/autobot/phase23_independent_multimodal_manifest.jsonl`
 - `workspace/evaluation/phase23_external_multimodal_gate.json`
 - `workspace/autobot/phase23_multimodal_collection_targets.json`
@@ -1263,6 +1351,10 @@ Compare six equal-source, equal-replay, and equal-resource arms:
 - `workspace/evaluation/phase40_dynamical_structural_validation_preregistration.json`
 - `workspace/evaluation/phase40_dynamical_structural_validation_benchmark.json`
 - `workspace/evaluation/phase40_dynamical_structural_validation_ablation.json`
+- `data/processed/benchmark_fixtures/phase41_structural_factorization_cases.jsonl`
+- `workspace/evaluation/phase41_structural_factorization_preregistration.json`
+- `workspace/evaluation/phase41_structural_factorization_benchmark.json`
+- `workspace/evaluation/phase41_structural_factorization_ablation.json`
 
 ## Review Rule
 

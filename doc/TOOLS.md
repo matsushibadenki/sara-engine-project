@@ -57,6 +57,8 @@ Run commands from the repository root unless a script says otherwise.
   - Decisions are stored separately from the request and historical evidence. Existing non-identical decisions require `--replace-existing`; six aligned, no-distortion decisions authorize only semantic delayed-recall preregistration and never production promotion.
 - `python scripts/sara_cli.py register-phase34-review-support`: register the fixed CPython/RFC source set that supports the six Phase 34 human comparisons; run this before collection.
 - `python scripts/sara_cli.py collect-phase34-review-support`: collect only the preregistered official sources and build a read-only comparison packet containing source hashes and top paragraph candidates without making an alignment decision.
+- `python scripts/sara_cli.py build-phase34-semantic-delayed-recall-preregistration-draft`: deterministically build the 270-case multilingual semantic delayed-recall fixture and draft after validating the six-decision human-review gate and completed exact-identity parent evidence.
+- `python scripts/sara_cli.py register-phase34-semantic-delayed-recall-preregistration --draft-path workspace/evaluation/phase34_semantic_delayed_recall_preregistration_draft.json`: immutably register the default-off semantic workload. Re-registration must be byte-equivalent at the canonical protocol level; changes require a new experiment identity.
 - `python scripts/sara_cli.py prune`: prune low-value memory weights.
 - `python scripts/sara_cli.py clean`: clean interim and processed data outputs.
 

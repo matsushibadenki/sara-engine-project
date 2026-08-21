@@ -1981,6 +1981,55 @@ def main():
         "--report-path",
         default=workspace_path("evaluation", "phase34_cpython_v3_14_6_git_snapshot_collection.json"),
     )
+    parser_phase34_semantic_draft = subparsers.add_parser(
+        "build-phase34-semantic-delayed-recall-preregistration-draft",
+        help="Freeze the multilingual semantic delayed-recall fixture and draft.",
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--request-path",
+        default=workspace_path("evaluation", "phase34_transcribed_excerpt_human_review_request.json"),
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--ledger-path",
+        default=workspace_path("evaluation", "phase34_transcribed_excerpt_human_review_decisions.json"),
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--gate-path",
+        default=workspace_path("evaluation", "phase34_transcribed_excerpt_human_review_gate.json"),
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--packet-path",
+        default=workspace_path("evaluation", "phase34_transcribed_excerpt_review_comparison_packet.json"),
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--parent-preregistration-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_adapter_v2_preregistration.json"),
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--parent-report-path",
+        default=workspace_path("evaluation", "phase34_memory_cache_factorial_independent_adapter_v2_benchmark.json"),
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--fixture-path",
+        default=processed_data_path("benchmark_fixtures", "phase34_semantic_delayed_recall_cases.jsonl"),
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--draft-path",
+        default=workspace_path("evaluation", "phase34_semantic_delayed_recall_preregistration_draft.json"),
+    )
+    parser_phase34_semantic_draft.add_argument(
+        "--environment-path",
+        default=workspace_path("evaluation", "phase34_semantic_delayed_recall_environment.json"),
+    )
+    parser_phase34_semantic_registration = subparsers.add_parser(
+        "register-phase34-semantic-delayed-recall-preregistration",
+        help="Register the immutable Phase 34 semantic delayed-recall workload.",
+    )
+    parser_phase34_semantic_registration.add_argument("--draft-path", required=True)
+    parser_phase34_semantic_registration.add_argument(
+        "--output-path",
+        default=workspace_path("evaluation", "phase34_semantic_delayed_recall_preregistration.json"),
+    )
     parser_phase33_twinprop_benchmark = subparsers.add_parser(
         "eval-phase33-twinprop-ablation",
         help="Execute the registered observed-only TwinProp-inspired ablation.",
@@ -4269,6 +4318,44 @@ def main():
             str(args.manifest_path),
             "--report-path",
             str(args.report_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "build-phase34-semantic-delayed-recall-preregistration-draft":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_semantic_delayed_recall_draft.py",
+            "--request-path",
+            str(args.request_path),
+            "--ledger-path",
+            str(args.ledger_path),
+            "--gate-path",
+            str(args.gate_path),
+            "--packet-path",
+            str(args.packet_path),
+            "--parent-preregistration-path",
+            str(args.parent_preregistration_path),
+            "--parent-report-path",
+            str(args.parent_report_path),
+            "--fixture-path",
+            str(args.fixture_path),
+            "--draft-path",
+            str(args.draft_path),
+            "--environment-path",
+            str(args.environment_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "register-phase34-semantic-delayed-recall-preregistration":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_semantic_delayed_recall_preregistration.py",
+            "--draft-path",
+            str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)
