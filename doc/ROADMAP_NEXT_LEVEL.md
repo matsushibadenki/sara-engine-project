@@ -86,7 +86,7 @@ TwinProp's training path remains comparison-only: it fits a DNN digital twin, di
 
 - [Done] v1.1 release gate: `15/15`.
 - [Done] Research product completion: `17/17`.
-- [Done] Full Python test suite: `1651 passed` in the managed Python 3.10 environment after the Phase 34 semantic delayed-recall preregistration was added.
+- [Done] Full Python test suite: `1656 passed` in the managed Python 3.10 environment after the Phase 34 semantic delayed-recall adapter and evaluator were added.
 - [Done] Phase 7 independent split: 24 train and 24 evaluation records with isolation checks passing.
 - [Done] Phase 8 local pretrained embedding reference: `nomic-ai/nomic-embed-text-v1`.
 - [Done] Phase 17-20 observed-only mechanisms: resonance credit, Event Memory, liquid dynamics, Semantic Echo.
@@ -318,9 +318,12 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Added a deterministic Rust scalar BPE merge reference that consumes Python-defined pretokens, preserves the frozen vocabulary/merge/unknown-token contract, rejects duplicate merge pairs, and matches Python token IDs across all eight multilingual conformance cases.
 - The initial cache timing remains diagnostic and preserves slower first-pass latency as a negative result rather than promoting acceleration. Rust scalar equivalence is observed, but no Rust performance or production-path claim is made; Gigatoken remains explicitly unobserved.
 
-### [Later]
+### [Next]
 
 - Add Python/Rust replay equivalence for Event Memory, RISA proposals, and predictive feedback.
+
+### [Later]
+
 - Extend the Rust scalar correctness reference into an optional accelerated candidate only after equal-budget cold/warm timing, boundary-call, RSS, and downstream replay measurements are implemented.
 - Freeze separate tokenizer identities for the custom `SaraTokenizer` BPE format and the standard `tokenizers` JSON used by `SpikeTokenizer`; never silently reinterpret one format as the other.
 - Add TTL/generation invalidation to the existing fingerprint-keyed bounded pretoken cache; retain its entry, logical-byte, token-count, eviction, and long-tail bypass ceilings.
@@ -756,11 +759,12 @@ For the matrix-free response-shape and influence audit, sweep one eligible scala
 - Verification passed for all 95 targeted review-support, human-review, review-request, and CLI dispatch tests.
 - Verification passed for all 92 targeted snapshot, review-request, and CLI tests. The full suite recorded `1634 passed` plus one pre-existing Phase 33 process-latency gate failure under aggregate test load; the unchanged Phase 33 test passed immediately in isolation with `max_latency_ms_observed=0.582`, so its threshold was not relaxed and it is not counted as a Phase 34 failure.
 - Verification after semantic preregistration passed all 152 Phase 34 and CLI regression tests and the complete managed Python 3.10 `tests/` suite with `1651 passed`. The full run used the frozen Python version so existing environment-fingerprint gates remained meaningful.
-
-### [Next]
-
-- Implement the registered semantic adapter and evaluator without changing the fixture, arms, seeds, budgets, thresholds, candidate-visible fields, or claim boundaries. Keep it default-off and disconnected from production retrieval and durable admission.
-- Execute all 6,750 registered conditions only after the evaluator proves that expected decisions and proposition IDs cannot enter candidate state, retention, selection, or tuning.
+- Implemented a default-off sparse multilingual semantic adapter that maps English, Japanese, and Simplified-Chinese source/query text into bounded typed subject and relation axes. It uses no proposition-ID lookup, exact source identity score, token-overlap score, matrix calculation, gradient, external model, GPU, production retrieval, or durable admission.
+- Kept retention query-blind and preserved the parent recurrent/equal/logarithmic and retrieve-all/Top-k arms. Equal-retention and logarithmic-retention paired arms produce identical retained-set digests before selection; Top-k uses a fixed recency tie rule and stores sparse checkpoint references instead of duplicating retained evidence.
+- Added `eval-phase34-semantic-delayed-recall` with exact candidate/evaluator field separation. Expected decisions and proposition IDs are absent from candidate inputs, retained state, selection state, and candidate traces; evidence-side source references are scored only after the candidate result is frozen.
+- Executed all 6,750 frozen conditions under the registered CPython `3.14.7` environment without changing the fixture, protocol, arms, seeds, budgets, or thresholds. Execution integrity and every semantic gate passed: best checkpoint paraphrase accuracy `1.0`, checkpoint-minus-control `1.0`, lexical/revision/contradiction/missing safety `1.0`, worst-language recall `1.0`, source traceability `1.0`, retained-set identity `1.0`, deterministic replay `1.0`, maximum state `5,996` bytes, event cost `116`, and recorded process latency `0.235 ms`.
+- Retained `promotion_ready=false`. The independent result covers only six human-aligned source-bound propositions, while probe wording was not separately human reviewed and the safety families are synthetic. Perfect registered-workload scores do not establish general semantic memory, language understanding, ANN parity, production benefit, or physical-energy savings.
+- Verification passed all 157 Phase 34 and CLI tests and the complete managed Python 3.10 `tests/` suite with `1656 passed`. A bare repository-root pytest invocation also collected dependency tests cached under `workspace/`; the canonical project run explicitly targeted `tests/` with `PYTHONPATH=.:src`.
 
 ### [Later]
 
@@ -1287,7 +1291,7 @@ Compare seven equal-source and equal-resource arms:
 3. [Done] Connect the horizon benchmark to Event Memory retention profiles.
 4. [Done] Add multimodal structural contradiction and missing-modality cases.
 5. [Done] Implement and execute the registered Phase 34 independent adapter v2 across all 1,050 conditions; retain `promotion_ready=false` because the result is exact source identity rather than semantic recall. Continue multimodal evidence collection separately.
-6. [Later] Complete Python/Rust canonical replay equivalence.
+6. [Next] Complete Python/Rust canonical replay equivalence.
 7. [Later] Run the exact-tokenization four-arm conformance and bounded-cache ablation before selecting any accelerated tokenizer path.
 8. [Later] Prototype Phase 30 temporal effective interactions only after preregistering the four-arm equal-budget ablation.
 9. [Done] Implement the observed-only Phase 31 repetition-dependent consolidation contract without connecting it to production recall.
@@ -1316,7 +1320,7 @@ Compare seven equal-source and equal-resource arms:
 32. [Later] After Phase 30 temporal state and Phase 37 explicit-motif controls are frozen, preregister the Phase 39 anonymous local-reuse experiment before implementing any unlabeled allocator, assembly observer, or emergent hierarchy candidate.
 33. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
 34. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
-35. [Next] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation, then execute all 6,750 frozen conditions without retuning selectors or changing production paths.
+35. [Done] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation and execute all 6,750 frozen conditions without retuning selectors or changing production paths; all registered gates passed within the six-proposition scope and `promotion_ready=false` remains fixed.
 36. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
 37. [Later] After independent Phase 23 text/vision/audio evidence and the Phase 37 canonical role schema are frozen, preregister the Phase 42 predictive cross-modal boundary experiment; do not add tactile claims until an independent tactile dataset and adapter pass their own gate.
 
@@ -1329,6 +1333,7 @@ Compare seven equal-source and equal-resource arms:
 - `workspace/evaluation/phase23_structural_fusion_benchmark.json`
 - `data/processed/benchmark_fixtures/phase34_semantic_delayed_recall_cases.jsonl`
 - `workspace/evaluation/phase34_semantic_delayed_recall_preregistration.json`
+- `workspace/evaluation/phase34_semantic_delayed_recall_benchmark.json`
 - `data/processed/autobot/phase23_independent_multimodal_manifest.jsonl`
 - `workspace/evaluation/phase23_external_multimodal_gate.json`
 - `workspace/autobot/phase23_multimodal_collection_targets.json`

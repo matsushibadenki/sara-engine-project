@@ -7,7 +7,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 - Target version: `1.1.0`
 - v1.1 release gate: `15/15` checks passing
 - Research product completion gate: `14/14` checks passing
-- Full test suite: `1398` tests passing in the Python 3.10 project environment
+- Full test suite: `1656` tests passing in the Python 3.10 project environment
 - Current release posture: ready for v1.1 release, with physical joule measurements intentionally placed on indefinite hold and excluded from active release blocking
 
 ## Core Policy And Runtime Constraints
@@ -43,6 +43,7 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 ## Memory And Continual Learning
 
 - Direct memory serialization and restoration are unified across active paths.
+- Phase 34 includes a default-off sparse multilingual semantic checkpoint adapter and a completed 6,750-condition evaluator with query-blind retention, evaluator-label isolation, deterministic replay, and bounded CPU-only state. Its passing result is limited to six human-aligned source propositions and does not authorize production promotion.
 - Unsafe active-path `eval()` loading has been removed in favor of safe parsers and shared helpers.
 - Direct memory, hippocampal memory, long-term memory, structural memory, and replay/consolidation flows are connected to evaluation gates.
 - Memory health diagnostics expose conversational readiness, session memory, diagnostic hits, predictive state, and future-state runtime state.

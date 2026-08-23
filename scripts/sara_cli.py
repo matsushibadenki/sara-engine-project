@@ -2030,6 +2030,34 @@ def main():
         "--output-path",
         default=workspace_path("evaluation", "phase34_semantic_delayed_recall_preregistration.json"),
     )
+    parser_phase34_semantic_benchmark = subparsers.add_parser(
+        "eval-phase34-semantic-delayed-recall",
+        help="Execute the registered Phase 34 semantic delayed-recall workload.",
+    )
+    parser_phase34_semantic_benchmark.add_argument(
+        "--fixture-path",
+        default=processed_data_path(
+            "benchmark_fixtures", "phase34_semantic_delayed_recall_cases.jsonl"
+        ),
+    )
+    parser_phase34_semantic_benchmark.add_argument(
+        "--preregistration-path",
+        default=workspace_path(
+            "evaluation", "phase34_semantic_delayed_recall_preregistration.json"
+        ),
+    )
+    parser_phase34_semantic_benchmark.add_argument(
+        "--request-path",
+        default=workspace_path(
+            "evaluation", "phase34_transcribed_excerpt_human_review_request.json"
+        ),
+    )
+    parser_phase34_semantic_benchmark.add_argument(
+        "--output-path",
+        default=workspace_path(
+            "evaluation", "phase34_semantic_delayed_recall_benchmark.json"
+        ),
+    )
     parser_phase33_twinprop_benchmark = subparsers.add_parser(
         "eval-phase33-twinprop-ablation",
         help="Execute the registered observed-only TwinProp-inspired ablation.",
@@ -4354,6 +4382,22 @@ def main():
             "scripts/eval/phase34_semantic_delayed_recall_preregistration.py",
             "--draft-path",
             str(args.draft_path),
+            "--output-path",
+            str(args.output_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-phase34-semantic-delayed-recall":
+        command = [
+            sys.executable,
+            "scripts/eval/phase34_semantic_delayed_recall_benchmark.py",
+            "--fixture-path",
+            str(args.fixture_path),
+            "--preregistration-path",
+            str(args.preregistration_path),
+            "--request-path",
+            str(args.request_path),
             "--output-path",
             str(args.output_path),
         ]
