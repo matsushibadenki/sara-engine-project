@@ -1284,6 +1284,69 @@ Compare seven equal-source and equal-resource arms:
 - Contradiction, source replacement, and environmental reversal deterministically recalibrate or demote affected applicability without altering unrelated structures; negative transfer, state, event, fan-out, and CPU-latency ceilings hold at the longest registered horizon.
 - Tactile claims require the separate independent tactile gate. Production routing or durable cross-modal knowledge requires a further external workload, provenance review, unchanged explicit verification, and human approval.
 
+## Phase 43: Canonical One-Step State Learning and Rollout Drift Recovery
+
+**Goal:** test whether SARA can learn bounded local state-update rules from canonical replay targets, then remain stable when those rules consume their own generated states, without backpropagation through time, dense latent vectors, a Transformer teacher, matrix operations, or GPU execution.
+
+### Adopted Design Reference
+
+- [Pretraining Recurrent Networks without Recurrence (SMT/DMT)](https://arxiv.org/html/2606.06479v2) separates *what a recurrent state should retain* from *how one step updates that state*. Its transferable idea is supervised one-step transition fitting from state targets, followed by training on learner-generated states to expose rollout drift.
+- SARA adopts that experimental decomposition, not the paper's Transformer predictive-state encoder, dense learned memory vector, gradient training, or reported language/pixel results. Canonical evidence replay supplies frozen target states; sparse local transition counters and plasticity rules remain the candidate learner.
+- The attached design discussion contributes four compatible refinements: explicit working/episodic/semantic/procedural state groups with different update horizons; novelty-, contradiction-, and utility-gated event updates; bounded external episodic recall instead of unbounded active state; and homeostatic correction of drift, saturation, collapse, overwrite, and contradiction.
+- RISA remains the representation layer and Phase 43 is an update-law experiment. A positive transition result cannot establish anonymous concept emergence, semantic truth, architecture self-evolution, or physical-energy advantage.
+
+### Research Hypothesis
+
+- Freeze a canonical state-target generator after Phase 27 replay equivalence. From an accepted history, emit only adjacent training records:
+
+```text
+(canonical grouped state at t, accepted event at t + 1)
+  -> canonical grouped state at t + 1
+```
+
+- The target record contains separate bounded digests and sparse active identifiers for working state, episodic cues, semantic/RISA revision state, and procedural policy state. It must not contain the withheld answer, future events, evaluator labels, or a full-history shortcut. Each group declares its own update horizon, capacity, provenance range, and absence state.
+- Fit the one-step candidate through local event-driven observations only. Reuse the current `SparseInternalPredictor` as the count-based baseline; a new candidate must justify any additional state, contact, timing, novelty, contradiction, utility, or homeostatic channel under an equal total budget.
+- Teacher-forced accuracy is insufficient because inference consumes candidate-generated states. During a training-only correction stage, roll the frozen candidate forward, compare its generated grouped state with the canonical target, and retain a bounded, deduplicated counterexample only when a frozen drift threshold is crossed. Correction labels may update local transitions but may not query the canonical generator during held-out inference.
+- Treat prediction, reconstruction, causal/revision integrity, novelty retention, and downstream utility as separately reported constraints. Do not collapse them into a tunable scalar whose weights can hide a failed rare-event, contradiction, or provenance gate.
+- Update work may be skipped for low-information repeats only when a frozen event gate preserves rare, delayed, contradictory, and revision-bearing evidence. Active recurrent state remains fixed-capacity; external episodic recall is sparse, cue-addressed, provenance-linked, and charged to the event/state/latency budget.
+
+### [Later]
+
+- Begin only after Phase 27 proves Python/Rust canonical replay equivalence for Event Memory, RISA proposals, and predictive feedback. Use Phase 19 multi-timescale state, Phase 22 revision histories, Phase 31 consolidation, and Phase 34 semantic checkpoints rather than creating a parallel memory hierarchy.
+- Preregister state-group schemas, target construction, split boundaries, update horizons, event-gate inputs, local learning rules, counterexample capacity and eviction, correction threshold, rollout length, perturbations, budgets, seeds, tuning attempts, and all stop conditions before implementing a new learner.
+- Keep the candidate sandboxed and default-off. No result may replace canonical replay, enable autonomous self-teaching, retire a prior learning system, or mutate production RISA/Event Memory without the separate Phase 36 migration and human-review gates.
+
+### Minimum Experiment
+
+Compare seven frozen equal-history and equal-resource arms:
+
+1. canonical replay with no learned transition approximation;
+2. the current `SparseInternalPredictor` count-based local baseline;
+3. one-step teacher-forced sparse transition learning from canonical adjacent pairs;
+4. the same learner with explicit working/episodic/semantic/procedural state groups and frozen per-group horizons;
+5. grouped learning rolled on its own states with no correction collection;
+6. grouped learning with bounded training-only rollout-error collection and local correction;
+7. the intact arm with state-group identity, event/target pairing, temporal order, correction targets, or episodic cues canonically shuffled.
+
+- Split histories by source and time before target generation. Include long clean sequences, rare delayed evidence, repetition, revisions, contradictions, omissions, duplicates, reordering, truncation, context switches, unknown states, state saturation, collapse, corrupted cues, and cases where the declared bounded state is intentionally insufficiently Markovian.
+- Compare always-update and frozen novelty/contradiction/utility-gated update schedules inside the intact arm without changing retained evidence or total capacity. Compare no external recall, bounded associative episodic recall, and an over-budget diagnostic; the latter can expose a capacity limitation but cannot satisfy acceptance.
+- Report exact next-state digest agreement per group, accepted-decision equivalence, rollout divergence rate and time, recovery steps, revision uptake, contradiction rejection, rare/delayed retention, false corrections, episodic-query precision/abstention, update/event counts, state and counterexample bytes, canonical-oracle queries during training, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject the candidate if it succeeds only under teacher forcing, reads canonical targets or the oracle at held-out inference, stores one answer/state per training example, carries hidden full history, leaks future events/evaluator labels, or uses unbounded counterexamples or episodic scans.
+- Reject it if correction hides rather than repairs divergence; changes an unaffected state group; launders contradiction into semantic acceptance; overwrites rare protected evidence; collapses all contexts into one state; fragments into one state per example; or fails safely only by copying canonical state wholesale.
+- Reject event gating if it saves common updates by dropping rare, delayed, contradictory, revision-bearing, or provenance-critical events. Reject external recall if cost or candidate fan-out grows with the entire store, cue corruption silently returns confident unrelated memory, or the result depends on source identity leakage.
+- Reject any implementation requiring backpropagation, BPTT, gradients through rollout, dense matrices/embeddings, GPU execution, an online Transformer teacher, all-pairs search, or more state/events/tuning trials than its controls.
+- Do not transfer SMT/DMT accuracy, scaling, training-time, or memory claims to SARA. A successful local transition benchmark is not evidence of language modeling parity, semantic understanding, self-evolution, or measured energy efficiency.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and independent source/time splits, the bounded correction arm improves held-out self-rollout decision equivalence and time-to-divergence over teacher-forced-only, uncorrected self-rollout, current local predictor, and shuffled controls under the same total budget.
+- Every accepted grouped state and downstream decision remains reproducible from canonical evidence; correction is training-only, deterministic, bounded, and selectively restores perturbed groups without changing unrelated groups or bypassing contradiction and revision policy.
+- The event-gated arm reduces update/event work versus always-update while meeting frozen rare/delayed evidence, revision, contradiction, provenance, and abstention floors. Bounded episodic recall must improve a preregistered long-horizon case over no recall without exceeding fixed query, fan-out, state, and latency ceilings.
+- Non-Markov, missing, corrupt, capacity-exceeded, and distribution-shift cases abstain or degrade visibly rather than fabricating stable state. Production integration requires independent workloads, Phase 36 migration review where applicable, and explicit human approval.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -1323,6 +1386,7 @@ Compare seven equal-source and equal-resource arms:
 35. [Done] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation and execute all 6,750 frozen conditions without retuning selectors or changing production paths; all registered gates passed within the six-proposition scope and `promotion_ready=false` remains fixed.
 36. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
 37. [Later] After independent Phase 23 text/vision/audio evidence and the Phase 37 canonical role schema are frozen, preregister the Phase 42 predictive cross-modal boundary experiment; do not add tactile claims until an independent tactile dataset and adapter pass their own gate.
+38. [Later] After Phase 27 cross-runtime canonical replay equivalence and independent Phase 22 revision histories are frozen, preregister the Phase 43 canonical one-step state-learning experiment; do not implement rollout correction or self-teaching before its state targets, leakage boundary, and bounded counterexample policy are immutable.
 
 ## Required Managed Outputs
 
