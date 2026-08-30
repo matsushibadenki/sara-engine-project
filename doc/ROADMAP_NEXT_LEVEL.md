@@ -317,10 +317,18 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Added `eval-phase27-tokenizer-acceleration`; it verifies token IDs, decode output, canonical sparse-spike replay digests, repeated-input equivalence, malformed UTF-8 rejection, cache reuse, eviction, and state ceilings without changing production defaults.
 - Added a deterministic Rust scalar BPE merge reference that consumes Python-defined pretokens, preserves the frozen vocabulary/merge/unknown-token contract, rejects duplicate merge pairs, and matches Python token IDs across all eight multilingual conformance cases.
 - The initial cache timing remains diagnostic and preserves slower first-pass latency as a negative result rather than promoting acceleration. Rust scalar equivalence is observed, but no Rust performance or production-path claim is made; Gigatoken remains explicitly unobserved.
+- Added independent Rust parsing, validation, ordering, canonical JSON serialization, Python-compatible Unicode escaping, and SHA-256 replay digest for canonical sparse IR without calling the Python reference implementation.
+- Rebuilt the PyO3 extension and observed exact Python/Rust canonical bytes and replay digests across all six frozen valid/invalid conformance cases. This closes canonical IR encoding equivalence only; semantic subsystem decisions remain unresolved.
+- Added a bounded portable decision kernel for the shared Event Memory, RISA proposal, and predictive-feedback safety boundary. Python and Rust independently replay verification, contradiction, freshness, capacity, support, and prediction-match signals into canonical admit/reject/freeze/correction decisions.
+- Added 16 managed multilingual decision cases and observed exact Python/Rust canonical decision bytes and digest across admission, retrieval, eviction, RISA proposal, and predictive-feedback subsystem labels. This proves only the shared boundary kernel.
+- Added frozen Python adapters for actual `CacheAdmissionResult`, `StructuralInterpolationProposal`/`StructuralEditProposal`, and predictive structural-feedback outputs. An end-to-end fixture now exercises real cache admission and contradiction rejection, independently supported RISA proposal generation, and predictive retain/correction generation before obtaining identical Rust decision bytes and digest.
+- The initial adapter evidence is repository-generated and narrow. The following independent run broadens source coverage, while retrieval decisions, revisions, eviction decisions, and repeated feedback cycles remain unresolved.
+- Added `phase27_independent_decision_replay.py` over six previously collected, provenance-bound external documentation records from `docs.python.org` and IETF RFC 9110. The observed-only run produced six real Event Memory admissions, six post-pressure retrieval decisions, two explicit capacity-eviction decisions, two RISA structural proposals, and five predictive-feedback decisions.
+- All 21 independent-source-derived decisions matched Python/Rust canonical bytes and digest (`0b88d1fdcf29c46e231c30c4266a6dde83c6593bd4497e4625e63e1877ac7809`). The four-entry cache retained four records, evicted two, retrieved retained evidence, and abstained for evicted evidence. Structural grouping and prediction transitions remain benchmark-declared, so this does not establish semantic accuracy or complete subsystem equivalence.
 
 ### [Next]
 
-- Add Python/Rust replay equivalence for Event Memory, RISA proposals, and predictive feedback.
+- Extend the independent replay contract to explicit revision replacement, separately sourced contradictory evidence, and repeated predictive-feedback cycles. Synthetic perturbations must remain labeled controls and cannot satisfy the independent-evidence requirement.
 
 ### [Later]
 
@@ -1403,6 +1411,7 @@ Compare seven frozen equal-history and equal-resource arms:
 - `workspace/autobot/phase23_multimodal_collection_targets.json`
 - `workspace/evaluation/phase24_causal_benchmark.json`
 - `workspace/evaluation/phase25_agent_loop_benchmark.json`
+- `workspace/evaluation/phase27_independent_decision_replay.json`
 - `workspace/evaluation/next_level_research_journal.jsonl`
 - `workspace/evaluation/next_level_promotion_gate.json`
 - `workspace/evaluation/next_level_human_approval.json`

@@ -93,7 +93,7 @@ Current high-level state:
 | [Done] | Repetition-dependent consolidation contract | Observed-only; not connected to production recall |
 | [Done] | Structured-edge and checkpoint-cache registered experiments | Observed-only; promotion remains closed where gates or independent evidence are missing |
 | [Done] | Phase 34 semantic delayed-recall adapter and 6,750-condition evaluation | All registered gates passed with evaluator-label isolation; evidence remains limited to six human-aligned propositions and production promotion remains closed |
-| [Next] | Complete Python/Rust canonical replay equivalence | Event Memory, RISA proposals, and predictive feedback must replay to identical canonical decisions before architecture-evolution work |
+| [Next] | Extend independent Python/Rust revision replay | A 21-decision external-source run now covers admission, retrieval, eviction, RISA, and feedback across runtimes; explicit revisions, separately sourced contradictions, and repeated feedback cycles remain unfinished |
 | [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, anonymous local reuse, dynamical validation, structural factorization/compositional search, predictive cross-modal structure boundaries, and canonical one-step state learning with rollout-drift recovery | Must follow the dependency and preregistration order in the roadmap; one-step state targets require Phase 27 replay equivalence and tactile claims require separate independent evidence |
 | [Later] | Physical energy claims | Proxy metrics are not joule measurements; reopening requires an explicit operator decision |
 

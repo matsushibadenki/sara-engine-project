@@ -204,3 +204,25 @@ def test_phase27_readiness_blocks_unreviewed_tokenizer_promotion():
 
     assert report["passed"] is False
     assert report["checks"]["tokenizer_acceleration_not_promoted"] is False
+
+
+def test_phase27_readiness_observes_independent_rust_canonical_equivalence():
+    module = _load_readiness_module()
+
+    class FakeRustCore:
+        @staticmethod
+        def canonical_sparse_ir_json(source):
+            events = __import__("json").loads(source)
+            return canonical_json(events)
+
+        @staticmethod
+        def canonical_sparse_ir_replay_digest(source):
+            events = __import__("json").loads(source)
+            return replay_digest(events)
+
+    report = module.build_report(rust_core=FakeRustCore())
+
+    assert report["passed"] is True
+    assert report["rust_equivalence_claimed"] is True
+    assert report["canonical_ir_rust_equivalence_observed"] is True
+    assert report["rust_canonical_conformance"]["passed"] is True

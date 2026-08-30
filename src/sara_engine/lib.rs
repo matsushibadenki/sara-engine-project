@@ -7,6 +7,8 @@
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 use pyo3::types::{PyDict, PyList, PyTuple};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use rayon::prelude::*;
 
@@ -29,6 +31,312 @@ fn validate_probability_like(name: &str, value: f32) -> PyResult<()> {
     } else {
         Err(value_error(&format!("{name} must be between 0.0 and 1.0")))
     }
+}
+
+const CANONICAL_IR_MAX_TEXT_LENGTH: usize = 256;
+const CANONICAL_IR_MAX_TAGS: usize = 32;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct CanonicalSparseEvent {
+    channel: String,
+    #[serde(default = "canonical_default_confidence")]
+    confidence: f64,
+    event_id: String,
+    modality: String,
+    spike_id: usize,
+    #[serde(default)]
+    tags: Vec<String>,
+    timestep: usize,
+}
+
+fn canonical_default_confidence() -> f64 {
+    1.0
+}
+
+fn validate_canonical_text(field: &str, value: &str) -> PyResult<()> {
+    if value.is_empty() {
+        return Err(value_error(&format!("{field} must be a non-empty string")));
+    }
+    if value.chars().count() > CANONICAL_IR_MAX_TEXT_LENGTH {
+        return Err(value_error(&format!(
+            "{field} exceeds {CANONICAL_IR_MAX_TEXT_LENGTH} characters"
+        )));
+    }
+    Ok(())
+}
+
+fn escape_non_ascii_json(serialized: &str) -> String {
+    let mut ascii = String::with_capacity(serialized.len());
+    for character in serialized.chars() {
+        if character.is_ascii() {
+            ascii.push(character);
+        } else {
+            for unit in character.encode_utf16(&mut [0; 2]).iter() {
+                ascii.push_str(&format!("\\u{unit:04x}"));
+            }
+        }
+    }
+    ascii
+}
+
+fn canonicalize_sparse_events_json(events_json: &str, max_events: usize) -> PyResult<String> {
+    if max_events == 0 {
+        return Err(value_error("max_events must be a positive integer"));
+    }
+    let mut events: Vec<CanonicalSparseEvent> = serde_json::from_str(events_json)
+        .map_err(|error| value_error(&format!("invalid canonical event JSON: {error}")))?;
+    if events.len() > max_events {
+        return Err(value_error(&format!(
+            "event count exceeds max_events={max_events}"
+        )));
+    }
+    let mut event_ids = HashSet::with_capacity(events.len());
+    for event in &mut events {
+        validate_canonical_text("event_id", &event.event_id)?;
+        validate_canonical_text("channel", &event.channel)?;
+        validate_canonical_text("modality", &event.modality)?;
+        if !event.confidence.is_finite() {
+            return Err(value_error("confidence must be a finite number"));
+        }
+        if !(0.0..=1.0).contains(&event.confidence) {
+            return Err(value_error("confidence must be between 0.0 and 1.0"));
+        }
+        event.confidence =
+            (event.confidence * 1_000_000.0).round_ties_even() / 1_000_000.0;
+        if event.confidence == -0.0 {
+            event.confidence = 0.0;
+        }
+        if event.tags.len() > CANONICAL_IR_MAX_TAGS {
+            return Err(value_error(&format!(
+                "tags exceeds {CANONICAL_IR_MAX_TAGS} entries"
+            )));
+        }
+        for tag in &event.tags {
+            validate_canonical_text("tag", tag)?;
+        }
+        event.tags.sort();
+        event.tags.dedup();
+        if !event_ids.insert(event.event_id.clone()) {
+            return Err(value_error(&format!(
+                "duplicate event_id: {}",
+                event.event_id
+            )));
+        }
+    }
+    events.sort_by(|left, right| {
+        left.timestep
+            .cmp(&right.timestep)
+            .then_with(|| left.event_id.cmp(&right.event_id))
+            .then_with(|| left.spike_id.cmp(&right.spike_id))
+            .then_with(|| left.channel.cmp(&right.channel))
+            .then_with(|| left.modality.cmp(&right.modality))
+            .then_with(|| left.confidence.total_cmp(&right.confidence))
+            .then_with(|| left.tags.cmp(&right.tags))
+    });
+    let serialized = serde_json::to_string(&events)
+        .map_err(|error| value_error(&format!("canonical serialization failed: {error}")))?;
+    Ok(escape_non_ascii_json(&serialized))
+}
+
+/// Canonicalizes sparse event JSON without calling the Python reference implementation.
+#[pyfunction]
+#[pyo3(signature = (events_json, max_events=10000))]
+fn canonical_sparse_ir_json(events_json: &str, max_events: usize) -> PyResult<String> {
+    canonicalize_sparse_events_json(events_json, max_events)
+}
+
+/// Computes the canonical sparse replay digest entirely in Rust.
+#[pyfunction]
+#[pyo3(signature = (events_json, max_events=10000))]
+fn canonical_sparse_ir_replay_digest(events_json: &str, max_events: usize) -> PyResult<String> {
+    let canonical = canonicalize_sparse_events_json(events_json, max_events)?;
+    Ok(format!("{:x}", Sha256::digest(canonical.as_bytes())))
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PortableDecisionInput {
+    decision_id: String,
+    sequence: usize,
+    subsystem: String,
+    subject_id: String,
+    evidence_ids: Vec<String>,
+    verified: bool,
+    contradiction: bool,
+    stale: bool,
+    capacity_available: bool,
+    prediction_match: bool,
+    support_count: usize,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct PortableDecisionOutput {
+    capacity_available: bool,
+    contradiction: bool,
+    decision: String,
+    decision_id: String,
+    evidence_ids: Vec<String>,
+    prediction_match: bool,
+    sequence: usize,
+    stale: bool,
+    subject_id: String,
+    subsystem: String,
+    support_count: usize,
+    verified: bool,
+}
+
+fn portable_decision(record: &PortableDecisionInput) -> PyResult<&'static str> {
+    match record.subsystem.as_str() {
+        "event_memory" => {
+            if !record.verified {
+                Ok("reject_unverified")
+            } else if record.contradiction {
+                Ok("reject_contradiction")
+            } else if record.stale {
+                Ok("reject_stale")
+            } else if !record.capacity_available {
+                Ok("abstain_capacity")
+            } else {
+                Ok("admit")
+            }
+        }
+        "risa_proposal" => {
+            if !record.verified {
+                Ok("reject_unverified")
+            } else if record.contradiction {
+                Ok("freeze_contradiction")
+            } else if record.support_count == 0 {
+                Ok("reject_missing_support")
+            } else {
+                Ok("propose")
+            }
+        }
+        "event_memory_retrieval" => {
+            if !record.verified {
+                Ok("abstain_unverified")
+            } else if record.contradiction {
+                Ok("reject_contradiction")
+            } else if record.stale {
+                Ok("reject_stale")
+            } else if record.support_count == 0 {
+                Ok("abstain_missing_support")
+            } else {
+                Ok("retrieve")
+            }
+        }
+        "event_memory_eviction" => {
+            if !record.verified {
+                Ok("reject_unverified")
+            } else if record.contradiction {
+                Ok("retain_protected")
+            } else if record.stale {
+                Ok("evict_stale")
+            } else if !record.capacity_available {
+                Ok("evict_capacity")
+            } else {
+                Ok("retain")
+            }
+        }
+        "predictive_feedback" => {
+            if !record.verified {
+                Ok("abstain_unverified")
+            } else if record.contradiction {
+                Ok("freeze_contradiction")
+            } else if record.support_count == 0 {
+                Ok("abstain_missing_support")
+            } else if record.prediction_match {
+                Ok("retain_prediction")
+            } else {
+                Ok("emit_correction")
+            }
+        }
+        _ => Err(value_error(&format!(
+            "unsupported subsystem: {}",
+            record.subsystem
+        ))),
+    }
+}
+
+fn canonicalize_portable_decisions_json(
+    records_json: &str,
+    max_decisions: usize,
+) -> PyResult<String> {
+    if max_decisions == 0 {
+        return Err(value_error("max_decisions must be a positive integer"));
+    }
+    let records: Vec<PortableDecisionInput> = serde_json::from_str(records_json)
+        .map_err(|error| value_error(&format!("invalid portable decision JSON: {error}")))?;
+    if records.len() > max_decisions {
+        return Err(value_error(&format!(
+            "decision count exceeds max_decisions={max_decisions}"
+        )));
+    }
+    let mut seen = HashSet::with_capacity(records.len());
+    let mut outputs = Vec::with_capacity(records.len());
+    for record in records {
+        validate_canonical_text("decision_id", &record.decision_id)?;
+        validate_canonical_text("subject_id", &record.subject_id)?;
+        if record.evidence_ids.len() > 32 {
+            return Err(value_error("evidence_ids exceeds 32 entries"));
+        }
+        if !seen.insert(record.decision_id.clone()) {
+            return Err(value_error(&format!(
+                "duplicate decision_id: {}",
+                record.decision_id
+            )));
+        }
+        let decision = portable_decision(&record)?.to_string();
+        let mut evidence_ids = record.evidence_ids;
+        for evidence_id in &evidence_ids {
+            validate_canonical_text("evidence_id", evidence_id)?;
+        }
+        evidence_ids.sort();
+        evidence_ids.dedup();
+        outputs.push(PortableDecisionOutput {
+            capacity_available: record.capacity_available,
+            contradiction: record.contradiction,
+            decision,
+            decision_id: record.decision_id,
+            evidence_ids,
+            prediction_match: record.prediction_match,
+            sequence: record.sequence,
+            stale: record.stale,
+            subject_id: record.subject_id,
+            subsystem: record.subsystem,
+            support_count: record.support_count,
+            verified: record.verified,
+        });
+    }
+    outputs.sort_by(|left, right| {
+        left.sequence
+            .cmp(&right.sequence)
+            .then_with(|| left.decision_id.cmp(&right.decision_id))
+    });
+    let serialized = serde_json::to_string(&outputs)
+        .map_err(|error| value_error(&format!("decision serialization failed: {error}")))?;
+    Ok(escape_non_ascii_json(&serialized))
+}
+
+/// Replays portable subsystem decisions and emits their canonical trace in Rust.
+#[pyfunction]
+#[pyo3(signature = (records_json, max_decisions=10000))]
+fn canonical_portable_decision_trace_json(
+    records_json: &str,
+    max_decisions: usize,
+) -> PyResult<String> {
+    canonicalize_portable_decisions_json(records_json, max_decisions)
+}
+
+/// Replays and hashes portable subsystem decisions entirely in Rust.
+#[pyfunction]
+#[pyo3(signature = (records_json, max_decisions=10000))]
+fn portable_decision_trace_digest(
+    records_json: &str,
+    max_decisions: usize,
+) -> PyResult<String> {
+    let canonical = canonicalize_portable_decisions_json(records_json, max_decisions)?;
+    Ok(format!("{:x}", Sha256::digest(canonical.as_bytes())))
 }
 
 // =====================================================================
@@ -781,6 +1089,10 @@ fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(batch_tokens_to_sdr, m)?)?;
     m.add_function(wrap_pyfunction!(apply_homeostatic_scaling, m)?)?;
     m.add_function(wrap_pyfunction!(tokenize_sara_bpe_pretokens, m)?)?;
+    m.add_function(wrap_pyfunction!(canonical_sparse_ir_json, m)?)?;
+    m.add_function(wrap_pyfunction!(canonical_sparse_ir_replay_digest, m)?)?;
+    m.add_function(wrap_pyfunction!(canonical_portable_decision_trace_json, m)?)?;
+    m.add_function(wrap_pyfunction!(portable_decision_trace_digest, m)?)?;
     m.add_class::<SpikeEngine>()?;
     m.add_class::<SpikeWTARouter>()?;
     m.add_class::<LIFNetwork>()?;
@@ -951,6 +1263,38 @@ mod tests {
             1,
         );
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn canonical_sparse_ir_matches_frozen_python_bytes_and_digest() {
+        let source = r#"[{"event_id":"audio-1","timestep":2,"channel":"audio","spike_id":11,"modality":"audio","confidence":0.625,"tags":["source:microphone-a"]},{"event_id":"vision-1","timestep":1,"channel":"vision","spike_id":7,"modality":"vision","confidence":0.875,"tags":["source:camera-a","object:door","object:door"]}]"#;
+        let canonical = canonicalize_sparse_events_json(source, 10_000).unwrap();
+        assert_eq!(
+            canonical,
+            r#"[{"channel":"vision","confidence":0.875,"event_id":"vision-1","modality":"vision","spike_id":7,"tags":["object:door","source:camera-a"],"timestep":1},{"channel":"audio","confidence":0.625,"event_id":"audio-1","modality":"audio","spike_id":11,"tags":["source:microphone-a"],"timestep":2}]"#
+        );
+        assert_eq!(
+            canonical_sparse_ir_replay_digest(source, 10_000).unwrap(),
+            "b66fdf601d0c3ab44e648995bbb70ef1675a2d30c61c6d6b294d243f183db18b"
+        );
+    }
+
+    #[test]
+    fn canonical_sparse_ir_uses_python_compatible_unicode_escaping() {
+        let source = r#"[{"event_id":"日本😀","timestep":0,"channel":"文字","spike_id":1,"modality":"text","tags":["简体中文"]}]"#;
+        let canonical = canonicalize_sparse_events_json(source, 10_000).unwrap();
+        assert!(canonical.contains(r#""event_id":"\u65e5\u672c\ud83d\ude00""#));
+        assert!(canonical.contains(r#""tags":["\u7b80\u4f53\u4e2d\u6587"]"#));
+    }
+
+    #[test]
+    fn portable_decision_trace_replays_all_three_boundaries() {
+        let source = r#"[{"decision_id":"feedback","sequence":2,"subsystem":"predictive_feedback","subject_id":"日本","evidence_ids":["b","a","a"],"verified":true,"contradiction":false,"stale":false,"capacity_available":true,"prediction_match":false,"support_count":1},{"decision_id":"memory","sequence":0,"subsystem":"event_memory","subject_id":"memory","evidence_ids":["e"],"verified":true,"contradiction":false,"stale":false,"capacity_available":true,"prediction_match":true,"support_count":1},{"decision_id":"risa","sequence":1,"subsystem":"risa_proposal","subject_id":"risa","evidence_ids":["e"],"verified":true,"contradiction":true,"stale":false,"capacity_available":true,"prediction_match":true,"support_count":1}]"#;
+        let canonical = canonicalize_portable_decisions_json(source, 10_000).unwrap();
+        assert!(canonical.contains(r#""decision":"admit","decision_id":"memory""#));
+        assert!(canonical.contains(r#""decision":"freeze_contradiction","decision_id":"risa""#));
+        assert!(canonical.contains(r#""decision":"emit_correction","decision_id":"feedback""#));
+        assert!(canonical.contains(r#""subject_id":"\u65e5\u672c""#));
     }
 
     #[test]

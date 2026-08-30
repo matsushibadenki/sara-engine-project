@@ -431,6 +431,14 @@ Added an optional frozen Python tokenizer snapshot with a semantic fingerprint a
 Added `eval-phase27-tokenizer-acceleration` with multilingual conformance, token/decode/spike-digest equivalence, malformed-input rejection, reuse/eviction/bypass checks, and cold/repeated timing. The initial timing is diagnostic, preserves slower-cache observations as negative results, and does not claim accelerated production or Gigatoken equivalence.
 Added a Rust scalar BPE merge reference behind Python-defined pretoken boundaries. It consumes the same frozen vocabulary, ordered merges, and unknown-token ID, rejects duplicate merge pairs, and matches Python token IDs on all eight multilingual Phase 27 fixtures. This establishes a correctness reference only; the production tokenizer, Rust performance, and Gigatoken compatibility remain unclaimed.
 
+Added an independent Rust canonical sparse IR codec and replay digest. The Rust path validates and orders events, emits Python-compatible canonical JSON including Unicode escapes, and computes SHA-256 without invoking the Python reference. The rebuilt PyO3 extension matched Python canonical bytes and digests on all six frozen valid/invalid conformance cases. Event Memory, RISA proposal, and predictive-feedback decision equivalence remains a separate unfinished gate.
+
+Added a sparse portable decision-trace kernel for the common Event Memory, RISA proposal, and predictive-feedback safety boundary. Independent Python and Rust rules matched canonical bytes and SHA-256 across 16 managed cases covering admission, retrieval, eviction, unverified evidence, contradiction, staleness, capacity, missing support, proposal, prediction retention, and correction.
+
+Added frozen adapters from real Event State Cache admission results, RISA interpolation/edit proposals, and predictive structural-feedback proposals into the portable decision trace. A repository-generated end-to-end test confirms Python/Rust equality after executing the actual subsystem classes.
+
+Added an observed-only Phase 27 independent replay using six provenance-bound Python documentation and IETF records already collected by the project. It executed 21 real adapter decisions across Event Memory admission/retrieval/eviction, RISA, and predictive feedback while a four-entry cache performed two evictions. Python and Rust matched canonical bytes and digest; declared structural/predictive transformations and the missing independent revision/contradiction cycle keep the claim bounded.
+
 ### Phase 28: Level-2 Promotion Review
 
 Added `eval-level2-capability-matrix`, which summarizes Phase21-25 capability evidence, provenance scope, unresolved gaps, and promotion status without changing production defaults.

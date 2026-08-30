@@ -14,6 +14,10 @@ def test_rust_core_exports_expected_sparse_runtime_symbols():
         "batch_tokens_to_sdr",
         "apply_homeostatic_scaling",
         "tokenize_sara_bpe_pretokens",
+        "canonical_sparse_ir_json",
+        "canonical_sparse_ir_replay_digest",
+        "canonical_portable_decision_trace_json",
+        "portable_decision_trace_digest",
         "SpikeEngine",
         "SpikeWTARouter",
         "LIFNetwork",
@@ -92,6 +96,39 @@ def test_rust_scalar_bpe_uses_python_defined_pretoken_boundaries():
         [("a", "b"), (" ", "日"), (" 日", "本")],
         1,
     ) == [9, 9, 13, 1]
+
+
+def test_rust_canonical_sparse_ir_matches_frozen_python_digest():
+    import json
+
+    sara_rust_core = pytest.importorskip(
+        "sara_engine.sara_rust_core",
+        reason="Rust extension is optional unless the package is built with maturin.",
+    )
+    events = [
+        {
+            "event_id": "vision-1",
+            "timestep": 1,
+            "channel": "vision",
+            "spike_id": 7,
+            "modality": "vision",
+            "confidence": 0.875,
+            "tags": ["source:camera-a", "object:door"],
+        },
+        {
+            "event_id": "audio-1",
+            "timestep": 2,
+            "channel": "audio",
+            "spike_id": 11,
+            "modality": "audio",
+            "confidence": 0.625,
+            "tags": ["source:microphone-a"],
+        },
+    ]
+    source = json.dumps(events, ensure_ascii=True, separators=(",", ":"))
+    assert sara_rust_core.canonical_sparse_ir_replay_digest(source) == (
+        "b66fdf601d0c3ab44e648995bbb70ef1675a2d30c61c6d6b294d243f183db18b"
+    )
 
 
 def test_spike_attention_uses_explicit_python_fallback_for_missing_rust_attention():
