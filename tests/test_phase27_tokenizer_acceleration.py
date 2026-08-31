@@ -123,3 +123,29 @@ def test_phase27_tokenizer_benchmark_passes():
         assert report["rust_path_observed"] is False
     assert report["gigatoken_path_observed"] is False
     assert report["checks"]["decode_round_trip_preserved"] is True
+    assert report["checks"]["snapshot_state_bounded"] is True
+    assert report["checks"]["peak_rss_growth_bounded"] is True
+    measurement = report["resource_measurement"]
+    assert measurement["resource_trace_count"] > 0
+    assert measurement["snapshot_state_bytes"] > 0
+    if report["rust_scalar_reference_available"]:
+        assert report["checks"]["equal_trace_rust_outputs_equivalent"] is True
+        assert report["checks"]["rust_warm_replay_equivalent"] is True
+        assert report["checks"]["downstream_replay_equivalent"] is True
+        assert report["checks"]["rust_boundary_calls_accounted"] is True
+        assert measurement["rust_boundary_calls"] == 2 * measurement["resource_trace_count"]
+        assert report["rust_batch_reference_available"] is True
+        assert report["rust_batch_reference_equivalent"] is True
+        assert report["checks"]["rust_batch_warm_replay_equivalent"] is True
+        assert report["checks"]["rust_batch_downstream_replay_equivalent"] is True
+        assert report["checks"]["rust_batch_boundary_reduced"] is True
+        assert measurement["rust_batch_boundary_calls"] == 2
+        assert report["checks"]["large_trace_batch_equivalent"] is True
+        assert report["checks"]["repeated_median_samples_complete"] is True
+        assert measurement["median_trace_count"] == 300
+        assert measurement["median_repetitions"] == 7
+        assert report["rust_snapshot_reference_available"] is True
+        assert report["rust_snapshot_reference_equivalent"] is True
+        assert report["checks"]["large_trace_snapshot_equivalent"] is True
+        assert report["checks"]["rust_snapshot_downstream_replay_equivalent"] is True
+        assert measurement["rust_snapshot_boundary_calls"] == 2

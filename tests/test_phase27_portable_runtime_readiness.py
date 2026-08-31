@@ -35,6 +35,24 @@ def _load_readiness_module():
     return module
 
 
+def _valid_evidence_reports(module):
+    reports = {}
+    for index, (evidence_id, schema) in enumerate(module.EVIDENCE_SCHEMAS.items()):
+        digest = f"digest-{index}"
+        reports[evidence_id] = {
+            "schema": schema,
+            "passed": True,
+            "observed_only": True,
+            "production_path_changed": False,
+            "independent_evidence": True,
+            "decision_trace_digest": digest,
+            "rust_decision_trace_digest": digest,
+            "checks": {"frozen_check": True},
+            "claim_boundary": f"Bounded claim for {evidence_id}.",
+        }
+    return reports
+
+
 def test_canonical_sparse_ir_is_order_independent():
     left = [
         {
@@ -179,7 +197,10 @@ def test_phase27_readiness_surfaces_observed_tokenizer_conformance():
         },
     }
 
-    report = module.build_report(tokenizer_report=tokenizer_report)
+    report = module.build_report(
+        tokenizer_report=tokenizer_report,
+        evidence_reports=_valid_evidence_reports(module),
+    )
 
     assert report["passed"] is True
     assert report["tokenizer_acceleration_conformance_observed"] is True
@@ -200,7 +221,10 @@ def test_phase27_readiness_blocks_unreviewed_tokenizer_promotion():
         },
     }
 
-    report = module.build_report(tokenizer_report=tokenizer_report)
+    report = module.build_report(
+        tokenizer_report=tokenizer_report,
+        evidence_reports=_valid_evidence_reports(module),
+    )
 
     assert report["passed"] is False
     assert report["checks"]["tokenizer_acceleration_not_promoted"] is False
@@ -220,9 +244,40 @@ def test_phase27_readiness_observes_independent_rust_canonical_equivalence():
             events = __import__("json").loads(source)
             return replay_digest(events)
 
-    report = module.build_report(rust_core=FakeRustCore())
+    report = module.build_report(
+        rust_core=FakeRustCore(),
+        evidence_reports=_valid_evidence_reports(module),
+    )
 
     assert report["passed"] is True
     assert report["rust_equivalence_claimed"] is True
     assert report["canonical_ir_rust_equivalence_observed"] is True
     assert report["rust_canonical_conformance"]["passed"] is True
+
+
+def test_phase27_readiness_requires_every_independent_evidence_report():
+    module = _load_readiness_module()
+    reports = _valid_evidence_reports(module)
+    reports.pop("verified_contradiction_replay")
+
+    report = module.build_report(evidence_reports=reports)
+
+    assert report["passed"] is False
+    assert report["checks"]["independent_evidence_bundle_complete"] is False
+    assert report["independent_evidence_bundle"]["entries"][
+        "verified_contradiction_replay"
+    ]["passed"] is False
+
+
+def test_phase27_readiness_rejects_synthetic_or_digest_mismatched_evidence():
+    module = _load_readiness_module()
+    reports = _valid_evidence_reports(module)
+    reports["genuine_revision_replay"]["independent_evidence"] = False
+    reports["observed_feedback_cycle"]["rust_decision_trace_digest"] = "different"
+
+    report = module.build_report(evidence_reports=reports)
+
+    assert report["passed"] is False
+    entries = report["independent_evidence_bundle"]["entries"]
+    assert entries["genuine_revision_replay"]["checks"]["independent_evidence"] is False
+    assert entries["observed_feedback_cycle"]["checks"]["runtime_digest_matches"] is False

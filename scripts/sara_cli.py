@@ -1352,6 +1352,11 @@ def main():
     parser_phase27_runtime.add_argument("--output-path", default=workspace_path("evaluation", "phase27_portable_runtime_readiness.json"))
     parser_phase27_runtime.add_argument("--rust-report-path", default=workspace_path("evaluation", "rust_core_benchmark.json"))
     parser_phase27_runtime.add_argument("--tokenizer-report-path", default=workspace_path("evaluation", "phase27_tokenizer_acceleration_benchmark.json"))
+    parser_phase27_runtime.add_argument("--independent-replay-report-path", default=workspace_path("evaluation", "phase27_independent_decision_replay.json"))
+    parser_phase27_runtime.add_argument("--revision-report-path", default=workspace_path("evaluation", "phase27_revision_history_replay.json"))
+    parser_phase27_runtime.add_argument("--feedback-report-path", default=workspace_path("evaluation", "phase27_observed_feedback_cycle.json"))
+    parser_phase27_runtime.add_argument("--contradiction-report-path", default=workspace_path("evaluation", "phase27_verified_contradiction_replay.json"))
+    parser_phase27_runtime.add_argument("--performance-stability-report-path", default=workspace_path("evaluation", "phase27_tokenizer_performance_stability.json"))
 
     parser_phase27_tokenizer = subparsers.add_parser(
         "eval-phase27-tokenizer-acceleration",
@@ -3912,6 +3917,16 @@ def main():
             str(args.rust_report_path),
             "--tokenizer-report-path",
             str(args.tokenizer_report_path),
+            "--independent-replay-report-path",
+            str(args.independent_replay_report_path),
+            "--revision-report-path",
+            str(args.revision_report_path),
+            "--feedback-report-path",
+            str(args.feedback_report_path),
+            "--contradiction-report-path",
+            str(args.contradiction_report_path),
+            "--performance-stability-report-path",
+            str(args.performance_stability_report_path),
         ]
         result = subprocess.run(command)
         sys.exit(result.returncode)

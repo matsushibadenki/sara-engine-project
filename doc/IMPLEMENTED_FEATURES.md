@@ -1,5 +1,12 @@
 # Implemented Features
 
+## Phase 37 structural-invariant preregistration
+
+- Immutable, managed preregistration with a canonical protocol fingerprint.
+- Six frozen mechanism arms, fourteen structural case families, six binding-shuffle ablations, and five deterministic seeds.
+- Anonymous canonical role identity excluding node names and task labels, with direction, order, topology, context, evidence, revision, and expiry boundaries.
+- Fail-closed validation for leakage controls, sparse resource budgets, CPU-only execution, no backpropagation/matrix/GPU/external-model use, no durable graph mutation, and no benchmark-driven production promotion.
+
 This document is the canonical list of completed SARA Engine features as of v1.1. It replaces the long completed-history section that previously lived in `doc/ROADMAP.md`.
 
 ## Release State
@@ -433,11 +440,29 @@ Added a Rust scalar BPE merge reference behind Python-defined pretoken boundarie
 
 Added an independent Rust canonical sparse IR codec and replay digest. The Rust path validates and orders events, emits Python-compatible canonical JSON including Unicode escapes, and computes SHA-256 without invoking the Python reference. The rebuilt PyO3 extension matched Python canonical bytes and digests on all six frozen valid/invalid conformance cases. Event Memory, RISA proposal, and predictive-feedback decision equivalence remains a separate unfinished gate.
 
-Added a sparse portable decision-trace kernel for the common Event Memory, RISA proposal, and predictive-feedback safety boundary. Independent Python and Rust rules matched canonical bytes and SHA-256 across 16 managed cases covering admission, retrieval, eviction, unverified evidence, contradiction, staleness, capacity, missing support, proposal, prediction retention, and correction.
+Added a sparse portable decision-trace kernel for the common Event Memory, RISA proposal, and predictive-feedback safety boundary. Independent Python and Rust rules matched canonical bytes and SHA-256 across 18 managed cases covering admission, retrieval, eviction, revision, unverified evidence, contradiction, staleness, capacity, missing support, proposal, prediction retention, and correction.
 
 Added frozen adapters from real Event State Cache admission results, RISA interpolation/edit proposals, and predictive structural-feedback proposals into the portable decision trace. A repository-generated end-to-end test confirms Python/Rust equality after executing the actual subsystem classes.
 
 Added an observed-only Phase 27 independent replay using six provenance-bound Python documentation and IETF records already collected by the project. It executed 21 real adapter decisions across Event Memory admission/retrieval/eviction, RISA, and predictive feedback while a four-entry cache performed two evictions. Python and Rust matched canonical bytes and digest; declared structural/predictive transformations and the missing independent revision/contradiction cycle keep the claim bounded.
+
+Fixed same-source revision replacement in Event State Cache so a newer verified revision updates retained provenance and time without increasing state. Added a separate three-decision controlled-perturbation arm for revision replacement, contradiction freeze, and oscillating feedback freeze. Its Python/Rust digest matches, while `independent_evidence=false` prevents the synthetic control from being reported as external revision evidence.
+
+Added a genuine external revision replay over official CPython `Lib/argparse.py` tags `v3.13.11` and `v3.14.6`. The provenance-bound manifest records exact tag commits, source URLs, byte counts, and distinct SHA-256 material hashes. Event Memory retained the newer verified revision, and Python/Rust emitted identical canonical `replace_revision` bytes and digest. This closes one independent version-history case only; separately sourced contradiction evidence remains open.
+
+Added an observed three-transition predictive-feedback replay using official CPython `Lib/argparse.py` tags `v3.14.3` through `v3.14.6`. Exact material hashes yielded changed, changed, and unchanged observations; the bounded feedback path emitted strengthen, retain/request-more-evidence, and cut decisions with identical Python/Rust canonical bytes and digest. The report is independent and observed-only, and explicitly does not infer semantic correctness or contradiction from byte identity.
+
+Added an explicit contradiction replay from RFC 6350 Section 4 and Verified Technical Erratum 3484. The original and corrected ABNF give opposite Boolean answers to whether truncated-time alternatives permit a zone suffix. Event Memory retained the original entry, blocked contradictory mutation, and the portable boundary emitted `freeze_revision` with identical Python/Rust canonical bytes and digest. This is one provenance-bound syntactic contradiction, not evidence of general semantic conflict discovery.
+
+Upgraded the Phase 27 portable-runtime readiness report to v3. It now requires the independent base replay, genuine revision replay, observed feedback cycle, and verified contradiction replay as a fail-closed bundle. Missing reports, wrong schemas, failed subchecks, synthetic evidence labels, production mutation, absent claim boundaries, or Python/Rust digest mismatch block readiness. The CLI exposes all four report paths, and the integrated observed run passes without merging their bounded claims into a general semantic-equivalence statement.
+
+Upgraded the tokenizer acceleration benchmark to v2 with equal-trace cold/warm timing, explicit boundary-call accounting, process peak-RSS high-water observations, canonical snapshot bytes, and downstream spike-replay comparison. The optional scalar Rust path remained exact but was slower than Python in the recorded 30-input run, so production promotion stays blocked. The benchmark also distinguishes reference-decode preservation from source round trip when the frozen Janome pretokenizer normalizes boundary whitespace, and uses an independent bounded bypass probe.
+
+Added a bounded stateless Rust batch tokenizer API with explicit sequence, pretoken, and character ceilings. It reduced the measured Python/Rust crossings from one per input to one per batch and preserved exact token IDs and downstream sparse replay. On the frozen 300-input trace over seven repetitions, the recorded median improved from `0.72x` for scalar Rust to `1.02x` for batched Rust versus Python, which remains below the preregistered `>1.05x` promotion threshold. Readiness reports batch equivalence and performance readiness separately.
+
+Added an immutable Rust-resident SARA BPE snapshot that validates and stores vocabulary and merge state once, then accepts only bounded pretoken batches. Rust now reports whether the extension is a debug or release build, and only release builds may satisfy performance readiness. Release-profile runs preserved exact replay and sometimes exceeded the `1.05x` threshold, but repeated process-level measurements straddled it, so production promotion remains blocked pending a frozen multi-process stability gate.
+
+Added the Phase 27 five-process performance stability gate. It retains every fresh release-profile run, freezes fixture and tokenizer identities, requires exact large-trace/downstream replay and resource checks, and evaluates both median and worst-run speedup. The executed gate passed integrity but rejected promotion because one retained run measured `0.9200x` despite a `1.0682x` median. This closes Phase 27 acceleration review as negative evidence without changing production routing.
 
 ### Phase 28: Level-2 Promotion Review
 

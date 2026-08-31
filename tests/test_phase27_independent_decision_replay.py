@@ -24,4 +24,9 @@ def test_independent_external_history_replays_across_python_and_rust():
     assert report["metrics"]["cache_entry_count"] <= 4
     assert report["checks"]["canonical_bytes_equivalent"] is True
     assert report["checks"]["digest_equivalent"] is True
+    assert report["checks"]["controlled_revision_replaced"] is True
+    assert report["checks"]["controlled_contradiction_frozen"] is True
+    assert report["checks"]["controlled_feedback_oscillation_frozen"] is True
+    assert report["checks"]["controlled_digest_equivalent"] is True
+    assert report["controlled_perturbation"]["independent_evidence"] is False
     assert report["production_path_changed"] is False

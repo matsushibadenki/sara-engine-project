@@ -11,6 +11,7 @@ SUPPORTED_SUBSYSTEMS = frozenset(
         "event_memory",
         "event_memory_retrieval",
         "event_memory_eviction",
+        "event_memory_revision",
         "risa_proposal",
         "predictive_feedback",
     }
@@ -83,6 +84,14 @@ def decide(record: Mapping[str, Any]) -> str:
         if not capacity_available:
             return "evict_capacity"
         return "retain"
+    if subsystem == "event_memory_revision":
+        if not verified:
+            return "reject_unverified"
+        if contradiction:
+            return "freeze_revision"
+        if support_count == 0:
+            return "abstain_missing_support"
+        return "retain_revision" if prediction_match else "replace_revision"
     if subsystem == "predictive_feedback":
         if not verified:
             return "abstain_unverified"
@@ -224,6 +233,31 @@ def adapt_event_memory_evictions(result: Any, *, sequence_start: int) -> Tuple[D
             }
         )
     return tuple(records)
+
+
+def adapt_event_memory_revision(result: Any, *, sequence: int) -> Dict[str, Any]:
+    trace = dict(getattr(result, "trace", {}) or {})
+    receipt = dict(trace.get("verification_receipt") or {})
+    evidence_ids = tuple(str(item) for item in receipt.get("source_refs", ()) if str(item))
+    source_decision = str(getattr(result, "decision", ""))
+    return {
+        "decision_id": f"event-revision::{getattr(result, 'entry_id', '')}::{sequence}",
+        "sequence": _index(sequence, "sequence"),
+        "subsystem": "event_memory_revision",
+        "subject_id": _text(getattr(result, "entry_id", ""), "entry_id"),
+        "evidence_ids": list(evidence_ids),
+        "verified": bool(
+            trace.get("observed", False)
+            and trace.get("source_backed", False)
+            and trace.get("verified", False)
+            and receipt.get("integrity_digest")
+        ),
+        "contradiction": bool(trace.get("contradicted", False)),
+        "stale": False,
+        "capacity_available": True,
+        "prediction_match": source_decision != "replace_verified_revision",
+        "support_count": len(set(evidence_ids)),
+    }
 
 
 def adapt_risa_proposal(proposal: Any, *, sequence: int) -> Dict[str, Any]:

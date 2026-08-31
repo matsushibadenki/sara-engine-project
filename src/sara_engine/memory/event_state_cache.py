@@ -292,6 +292,12 @@ class VerifiedHierarchicalEventStateCache:
             candidate.source_ref,
         )
         if duplicate is not None:
+            replaces_revision = bool(
+                candidate.source_ref == duplicate.source_ref
+                and candidate.source_revision
+                and candidate.source_revision != duplicate.source_revision
+                and int(candidate.time_segment) >= int(duplicate.time_segment)
+            )
             merged = replace(
                 duplicate,
                 signature=_bounded_ids(
@@ -331,12 +337,26 @@ class VerifiedHierarchicalEventStateCache:
                 ),
                 utility=max(duplicate.utility, utility),
                 access_count=duplicate.access_count + 1,
+                source_revision=(
+                    str(candidate.source_revision)
+                    if replaces_revision
+                    else duplicate.source_revision
+                ),
+                time_segment=(
+                    int(candidate.time_segment)
+                    if replaces_revision
+                    else duplicate.time_segment
+                ),
             )
             self.entries[duplicate.entry_id] = merged
             self.merge_count += 1
             result = CacheAdmissionResult(
                 accepted=True,
-                decision="merge_verified_duplicate",
+                decision=(
+                    "replace_verified_revision"
+                    if replaces_revision
+                    else "merge_verified_duplicate"
+                ),
                 entry_id=duplicate.entry_id,
                 tier=duplicate.tier,
                 event_cost=len(normalized_signature) + len(duplicate.signature),

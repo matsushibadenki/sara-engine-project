@@ -42,6 +42,27 @@ DEFAULT_FIXTURE = processed_data_path(
 DEFAULT_DECISION_FIXTURE = processed_data_path(
     "benchmark_fixtures", "phase27_portable_decision_cases.jsonl"
 )
+DEFAULT_INDEPENDENT_REPLAY_REPORT = workspace_path(
+    "evaluation", "phase27_independent_decision_replay.json"
+)
+DEFAULT_REVISION_REPORT = workspace_path(
+    "evaluation", "phase27_revision_history_replay.json"
+)
+DEFAULT_FEEDBACK_REPORT = workspace_path(
+    "evaluation", "phase27_observed_feedback_cycle.json"
+)
+DEFAULT_CONTRADICTION_REPORT = workspace_path(
+    "evaluation", "phase27_verified_contradiction_replay.json"
+)
+DEFAULT_PERFORMANCE_STABILITY_REPORT = workspace_path(
+    "evaluation", "phase27_tokenizer_performance_stability.json"
+)
+EVIDENCE_SCHEMAS = {
+    "independent_base_replay": "sara-phase27-independent-decision-replay-v1",
+    "genuine_revision_replay": "sara-phase27-revision-history-replay-v1",
+    "observed_feedback_cycle": "sara-phase27-observed-feedback-cycle-v1",
+    "verified_contradiction_replay": "sara-phase27-verified-contradiction-replay-v1",
+}
 
 
 def load_cases(path: str) -> List[Mapping[str, Any]]:
@@ -206,12 +227,53 @@ def evaluate_rust_decision_equivalence(
     }
 
 
+def evaluate_independent_evidence_bundle(
+    reports: Mapping[str, Mapping[str, Any]],
+) -> Dict[str, Any]:
+    entries: Dict[str, Any] = {}
+    all_passed = True
+    for evidence_id, expected_schema in EVIDENCE_SCHEMAS.items():
+        report = reports.get(evidence_id, {})
+        checks = report.get("checks", {}) if isinstance(report, Mapping) else {}
+        python_digest = str(report.get("decision_trace_digest", ""))
+        rust_digest = str(report.get("rust_decision_trace_digest", ""))
+        entry_checks = {
+            "schema_matches": report.get("schema") == expected_schema,
+            "report_passed": report.get("passed") is True,
+            "observed_only": report.get("observed_only") is True,
+            "production_unchanged": report.get("production_path_changed") is False,
+            "independent_evidence": report.get("independent_evidence") is True,
+            "runtime_digest_matches": bool(python_digest)
+            and python_digest == rust_digest,
+            "subchecks_passed": isinstance(checks, Mapping)
+            and bool(checks)
+            and all(value is True for value in checks.values()),
+            "claim_boundary_present": bool(str(report.get("claim_boundary", ""))),
+        }
+        passed = all(entry_checks.values())
+        all_passed = all_passed and passed
+        entries[evidence_id] = {
+            "passed": passed,
+            "schema": report.get("schema"),
+            "decision_trace_digest": python_digest or None,
+            "claim_boundary": report.get("claim_boundary"),
+            "checks": entry_checks,
+        }
+    return {
+        "passed": all_passed and len(entries) == len(EVIDENCE_SCHEMAS),
+        "required_report_count": len(EVIDENCE_SCHEMAS),
+        "entries": entries,
+    }
+
+
 def build_report(
     rust_report: Optional[Mapping[str, Any]] = None,
     conformance_rows: Sequence[Mapping[str, Any]] = (),
     tokenizer_report: Optional[Mapping[str, Any]] = None,
     rust_core: Any | None = None,
     decision_rows: Sequence[Mapping[str, Any]] = (),
+    evidence_reports: Optional[Mapping[str, Mapping[str, Any]]] = None,
+    performance_stability_report: Optional[Mapping[str, Any]] = None,
 ) -> Dict[str, Any]:
     if not conformance_rows:
         conformance_rows = load_cases(DEFAULT_FIXTURE)
@@ -253,6 +315,7 @@ def build_report(
         conformance_rows, rust_core
     )
     rust_decisions = evaluate_rust_decision_equivalence(decision_rows, rust_core)
+    evidence_bundle = evaluate_independent_evidence_bundle(evidence_reports or {})
     try:
         replay_digest(events + [dict(events[0])])
         duplicate_event_rejected = False
@@ -274,6 +337,7 @@ def build_report(
         "rust_decision_evidence_consistent": (
             not rust_decisions["available"] or rust_decisions["passed"]
         ),
+        "independent_evidence_bundle_complete": evidence_bundle["passed"],
     }
     rust_report = rust_report or {}
     tokenizer_report = tokenizer_report or {}
@@ -296,11 +360,32 @@ def build_report(
         and tokenizer_report.get("rust_scalar_reference_equivalent", False)
         and tokenizer_report.get("rust_path_observed", False)
     )
+    rust_batch_tokenizer_equivalence = bool(
+        tokenizer_report.get("rust_batch_reference_available", False)
+        and tokenizer_report.get("rust_batch_reference_equivalent", False)
+        and isinstance(tokenizer_checks, Mapping)
+        and tokenizer_checks.get("rust_batch_boundary_reduced", False)
+        and tokenizer_checks.get("large_trace_batch_equivalent", False)
+    )
+    rust_snapshot_tokenizer_equivalence = bool(
+        tokenizer_report.get("rust_snapshot_reference_available", False)
+        and tokenizer_report.get("rust_snapshot_reference_equivalent", False)
+        and isinstance(tokenizer_checks, Mapping)
+        and tokenizer_checks.get("large_trace_snapshot_equivalent", False)
+    )
     checks["tokenizer_acceleration_not_promoted"] = (
         tokenizer_report.get("production_path_changed") is not True
     )
+    performance_stability_report = performance_stability_report or {}
+    performance_stability_observed = bool(
+        performance_stability_report.get("schema")
+        == "sara-phase27-tokenizer-performance-stability-v1"
+        and performance_stability_report.get("passed") is True
+        and performance_stability_report.get("observed_only") is True
+        and performance_stability_report.get("production_path_changed") is False
+    )
     return {
-        "schema": "sara-phase27-portable-runtime-readiness-v2",
+        "schema": "sara-phase27-portable-runtime-readiness-v3",
         "passed": all(checks.values()),
         "observed_only": True,
         "rust_equivalence_claimed": rust_canonical["passed"],
@@ -313,15 +398,33 @@ def build_report(
         "rust_scalar_tokenizer_equivalence_observed": (
             rust_scalar_tokenizer_equivalence
         ),
+        "rust_batch_tokenizer_equivalence_observed": (
+            rust_batch_tokenizer_equivalence
+        ),
+        "rust_batch_tokenizer_performance_promotion_ready": bool(
+            tokenizer_report.get("rust_batch_performance_promotion_ready", False)
+        ),
+        "rust_snapshot_tokenizer_equivalence_observed": (
+            rust_snapshot_tokenizer_equivalence
+        ),
+        "rust_snapshot_tokenizer_performance_promotion_ready": bool(
+            tokenizer_report.get("rust_snapshot_performance_promotion_ready", False)
+        ),
         "tokenizer_acceleration_production_promoted": False,
+        "tokenizer_performance_stability_observed": performance_stability_observed,
+        "tokenizer_performance_promotion_ready": bool(
+            performance_stability_observed
+            and performance_stability_report.get("promotion_ready") is True
+        ),
         "checks": checks,
         "conformance": conformance,
         "rust_canonical_conformance": rust_canonical,
         "rust_decision_conformance": rust_decisions,
+        "independent_evidence_bundle": evidence_bundle,
+        "tokenizer_performance_stability": performance_stability_report,
         "metrics": {"canonical_event_count": len(canonical), "replay_digest": digest_a},
         "next_actions": [
-            "Run Python/Rust replay equivalence after canonical IR is frozen.",
-            "Use the frozen conformance vectors for the Rust replay implementation.",
+            "Keep all four independent evidence reports passing and provenance-bound.",
             (
                 "Keep the Rust scalar tokenizer as a correctness reference; "
                 "measure an optional accelerated candidate separately."
@@ -342,6 +445,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     parser.add_argument("--fixture-path", default=DEFAULT_FIXTURE)
     parser.add_argument("--decision-fixture-path", default=DEFAULT_DECISION_FIXTURE)
+    parser.add_argument("--independent-replay-report-path", default=DEFAULT_INDEPENDENT_REPLAY_REPORT)
+    parser.add_argument("--revision-report-path", default=DEFAULT_REVISION_REPORT)
+    parser.add_argument("--feedback-report-path", default=DEFAULT_FEEDBACK_REPORT)
+    parser.add_argument("--contradiction-report-path", default=DEFAULT_CONTRADICTION_REPORT)
+    parser.add_argument("--performance-stability-report-path", default=DEFAULT_PERFORMANCE_STABILITY_REPORT)
     args = parser.parse_args(argv)
     try:
         with open(args.rust_report_path, "r", encoding="utf-8") as handle:
@@ -353,17 +461,38 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             tokenizer_report = json.load(handle)
     except (FileNotFoundError, json.JSONDecodeError):
         tokenizer_report = {}
+    evidence_reports: Dict[str, Mapping[str, Any]] = {}
+    evidence_paths = {
+        "independent_base_replay": args.independent_replay_report_path,
+        "genuine_revision_replay": args.revision_report_path,
+        "observed_feedback_cycle": args.feedback_report_path,
+        "verified_contradiction_replay": args.contradiction_report_path,
+    }
+    for evidence_id, path in evidence_paths.items():
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                candidate = json.load(handle)
+        except (FileNotFoundError, json.JSONDecodeError):
+            candidate = {}
+        evidence_reports[evidence_id] = candidate if isinstance(candidate, dict) else {}
+    try:
+        with open(args.performance_stability_report_path, "r", encoding="utf-8") as handle:
+            performance_stability_report = json.load(handle)
+    except (FileNotFoundError, json.JSONDecodeError):
+        performance_stability_report = {}
     report = build_report(
         rust_report if isinstance(rust_report, dict) else {},
         load_cases(args.fixture_path),
         tokenizer_report if isinstance(tokenizer_report, dict) else {},
         load_rust_core(),
         load_cases(args.decision_fixture_path),
+        evidence_reports,
+        performance_stability_report if isinstance(performance_stability_report, dict) else {},
     )
     with open(ensure_parent_directory(args.output_path), "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2, sort_keys=True)
         handle.write("\n")
-    return 0
+    return 0 if report["passed"] else 1
 
 
 if __name__ == "__main__":

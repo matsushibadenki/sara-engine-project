@@ -86,6 +86,26 @@ def test_cache_merges_verified_duplicates_without_state_growth():
     assert cache.state_dict()["merge_count"] == 1
 
 
+def test_cache_replaces_newer_verified_revision_from_same_source():
+    cache = VerifiedHierarchicalEventStateCache()
+    cache.admit(_candidate("revision-v1", source_ref="source:stable", source_revision="r1"))
+
+    result = cache.admit(
+        _candidate(
+            "revision-v2",
+            source_ref="source:stable",
+            source_revision="r2",
+            time_segment=2,
+        )
+    )
+
+    state = cache.state_dict()
+    assert result.decision == "replace_verified_revision"
+    assert state["entry_count"] == 1
+    assert state["entries"][0]["source_revision"] == "r2"
+    assert state["entries"][0]["time_segment"] == 2
+
+
 def test_logarithmic_cache_is_bounded_and_preserves_high_utility_state():
     cache = VerifiedHierarchicalEventStateCache(
         retention_profile="logarithmic",

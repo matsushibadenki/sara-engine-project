@@ -20,6 +20,7 @@ from sara_engine.edge.portable_decision_trace import (  # noqa: E402
     adapt_event_memory_admission,
     adapt_event_memory_evictions,
     adapt_event_memory_retrieval,
+    adapt_event_memory_revision,
     adapt_predictive_feedback,
     adapt_risa_proposal,
     canonical_decision_json,
@@ -183,6 +184,75 @@ def build_report(rows: Sequence[Mapping[str, Any]], rust_core: Any | None = None
     source = json.dumps(records, ensure_ascii=True, separators=(",", ":"))
     rust_json = str(canonical_fn(source)) if rust_available else ""
     rust_digest = str(digest_fn(source)) if rust_available else ""
+    controlled_records: List[Dict[str, Any]] = []
+    if rows:
+        base = rows[0]
+        control_cache = VerifiedHierarchicalEventStateCache(max_entries=2, retention_profile="fixed")
+
+        def controlled_candidate(revision: str, segment: int, contradicted: bool = False) -> EventStateCandidate:
+            receipt = issue_verification_receipt(
+                verifier_id="phase27-controlled-revision-gate",
+                verifier_version="v1",
+                decision="verified_controlled_perturbation",
+                evidence={"base_material_hash": base["material_hash"], "revision": revision},
+                source_refs=(str(base["source_ref"]),),
+                source_revision=revision,
+                observed=True,
+                source_backed=True,
+                verified=True,
+                contradicted=contradicted,
+            )
+            return EventStateCandidate(
+                entry_id=f"controlled::{revision}",
+                signature=tuple(int(item) for item in base["sparse_signature"]),
+                source_ref=str(base["source_ref"]),
+                source_revision=revision,
+                time_segment=segment,
+                own_latent_id="controlled-revision",
+                confidence=1.0,
+                uncertainty=0.0,
+                source_reliability=1.0,
+                resonance_score=0.9,
+                metabolic_headroom=0.9,
+                observed=True,
+                source_backed=True,
+                verified=True,
+                contradicted=contradicted,
+                verification_receipt=receipt,
+            )
+
+        control_cache.admit(controlled_candidate("controlled-r1", 100))
+        replacement = control_cache.admit(controlled_candidate("controlled-r2", 101))
+        controlled_records.append(adapt_event_memory_revision(replacement, sequence=0))
+        contradiction = control_cache.admit(
+            controlled_candidate("controlled-r3-contradiction", 102, contradicted=True)
+        )
+        controlled_records.append(adapt_event_memory_revision(contradiction, sequence=1))
+        oscillation = feedback.propose(
+            (
+                StructuralFeedbackSignal(
+                    predicting_concept="controlled-source-continuity",
+                    source_node=str(base["manifest_id"]),
+                    target_node=str(base["manifest_id"]),
+                    relation_type="revision_cycle",
+                    predicted_confidence=0.2,
+                    observed_confidence=0.9,
+                    evidence_ids=(str(base["provenance_digest"]),),
+                    recent_actions=(
+                        "strengthen_relation",
+                        "cut_relation",
+                        "strengthen_relation",
+                        "cut_relation",
+                    ),
+                ),
+            )
+        )[0]
+        controlled_records.append(adapt_predictive_feedback(oscillation, sequence=2))
+    controlled_source = json.dumps(controlled_records, ensure_ascii=True, separators=(",", ":"))
+    controlled_python_json = canonical_decision_json(controlled_records)
+    controlled_python_digest = decision_trace_digest(controlled_records)
+    controlled_rust_json = str(canonical_fn(controlled_source)) if rust_available else ""
+    controlled_rust_digest = str(digest_fn(controlled_source)) if rust_available else ""
     checks = {
         **source_checks,
         "bounded_cache_state": len(cache.entries) <= 4,
@@ -194,15 +264,34 @@ def build_report(rows: Sequence[Mapping[str, Any]], rust_core: Any | None = None
         "rust_extension_available": rust_available,
         "canonical_bytes_equivalent": rust_available and rust_json == python_json,
         "digest_equivalent": rust_available and rust_digest == python_digest,
+        "controlled_revision_replaced": bool(
+            controlled_records and controlled_records[0]["prediction_match"] is False
+        ),
+        "controlled_contradiction_frozen": bool(
+            len(controlled_records) > 1 and controlled_records[1]["contradiction"] is True
+        ),
+        "controlled_feedback_oscillation_frozen": bool(
+            len(controlled_records) > 2 and controlled_records[2]["contradiction"] is True
+        ),
+        "controlled_bytes_equivalent": rust_available and controlled_rust_json == controlled_python_json,
+        "controlled_digest_equivalent": rust_available and controlled_rust_digest == controlled_python_digest,
     }
     return {
         "schema": "sara-phase27-independent-decision-replay-v1",
         "passed": all(checks.values()),
         "observed_only": True,
         "production_path_changed": False,
+        "independent_evidence": True,
         "source_manifest_fingerprint": _fingerprint(list(rows)),
         "decision_trace_digest": python_digest,
         "rust_decision_trace_digest": rust_digest or None,
+        "controlled_perturbation": {
+            "scope": "synthetic_control_over_external_base_record",
+            "decision_count": len(controlled_records),
+            "decision_trace_digest": controlled_python_digest,
+            "rust_decision_trace_digest": controlled_rust_digest or None,
+            "independent_evidence": False,
+        },
         "checks": checks,
         "metrics": {
             "source_row_count": len(rows),
@@ -210,7 +299,7 @@ def build_report(rows: Sequence[Mapping[str, Any]], rust_core: Any | None = None
             "cache_entry_count": len(cache.entries),
             "cache_eviction_count": cache.eviction_count,
         },
-        "claim_boundary": "Independent source records; benchmark-defined structural and predictive transitions; no semantic accuracy or full-subsystem equivalence claim.",
+        "claim_boundary": "Independent source records for the base run; revision, contradiction, and oscillation are explicitly synthetic controls over one external base record; no semantic accuracy or full-subsystem equivalence claim.",
     }
 
 

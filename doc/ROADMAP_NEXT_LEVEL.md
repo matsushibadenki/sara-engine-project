@@ -124,10 +124,12 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Added source-backed `create_provisional_node` feedback proposals; unknown nodes remain review-only and cannot enter the durable graph directly.
 - Added bounded multi-edit staging with deterministic graph snapshots, exact-digest rollback validation, edit/node/edge budgets, and byte-equivalent restoration after any late edit failure.
 - The Phase 21 benchmark now verifies provisional-node isolation, successful two-edit staging, and atomic rollback after a partially staged batch.
+- Independent held-out structural benchmark over seven cases derived from six human-reviewed IETF/Python documentation records. The three supported multi-hop cases reached `1.0` accuracy versus `0.0` for direct single-edge retrieval; two unsupported cases abstained and two relation-signature analogy decisions were correct.
+- The independent gate validates source record/hash bindings, rejects legacy-fixture entity overlap, caps hops/paths/edge work, and keeps every proposal provisional. Its evidence is explicitly limited: the external statements are independent, while their edge decomposition is benchmark-authored rather than autonomously learned.
 
 ### [Next]
 
-- Repeat compositional and analogy benchmarks with independent held-out cases.
+- Preregister the Phase 37 structural-invariant sharing experiment now that the independent Phase 21 baseline is available.
 
 ### Acceptance Gate
 
@@ -320,15 +322,35 @@ Every major mechanism must pass this ladder before it can affect production defa
 - Added independent Rust parsing, validation, ordering, canonical JSON serialization, Python-compatible Unicode escaping, and SHA-256 replay digest for canonical sparse IR without calling the Python reference implementation.
 - Rebuilt the PyO3 extension and observed exact Python/Rust canonical bytes and replay digests across all six frozen valid/invalid conformance cases. This closes canonical IR encoding equivalence only; semantic subsystem decisions remain unresolved.
 - Added a bounded portable decision kernel for the shared Event Memory, RISA proposal, and predictive-feedback safety boundary. Python and Rust independently replay verification, contradiction, freshness, capacity, support, and prediction-match signals into canonical admit/reject/freeze/correction decisions.
-- Added 16 managed multilingual decision cases and observed exact Python/Rust canonical decision bytes and digest across admission, retrieval, eviction, RISA proposal, and predictive-feedback subsystem labels. This proves only the shared boundary kernel.
+- Added 18 managed multilingual decision cases and observed exact Python/Rust canonical decision bytes and digest across admission, retrieval, eviction, revision, RISA proposal, and predictive-feedback subsystem labels. This proves only the shared boundary kernel.
 - Added frozen Python adapters for actual `CacheAdmissionResult`, `StructuralInterpolationProposal`/`StructuralEditProposal`, and predictive structural-feedback outputs. An end-to-end fixture now exercises real cache admission and contradiction rejection, independently supported RISA proposal generation, and predictive retain/correction generation before obtaining identical Rust decision bytes and digest.
 - The initial adapter evidence is repository-generated and narrow. The following independent run broadens source coverage, while retrieval decisions, revisions, eviction decisions, and repeated feedback cycles remain unresolved.
 - Added `phase27_independent_decision_replay.py` over six previously collected, provenance-bound external documentation records from `docs.python.org` and IETF RFC 9110. The observed-only run produced six real Event Memory admissions, six post-pressure retrieval decisions, two explicit capacity-eviction decisions, two RISA structural proposals, and five predictive-feedback decisions.
 - All 21 independent-source-derived decisions matched Python/Rust canonical bytes and digest (`0b88d1fdcf29c46e231c30c4266a6dde83c6593bd4497e4625e63e1877ac7809`). The four-entry cache retained four records, evicted two, retrieved retained evidence, and abstained for evicted evidence. Structural grouping and prediction transitions remain benchmark-declared, so this does not establish semantic accuracy or complete subsystem equivalence.
+- Fixed Event State Cache revision integrity: a newer verified revision replaces `source_revision` and `time_segment` only when it comes from the same source and is not older than the retained entry. Different-source duplicates keep the existing provenance rather than being mislabeled as a revision.
+- Added a separately reported three-decision control over one external base record: verified `r1 -> r2` replacement, contradictory `r3` freeze, and oscillating strengthen/cut feedback freeze. Python/Rust digests matched (`54f867488b6b8056d09aeff5c88f52efa1c89e418dce40d408fe86d1cd565261`), but the report binds `independent_evidence=false` because the revision and contradiction are controlled perturbations rather than independently collected facts.
+- Added a provenance-bound genuine version-history manifest for CPython `Lib/argparse.py` at official tags `v3.13.11` and `v3.14.6`. The two verified tag commits have distinct content hashes and retain one stable logical source identity.
+- Added `phase27_revision_history_replay.py`. The newer official revision replaced the older Event Memory entry without state growth, and the resulting portable `replace_revision` decision matched Python/Rust canonical bytes and digest (`b40bc6ff90909bfafdaa27cb7421860052394f84b874003a9c2528c457f80186`). The report binds `independent_evidence=true` while explicitly limiting the result to one genuine source revision.
+- Added a four-revision observed feedback history from official CPython tags `v3.14.3` through `v3.14.6`. Exact `Lib/argparse.py` hashes produce the observed transition path changed, changed, unchanged without interpreting byte changes as semantic quality.
+- Added `phase27_observed_feedback_cycle.py`. The three-step predictive path emitted `strengthen_relation`, `request_more_evidence`, and `cut_relation`; all portable decisions matched Python/Rust canonical bytes and digest (`efa0a06dc11e75669d27d56435efefbb79815c9eef182792dc8e62120f8cf6e5`). The report binds `independent_evidence=true`, remains observed-only, and forbids contradiction or semantic-accuracy claims.
+- Added a separately sourced explicit conflict from RFC 6350 Section 4 and Verified Technical Erratum 3484. The published ABNF permits a zone suffix in two truncated-time alternatives, while the verified correction removes that suffix from the same alternatives; the manifest freezes the proposition, opposite Boolean polarities, source roles, exact locators, and material hashes.
+- Added `phase27_verified_contradiction_replay.py`. Event Memory admitted the published claim, blocked the verified contradictory correction from mutating the retained state, and emitted portable `freeze_revision`. Python/Rust canonical bytes and digest matched (`7ce91c62cbb0eb9e6271adfaf45c25f94af4c0fac2ac4b881c318c32e22f0cea`) with `independent_evidence=true`. This proves one explicit ABNF contradiction only, not general semantic contradiction detection.
+- Upgraded `phase27_portable_runtime_readiness.py` to schema v3 and bound all four independent reports into one fail-closed evidence bundle. Every report must have its exact schema, pass its own frozen checks, remain observed-only and production-unchanged, declare independent evidence, preserve a non-empty claim boundary, and match its Python/Rust decision digest.
+- Added CLI paths and negative tests for missing reports, synthetic evidence, and digest mismatch. The integrated observed run passed all four evidence entries plus the six canonical-IR and 18 portable-decision conformance cases. Individual claim boundaries remain visible and tokenizer acceleration remains unpromoted.
+- Upgraded the tokenizer acceleration benchmark to v2 with one equal 30-input trace for Python and the optional Rust scalar candidate. It records end-to-end cold/warm process time, explicit Python/Rust boundary-call counts, process peak-RSS high-water growth, canonical snapshot state bytes, exact token outputs, and downstream sparse-spike replay digests.
+- The observed candidate preserved token and downstream replay identity, used a 2,143-byte snapshot, and added 114,688 peak-RSS bytes in the recorded process. It made 30 Rust calls per pass and was slower than Python (`0.72x` cold and `0.59x` warm in the recorded run). This negative result blocks promotion and supports reducing boundary crossings before further optimization.
+- Corrected the conformance interpretation for the frozen Janome pretokenizer: acceleration must reproduce reference decode exactly, while source-text round trip is reported separately because the reference itself normalizes leading/trailing boundary whitespace. Cache bypass is now tested with an independent fixed 64-byte probe rather than depending on language-specific pretoken segmentation.
+- Added bounded `batch_tokenize_sara_bpe_pretokens` to the Rust extension. One call accepts at most 1,024 sequences, 65,536 pretokens, and 1,048,576 characters, rejects duplicate merge pairs, and returns one exact token-ID list per input without matrices, gradients, GPU execution, or production routing changes.
+- The equal 30-input trace reduced Rust boundary calls from 30 to one per pass while preserving exact tokens and downstream spike replay. A larger 300-input trace with seven timed repetitions produced median speedups of `0.72x` for the scalar boundary and `1.02x` for the batched boundary versus Python in the recorded run.
+- Frozen performance promotion requires more than `1.05x` repeated-median speedup. The batched result did not pass, so `rust_batch_performance_promotion_ready=false`; readiness surfaces equivalence separately from performance promotion.
+- Added immutable `FrozenSaraBpeTokenizer` in Rust. Vocabulary, ranked merge pairs, and unknown-token identity are validated once at construction; subsequent bounded batch calls transfer only Python-defined pretokens. The object exposes no mutation path and preserves the same sequence, pretoken, and character ceilings.
+- Added a Rust-reported build profile so debug extensions cannot satisfy performance readiness. Under an optimized release build, the snapshot candidate remained exact and improved over stateless batching, but independent executions varied around the threshold (`1.0519x`, `1.0544x`, `1.0379x`, and a later integrated `1.0404x`). Promotion therefore remains false despite isolated passing runs.
+- Added `phase27_tokenizer_performance_stability.py`, which retains five fresh release-profile process runs without post-observation exclusion. It freezes the fixture digest, tokenizer fingerprint, 300-input/seven-repetition trace, exact replay/resource checks, and exclusive `>1.05x` threshold, then reports median, best, and worst speedup.
+- The five-run stability report passed execution integrity but rejected promotion: observed speedups were `1.0616x`, `1.0682x`, `1.0755x`, `1.0710x`, and `0.9200x`; median was `1.0682x` and worst-run speedup was `0.9200x`. All trials remain recorded, production routing is unchanged, and readiness reports performance evidence separately from correctness readiness.
 
 ### [Next]
 
-- Extend the independent replay contract to explicit revision replacement, separately sourced contradictory evidence, and repeated predictive-feedback cycles. Synthetic perturbations must remain labeled controls and cannot satisfy the independent-evidence requirement.
+- Preregister the Phase 37 structural-invariant sharing experiment. Phase 21 independent held-out structural baselines and Phase 27 canonical/runtime equivalence are complete; Phase 27 optional tokenizer acceleration remains a retained negative result unless a separately preregistered optimization experiment is approved.
 
 ### [Later]
 
@@ -936,10 +958,16 @@ Compare five frozen successor-migration arms over identical source histories and
 - Keep five capabilities distinct in reports: exact relation retrieval, verified path composition, similarity scoring, proposal of an unstored relation, and later verification of that proposal. Only the last two can support a claim of structural generative transfer; an attractive motif visualization or high analogy score cannot.
 - Structural sharing is the sparse auditable analogue to parameter sharing only if one verified pattern change predictably affects several later eligible cases. This is a testable functional analogy, not a claim that RISA reproduces ANN representations or biological knowledge.
 
-### [Later]
+### [Done]
 
-- Begin only after the Phase 21 independent held-out composition/analogy benchmark is available. Reuse Phase 22 revision/contradiction histories, Phase 31 consolidation limits, and Phase 33 structured-edge resource accounting.
-- Preregister canonical role assignment, motif width/depth, candidate index, maximum patterns, exemplars/counterexamples per pattern, match threshold, propagation fan-out, expiry, revision behavior, tie order, state/event/latency ceilings, seeds, and tuning attempts before implementing the candidate.
+- The Phase 21 independent held-out composition/analogy prerequisite is complete, and its report and fixture SHA-256 identities are bound into the Phase 37 protocol.
+- Registered the immutable `phase37-structural-invariant-sharing-v1` protocol before candidate implementation. It freezes six equal-resource arms, fourteen structural case families, six binding shuffles, five seeds, canonical anonymous roles, topology/direction/order identity, match/expiry/tie rules, sparse capacity and CPU ceilings, one tuning attempt, failure rules, and non-promotion boundaries.
+- The registered protocol fingerprint is `e77d34460bfc2ae2440d765616a65ce7dad734d07ef6cca3b0d17b1532cfe704`. Node identity and task labels are excluded from motif fingerprints; withheld relations and endpoint roles remain evaluator-only until proposals are frozen.
+
+### [Next]
+
+- Collect and provenance-review the independent Phase 37 source manifest, then freeze structural-family/source-disjoint train/evaluation fixtures and their hashes before implementing the default-off motif candidate.
+- Reuse Phase 22 revision/contradiction histories, Phase 31 consolidation limits, and Phase 33 structured-edge resource accounting during execution.
 - Keep the candidate default-off and separate from the current `StructuralAnalogyEngine`. Do not silently upgrade an analogy score into a relation proposal or alter production RISA graph state.
 - Start with fixed nodes and relations. Pattern-driven structural add/prune is a later follow-up and must not provide the initial transfer result.
 
@@ -1362,8 +1390,8 @@ Compare seven frozen equal-history and equal-resource arms:
 3. [Done] Connect the horizon benchmark to Event Memory retention profiles.
 4. [Done] Add multimodal structural contradiction and missing-modality cases.
 5. [Done] Implement and execute the registered Phase 34 independent adapter v2 across all 1,050 conditions; retain `promotion_ready=false` because the result is exact source identity rather than semantic recall. Continue multimodal evidence collection separately.
-6. [Next] Complete Python/Rust canonical replay equivalence.
-7. [Later] Run the exact-tokenization four-arm conformance and bounded-cache ablation before selecting any accelerated tokenizer path.
+6. [Done] Complete Python/Rust canonical replay equivalence, bind four independent subsystem reports fail-closed, and retain their separate claim boundaries.
+7. [Done] Run exact-tokenization conformance, scalar/batch/immutable-snapshot ablations, and the five-process stability gate; retain the optional accelerated path as unpromoted negative evidence because worst-run speedup failed.
 8. [Later] Prototype Phase 30 temporal effective interactions only after preregistering the four-arm equal-budget ablation.
 9. [Done] Implement the observed-only Phase 31 repetition-dependent consolidation contract without connecting it to production recall.
 10. [Later] Preregister the Phase 32 four-arm sparse depth-routing experiment before implementing either candidate.
@@ -1386,8 +1414,8 @@ Compare seven frozen equal-history and equal-resource arms:
 27. [Later] Reopen physical-energy evidence only by explicit operator decision.
 28. [Later] After Phase 32 fixed-expert controls execute, preregister the Phase 35 emergent overlapping spatiotemporal expert-field experiment before implementing any boundary-free routing candidate.
 29. [Later] After Phase 27 replay/migration equivalence and independent Phase 22 histories exist, preregister the Phase 36 evidence-preserving learning-system evolution experiment before implementing any representation translator or predecessor-retirement path.
-30. [Later] After independent Phase 21 structural baselines execute, preregister the Phase 37 structural-invariant sharing experiment before implementing any shared-pattern store or unstored-relation proposal path.
-31. [Later] After the Phase 37 canonical role schema is frozen, preregister the Phase 38 canonical structural-delta and transformation-memory experiment before implementing any persistent delta codec, MDL selector, or shared transformation store.
+30. [Done] Preregistered the Phase 37 structural-invariant sharing experiment before implementing any shared-pattern store or unstored-relation proposal path; protocol fingerprint `e77d34460bfc2ae2440d765616a65ce7dad734d07ef6cca3b0d17b1532cfe704`.
+31. [Next] Collect and freeze the independent Phase 37 source/split manifest under the registered leakage boundary, then implement and execute the default-off observed-only candidate. The canonical role schema is also frozen, so Phase 38 preregistration may follow without implementing a delta codec.
 32. [Later] After Phase 30 temporal state and Phase 37 explicit-motif controls are frozen, preregister the Phase 39 anonymous local-reuse experiment before implementing any unlabeled allocator, assembly observer, or emergent hierarchy candidate.
 33. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
 34. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.

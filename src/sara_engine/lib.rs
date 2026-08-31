@@ -238,6 +238,19 @@ fn portable_decision(record: &PortableDecisionInput) -> PyResult<&'static str> {
                 Ok("retain")
             }
         }
+        "event_memory_revision" => {
+            if !record.verified {
+                Ok("reject_unverified")
+            } else if record.contradiction {
+                Ok("freeze_revision")
+            } else if record.support_count == 0 {
+                Ok("abstain_missing_support")
+            } else if record.prediction_match {
+                Ok("retain_revision")
+            } else {
+                Ok("replace_revision")
+            }
+        }
         "predictive_feedback" => {
             if !record.verified {
                 Ok("abstain_unverified")
@@ -337,6 +350,11 @@ fn portable_decision_trace_digest(
 ) -> PyResult<String> {
     let canonical = canonicalize_portable_decisions_json(records_json, max_decisions)?;
     Ok(format!("{:x}", Sha256::digest(canonical.as_bytes())))
+}
+
+#[pyfunction]
+fn sara_rust_build_profile() -> &'static str {
+    if cfg!(debug_assertions) { "debug" } else { "release" }
 }
 
 // =====================================================================
@@ -1081,6 +1099,169 @@ fn tokenize_sara_bpe_pretokens(
         .collect())
 }
 
+/// Applies one frozen SARA BPE snapshot to a bounded batch of pretoken lists.
+#[pyfunction]
+#[pyo3(signature = (
+    pretoken_batch,
+    vocab,
+    merges,
+    unknown_id,
+    max_sequences=1024,
+    max_total_pretokens=65536,
+    max_total_characters=1048576
+))]
+fn batch_tokenize_sara_bpe_pretokens(
+    pretoken_batch: Vec<Vec<String>>,
+    vocab: HashMap<String, usize>,
+    merges: Vec<(String, String)>,
+    unknown_id: usize,
+    max_sequences: usize,
+    max_total_pretokens: usize,
+    max_total_characters: usize,
+) -> PyResult<Vec<Vec<usize>>> {
+    if max_sequences == 0 || max_total_pretokens == 0 || max_total_characters == 0 {
+        return Err(value_error("batch limits must be positive"));
+    }
+    if pretoken_batch.len() > max_sequences {
+        return Err(value_error(&format!(
+            "sequence count exceeds max_sequences={max_sequences}"
+        )));
+    }
+    let mut total_pretokens = 0usize;
+    let mut total_characters = 0usize;
+    for pretokens in &pretoken_batch {
+        total_pretokens = total_pretokens
+            .checked_add(pretokens.len())
+            .ok_or_else(|| value_error("total pretoken count overflow"))?;
+        if total_pretokens > max_total_pretokens {
+            return Err(value_error(&format!(
+                "pretoken count exceeds max_total_pretokens={max_total_pretokens}"
+            )));
+        }
+        for pretoken in pretokens {
+            total_characters = total_characters
+                .checked_add(pretoken.chars().count())
+                .ok_or_else(|| value_error("total character count overflow"))?;
+            if total_characters > max_total_characters {
+                return Err(value_error(&format!(
+                    "character count exceeds max_total_characters={max_total_characters}"
+                )));
+            }
+        }
+    }
+    let mut merge_ranks = HashMap::with_capacity(merges.len());
+    for (rank, pair) in merges.into_iter().enumerate() {
+        if merge_ranks.insert(pair, rank).is_some() {
+            return Err(value_error("merges must not contain duplicate pairs"));
+        }
+    }
+    Ok(pretoken_batch
+        .iter()
+        .map(|pretokens| {
+            pretokens
+                .iter()
+                .flat_map(|pretoken| {
+                    tokenize_bpe_pretoken(pretoken, &vocab, &merge_ranks, unknown_id)
+                })
+                .collect()
+        })
+        .collect())
+}
+
+/// Immutable Rust-resident snapshot of one frozen SARA BPE contract.
+#[pyclass]
+struct FrozenSaraBpeTokenizer {
+    vocab: HashMap<String, usize>,
+    merge_ranks: HashMap<(String, String), usize>,
+    unknown_id: usize,
+}
+
+#[pymethods]
+impl FrozenSaraBpeTokenizer {
+    #[new]
+    fn new(
+        vocab: HashMap<String, usize>,
+        merges: Vec<(String, String)>,
+        unknown_id: usize,
+    ) -> PyResult<Self> {
+        if vocab.is_empty() {
+            return Err(value_error("vocab must not be empty"));
+        }
+        let mut merge_ranks = HashMap::with_capacity(merges.len());
+        for (rank, pair) in merges.into_iter().enumerate() {
+            if merge_ranks.insert(pair, rank).is_some() {
+                return Err(value_error("merges must not contain duplicate pairs"));
+            }
+        }
+        Ok(Self {
+            vocab,
+            merge_ranks,
+            unknown_id,
+        })
+    }
+
+    #[pyo3(signature = (
+        pretoken_batch,
+        max_sequences=1024,
+        max_total_pretokens=65536,
+        max_total_characters=1048576
+    ))]
+    fn batch_tokenize(
+        &self,
+        pretoken_batch: Vec<Vec<String>>,
+        max_sequences: usize,
+        max_total_pretokens: usize,
+        max_total_characters: usize,
+    ) -> PyResult<Vec<Vec<usize>>> {
+        if max_sequences == 0 || max_total_pretokens == 0 || max_total_characters == 0 {
+            return Err(value_error("batch limits must be positive"));
+        }
+        if pretoken_batch.len() > max_sequences {
+            return Err(value_error(&format!(
+                "sequence count exceeds max_sequences={max_sequences}"
+            )));
+        }
+        let mut total_pretokens = 0usize;
+        let mut total_characters = 0usize;
+        for pretokens in &pretoken_batch {
+            total_pretokens = total_pretokens
+                .checked_add(pretokens.len())
+                .ok_or_else(|| value_error("total pretoken count overflow"))?;
+            if total_pretokens > max_total_pretokens {
+                return Err(value_error(&format!(
+                    "pretoken count exceeds max_total_pretokens={max_total_pretokens}"
+                )));
+            }
+            for pretoken in pretokens {
+                total_characters = total_characters
+                    .checked_add(pretoken.chars().count())
+                    .ok_or_else(|| value_error("total character count overflow"))?;
+                if total_characters > max_total_characters {
+                    return Err(value_error(&format!(
+                        "character count exceeds max_total_characters={max_total_characters}"
+                    )));
+                }
+            }
+        }
+        Ok(pretoken_batch
+            .iter()
+            .map(|pretokens| {
+                pretokens
+                    .iter()
+                    .flat_map(|pretoken| {
+                        tokenize_bpe_pretoken(
+                            pretoken,
+                            &self.vocab,
+                            &self.merge_ranks,
+                            self.unknown_id,
+                        )
+                    })
+                    .collect()
+            })
+            .collect())
+    }
+}
+
 #[pymodule]
 fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calculate_sdr_overlap, m)?)?;
@@ -1089,16 +1270,19 @@ fn sara_rust_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(batch_tokens_to_sdr, m)?)?;
     m.add_function(wrap_pyfunction!(apply_homeostatic_scaling, m)?)?;
     m.add_function(wrap_pyfunction!(tokenize_sara_bpe_pretokens, m)?)?;
+    m.add_function(wrap_pyfunction!(batch_tokenize_sara_bpe_pretokens, m)?)?;
     m.add_function(wrap_pyfunction!(canonical_sparse_ir_json, m)?)?;
     m.add_function(wrap_pyfunction!(canonical_sparse_ir_replay_digest, m)?)?;
     m.add_function(wrap_pyfunction!(canonical_portable_decision_trace_json, m)?)?;
     m.add_function(wrap_pyfunction!(portable_decision_trace_digest, m)?)?;
+    m.add_function(wrap_pyfunction!(sara_rust_build_profile, m)?)?;
     m.add_class::<SpikeEngine>()?;
     m.add_class::<SpikeWTARouter>()?;
     m.add_class::<LIFNetwork>()?;
     m.add_class::<CausalSynapses>()?;
     m.add_class::<ScalableSDRMemory>()?;
     m.add_class::<RewardModulatedSTDP>()?;
+    m.add_class::<FrozenSaraBpeTokenizer>()?;
     Ok(())
 }
 
@@ -1263,6 +1447,71 @@ mod tests {
             1,
         );
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn batched_scalar_bpe_matches_single_reference_and_enforces_limits() {
+        let vocab = HashMap::from([
+            ("<unk>".to_string(), 1usize),
+            ("a".to_string(), 7usize),
+            ("b".to_string(), 8usize),
+            ("ab".to_string(), 9usize),
+        ]);
+        let merges = vec![("a".to_string(), "b".to_string())];
+        let output = batch_tokenize_sara_bpe_pretokens(
+            vec![vec!["abab".to_string()], vec!["x".to_string()]],
+            vocab.clone(),
+            merges.clone(),
+            1,
+            2,
+            2,
+            5,
+        )
+        .unwrap();
+        assert_eq!(output, vec![vec![9, 9], vec![1]]);
+        assert!(batch_tokenize_sara_bpe_pretokens(
+            vec![vec!["ab".to_string()], vec!["ab".to_string()]],
+            vocab,
+            merges,
+            1,
+            1,
+            2,
+            4,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn frozen_bpe_snapshot_reuses_contract_and_rejects_invalid_construction() {
+        let vocab = HashMap::from([
+            ("<unk>".to_string(), 1usize),
+            ("a".to_string(), 7usize),
+            ("b".to_string(), 8usize),
+            ("ab".to_string(), 9usize),
+        ]);
+        let snapshot = FrozenSaraBpeTokenizer::new(
+            vocab,
+            vec![("a".to_string(), "b".to_string())],
+            1,
+        )
+        .unwrap();
+        assert_eq!(
+            snapshot
+                .batch_tokenize(
+                    vec![vec!["abab".to_string()], vec!["x".to_string()]],
+                    2,
+                    2,
+                    5,
+                )
+                .unwrap(),
+            vec![vec![9, 9], vec![1]]
+        );
+        assert!(FrozenSaraBpeTokenizer::new(
+            HashMap::new(),
+            Vec::new(),
+            1,
+        )
+        .is_err());
     }
 
     #[test]

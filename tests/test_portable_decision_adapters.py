@@ -6,6 +6,7 @@ import pytest
 
 from sara_engine.edge.portable_decision_trace import (
     adapt_event_memory_admission,
+    adapt_event_memory_revision,
     adapt_predictive_feedback,
     adapt_risa_proposal,
     canonical_decision_json,
@@ -25,14 +26,22 @@ from sara_engine.risa.structural_interpolation import (
 )
 
 
-def _candidate(entry_id: str, *, contradicted: bool = False) -> EventStateCandidate:
+def _candidate(
+    entry_id: str,
+    *,
+    contradicted: bool = False,
+    source_ref: str | None = None,
+    source_revision: str = "revision-1",
+    time_segment: int = 1,
+) -> EventStateCandidate:
+    resolved_source_ref = source_ref or f"source:{entry_id}"
     receipt = issue_verification_receipt(
         verifier_id="portable-adapter-test",
         verifier_version="v1",
         decision="verified_fixture",
         evidence={"entry_id": entry_id},
-        source_refs=(f"source:{entry_id}",),
-        source_revision="revision-1",
+        source_refs=(resolved_source_ref,),
+        source_revision=source_revision,
         observed=True,
         source_backed=True,
         verified=True,
@@ -41,9 +50,9 @@ def _candidate(entry_id: str, *, contradicted: bool = False) -> EventStateCandid
     return EventStateCandidate(
         entry_id=entry_id,
         signature=(1, 3, 5),
-        source_ref=f"source:{entry_id}",
-        source_revision="revision-1",
-        time_segment=1,
+        source_ref=resolved_source_ref,
+        source_revision=source_revision,
+        time_segment=time_segment,
         own_latent_id=f"latent:{entry_id}",
         confidence=0.9,
         uncertainty=0.1,
@@ -132,3 +141,32 @@ def test_real_subsystem_outputs_adapt_to_portable_decisions():
     source = json.dumps(records, ensure_ascii=True, separators=(",", ":"))
     assert rust.canonical_portable_decision_trace_json(source) == canonical_decision_json(records)
     assert rust.portable_decision_trace_digest(source) == decision_trace_digest(records)
+
+
+def test_verified_revision_replacement_adapts_across_python_and_rust():
+    cache = VerifiedHierarchicalEventStateCache()
+    cache.admit(
+        _candidate(
+            "revision-v1",
+            source_ref="source:stable",
+            source_revision="r1",
+            time_segment=1,
+        )
+    )
+    result = cache.admit(
+        _candidate(
+            "revision-v2",
+            source_ref="source:stable",
+            source_revision="r2",
+            time_segment=2,
+        )
+    )
+    record = adapt_event_memory_revision(result, sequence=0)
+
+    assert result.decision == "replace_verified_revision"
+    assert decide(record) == "replace_revision"
+    assert cache.state_dict()["entries"][0]["source_revision"] == "r2"
+
+    rust = pytest.importorskip("sara_engine.sara_rust_core")
+    source = json.dumps([record], ensure_ascii=True, separators=(",", ":"))
+    assert rust.canonical_portable_decision_trace_json(source) == canonical_decision_json([record])
