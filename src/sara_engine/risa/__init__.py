@@ -54,6 +54,18 @@ from .structural_edit_transaction import (
     StructuralGraphSnapshot as StructuralGraphSnapshot,
     graph_digest as graph_digest,
 )
+from .structural_invariant import (
+    CanonicalTypedMotifStore as CanonicalTypedMotifStore,
+    MotifEdge as MotifEdge,
+    MotifMatchResult as MotifMatchResult,
+    MotifProposal as MotifProposal,
+    TypedMotifPattern as TypedMotifPattern,
+)
+from .structural_delta import (
+    CanonicalStructuralDeltaCodec as CanonicalStructuralDeltaCodec,
+    DeltaApplicationResult as DeltaApplicationResult,
+    canonical_digest as canonical_structural_digest,
+)
 from .causal_reasoning import (
     BoundedCausalReasoner as BoundedCausalReasoner,
     CausalEvidence as CausalEvidence,

@@ -1,11 +1,22 @@
 # Implemented Features
 
+## Phase 38 structural-delta preregistration
+
+- Immutable managed protocol for canonical `base + typed delta` reconstruction and transformation-memory evaluation.
+- Eleven ordered operators with preconditions, evidence, revision, inverse/rollback, tombstone, stale/missing/cyclic/budget failure contracts.
+- Six equal-resource arms, twenty-six case families, five seeds, bounded base selection and chains, complete MDL cost accounting, evaluator isolation, and one-attempt tuning.
+- Candidate codec, persistent delta storage, production snapshots, and durable RISA behavior remain unchanged and default-off.
+- Default-off canonical codec supporting all eleven registered typed operations, exact canonical materialization, digest validation, bounded operation/state checks, evidence-preserving removal tombstones, deterministic rollback receipts, stale/missing/corrupt/cyclic/budget fail-closed controls, and no durable mutation.
+- The frozen synthetic codec attempt is retained negative: valid reconstruction mechanics passed exactly, but malformed-control abstention reached only `0.5`; transformation sharing and production integration remain blocked.
+
 ## Phase 37 structural-invariant preregistration
 
 - Immutable, managed preregistration with a canonical protocol fingerprint.
 - Six frozen mechanism arms, fourteen structural case families, six binding-shuffle ablations, and five deterministic seeds.
 - Anonymous canonical role identity excluding node names and task labels, with direction, order, topology, context, evidence, revision, and expiry boundaries.
 - Fail-closed validation for leakage controls, sparse resource budgets, CPU-only execution, no backpropagation/matrix/GPU/external-model use, no durable graph mutation, and no benchmark-driven production promotion.
+- Default-off `CanonicalTypedMotifStore` with node-name-independent sparse topology signatures, evidence-linked provisional proposals, context-aware bounded matching, state/event accounting, and deterministic replay.
+- Frozen six-arm execution over fourteen evaluator-isolated cases. The first registered attempt is intentionally retained as a negative result because it failed novel-relation and held-out-transfer gates; it is not production-enabled.
 
 This document is the canonical list of completed SARA Engine features as of v1.1. It replaces the long completed-history section that previously lived in `doc/ROADMAP.md`.
 
