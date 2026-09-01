@@ -22,7 +22,8 @@ This repository uses fixed output locations. New code must not create files outs
 - Prefer using `src/sara_engine/utils/project_paths.py` for all new read/write paths.
 - When adding a new output path, validate it against the managed directories before writing.
 - SNN-based AI
-- Does not use backpropagation
+- Does not require global gradient backpropagation for correctness or normal runtime learning
+- May use bounded backward information such as branch-local activity history, bAP-like events, prediction error, outcome, reward, and neuromodulation, provided updates remain local, sparse, auditable, and do not require differentiating the whole network
 - Does not rely on matrix calculations
 - Does not rely on GPUs
 - Emphasizes accuracy and energy efficiency

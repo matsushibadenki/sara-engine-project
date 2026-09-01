@@ -91,7 +91,7 @@ The project should not chase dense ANN or LLM capability on their own terms. It 
 
 New work must follow [policy.md](policy.md):
 
-- No runtime dependency on backpropagation
+- No runtime dependency on global gradient backpropagation; bounded backward information and hierarchical local credit are allowed
 - No dense-matrix-first runtime design
 - No GPU requirement for correctness or normal operation
 - Managed outputs only under `data/`, `workspace/`, and `models/`

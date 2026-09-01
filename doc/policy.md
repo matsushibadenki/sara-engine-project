@@ -6,7 +6,12 @@ These constraints are research-shaping defaults, not untouchable dogma. If a cle
 
 ## Core Design Rules
 
-- Do not make runtime learning depend on backpropagation.
+- Do not make correctness or normal runtime learning depend on global gradient backpropagation, end-to-end differentiation, or storage of a whole-network backward graph.
+- Backward information is permitted and encouraged when bounded and auditable. Examples include branch-local activity history, bAP-like events, prediction-error or outcome events, global reward/modulatory scalars, replayed consequences, and source-linked correction signals.
+- A backward signal must not be described as a gradient unless it is mathematically a derivative. Local eligibility, temporal proximity, branch contribution, novelty, reward, and modulation may assign credit without computing a global differential gradient.
+- Prefer hierarchical local credit assignment: trace recently eligible branches, sub-branches, contacts, and synapses through explicit sparse structure, then apply local plasticity and structural-plasticity rules under fixed state/event budgets.
+- Treat learning as an internal distributed capability of each bounded unit, not only as an external optimizer. A unit may compute, retain recent eligibility, receive feedback/modulation, update local parameters, and propose structural change through the same sparse event contract.
+- Prefer algorithmic self-similarity over prescribed biological shape: the same bounded `local processing -> integration -> feedback -> plasticity` contract may recur at contact, branch, neuron, circuit, and module scales, while topology is allowed to emerge only through controlled growth and pruning.
 - Do not make dense matrix operations the primary runtime design.
 - Do not require GPUs for correctness or normal operation.
 - Prefer sparse event routing, local plasticity, STDP-style updates, homeostasis, replay, and bounded memory structures.
@@ -42,4 +47,4 @@ Research ideas may be stored under `doc/idea/`. Promote them into active impleme
 - A bounded runtime feature.
 - A managed artifact or release-gate signal.
 
-Ideas that require GPU-first kernels, dense matrix training as the core mechanism, or backpropagation-dependent runtime learning should remain research notes unless the project policy changes or the roadmap explicitly approves a bounded research exception because it materially improves the project's long-term objective.
+Ideas that require GPU-first kernels, dense matrix training as the core mechanism, or global-gradient-backpropagation-dependent runtime learning should remain research notes unless the project policy changes or the roadmap explicitly approves a bounded research exception because it materially improves the project's long-term objective. Bounded backward information and local credit propagation are policy-compatible when they satisfy the core rules above.

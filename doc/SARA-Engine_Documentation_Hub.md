@@ -6,7 +6,7 @@ This hub is the current entry point for the SARA Engine documents. It separates 
 
 SARA Engine is a CPU-first, SNN-based research and runtime project. The active implementation follows these constraints:
 
-- No runtime dependency on backpropagation.
+- No runtime dependency on global gradient backpropagation; bounded backward information and hierarchical local credit are allowed.
 - No dense-matrix-first design.
 - No GPU requirement.
 - Event-driven, sparse, biologically inspired mechanisms are preferred.

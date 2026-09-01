@@ -10,7 +10,7 @@ The current architecture has a good foundation. The strongest property is not an
 
 - CPU-first operation.
 - SNN-based sparse event processing.
-- No runtime dependency on backpropagation.
+- No runtime dependency on global gradient backpropagation; backward information may modulate bounded local eligibility and structural credit.
 - No GPU requirement for correctness or normal operation.
 - Bounded memory, managed artifacts, and release-gated validation.
 - Performance-per-energy treated as the primary objective, with accuracy and capability improvements accepted only when their runtime cost stays bounded.
@@ -24,7 +24,7 @@ The most important project target is the ratio between useful performance and en
 The long-term direction is to move closer to the human brain's operating style:
 
 - Sparse spikes instead of dense activation sweeps.
-- Local updates instead of global backpropagation.
+- Local updates driven by forward activity plus bounded backward information instead of mandatory global differential gradients.
 - Bounded working memory instead of unbounded context expansion.
 - Sleep/replay/consolidation during low-pressure windows.
 - Energy-aware routing, skipping, pruning, and temporal compression.

@@ -1,6 +1,6 @@
 # SARA Engine
 
-SARA (Spiking Architecture for Reasoning and Adaptation) Engine is a CPU-first research engine for sparse, event-driven intelligence. It explores how useful reasoning, continual memory, and adaptive behavior can be built from spikes, local state, structural relations, replay, and bounded verification rather than runtime backpropagation or a dense matrix-first architecture.
+SARA (Spiking Architecture for Reasoning and Adaptation) Engine is a CPU-first research engine for sparse, event-driven intelligence. It explores how useful reasoning, continual memory, and adaptive behavior can be built from spikes, local state, structural relations, replay, and bounded verification without requiring global gradient backpropagation or a dense matrix-first architecture.
 
 SARA is not currently a general replacement for ANN-based LLMs. Its practical scope is a local SNN research/runtime system with lightweight dialogue, sparse memory, predictive traces, structural reasoning experiments, and reproducible promotion gates.
 
@@ -13,7 +13,10 @@ The project is organized around one principle:
 This leads to the following design commitments:
 
 - **Sparse events are the common interface.** Modules exchange spikes, typed events, bounded state snapshots, routes, prediction errors, corrections, and audit records instead of unrestricted dense tensors.
-- **Runtime learning is local.** Production-oriented learning must not require backpropagation, GPU execution, or dense matrix sweeps. ANN and Transformer systems may be used as offline references or comparison baselines only.
+- **Runtime learning does not require global gradients.** Production-oriented learning may use bounded backward information—such as bAP-like events, outcome and prediction-error signals, reward/modulation, replayed consequences, and branch-local activity history—but must not require end-to-end differentiation, a whole-network backward graph, GPU execution, or dense matrix sweeps.
+- **Credit follows explicit activity and structure.** Candidate credit is assigned through recent local eligibility, temporal proximity, branch contribution, novelty, and outcome modulation. Backward information may select or modulate eligible branches without being treated as a numerical gradient.
+- **Learning lives inside the network.** A bounded unit computes, remembers recent activity, receives feedback, updates local state, and may propose structural change; learning is not assumed to be an external optimizer that periodically rewrites an otherwise passive network.
+- **The algorithm may be fractal; the shape is not prescribed.** Contacts, branches, neurons, circuits, and modules may reuse the same `local processing -> integration -> feedback -> plasticity` contract. A canopy-like topology must emerge from controlled use, growth, and pruning rather than being counted as success because it was designed in advance.
 - **Time is part of the representation.** Firing time, order, interval, phase, delay, fatigue, and short-lived state are potential computational resources rather than values to average away automatically.
 - **Knowledge is not identical to weights.** Experiences, relations, provenance, revisions, contradictions, and evidence should survive changes in internal representation. Weights or effective interactions may be regenerated, cached, or revised from that state.
 - **Structure and parameters are complementary.** Connectivity determines possible computation; local strengths, delays, roles, and state tune it. The project does not assume that either topology or scalar weight alone is sufficient.
@@ -64,6 +67,21 @@ Structural validation may also begin below the level of a separate intelligent j
 
 Implemented and experimental learning paths include local STDP-family updates, reward modulation, predictive error traces, direct memory updates, structural plasticity, replay, and consolidation. Repetition-dependent memory work models the observation that repeated, spaced, and successfully retrieved experiences may become more stable, while contradictions and excessive repetition must not receive automatic reinforcement.
 
+The revised learning target is not “no information may travel backward.” It is:
+
+```text
+input event
+  -> local activity and neuron interaction
+  -> STDP + bAP-like branch event + bounded modulation
+  -> hierarchical local credit over recent eligible structure
+  -> local weight, delay, contact, branch, growth, or pruning update
+  -> next network state and event
+```
+
+SARA therefore distinguishes backward information from backward gradients. The research question is whether explicit sparse structure, temporal eligibility, and local modulation can approach the credit-assignment quality of global backpropagation without making global differential gradients mandatory.
+
+This problem is not solved. SARA treats the following as a falsifiable hypothesis: some SNN learning difficulty may come not only from spikes, but from reducing neurons to point operators and omitting dendritic hierarchy, local feedback, structural plasticity, recurrence, and multi-timescale credit memory. The project will test whether these mechanisms distribute the work that backpropagation performs centrally; it will not claim a solution until independent held-out tasks approach strong surrogate-gradient SNN and ANN/Transformer references under explicit resource accounting.
+
 Several biologically inspired ideas are intentionally isolated until evidence is stronger:
 
 - time-dependent effective interactions generated from recent spike state;
@@ -73,6 +91,8 @@ Several biologically inspired ideas are intentionally isolated until evidence is
 - explicit structure-plus-delta memory compared with differences derived from shared/non-shared active resources;
 - usage-driven anonymous latent structures and emergent hierarchies.
 - two-layer structural validation combining local replay dynamics with an explicit evidence and safety boundary.
+- hierarchical local credit assignment over dendritic and canopy structure using bounded backward information without mandatory global gradients.
+- multi-timescale delayed structural credit that connects short eligibility to replayable episodic evidence without unbounded history scans.
 
 These are research candidates, not descriptions of the production runtime.
 
@@ -104,7 +124,7 @@ Current high-level state:
 | [Done] | Phase 38 canonical codec evaluation | Valid reconstruction, digest, rollback, tombstone, evidence, replay, and resource gates reached `1.0`, but malformed abstention was `0.5`; the result is retained negative and transformation sharing remains unimplemented |
 | [Done] | Phase 30 temporal effective-interaction preregistration | Immutable protocol `564a1b3d…b37a` freezes four arms, thirteen timing/control families, finite temporal-state ranges, invalidation, equal budgets, five seeds, and one tuning attempt |
 | [Next] | Freeze and execute Phase 30 temporal controls | Build source-/generator-disjoint histories and evaluator-only timing labels, then verify state-only and bounded-cache replay/invalidation before Phase 39 registration |
-| [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, anonymous local reuse, dynamical validation, structural factorization/compositional search, predictive cross-modal structure boundaries, and canonical one-step state learning with rollout-drift recovery | Must follow the dependency and preregistration order in the roadmap; one-step state targets require Phase 27 replay equivalence and tactile claims require separate independent evidence |
+| [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, anonymous local reuse, dynamical validation, structural factorization/compositional search, predictive cross-modal structure boundaries, canonical one-step state learning, recursive sparse canopy routing, hierarchical local credit assignment, and multi-timescale delayed structural credit | Global gradient backpropagation is not required, but bounded backward information is allowed; long-delay credit requires bounded episodic anchors and targeted replay after the Phase 31/43/45 controls |
 | [Later] | Physical energy claims | Proxy metrics are not joule measurements; reopening requires an explicit operator decision |
 
 For the authoritative status, dependencies, negative results, and acceptance gates, see [doc/ROADMAP_NEXT_LEVEL.md](doc/ROADMAP_NEXT_LEVEL.md).

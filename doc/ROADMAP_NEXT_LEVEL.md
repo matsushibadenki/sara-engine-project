@@ -30,7 +30,9 @@ observe
 
 ## Non-Negotiable Boundaries
 
-- Runtime learning remains backpropagation-free, sparse-event-first, CPU-first, and bounded-state.
+- Correctness and normal runtime learning must not require global gradient backpropagation, end-to-end differentiation, or a stored whole-network backward graph. Runtime learning remains sparse-event-first, CPU-first, and bounded-state.
+- Bounded backward information is allowed: bAP-like branch events, recent eligibility/activity traces, prediction error, outcome, reward or neuromodulatory scalars, and replayed consequences may flow to explicit local structures. These signals must not be called gradients unless they are mathematical derivatives.
+- Credit assignment should be tested through local temporal eligibility and explicit hierarchical structure before any global-gradient exception: backward information selects or modulates eligible branches, while each synapse/contact/branch updates from locally available state under fixed event and byte budgets.
 - Durable knowledge requires observed evidence, provenance, verification, contradiction checks, and Event Memory admission.
 - Structural proposals never mutate durable graph state directly.
 - Prediction error is not treated as a numeric gradient; it becomes an auditable typed edit proposal.
@@ -1402,6 +1404,160 @@ Compare seven frozen equal-history and equal-resource arms:
 - The event-gated arm reduces update/event work versus always-update while meeting frozen rare/delayed evidence, revision, contradiction, provenance, and abstention floors. Bounded episodic recall must improve a preregistered long-horizon case over no recall without exceeding fixed query, fan-out, state, and latency ceilings.
 - Non-Markov, missing, corrupt, capacity-exceeded, and distribution-shift cases abstain or degrade visibly rather than fabricating stable state. Production integration requires independent workloads, Phase 36 migration review where applicable, and explicit human approval.
 
+## Phase 44: Recursive Multi-Scale Sparse Canopy Routing
+
+**Goal:** test whether the same bounded local routing-and-processing rule can be reused recursively across multiple structural scales, so easy inputs stop on shallow paths, difficult or novel inputs recruit deeper or cross-linked paths, and new reusable branches can be proposed without converting SARA into a fixed taxonomy, dense MoE, or matrix-based Transformer.
+
+### Evidence Boundary
+
+- [FractalNet](https://arxiv.org/abs/1605.07648) provides evidence that a self-similar macro-architecture can contain interacting subpaths of different lengths and support shallow-to-deep behavior. It does not establish language-model, SNN, RISA, structural-growth, or energy-efficiency gains.
+- [Mixture-of-Depths](https://arxiv.org/abs/2404.02258) provides evidence that token-level routing can allocate different compute depths under a fixed compute budget. Its learned dense router and capacity-constrained Top-k mechanism are comparison baselines, not SARA's presumed optimum.
+- SARA adopts only the testable abstraction: repeat one local event-driven rule across scales, allow bounded early exit and sparse cross-links, and evaluate whether useful route depth and branch reuse emerge. Backpropagation, dense matrices, GPU execution, Transformer blocks, and published benchmark gains remain out of scope.
+
+### Research Hypothesis
+
+- Represent a route as a bounded sparse graph of reusable local resources rather than a human-authored subject tree. Each active resource applies the same scale-independent cycle: `observe -> compete/route -> update local state -> emit or stop`.
+- The desired fractal property is algorithmic, not geometric. The same bounded `local processing -> integration -> feedback -> plasticity` contract should be reusable at contact, branch, neuron, circuit, and module scales; no acceptance metric may reward visual tree similarity or a topology authored to resemble biology.
+- Start the growth arm from the smallest preregistered seed that can solve the control task. Canopy depth, branching, and cross-links must arise from local credited use under a global resource envelope, not from initializing the target hierarchy and merely tuning it.
+- A parent may activate zero or more children under a frozen event/state budget. Variable-cardinality routing is the candidate mechanism; fixed Top-k is retained as a controlled baseline because it can confound useful specialization with forced capacity use.
+- Depth is an observed consequence of local uncertainty, prediction error, novelty, conflict, or unresolved structure, not an evaluator label or a post-hoc difficulty annotation. Early exit must preserve calibrated abstention and cannot simply truncate unresolved cases.
+- Cross-links may connect structurally reusable resources across branches, but their creation, reinforcement, pruning, and invalidation must be local, bounded, provenance-linked, deterministic, and reversible. A proposed branch remains sandboxed until replay and contradiction checks pass.
+- Structural growth is tested as provisional resource allocation, not durable knowledge creation. Phase 39 must first show anonymous local reuse; Phase 32/35 supply fixed-boundary, depth, cardinality, and emergent-field controls; Phase 30 supplies temporal-state controls.
+
+### [Later]
+
+- Begin only after Phase 30 temporal controls and Phase 32 fixed/variable-cardinality depth-routing controls execute, and after Phase 39 demonstrates anonymous reuse independently of explicit motif labels. Use Phase 35 results when available to distinguish recursive scale reuse from merely overlapping expert fields.
+- Preregister the local rule, maximum depth, branch and cross-link budgets, early-exit signal, growth/pruning thresholds, protection for rare evidence, deterministic tie rules, histories, splits, seeds, tuning attempts, and stop conditions before implementing the canopy candidate.
+- Keep all canopy routing, growth, and pruning default-off. It may not mutate production RISA/Event Memory, replace canonical verification, or claim self-evolution without Phase 36 migration and explicit human approval.
+
+### Minimum Experiment
+
+Compare seven equal-history, equal-total-state, equal-event, and equal-tuning-budget arms:
+
+1. flat sparse local routing with no hierarchy;
+2. a fixed human-authored hierarchy with the same resources;
+3. fixed-capacity Mixture-of-Depths-style Top-k depth routing;
+4. recursive variable-cardinality canopy routing with no cross-links or growth;
+5. a minimal-seed network using scale-specific local rules and the same growth budget;
+6. the intact minimal-seed bounded canopy using one scale-reused rule with sparse cross-links and provisional growth/pruning;
+7. the intact arm with scale identity, parent-child links, cross-links, temporal order, exit signals, or reuse assignments canonically shuffled.
+
+- Use source-, time-, and structural-family-disjoint histories containing easy and difficult cases, staged specialization, cross-domain structural reuse, novel compositions, contradictions, reversals, rare knowledge, noisy cues, distribution shifts, and deliberately insufficient budgets. Difficulty labels are evaluator-only.
+- Report held-out decision accuracy and abstention, early-exit calibration, route depth and event cost by case family, compute-depth correlation, path overlap, cross-domain reuse, branch/cross-link growth and pruning, dead-branch and dominant-branch rates, catastrophic interference, rare-evidence retention, revision recovery, state bytes, fan-out, CPU latency, and deterministic replay.
+- Include matched no-growth and no-cross-link ablations plus an over-budget diagnostic. The latter can reveal a capacity limit but cannot satisfy acceptance.
+
+### Failure Conditions
+
+- Reject the candidate if gains disappear under equal total resources, arise from extra depth/capacity/tuning, depend on task/domain/difficulty labels, store one branch per example, require a fixed human taxonomy or biologically shaped initialization, or use global/all-pairs route search.
+- Reject it if all inputs take effectively the same path, shallow exit confidently truncates unresolved evidence, fixed Top-k alone explains the result, branches collapse into one dominant route, dead branches accumulate, or uncontrolled cross-links make provenance and invalidation non-local.
+- Reject growth/pruning if revisions cannot demote obsolete paths, rare protected knowledge is erased, contradictory branches are silently merged, resource use grows with the full memory store, or replay cannot reconstruct each routing and structural decision.
+- Reject any implementation requiring backpropagation, dense matrices or embeddings, GPU execution, an online Transformer router, evaluator labels at inference, or more state/events/tuning trials than its controls. A positive result is not evidence of LLM parity, autonomous self-evolution, human-like concepts, or measured energy efficiency.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and independent source/time/structural-family splits, the intact canopy improves a frozen held-out quality-versus-event metric over flat, fixed-hierarchy, fixed Top-k, no-growth/no-cross-link, and shuffled controls under the same total resource envelope.
+- Route depth responds prospectively to frozen uncertainty/error/novelty signals, shallow cases exit earlier without losing calibrated accuracy or abstention, and difficult/novel cases receive additional bounded work without evaluator-label access.
+- At least one anonymous local resource is reused across independently sourced domains and scales; targeted removal must selectively remove its predicted benefit while leaving unrelated paths stable. Cross-links and new branches must add value beyond capacity alone.
+- Growth and pruning remain bounded, deterministic, provenance-linked, replayable, revision-sensitive, and safe for rare evidence at the longest registered horizon. Production use requires independent workloads, migration review, and explicit human approval.
+
+## Phase 45: Hierarchical Local Credit Assignment with Backward Information
+
+**Goal:** test whether bounded backward information can assign outcome credit through recently active dendritic and canopy structure with substantially better delayed and deep credit assignment than STDP/Hebbian learning alone, without requiring global differential gradients.
+
+### Claim Boundary
+
+- SNN learning difficulty is not considered solved. The testable hypothesis is that part of the difficulty attributed to spikes or local learning instead comes from point-neuron simplification and the removal of dendritic subunits, hierarchical eligibility, backward local feedback, recurrence, structural plasticity, and multi-timescale credit memory.
+- The candidate does not “replace Backprop” merely by sending reward backward through a tree. It must show correct causal attribution, delayed learning, joint-cause handling, reversal, and held-out outcome improvement beyond point-neuron and non-hierarchical local controls.
+- Strong surrogate-gradient SNN and ANN/Transformer results may be included as offline diagnostic references with matched task definitions and transparent resource differences. They are not runtime dependencies, and failing to approach them must be reported rather than hidden behind biological plausibility or event-cost claims.
+
+### Policy Boundary
+
+- “Backward” describes information direction, not a derivative. Permitted signals include soma outcome events, bAP-like branch notifications, prediction-error category and magnitude, success/failure, bounded global reward or neuromodulation, novelty, and replayed consequence.
+- No candidate may require differentiating an end-to-end loss through the network, maintaining an autograd tape, transporting exact downstream derivatives, symmetric forward/backward weights, BPTT, surrogate gradients, or GPU execution.
+- Global reward/modulation may be broadcast, but synaptic change must require a locally stored eligibility trace and explicit structural membership. A reward alone cannot update every active connection.
+
+### Research Hypothesis
+
+- During forward activity, each contact records a bounded decaying eligibility trace containing activation time, order, branch identity, coincidence, local prediction contribution, novelty, and provenance. Parent branches retain only bounded aggregate child evidence.
+- When the soma or a downstream verified outcome emits backward information, credit is routed through the explicit hierarchy from recently contributing branches to sub-branches and contacts. Routing uses activity and structural traces, not a numerical chain-rule derivative.
+- Freeze an initial local rule of the form `credit = eligibility × temporal proximity × branch contribution × outcome modulation × novelty`, with signed success/failure modulation, normalization, saturation, and abstention when contribution is ambiguous. Do not tune a hidden scalar blend after observing held-out results.
+- Apply credit to bounded local weight, delay, short-term state, contact selection, and synaptic tags first. Branch growth, cross-link formation, and pruning are separate slow-timescale actions that require repeated credited evidence, homeostatic budgets, replay validation, contradiction handling, and reversible provenance.
+- The hierarchy may accelerate attribution but must not force one winner. Competing or jointly necessary branches may share calibrated credit; counterfactual branch suppression and targeted replay must test whether assigned credit is causal rather than merely correlated.
+
+### [Later]
+
+- Begin after Phase 33 provides branch/contact controls and Phase 44 freezes canopy topology, path, growth, and pruning controls. Use Phase 31 consolidation tags and Phase 40 dynamical validation when available rather than creating parallel stability systems.
+- Preregister all trace fields, decay windows, backward-event types, credit formula, ambiguity/abstention rule, normalization, structural update schedule, budgets, seeds, tuning attempts, causal interventions, and stop conditions before implementing a new learner.
+- Keep backward events and structural updates sandboxed, default-off, deterministic, and auditable. Passing an observed-only benchmark cannot authorize production topology mutation or claim biological equivalence.
+
+### Minimum Experiment
+
+Compare eight equal-forward-history, equal-state, equal-event, and equal-tuning-budget local arms:
+
+1. fixed network with no learning;
+2. point-neuron local Hebbian/STDP learning only;
+3. dendritic local Hebbian/STDP with identical total contacts but no hierarchical credit;
+4. point-neuron reward-modulated STDP with a global scalar;
+5. flat eligibility-trace credit without branch structure;
+6. hierarchical branch-to-contact credit with temporal eligibility;
+7. the intact hierarchical arm plus slow bounded growth/pruning;
+8. intact arms with branch identity, activity history, event time, outcome sign, eligibility, or parent-child paths canonically shuffled.
+
+- Include delayed rewards, deep paths, jointly necessary branches, distractor activity, branch competition, repeated success, explicit failure, novelty, reversals, contradictions, rare causal paths, misleading correlations, variable delays, missing outcome, and structurally identical cases with different causal interventions.
+- Where feasible, include two separately reported offline diagnostic references: a surrogate-gradient/BPTT SNN and an ANN or Transformer appropriate to the frozen task. Match forward capacity where meaningful, disclose optimizer and hardware advantages, and never use either model to generate candidate-runtime labels, routes, traces, or topology. These references cannot satisfy acceptance for the local mechanism.
+- Report causal-credit precision/recall, signed update accuracy, delayed-credit retention, joint-cause allocation, distractor suppression, reversal recovery, topology precision, false growth/pruning, rare-path survival, held-out task quality, updates/events/state bytes, fan-out, CPU latency, and deterministic replay.
+
+### Failure Conditions
+
+- Reject the mechanism if it merely reinforces the most recent or strongest branch, broadcasts reward updates indiscriminately, cannot represent joint causes, silently assigns credit when evidence is ambiguous, or depends on evaluator labels or future events at inference.
+- Reject apparent improvement caused by extra state, events, depth, capacity, tuning, replay passes, or one trace/branch per example. Reject topology learning that grows without a fixed budget, prunes rare valid paths, cannot undo obsolete credit after reversal, or loses source-linked reconstruction.
+- Reject any path that computes or approximates an end-to-end chain-rule gradient as a mandatory runtime operation, stores a whole-network backward graph, uses BPTT/surrogate gradients, dense matrices, or GPUs. Local scalar prediction-error or derivative-like signals are allowed only when computed from locally available variables and reported precisely.
+- Do not claim “Backprop-level” credit assignment from correlation with an offline gradient. The candidate must improve causal interventions and held-out outcomes over local controls within its own bounded runtime.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and independent source/time/causal-structure splits, hierarchical credit improves frozen causal-credit and held-out outcome metrics over point-neuron STDP, dendritic STDP without hierarchy, reward-modulated STDP, flat eligibility, and shuffled controls under identical local budgets.
+- Credit must follow targeted causal interventions: removing or delaying a contributing branch changes its assigned credit predictably, while inactive distractors and unrelated branches remain stable. Joint causes receive non-zero bounded shares and ambiguous cases abstain.
+- Delayed success, failure, contradiction, and reversal update the correct eligible structures without overwriting rare protected paths. Growth/pruning must add benefit beyond weight/delay updates alone and remain bounded, reversible, provenance-linked, and deterministically replayable.
+- The offline global-gradient reference, when used, is reported only as a diagnostic gap. Promotion requires independent workloads, unchanged durable-memory verification, migration review for topology changes, and explicit human approval.
+
+## Phase 46: Multi-Timescale Delayed Structural Credit
+
+**Goal:** test whether short local eligibility can be connected to minutes-, sessions-, and long-horizon consequences through bounded hierarchical summaries and targeted replay, without retaining an unbounded computation graph or scanning all past activity.
+
+### Research Hypothesis
+
+- Separate credit state by timescale: fast contact eligibility, branch contribution summaries, episodic causal anchors, and consolidated structural tags. Each slower level stores fewer provenance-linked records and never fabricates detail discarded by a faster level.
+- A delayed verified outcome first updates still-live local eligibility. If that has expired, it may retrieve only a bounded set of causally plausible episodic anchors, replay their canonical event paths, and regenerate local eligibility before applying Phase 45 credit.
+- Event Memory stores compressed route/module/branch participation and evidence ranges, not a hidden full activation tape. Credit retrieval proceeds `outcome -> episodic anchors -> relevant modules -> relevant branches -> regenerated local eligibility`, with explicit uncertainty at every narrowing step.
+- Credit may cross neuron, circuit, and module boundaries only through typed sparse events carrying outcome, time range, route identity, provenance, uncertainty, and bounded modulation—not through an end-to-end derivative or an unrestricted broadcast update.
+- Repeated delayed evidence may consolidate a structural tag or protected path; contradiction, reversal, source invalidation, and counterfactual replay must weaken or quarantine it. Frequency alone is insufficient.
+
+### [Later]
+
+- Begin only after Phase 31 consolidation, Phase 43 bounded rollout/replay state, and Phase 45 local causal-credit controls are frozen. Reuse Event Memory and canonical replay rather than creating an unbounded training-history store.
+- Preregister timescale boundaries, decay and promotion rules, episodic anchor schema, retrieval fan-out, replay count, causal filters, ambiguity/abstention behavior, resource ceilings, seeds, tuning attempts, and maximum credit delay before implementation.
+- Keep delayed credit observed-only and default-off. It may not rewrite durable memory, autonomously reactivate arbitrary history, or trigger external actions.
+
+### Minimum Experiment
+
+Compare no learning, immediate-only Phase 45 credit, one flat long eligibility trace, bounded multi-timescale traces without replay, intact targeted replay, an unlimited-history diagnostic, and time/route/provenance/outcome-shuffled controls under equal accepted evidence and declared budgets.
+
+- Evaluate seconds-, minutes-, session-, and cross-session delays; distractor-rich intervals; multiple plausible causes; repeated and one-shot rare causes; delayed failure; reversal; contradiction; missing outcome; corrupted cues; source invalidation; and consequences requiring jointly separated events.
+- Report causal-credit precision/recall by delay, credit survival curve, false remote attribution, replay precision/abstention, joint-cause allocation, reversal recovery, rare-path retention, held-out outcome gain, retrieved anchors, replayed events, state bytes, CPU latency, and deterministic reconstruction.
+
+### Failure Conditions
+
+- Reject the mechanism if long-delay gains require a trace whose state grows with elapsed history, full-store scans, hidden future labels, exact episode IDs supplied by the evaluator, unlimited replay, or one persistent trace per training example.
+- Reject it if replay reinforces correlation without causal-intervention support, delayed reward contaminates unrelated recent activity, frequent paths erase rare valid causes, expired evidence is reconstructed with false certainty, or invalidated sources continue receiving credit.
+- Reject mandatory global-gradient backpropagation, BPTT, dense matrices, GPUs, or an online external teacher. The unlimited-history arm is diagnostic only and cannot pass acceptance.
+
+### Acceptance Gate
+
+- Across at least five preregistered seeds and independent source/time/causal-family splits, bounded targeted replay improves delayed causal-credit and held-out outcomes over immediate-only, flat-trace, no-replay, and shuffled controls while remaining below fixed state, fan-out, replay, event, and latency ceilings.
+- Targeted causal interventions selectively change the credited historical path; unrelated activity stays stable, ambiguous retrieval abstains, and contradiction/reversal/source invalidation deterministically demote affected credit.
+- The bounded mechanism must retain a preregistered fraction of the unlimited-history diagnostic's benefit at every accepted delay without cost growing with total history. Production consideration requires independent long-horizon workloads and explicit human approval.
+
 ## Immediate Execution Order
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
@@ -1446,6 +1602,9 @@ Compare seven frozen equal-history and equal-resource arms:
 40. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
 41. [Later] After independent Phase 23 text/vision/audio evidence and the Phase 37 canonical role schema are frozen, preregister the Phase 42 predictive cross-modal boundary experiment; do not add tactile claims until an independent tactile dataset and adapter pass their own gate.
 42. [Later] After Phase 27 cross-runtime canonical replay equivalence and independent Phase 22 revision histories are frozen, preregister the Phase 43 canonical one-step state-learning experiment; do not implement rollout correction or self-teaching before its state targets, leakage boundary, and bounded counterexample policy are immutable.
+43. [Later] After Phase 30 and Phase 32 controls execute and Phase 39 demonstrates anonymous local reuse, preregister the Phase 44 recursive multi-scale sparse canopy experiment; treat fixed Top-k as a comparison baseline and keep branch growth, pruning, and cross-links provisional and default-off.
+44. [Later] After Phase 33 branch/contact controls and Phase 44 canopy controls are frozen, preregister Phase 45 hierarchical local credit assignment; permit bounded backward information but do not require global differential gradients, BPTT, or a whole-network backward graph.
+45. [Later] After Phase 31 consolidation, Phase 43 bounded rollout/replay state, and Phase 45 local causal-credit controls are frozen, preregister Phase 46 multi-timescale delayed structural credit; keep retrieval/replay bounded and reject history-sized eligibility or global backward graphs.
 
 ## Required Managed Outputs
 
@@ -1552,6 +1711,18 @@ Compare seven frozen equal-history and equal-resource arms:
 - `workspace/evaluation/phase42_cross_modal_structure_preregistration.json`
 - `workspace/evaluation/phase42_cross_modal_structure_benchmark.json`
 - `workspace/evaluation/phase42_cross_modal_structure_ablation.json`
+- `data/processed/benchmark_fixtures/phase44_recursive_canopy_routing_cases.jsonl`
+- `workspace/evaluation/phase44_recursive_canopy_routing_preregistration.json`
+- `workspace/evaluation/phase44_recursive_canopy_routing_benchmark.json`
+- `workspace/evaluation/phase44_recursive_canopy_routing_ablation.json`
+- `data/processed/benchmark_fixtures/phase45_hierarchical_local_credit_cases.jsonl`
+- `workspace/evaluation/phase45_hierarchical_local_credit_preregistration.json`
+- `workspace/evaluation/phase45_hierarchical_local_credit_benchmark.json`
+- `workspace/evaluation/phase45_hierarchical_local_credit_ablation.json`
+- `data/processed/benchmark_fixtures/phase46_delayed_structural_credit_cases.jsonl`
+- `workspace/evaluation/phase46_delayed_structural_credit_preregistration.json`
+- `workspace/evaluation/phase46_delayed_structural_credit_benchmark.json`
+- `workspace/evaluation/phase46_delayed_structural_credit_ablation.json`
 
 ## Review Rule
 
