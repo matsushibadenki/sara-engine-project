@@ -478,8 +478,14 @@ g_ij(t) = f(
 - The intended benefit is preservation and reuse of temporal evidence, not conversion of the runtime into an ANN. ANN-like accuracy, wall-clock latency, event cost, temporal representation quality, and physical energy are separate claims and must be measured separately.
 - RISA may provide verified context for selecting eligible sparse relations, but unverified correlation, synchrony, or repeated co-activation cannot become a durable RISA relation through this cache.
 
-### [Later]
+### [Done]
 
+- Registered immutable experiment `phase30-temporal-effective-interaction-v1` before implementing the temporal cache candidate. Protocol fingerprint: `564a1b3d9092ebb50ce18540efb6ca420b5793d76a4cb8d46fa252a345d4b37a`.
+- The registration freezes four equal-budget arms, thirteen timing/control families, five seeds, timestamp resolution, bounded recent-event and cache state, finite interaction/excitation/fatigue/phase ranges, local reuse threshold, canonical replay order, invalidation rules, resource ceilings, one tuning attempt, and non-promotion boundaries.
+
+### [Next]
+
+- Freeze source-/temporal-generator-disjoint Phase 30 histories and evaluator-only timing labels, then implement the default-off recent-event state and local effective-interaction cache.
 - Reuse Phase 19 fixed/multi-timescale/liquid dynamics as the state-only controls instead of duplicating them; Phase 30 must prove that materializing a cache adds value beyond those temporal states.
 - Add a bounded recent-event state containing timestamp, order, interval, delay, phase bucket, excitation/fatigue, expiry, and provenance reference.
 - Materialize an effective interaction only after a local active-edge reuse threshold is met. Otherwise compute directly from temporal state so cache-construction cost cannot dominate one-shot events.
@@ -1105,7 +1111,7 @@ Compare six equal-source arms under separately reported storage and inference bu
 
 ### [Later]
 
-- Preregister Phase 39 after the Phase 30 temporal-state contract and the Phase 37 explicit-motif controls are frozen. Phase 39 is an alternative mechanism arm, not an automatic successor to explicit canonical matching.
+- Begin Phase 39 preregistration only after the registered Phase 30 temporal histories, state-only control, and deterministic replay/invalidation boundary are frozen and executable. Phase 37 explicit-motif controls are already frozen. Phase 39 is an alternative mechanism arm, not an automatic successor to explicit canonical matching.
 - Freeze input primitives, candidate-neighborhood construction, reuse/allocation thresholds, local update rules, homeostasis/fatigue/EI parameters, capacity and eviction, assembly observation rule, hierarchy limits, state/event/latency budgets, seeds, tuning attempts, and canonical replay order before implementing the candidate.
 - Use Phase 35 spatiotemporal fields only as a reusable control if Phase 35 passes independently. Do not transfer its expert-field result into a concept-emergence claim.
 - Keep anonymous units, assemblies, and optional human labels default-off and outside durable RISA state. Naming or interpreting a pattern is a read-only review action and cannot change its routing or evaluation result.
@@ -1432,13 +1438,14 @@ Compare seven frozen equal-history and equal-resource arms:
 32. [Done] Preregistered Phase 38 canonical structural-delta and transformation memory before implementing a codec or shared transformation store; protocol fingerprint `9dfafe9e…80dd`.
 33. [Done] Froze Phase 38 source/split and evaluator-isolated execution identities across all eleven operators and twenty-six registered case families; evidence remains registered synthetic control and production promotion is closed.
 34. [Done] Implemented and evaluated the default-off Phase 38 codec. Valid exact reconstruction, digest, rollback, tombstone, evidence, replay, and resource gates passed, but malformed-control abstention was `0.5`; the result is retained negative and transformation sharing was not executed.
-35. [Next] Preregister the Phase 39 anonymous local-reuse experiment against the frozen Phase 30 temporal contract and Phase 37 explicit-motif controls before implementing any unlabeled allocator, assembly observer, or emergent hierarchy candidate.
-36. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
-37. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
-38. [Done] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation and execute all 6,750 frozen conditions without retuning selectors or changing production paths; all registered gates passed within the six-proposition scope and `promotion_ready=false` remains fixed.
-39. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
-40. [Later] After independent Phase 23 text/vision/audio evidence and the Phase 37 canonical role schema are frozen, preregister the Phase 42 predictive cross-modal boundary experiment; do not add tactile claims until an independent tactile dataset and adapter pass their own gate.
-41. [Later] After Phase 27 cross-runtime canonical replay equivalence and independent Phase 22 revision histories are frozen, preregister the Phase 43 canonical one-step state-learning experiment; do not implement rollout correction or self-teaching before its state targets, leakage boundary, and bounded counterexample policy are immutable.
+35. [Next] Freeze Phase 30 source-/temporal-generator-disjoint histories and evaluator-only labels, then implement its state-only and bounded-cache controls with deterministic replay/invalidation traces.
+36. [Later] After Phase 30 histories and executable temporal controls are frozen, preregister Phase 39 anonymous local reuse against the existing Phase 37 explicit-motif controls.
+37. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
+38. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
+39. [Done] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation and execute all 6,750 frozen conditions without retuning selectors or changing production paths; all registered gates passed within the six-proposition scope and `promotion_ready=false` remains fixed.
+40. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
+41. [Later] After independent Phase 23 text/vision/audio evidence and the Phase 37 canonical role schema are frozen, preregister the Phase 42 predictive cross-modal boundary experiment; do not add tactile claims until an independent tactile dataset and adapter pass their own gate.
+42. [Later] After Phase 27 cross-runtime canonical replay equivalence and independent Phase 22 revision histories are frozen, preregister the Phase 43 canonical one-step state-learning experiment; do not implement rollout correction or self-teaching before its state targets, leakage boundary, and bounded counterexample policy are immutable.
 
 ## Required Managed Outputs
 

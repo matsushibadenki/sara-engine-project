@@ -1,5 +1,11 @@
 # Implemented Features
 
+## Phase 30 temporal effective-interaction preregistration
+
+- Immutable four-arm protocol comparing fixed sparse SNN, timing-removed history averaging, temporal state only, and bounded local effective-interaction cache.
+- Frozen timestamp/order/interval/delay/phase/excitation/fatigue/expiry/provenance fields, finite scalar ranges, local reuse threshold, invalidation contract, five seeds, equal budgets, one tuning attempt, and no physical-energy claim.
+- Candidate cache and production temporal behavior remain unimplemented and default-off; Phase 39 remains blocked until executable Phase 30 histories and controls are frozen.
+
 ## Phase 38 structural-delta preregistration
 
 - Immutable managed protocol for canonical `base + typed delta` reconstruction and transformation-memory evaluation.
