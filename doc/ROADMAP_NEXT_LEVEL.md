@@ -486,10 +486,15 @@ g_ij(t) = f(
 - The registration freezes four equal-budget arms, thirteen timing/control families, five seeds, timestamp resolution, bounded recent-event and cache state, finite interaction/excitation/fatigue/phase ranges, local reuse threshold, canonical replay order, invalidation rules, resource ceilings, one tuning attempt, and non-promotion boundaries.
 - Froze 130 deterministic source-/generator-disjoint histories covering all thirteen families, five replicate seeds, and separate train/evaluation partitions at exactly 256 events per case (33,280 events total). Candidate inputs and evaluator labels are stored separately; input digest is `39d28eb9…e36b`, evaluator-key digest is `a4f77c26…72d0`, and freeze fingerprint is `eed41072…0f17`.
 - Added fail-closed fixture validation for exact case/event coverage, source/generator isolation, evaluator-label absence, case identity, canonical digests, and tampering. The freeze generator and registration suite pass 15 focused tests.
+- Implemented all four default-off control runtimes over one shared bounded event contract: fixed sparse accumulation, timing-erased history averaging, finite temporal state, and temporal state with a local effective-interaction cache. The candidate uses deterministic LRU edge/cache eviction, direct computation below the frozen reuse threshold, finite excitation/fatigue/phase calculations, exact provenance-linked state, and no production or durable-knowledge mutation.
+- Added deterministic context-revision, contradiction, explicit-expiry, cache-expiry, cache-capacity, and active-edge-eviction traces. Across all 520 fixture/arm executions, maximum observed event cost was `960/4096`, state was `13,921/65,536` bytes, cache was `275/16,384` bytes, active edges were `64/64`, cached interactions were `2/32`, cache-arm hits totaled `26,880`, and non-cache controls built zero entries. These are conformance/resource observations, not accuracy or promotion evidence.
+- Executed all 520 frozen decisions before loading the evaluator key, then joined labels only through the hash-bound evaluator. Report digest is `bf560bb9…e2a5`; deterministic replay and every resource budget passed, with maximum recorded candidate CPU latency `1.089/50 ms`.
+- Retained the registered result as negative evidence: all four arms reached identical timing-required accuracy `0.8` and overall accuracy `0.846154`, so timing-sensitivity delta was `0.0` and neither cache superiority nor history-average degradation was demonstrated. The cache reused work (`cache_hit_rate=0.807692`, `useful_reuse_rate=0.833333`) but failed calibration `0.243084`, justified abstention `0.6`, revision recovery `18/8` events, stale-cache harm `0.333333/0.05`, and timing-perturbation abstention `0.5`.
+- Fixed `threshold_gate_passed=false`, `comparative_gate_passed=false`, `mechanism_gate_passed=false`, and `promotion_ready=false`. The one registered tuning attempt is consumed; the fixture, candidate, thresholds, and failed result must not be rewritten. Any repair requires a new experiment identity and must first address why timing-erased controls matched the candidate.
 
 ### [Next]
 
-- Implement the default-off recent-event state and four frozen control arms against the now-frozen evaluator-isolated histories.
+- Use the completed negative Phase 30 controls as the frozen temporal baseline for Phase 39. Do not promote or retune the temporal cache under this experiment identity.
 - Reuse Phase 19 fixed/multi-timescale/liquid dynamics as the state-only controls instead of duplicating them; Phase 30 must prove that materializing a cache adds value beyond those temporal states.
 - Add a bounded recent-event state containing timestamp, order, interval, delay, phase bucket, excitation/fatigue, expiry, and provenance reference.
 - Materialize an effective interaction only after a local active-edge reuse threshold is met. Otherwise compute directly from temporal state so cache-construction cost cannot dominate one-shot events.
@@ -1113,10 +1118,18 @@ Compare six equal-source arms under separately reported storage and inference bu
 - Anonymous pattern IDs such as `latent:3817` need not receive a human semantic name. They must still be auditable through supporting/counterexample event references, activation and allocation traces, revision history, ablation effect, uncertainty, expiry, and resource cost.
 - Human-designed primitives remain a possible inductive bias and must be reported. A system using typed time, causal, role, or spatial events may discover unnamed combinations of those primitives, but it may not claim completely assumption-free structure discovery.
 
+### [Done]
+
+- Registered immutable experiment `phase39-anonymous-local-reuse-v1` before implementing any anonymous unit, assembly, hierarchy, or reuse candidate. Protocol fingerprint: `5dfecedc4dfa239bb3a37c12bfc59069c01a7b5cf450149842db4dc6a3abf57f`.
+- The protocol freezes six arms, twenty-one positive/negative case families, four canonical shuffles, five seeds, one tuning attempt, learner-visible and evaluator-only fields, bounded local-neighborhood construction, overlapping assemblies, homeostasis/fatigue/EI constraints, hierarchy/resource ceilings, fifteen thresholds, targeted ablation, and non-promotion boundaries.
+- Bound the completed Phase 30 and Phase 37 negative identities as controls rather than supporting evidence. Phase 30 report digest is `bf560bb9…e2a5`; Phase 37 report SHA-256 is `af1b5d4a…de6b9`. Their failed mechanism/promotion status cannot be reinterpreted as proof for Phase 39.
+- Added fail-closed validation for label leakage, global all-pairs search, predeclared hierarchy, prerequisite drift, resource/threshold omission, execution-policy drift, immutable replacement, and unmanaged outputs. Registration is idempotent and ten focused contract tests pass.
+- Froze 210 deterministic execution histories across all twenty-one families, five seeds, and separate train/evaluation partitions at exactly 256 events per case (53,760 events total). Candidate inputs contain only opaque case/event identities and registered local fields; partition, case family, seed, generator/source identity, hidden factors, expected outcome, human names, task labels, and offline-cluster IDs are physically confined to the evaluator key.
+- Input digest is `15a93686…8d953`, evaluator-key digest is `821670a3…6f08`, and freeze fingerprint is `7eb5ba8b…8c7d4`. Source and hidden-generator identities are disjoint across partitions, every registered evaluator field is absent from candidate inputs, and deterministic generation/tamper/leakage checks pass sixteen focused fixture/preregistration tests.
+
 ### [Later]
 
-- Begin Phase 39 preregistration only after the registered Phase 30 temporal histories, state-only control, and deterministic replay/invalidation boundary are frozen and executable. Phase 37 explicit-motif controls are already frozen. Phase 39 is an alternative mechanism arm, not an automatic successor to explicit canonical matching.
-- Freeze input primitives, candidate-neighborhood construction, reuse/allocation thresholds, local update rules, homeostasis/fatigue/EI parameters, capacity and eviction, assembly observation rule, hierarchy limits, state/event/latency budgets, seeds, tuning attempts, and canonical replay order before implementing the candidate.
+- Implement the bounded local-neighborhood, reuse/allocation, homeostasis/fatigue/EI, overlap, evidence, expiry, and deterministic replay controls exactly against the frozen candidate inputs.
 - Use Phase 35 spatiotemporal fields only as a reusable control if Phase 35 passes independently. Do not transfer its expert-field result into a concept-emergence claim.
 - Keep anonymous units, assemblies, and optional human labels default-off and outside durable RISA state. Naming or interpreting a pattern is a read-only review action and cannot change its routing or evaluation result.
 
@@ -1597,17 +1610,20 @@ Compare no learning, immediate-only Phase 45 credit, one flat long eligibility t
 33. [Done] Froze Phase 38 source/split and evaluator-isolated execution identities across all eleven operators and twenty-six registered case families; evidence remains registered synthetic control and production promotion is closed.
 34. [Done] Implemented and evaluated the default-off Phase 38 codec. Valid exact reconstruction, digest, rollback, tombstone, evidence, replay, and resource gates passed, but malformed-control abstention was `0.5`; the result is retained negative and transformation sharing was not executed.
 35. [Done] Freeze 130 Phase 30 source-/temporal-generator-disjoint histories and evaluator-only labels with exact canonical digests, 33,280 total events, and fail-closed tamper/isolation tests.
-36. [Next] Implement Phase 30 fixed, history-averaged, temporal-state-only, and bounded-cache controls with deterministic replay and exact invalidation traces.
-37. [Later] After Phase 30 histories and executable temporal controls are frozen, preregister Phase 39 anonymous local reuse against the existing Phase 37 explicit-motif controls.
-38. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
-39. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
-40. [Done] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation and execute all 6,750 frozen conditions without retuning selectors or changing production paths; all registered gates passed within the six-proposition scope and `promotion_ready=false` remains fixed.
-41. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
-42. [Later] After independent Phase 23 text/vision/audio evidence and the Phase 37 canonical role schema are frozen, preregister the Phase 42 predictive cross-modal boundary experiment; do not add tactile claims until an independent tactile dataset and adapter pass their own gate.
-43. [Later] After Phase 27 cross-runtime canonical replay equivalence and independent Phase 22 revision histories are frozen, preregister the Phase 43 canonical one-step state-learning experiment; do not implement rollout correction or self-teaching before its state targets, leakage boundary, and bounded counterexample policy are immutable.
-44. [Later] After Phase 30 and Phase 32 controls execute and Phase 39 demonstrates anonymous local reuse, preregister the Phase 44 recursive multi-scale sparse canopy experiment; treat fixed Top-k as a comparison baseline and keep branch growth, pruning, and cross-links provisional and default-off.
-45. [Later] After Phase 33 branch/contact controls and Phase 44 canopy controls are frozen, preregister Phase 45 hierarchical local credit assignment; permit bounded backward information but do not require global differential gradients, BPTT, or a whole-network backward graph.
-46. [Later] After Phase 31 consolidation, Phase 43 bounded rollout/replay state, and Phase 45 local causal-credit controls are frozen, preregister Phase 46 multi-timescale delayed structural credit; keep retrieval/replay bounded and reject history-sized eligibility or global backward graphs.
+36. [Done] Implement Phase 30 fixed, history-averaged, temporal-state-only, and bounded-cache controls with deterministic replay, exact invalidation traces, and full 520-run resource conformance.
+37. [Done] Execute all 520 evaluator-isolated Phase 30 decisions; retain the passed resource/replay gate and failed threshold/comparative/mechanism gates as immutable negative evidence with `promotion_ready=false`.
+38. [Done] Preregister Phase 39 anonymous local reuse against the completed negative Phase 30 and Phase 37 controls; protocol fingerprint `5dfecedc…bf57f` freezes labels, six arms, twenty-one families, four shuffles, five seeds, budgets, and one tuning attempt.
+39. [Done] Freeze 210 Phase 39 source-/hidden-generator-disjoint histories and evaluator-only keys with 53,760 events, zero registered evaluator fields in candidate inputs, and freeze fingerprint `7eb5ba8b…8c7d4`.
+40. [Next] Implement Phase 39 bounded anonymous units, local candidate neighborhoods, reuse/allocation, homeostasis/fatigue/EI, overlapping assemblies, and deterministic evidence/revision traces against the frozen inputs.
+41. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
+42. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
+43. [Done] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation and execute all 6,750 frozen conditions without retuning selectors or changing production paths; all registered gates passed within the six-proposition scope and `promotion_ready=false` remains fixed.
+44. [Later] After Phase 37 canonical invariants and Phase 38 reconstructible transformations pass, preregister the Phase 41 explicit structural-factorization experiment before implementing any factor dictionary or compositional solver; add anonymous factors only after Phase 39 passes independently.
+45. [Later] After independent Phase 23 text/vision/audio evidence and the Phase 37 canonical role schema are frozen, preregister the Phase 42 predictive cross-modal boundary experiment; do not add tactile claims until an independent tactile dataset and adapter pass their own gate.
+46. [Later] After Phase 27 cross-runtime canonical replay equivalence and independent Phase 22 revision histories are frozen, preregister the Phase 43 canonical one-step state-learning experiment; do not implement rollout correction or self-teaching before its state targets, leakage boundary, and bounded counterexample policy are immutable.
+47. [Later] After Phase 30 and Phase 32 controls execute and Phase 39 demonstrates anonymous local reuse, preregister the Phase 44 recursive multi-scale sparse canopy experiment; treat fixed Top-k as a comparison baseline and keep branch growth, pruning, and cross-links provisional and default-off.
+48. [Later] After Phase 33 branch/contact controls and Phase 44 canopy controls are frozen, preregister Phase 45 hierarchical local credit assignment; permit bounded backward information but do not require global differential gradients, BPTT, or a whole-network backward graph.
+49. [Later] After Phase 31 consolidation, Phase 43 bounded rollout/replay state, and Phase 45 local causal-credit controls are frozen, preregister Phase 46 multi-timescale delayed structural credit; keep retrieval/replay bounded and reject history-sized eligibility or global backward graphs.
 
 ## Required Managed Outputs
 
@@ -1634,6 +1650,7 @@ Compare no learning, immediate-only Phase 45 credit, one flat long eligibility t
 - `data/processed/benchmark_fixtures/phase30_temporal_effective_interaction_cases.jsonl`
 - `data/processed/benchmark_fixtures/phase30_temporal_effective_interaction_evaluator_key.jsonl`
 - `workspace/evaluation/phase30_temporal_effective_interaction_fixture_freeze.json`
+- `workspace/evaluation/phase30_temporal_effective_interaction_decisions.json`
 - `workspace/evaluation/phase30_temporal_effective_interaction_benchmark.json`
 - `data/processed/benchmark_fixtures/phase31_repetition_consolidation_cases.jsonl`
 - `workspace/evaluation/phase31_repetition_consolidation_benchmark.json`
@@ -1701,6 +1718,8 @@ Compare no learning, immediate-only Phase 45 credit, one flat long eligibility t
 - `workspace/evaluation/phase38_structural_delta_codec_conformance.json`
 - `workspace/evaluation/phase38_transformation_memory_benchmark.json`
 - `data/processed/benchmark_fixtures/phase39_anonymous_structure_reuse_cases.jsonl`
+- `data/processed/benchmark_fixtures/phase39_anonymous_structure_reuse_evaluator_key.jsonl`
+- `workspace/evaluation/phase39_anonymous_structure_reuse_fixture_freeze.json`
 - `workspace/evaluation/phase39_anonymous_structure_reuse_preregistration.json`
 - `workspace/evaluation/phase39_anonymous_structure_reuse_benchmark.json`
 - `workspace/evaluation/phase39_anonymous_structure_ablation.json`
