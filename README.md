@@ -98,6 +98,12 @@ These are research candidates, not descriptions of the production runtime.
 
 ## Current Status
 
+The September 5, 2026 design review prioritizes a minimal causal local-learning experiment before anonymous concepts or further architectural expansion. See the [active research queue](doc/ROADMAP_NEXT_LEVEL.md#research-focus-reset--2026-09-05). Existing release gates establish engineering readiness within their scope; SNN-specific generalization and physical energy superiority remain unproven.
+
+日本語: 次の重点は、局所学習とスパイク時刻が未知例の予測を改善する最小閉ループの実証です。
+
+简体中文: 下一步重点是验证最小闭环，证明局部学习和脉冲时序能够改善对未见样本的预测。
+
 Roadmap labels have strict meanings:
 
 - `[Done]` implemented in the current codebase, with the evidence stated by the relevant gate.
@@ -128,7 +134,9 @@ Current high-level state:
 | [Done] | Phase 30 evaluator-isolated execution | All four arms tied at timing accuracy `0.8`; resource/replay passed but calibration, abstention, revision, stale-cache, timing-sensitivity, and comparative gates failed. Immutable negative report `bf560bb9…e2a5`; promotion remains closed |
 | [Done] | Phase 39 anonymous local-reuse preregistration | Immutable protocol `5dfecedc…bf57f` freezes six arms, twenty-one case families, evaluator-only hidden factors, four shuffles, five seeds, one tuning attempt, local-neighborhood budgets, ablation, and collapse controls |
 | [Done] | Phase 39 execution-history freeze | 210 histories and 53,760 events are source-/hidden-generator-disjoint; candidate inputs exclude all registered evaluator fields. Freeze fingerprint `7eb5ba8b…8c7d4` |
-| [Next] | Implement Phase 39 anonymous local reuse | Add bounded local neighborhoods, reuse/allocation, homeostasis/fatigue/EI, overlapping assemblies, and deterministic evidence/revision traces without reading evaluator keys |
+| [Next] | R0: establish the causal-learning core contracts | Inventory prediction paths; correct inhibitory delivery and enforce budgets before traversal/allocation in the selected core |
+| [Later] | R1–R3: local temporal learning, independent usefulness, measured CPU scaling | Compare frozen learning, shuffled feedback, timing controls, and non-spiking baselines before expanding mechanisms |
+| [Later] | Implement Phase 39 anonymous local reuse | Preserve the frozen protocol; resume only after the R1 causal-learning decision and a documented residual need |
 | [Later] | Temporal effective interactions, emergent expert fields, architecture evolution, structural invariant/delta memory, anonymous local reuse, dynamical validation, structural factorization/compositional search, predictive cross-modal structure boundaries, canonical one-step state learning, recursive sparse canopy routing, hierarchical local credit assignment, and multi-timescale delayed structural credit | Global gradient backpropagation is not required, but bounded backward information is allowed; long-delay credit requires bounded episodic anchors and targeted replay after the Phase 31/43/45 controls |
 | [Later] | Physical energy claims | Proxy metrics are not joule measurements; reopening requires an explicit operator decision |
 

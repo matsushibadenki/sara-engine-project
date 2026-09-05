@@ -2,7 +2,22 @@
 
 This roadmap starts after the v1.1 release-hardening work. Completed implementation history is kept in [IMPLEMENTED_FEATURES.md](IMPLEMENTED_FEATURES.md). The archived pre-v1.1 roadmap is kept in [old/ROADMAP_v1_1_completion_archive.md](old/ROADMAP_v1_1_completion_archive.md).
 
-## Current Release Baseline
+## Research Priority — 2026-09-05
+
+The authoritative next-work queue is the [Research Focus Reset](ROADMAP_NEXT_LEVEL.md#research-focus-reset--2026-09-05). It supersedes unfinished phase-local priorities below while preserving completed experiments and their negative results.
+
+- [Done] Audited representative runtime, local-learning, memory/agent paths, recent stored experiment reports, and roadmap dependencies; identified gaps between SNN implementation, causal learning evidence, and resource-bound claims.
+- [Next] R0: establish the prediction-path inventory and correct inhibitory-delivery and pre-execution budget contracts in the selected learning core, with focused regression tests.
+- [Later] R1–R3: execute one controlled local temporal-learning experiment, validate an independent task, then optimize the demonstrated useful path.
+- [Later] Phase 39 anonymous reuse and Phases 40–46 architectural expansion; retain frozen protocols, but wait for the R1 causal-learning result. The minimal fixed-topology credit experiment does not depend on Phase 44.
+
+日本語: 機構追加より、SNNの局所学習が未知例の予測に寄与する実証を優先します。
+
+简体中文: 优先证明 SNN 局部学习对未见样本预测的贡献，再扩展架构。
+
+## Historical Release Baseline
+
+The counts below are historical release records, not a fresh full-suite result or evidence that SNN learning generalizes.
 
 SARA Engine v1.1 is release-ready by the active gates:
 

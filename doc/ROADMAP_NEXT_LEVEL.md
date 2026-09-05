@@ -10,7 +10,67 @@
 - [Next] Highest-priority unfinished work that can be executed internally.
 - [Later] Planned work that must wait for stronger evidence, independent data, or an explicit operator decision.
 
+## Research Focus Reset — 2026-09-05
+
+This section is the authoritative execution queue. It supersedes unfinished priorities in phase sections and the historical execution list below; it does not rewrite immutable protocols, consumed attempts, or recorded outcomes. The detailed review is stored under `workspace/reviews/snn_design_review_2026-09-05.md`.
+
+**Decision:** continue SARA as a CPU-first local temporal-learning and verified-memory research system. There is a plausible research opportunity, but the current evidence does not establish general language intelligence, anonymous concept formation, or a CPU energy advantage from spikes. Mechanism expansion is paused while the smallest causal learning loop is established.
+
+**Why change direction now:** the stored Phase 30 report gives all four arms timing-required accuracy `0.8` and timing-sensitivity delta `0.0`; the temporal candidate increases maximum event work from `448` to `960`. Phase 37 has zero novel-relation precision/recall and zero held-out domain transfer. Phase 38 preserves valid reconstruction but malformed-control abstention is `0.5`. These are informative negative results, not a reason to immediately add another layer of mechanisms. Phase 34's successful six-proposition workload supports its narrow adapter claim, not broad semantic learning.
+
+### Active Queue
+
+| Status | Step | Deliverable and decision |
+| --- | --- | --- |
+| [Done] | Evidence and design review | Identify causal-readout gaps, ineffective inhibitory delivery in one primitive pair, missing pre-work bounds, and the delayed priority of basic credit learning. Preserve existing negative reports. |
+| [Next] | R0 — Select and validate the minimal core | Produce a path inventory for CLI/SaraInference, SpikingLLM, StrongSpikingLM, SaraAgent and bot/root-agent routes. Select one existing sparse core, document ownership of state/updates/readout, and fix or exclude incompatible primitives with regression evidence. |
+| [Later] | R1 — Prove local temporal learning | After R0, run one fixed-topology experiment with local eligibility and bounded outcome modulation. Require both learning benefit and a causal temporal contribution on untouched test streams. |
+| [Later] | R2 — Establish independent usefulness | After R1, test one independently collected temporal task and correction/retention under drift. Retain source/session-disjoint evaluation and equal information access for controls. |
+| [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
+| [Later] | Resume selected advanced phases | Resume Phase 39 or a specific Phase 40–46 mechanism only when the earlier results identify a failure it can test. Preserve preregistration and use fresh evaluation identities where exposure requires them. |
+
+日本語: SNN研究として継続する価値はあります。ただし、まず「入力→時間状態→予測→遅延した結果→局所更新→次の予測」の効果を実証します。匿名概念や大規模な階層構造は、その実証後に必要性を判断します。
+
+简体中文: 项目值得继续作为 SNN 研究推进，但应先验证“输入→时间状态→预测→延迟结果→局部更新→下一次预测”的实际效果。匿名概念和大规模层级结构应等待这一步的证据。
+
+### R0: Core Correctness and Attribution
+
+- Inventory each public prediction path as learned spiking state, associative retrieval, explicit rules, or a mixture. Record which actual output depends on which component. Do not classify the entire repository from the name of one model.
+- `SaraInference.generate` currently feeds an optional LIF network but discards its return value; its normal token candidates come from `direct_map`, and its LIF-presence fallback samples prior tokens. Keep it as a retrieval/dialogue baseline until an explicit learned readout is evaluated.
+- `StrongSpikingLM.forward_step` does consume spiking context in a mixture with bigram/unigram memory. Measure this contribution separately instead of extending the SaraInference finding to all models.
+- Reproduce and repair or explicitly exclude the `Synapse` → `Neuron.add_input_to_branch` inhibitory contract: the former sends negative current while the latter accepts only positive current. Test combined excitation/inhibition and reduced firing, not just a negative manually assigned voltage. Keep biological STDP ordering conventions explicit and test the chosen sign rule before treating it as canonical.
+- `SparseDendriticFeedbackGate.update_local_links` currently creates all ordered pairs, and `gate` detects budget excess after traversal. `ThreeFactorLearningManager` keeps uncapped trace dictionaries and scans them on reward; its `time` argument does not decay traces by elapsed time. Introduce hard admission/trace/fan-out limits and explicit elapsed-time semantics in the selected core. Document whether other modules are legacy or separately bounded by callers.
+- Measure quiet-step work: sparse weights alone do not remove the full population loops in `CortexLayer.forward`. Choose lazy decay or bounded scheduled maintenance only after defining equivalent time semantics.
+- Exit only after focused tests cover signed current, timing/order, long gaps, trace expiry, saturation, adversarial event cardinality, replay, and independent per-instance state. Validate both actual work and reported counters; leave unrelated public APIs intact.
+
+### R1: One Minimal Causal Experiment
+
+Use existing sparse recurrence and local learning primitives with a simple bounded readout. Start with a fixed topology; defer branch growth, anonymous reuse, multi-contact expansion, and global routing. This is a minimal prerequisite to Phase 45, not execution or alteration of its full hierarchical protocol.
+
+Freeze the following before candidate tuning:
+
+1. **Task:** delayed cue-dependent next-event prediction on streams containing the same event multiset with different order/intervals, distractors, and a controlled rule reversal. Add a timing-irrelevant control task. Define the target and label availability explicitly; reveal outcomes only after prediction.
+2. **Splits:** separate development and untouched evaluation generators/sessions, sequences and revisions. Start with at least five training seeds and two held-out generator families, then use development variance to fix the independent episode count before evaluation. Report that count separately from repeated runs. New generator families establish controlled transfer, not real-world validity.
+3. **Arms:** intact local learner; identical frozen-plasticity network; shuffled outcome feedback with matched marginal distribution; timing-destroyed control preserving counts; bounded n-gram/transition memory; non-spiking temporal state baseline with equivalent history and scalar local updates. Keep encoder, target exposure, readout capacity and tuning allowance matched wherever applicable. Declare unavoidable differences.
+4. **Resources:** preregister numerical limits on input events, units, edges, active neighbors, eligibility entries/age, update work, readout work, replay, bytes and elapsed runtime. Budget total maintained state, not just scalar weights. Report each arm's actual resources as well as ceilings.
+5. **Metrics:** prediction quality, learning curve, correction latency, old-rule interference, coverage/error among answered cases, and work per correct prediction. Include abstentions and preprocessing costs in denominators. No template, direct-answer cache or teacher may silently supply the target.
+6. **Proposed decision threshold:** at least a 5 percentage-point gain over frozen learning and the strongest non-spiking control on the primary temporal task, with a paired 95% confidence interval above zero using independent episodes/sessions as the unit. Require improvement over shuffled feedback and loss of the claimed temporal gain under timing destruction, without a comparable loss on the timing-irrelevant task. Fix the interval method and multiplicity handling before evaluation. These are new proposed thresholds, not results or changes to earlier protocols.
+7. **Safety and cost:** all preregistered correctness and resource ceilings must pass. If accuracy ties, only a separately preregistered cost objective can qualify as a narrower result; do not change the goal after seeing test scores.
+
+Allow one bounded development search with a recorded configuration budget and one frozen evaluation per hypothesis version. If R1 fails, retain the negative result, identify whether encoding, plasticity, readout or capacity is limiting using development-only diagnostics, and permit one revised hypothesis with fresh evaluation data. If both fail to establish scoped benefit, stop architectural expansion and narrow the project to verified sparse memory/tooling while reassessing the SNN learner. This is a stop rule for this approach, not proof that all local-learning SNNs are impossible.
+
+### R2 and R3: Useful Deployment Evidence
+
+- Choose one timestamped sensor/log prediction task whose outcome can be observed independently. Event-driven data is the first working hypothesis; do not begin with open-ended LLM replacement. Report acquisition/preprocessing costs and train/test source, device/session, time, license, and duplicate checks.
+- Test chronological prediction-before-update, delayed labels, revision, distraction, and retention over 10/30/100 episode buckets. Store raw data under `data/raw/`, frozen processed splits under `data/processed/`, reports under `workspace/`, and final models under `models/` using managed path validation.
+- Compare at least three stream sizes and sparse/dense activity regimes with fixed resident-state ceilings. Include p50/p95 CPU latency, peak RSS, stored state, event work, index building, idle maintenance, verification and serialization. Record CPU, threads, interpreter/build, warmup and repeated process runs. Do not present dictionary-based computation as automatically efficient.
+- Preserve the verifier outside the learned predictor: local learning proposes; evidence-linked verification governs durable memory. Biological stability cannot substitute for correctness or provenance.
+- English, Japanese and Simplified Chinese interfaces and language-dependent evaluations remain required when the selected path handles language; translated copies are not independent source samples. Logs remain English.
+- Physical joule work remains `[Later]` under the existing meter policy. CPU timing and event proxies may guide optimization but cannot substantiate an energy-saving claim.
+
 ## Level-2 North Star
+
+The following remains the long-term direction; anonymous concept formation is not a prerequisite for the R0–R3 loop above.
 
 SARAを、次の閉ループを持つCPU-firstの構造型エージェントへ進化させます。
 
@@ -1573,7 +1633,9 @@ Compare no learning, immediate-only Phase 45 credit, one flat long eligibility t
 - Targeted causal interventions selectively change the credited historical path; unrelated activity stays stable, ambiguous retrieval abstains, and contradiction/reversal/source invalidation deterministically demote affected credit.
 - The bounded mechanism must retain a preregistered fraction of the unlimited-history diagnostic's benefit at every accepted delay without cost growing with total history. Production consideration requires independent long-horizon workloads and explicit human approval.
 
-## Immediate Execution Order
+## Historical Phase Execution Order
+
+The Research Focus Reset above controls new work. Unfinished entries here retain their phase-local dependencies for reference and must not bypass R0–R3.
 
 1. [Done] Implement bounded RISA subgraph composition and structural analogy.
 2. [Done] Build the observed-only 10/30/100-episode continual horizon benchmark.
@@ -1614,7 +1676,7 @@ Compare no learning, immediate-only Phase 45 credit, one flat long eligibility t
 37. [Done] Execute all 520 evaluator-isolated Phase 30 decisions; retain the passed resource/replay gate and failed threshold/comparative/mechanism gates as immutable negative evidence with `promotion_ready=false`.
 38. [Done] Preregister Phase 39 anonymous local reuse against the completed negative Phase 30 and Phase 37 controls; protocol fingerprint `5dfecedc…bf57f` freezes labels, six arms, twenty-one families, four shuffles, five seeds, budgets, and one tuning attempt.
 39. [Done] Freeze 210 Phase 39 source-/hidden-generator-disjoint histories and evaluator-only keys with 53,760 events, zero registered evaluator fields in candidate inputs, and freeze fingerprint `7eb5ba8b…8c7d4`.
-40. [Next] Implement Phase 39 bounded anonymous units, local candidate neighborhoods, reuse/allocation, homeostasis/fatigue/EI, overlapping assemblies, and deterministic evidence/revision traces against the frozen inputs.
+40. [Later] After the R1 causal-learning decision identifies a need for anonymous reuse, implement Phase 39 bounded anonymous units and local neighborhoods against its preserved protocol; recheck evaluation exposure before resuming.
 41. [Later] After the Phase 30 temporal-state contract and independent Phase 31 replay/consolidation evidence are frozen, preregister the Phase 40 dynamical structural-validation experiment before coupling replay, competition, inhibition, or homeostasis into a structural admission signal.
 42. [Done] Register the separate 270-case Phase 34 semantic delayed-recall workload against the passed hash-bound human-review gate before implementing any semantic adapter or selecting semantic thresholds.
 43. [Done] Implement the registered semantic adapter/evaluator with strict evaluator-label isolation and execute all 6,750 frozen conditions without retuning selectors or changing production paths; all registered gates passed within the six-proposition scope and `promotion_ready=false` remains fixed.
