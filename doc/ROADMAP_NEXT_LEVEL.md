@@ -27,6 +27,7 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 | [Later] | R1 — Prove local temporal learning | After R0, run one fixed-topology experiment with local eligibility and bounded outcome modulation. Require both learning benefit and a causal temporal contribution on untouched test streams. |
 | [Later] | R2 — Establish independent usefulness | After R1, test one independently collected temporal task and correction/retention under drift. Retain source/session-disjoint evaluation and equal information access for controls. |
 | [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
+| [Later] | C0–C3 — Verified concept condensation | After R1 establishes causal local learning, test whether diverse episodes can form unnamed reusable structures, survive counterexamples, earn an optional lexical binding, and improve a bounded second pass over relevant memory. |
 | [Later] | Resume selected advanced phases | Resume Phase 39 or a specific Phase 40–46 mechanism only when the earlier results identify a failure it can test. Preserve preregistration and use fresh evaluation identities where exposure requires them. |
 
 日本語: SNN研究として継続する価値はあります。ただし、まず「入力→時間状態→予測→遅延した結果→局所更新→次の予測」の効果を実証します。匿名概念や大規模な階層構造は、その実証後に必要性を判断します。
@@ -67,6 +68,32 @@ Allow one bounded development search with a recorded configuration budget and on
 - Preserve the verifier outside the learned predictor: local learning proposes; evidence-linked verification governs durable memory. Biological stability cannot substitute for correctness or provenance.
 - English, Japanese and Simplified Chinese interfaces and language-dependent evaluations remain required when the selected path handles language; translated copies are not independent source samples. Logs remain English.
 - Physical joule work remains `[Later]` under the existing meter policy. CPU timing and event proxies may guide optimization but cannot substantiate an energy-saving claim.
+
+### C0–C3: Verified Concept Condensation
+
+The dialogue-derived ideas of *undivided knowledge*, *conceptual pressure*, *semantic condensation*, *semantic germination*, *lexical horizon*, and *intelligence compounding* are adopted as operational hypotheses, not established laws of intelligence or human history. Their detailed mapping is recorded in [Concept Condensation Loop](idea/concept_condensation_loop.md).
+
+```text
+diverse episodes and expressions
+  -> bounded local recurrence and unexplained prediction residuals
+  -> anonymous provisional structure
+  -> prospective prediction, compression, contrast, and ablation checks
+  -> evidence-preserving structural promotion
+  -> optional multilingual lexical binding
+  -> bounded replay of relevant memories
+  -> new provisional relations and concepts
+```
+
+- [Done] Map the dialogue's concepts onto existing Phase 37–41 structures and preserve R0/R1 as prerequisites. The idea mainly extends Phase 39 anonymous reuse with a separate post-validation naming and bounded reinterpretation loop; it does not change the consumed Phase 39 protocol.
+- [Next] Complete R0. Concept condensation must not become another mechanism implemented before the prediction path and hard resource contracts are sound.
+- [Later] **C0 — Undivided evidence reservoir:** retain source-aware episodes, differing expressions, local event fragments, unresolved residuals, and counterexamples without forcing an early concept label. Surface paraphrases from one source may raise recurrence counts but count as one independence group.
+- [Later] **C1 — Conceptual-pressure trigger:** queue a candidate only when bounded local reuse occurs across independent contexts and either prospective prediction residual or fully accounted description cost indicates missing reusable structure. Frequency alone cannot trigger promotion.
+- [Later] **C2 — Anonymous condensation:** use Phase 39-style overlapping assemblies to create an opaque `latent:*` candidate with explicit bindings, differences, exceptions, provenance, revision, expiry, and resource cost. Require held-out benefit and targeted-ablation loss before treating it as a useful concept-like factor.
+- [Later] **C3 — Lexicalization and reinterpretation:** attach English, Japanese, and Simplified Chinese names and definitions only after structural validation. Store lexical bindings separately from the anonymous candidate so naming cannot change routing, evidence, or evaluation. Replay only a capped provenance-linked retrieval set; never rescan the entire corpus or allow a candidate to cite its own generated restatements as new evidence.
+
+The following gates are conjunctive and must not be collapsed into one tunable post-hoc score: independent-context support, fully accounted compression gain, held-out predictive or compositional gain, counterexample/rare-case preservation, targeted ablation effect, deterministic replay, and fixed state/event/CPU budgets. A candidate that merely shortens descriptions, attracts many paraphrases, or sounds novel remains provisional.
+
+Concept production has a hard per-window budget, maximum hierarchy depth, minimum lifetime before promotion, expiry, merge/split review, and a total retained-candidate ceiling. Derived text is marked with its parent candidate and cannot become independent support. A later concept may consume a verified earlier concept as a typed event, which creates a bounded form of knowledge compounding without uncontrolled pairwise enumeration.
 
 ## Level-2 North Star
 
@@ -1177,6 +1204,8 @@ Compare six equal-source arms under separately reported storage and inference bu
 - Permit a bounded higher level to consume canonical traces of lower-level assembly reuse as events. Higher-order structures may form only when reuse and held-out predictive/compressive value pass frozen thresholds; hierarchy depth, width, promotion count, and state are capped rather than chosen after seeing the evaluation.
 - Anonymous pattern IDs such as `latent:3817` need not receive a human semantic name. They must still be auditable through supporting/counterexample event references, activation and allocation traces, revision history, ablation effect, uncertainty, expiry, and resource cost.
 - Human-designed primitives remain a possible inductive bias and must be reported. A system using typed time, causal, role, or spatial events may discover unnamed combinations of those primitives, but it may not claim completely assumption-free structure discovery.
+- Treat repeated alternative expressions as candidate-discovery pressure rather than independent truth votes. Preserve expression diversity, source identity, context and counterexamples; one source expanded into thousands of paraphrases remains one evidence lineage.
+- When local reuse, residual prediction error, and description-cost pressure jointly identify a missing reusable structure, emit an anonymous candidate record rather than a word. Optional human-readable names belong to the later C3 lexical-binding layer and cannot influence the frozen Phase 39 evaluator.
 
 ### [Done]
 
@@ -1192,6 +1221,7 @@ Compare six equal-source arms under separately reported storage and inference bu
 - Implement the bounded local-neighborhood, reuse/allocation, homeostasis/fatigue/EI, overlap, evidence, expiry, and deterministic replay controls exactly against the frozen candidate inputs.
 - Use Phase 35 spatiotemporal fields only as a reusable control if Phase 35 passes independently. Do not transfer its expert-field result into a concept-emergence claim.
 - Keep anonymous units, assemblies, and optional human labels default-off and outside durable RISA state. Naming or interpreting a pattern is a read-only review action and cannot change its routing or evaluation result.
+- If Phase 39 later passes, hand accepted anonymous candidates to a separately preregistered C3 lexicalization/reinterpretation experiment. Do not add that loop to the already frozen Phase 39 attempt.
 
 ### Minimum Experiment
 

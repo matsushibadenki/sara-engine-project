@@ -556,3 +556,78 @@ cognitive architecture
 * 世界モデル推論
 
 ---
+
+# 23 検証付き概念凝縮ループ
+
+大量の文章や経験は、それだけで知能を保証しない。一方、同じ構造が異なる表現・状況・時刻・観測者をまたいで現れると、既存の記憶単位では説明しにくい共通構造を切り出せる可能性がある。本設計では、この状態を次の段階に分ける。
+
+```text
+未分知
+  = 概念名を与えず保持した、出典付きの経験・関係・予測残差
+
+概念圧
+  = 局所的な再利用と未説明の予測誤差または記述費用が、
+    新しい共有構造の候補を要求する状態
+
+意味凝縮
+  = 複数の独立文脈に再利用される匿名構造を仮生成する処理
+
+意味発芽
+  = 検証済み構造を使うことで、未知例の予測または構成が改善する現象
+
+語彙地平線
+  = 検証済み匿名構造へ、人間が扱える名前と定義を結び付ける境界
+
+知能複利
+  = 検証済み構造を次層の入力として再利用し、
+    新たな候補形成を可能にする有界な循環
+```
+
+処理順序は次の通りとする。
+
+```text
+source-aware episodes
+  -> sparse typed fragments
+  -> bounded local reuse
+  -> anonymous concept candidate
+  -> held-out prediction and compression checks
+  -> contrast, counterexample, revision, and ablation checks
+  -> verified structural factor
+  -> optional multilingual lexical binding
+  -> capped provenance-linked replay
+```
+
+匿名候補は、少なくとも次の情報を持つ。
+
+```text
+candidate_id
+invariant_signature
+concrete_bindings
+support_evidence_refs
+counterexample_refs
+independence_groups
+prediction_contract
+description_cost_before_after
+ablation_effect
+revision_and_expiry
+state_event_cpu_cost
+status
+```
+
+新しい名称は候補の発見や評価には使わない。構造が先、名前は後とする。英語・日本語・简体中文の名称は同じ匿名IDへ結び付ける表示層であり、別々の概念や独立証拠として数えない。
+
+同じ資料から自動生成した大量の言い換えは、表現の不変性を学ぶ材料にはなるが、独立した根拠にはならない。出典・生成系・改訂系列を一つのevidence lineageとして数え、異なる文脈、異なる反例、異なる将来予測で有用性を確認する。
+
+全コーパスの無制限な再読込は行わない。候補の局所署名と出典索引から固定件数の関連記憶だけをreplayし、候補が生成した説明文を候補自身の追加証拠にしない。概念候補数、生成速度、階層深さ、接続数、replay数、寿命、状態bytes、event costを事前に制限する。
+
+昇格には、独立文脈での再利用、全費用込みの圧縮改善、未知例の予測または構成改善、反例と希少例の保持、対象構造を除去したときの性能低下、決定的replay、固定資源上限をすべて要求する。短い説明や新奇な名前だけでは概念と認めない。
+
+日本語: 名前を作る前に、匿名構造が未知例に役立つことを確認する。
+
+English: Validate an anonymous reusable structure on unseen cases before naming it.
+
+简体中文: 在命名之前，先验证匿名可复用结构能否改善未见样本的表现。
+
+実装はR0/R1の局所学習実証後に行い、Phase 39の匿名再利用、Phase 40の動的検証、Phase 41の構造因子化へ順に接続する。既存の凍結済みPhase 39プロトコルは変更しない。
+
+---
