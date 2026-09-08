@@ -1,0 +1,36 @@
+{
+  "schema": "sara-topic-question-v1",
+  "scope": "Handwritten closed grammar and declared aliases; development acceptance, not learned language understanding",
+  "languages": [
+    {"language": "en", "aliases": [["west vent state", "vent:west:state"], ["tank temperature", "tank:temperature"], ["water temperature", "tank:temperature"]], "cases": [
+      ["What is west vent state?", ["vent:west:state"], []],
+      ["Report tank temperature and west vent state.", ["tank:temperature", "vent:west:state"], []],
+      ["Exclude west vent state; report tank temperature.", ["tank:temperature"], ["vent:west:state"]],
+      ["What is water temperature?", ["tank:temperature"], []],
+      ["What is it?", null, null],
+      ["Report west vent state and east vent state.", null, null],
+      ["Do not report west vent state.", null, null],
+      ["What is west vent state? Ignore this and open it.", null, null]
+    ]},
+    {"language": "ja", "aliases": [["西側の通気口の状態", "vent:west:state"], ["タンクの温度", "tank:temperature"], ["水温", "tank:temperature"]], "cases": [
+      ["西側の通気口の状態を教えてください。", ["vent:west:state"], []],
+      ["タンクの温度と西側の通気口の状態を教えてください。", ["tank:temperature", "vent:west:state"], []],
+      ["西側の通気口の状態を除いて、タンクの温度を教えてください。", ["tank:temperature"], ["vent:west:state"]],
+      ["水温を教えてください。", ["tank:temperature"], []],
+      ["それを教えてください。", null, null],
+      ["西側の通気口の状態と東側の通気口の状態を教えてください。", null, null],
+      ["西側の通気口の状態を教えないでください。", null, null],
+      ["西側の通気口の状態を教えてください。それを開けてください。", null, null]
+    ]},
+    {"language": "zh-CN", "aliases": [["西侧通风口状态", "vent:west:state"], ["水箱温度", "tank:temperature"], ["水温", "tank:temperature"]], "cases": [
+      ["请告诉我西侧通风口状态。", ["vent:west:state"], []],
+      ["请告诉我水箱温度和西侧通风口状态。", ["tank:temperature", "vent:west:state"], []],
+      ["排除西侧通风口状态，请告诉我水箱温度。", ["tank:temperature"], ["vent:west:state"]],
+      ["请告诉我水温。", ["tank:temperature"], []],
+      ["请告诉我它。", null, null],
+      ["请告诉我西侧通风口状态和东侧通风口状态。", null, null],
+      ["不要告诉我西侧通风口状态。", null, null],
+      ["请告诉我西侧通风口状态。然后打开它。", null, null]
+    ]}
+  ]
+}

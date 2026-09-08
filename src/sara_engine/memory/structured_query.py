@@ -59,6 +59,23 @@ def _valid_topics(values) -> bool:
     )
 
 
+def _query_failure(query, now_segment):
+    if (
+        not isinstance(query, TopicQuery)
+        or not _valid_topics(query.requested) or not query.requested
+        or not _valid_topics(query.excluded)
+        or set(query.requested).intersection(query.excluded)
+        or not isinstance(query.language, str) or query.language not in ("en", "ja", "zh-CN")
+        or type(query.unresolved) is not bool
+    ):
+        return QueryResolution("invalid_query")
+    if type(now_segment) is not int:
+        return QueryResolution("invalid_time")
+    if query.unresolved:
+        return QueryResolution("unresolved_reference")
+    return None
+
+
 def _valid_binding(item: TopicEvidence) -> bool:
     receipt = item.receipt
     if not isinstance(receipt, VerificationReceipt):
@@ -92,19 +109,9 @@ def resolve_topic_query(
     separately validated structured producer; arbitrary chat cannot use this
     function as evidence that its topic interpretation was correct.
     """
-    if (
-        not isinstance(query, TopicQuery)
-        or not _valid_topics(query.requested) or not query.requested
-        or not _valid_topics(query.excluded)
-        or set(query.requested).intersection(query.excluded)
-        or not isinstance(query.language, str) or query.language not in ("en", "ja", "zh-CN")
-        or type(query.unresolved) is not bool
-    ):
-        return QueryResolution("invalid_query")
-    if type(now_segment) is not int:
-        return QueryResolution("invalid_time")
-    if query.unresolved:
-        return QueryResolution("unresolved_reference")
+    failure = _query_failure(query, now_segment)
+    if failure is not None:
+        return failure
     if not isinstance(evidence, tuple) or len(evidence) > 12:
         return QueryResolution("evidence_limit")
     if any(not isinstance(item, TopicEvidence) or not _valid_topic(item.topic_id) for item in evidence):
@@ -127,6 +134,12 @@ def resolve_topic_query(
 
     if any(not values for values in grouped.values()):
         return QueryResolution("incomplete_coverage")
+    for values in grouped.values():
+        revisions = {}
+        for answer in values:
+            revisions.setdefault(answer.source_ref, set()).add(answer.source_revision)
+        if any(len(versions) > 1 for versions in revisions.values()):
+            return QueryResolution("ambiguous_revision")
     if any(len({answer.text for answer in values}) != 1 for values in grouped.values()):
         return QueryResolution("conflicting_evidence")
     items = tuple(
@@ -134,3 +147,32 @@ def resolve_topic_query(
         for topic, values in grouped.items()
     )
     return QueryResolution("answer", items)
+
+
+def resolve_complete_topic_query(query: TopicQuery, evidence, *, now_segment: int) -> QueryResolution:
+    """Require exhaustion of an authoritative iterator before returning answers.
+
+    Consume at most thirteen records, retaining at most twelve. Never accept a
+    top-k prefix as complete: callers must enumerate all evidence in a consistent
+    authoritative scope, propagate page failures, and enforce backend timeouts.
+    Iterator exhaustion alone cannot detect an upstream omission. This function
+    bounds iteration count, not latency or memory allocated by the producer.
+    """
+    failure = _query_failure(query, now_segment)
+    if failure is not None:
+        return failure
+    records = []
+    try:
+        iterator = iter(evidence)
+        for index in range(13):
+            try:
+                item = next(iterator)
+            except StopIteration:
+                break
+            if index == 12:
+                return QueryResolution("evidence_limit")
+            records.append(item)
+    except Exception:
+        # Producer failures must never turn a valid prefix into a full answer.
+        return QueryResolution("evidence_unavailable")
+    return resolve_topic_query(query, tuple(records), now_segment=now_segment)
