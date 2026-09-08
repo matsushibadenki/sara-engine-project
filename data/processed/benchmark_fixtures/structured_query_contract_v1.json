@@ -1,0 +1,25 @@
+{
+  "schema": "sara-structured-query-contract-v1",
+  "scope": "Explicit trusted topic IDs only; no natural-language parsing or learned semantics",
+  "limits": {"requested_topics": 4, "excluded_topics": 4, "evidence_records": 12, "topic_id_characters": 128},
+  "languages": [
+    {"language": "en", "texts": ["The west vent is closed.", "The tank temperature is 18 degrees Celsius."]},
+    {"language": "ja", "texts": ["西側の通気口は閉じています。", "タンクの温度は摂氏18度です。"]},
+    {"language": "zh-CN", "texts": ["西侧通风口已关闭。", "水箱温度为18摄氏度。"]}
+  ],
+  "topics": ["vent:west:state", "tank:temperature"],
+  "cases": [
+    {"id": "single", "requested": ["vent:west:state"], "excluded": [], "available": [0, 1], "expected": "answer"},
+    {"id": "complete_multiple", "requested": ["vent:west:state", "tank:temperature"], "excluded": [], "available": [0, 1], "expected": "answer"},
+    {"id": "reverse_requested", "requested": ["tank:temperature", "vent:west:state"], "excluded": [], "available": [0, 1], "expected": "answer"},
+    {"id": "explicit_exclusion", "requested": ["tank:temperature"], "excluded": ["vent:west:state"], "available": [0, 1], "expected": "answer"},
+    {"id": "partial_evidence", "requested": ["vent:west:state", "tank:temperature"], "excluded": [], "available": [0], "expected": "incomplete_coverage"},
+    {"id": "unknown_topic", "requested": ["vent:east:state"], "excluded": [], "available": [0, 1], "expected": "incomplete_coverage"},
+    {"id": "unresolved_reference", "requested": ["vent:west:state"], "excluded": [], "unresolved": true, "available": [0, 1], "expected": "unresolved_reference"},
+    {"id": "overlap", "requested": ["vent:west:state"], "excluded": ["vent:west:state"], "available": [0, 1], "expected": "invalid_query"},
+    {"id": "empty", "requested": [], "excluded": [], "available": [0, 1], "expected": "invalid_query"},
+    {"id": "duplicate", "requested": ["vent:west:state", "vent:west:state"], "excluded": [], "available": [0, 1], "expected": "invalid_query"},
+    {"id": "request_overflow", "requested": ["a", "b", "c", "d", "e"], "excluded": [], "available": [0, 1], "expected": "invalid_query"},
+    {"id": "exclusion_overflow", "requested": ["vent:west:state"], "excluded": ["a", "b", "c", "d", "e"], "available": [0, 1], "expected": "invalid_query"}
+  ]
+}

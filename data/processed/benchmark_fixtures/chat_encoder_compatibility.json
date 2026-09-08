@@ -1,0 +1,33 @@
+{
+  "schema": "sara-chat-encoder-compatibility-v1",
+  "scope": "Isolated production encoder and dynamic vocabulary methods; excludes full chat routing and generation",
+  "cases": [
+    {"language":"en","topic":"north door state","text":"The north door is open.","queries":[
+      {"kind":"exact","text":"north door state","answerable":true},
+      {"kind":"framing","text":"What is the north door state?","answerable":true},
+      {"kind":"paraphrase","text":"Is the northern entrance open or closed?","answerable":true},
+      {"kind":"ambiguous","text":"Is it open?","answerable":false},
+      {"kind":"multiple","text":"What are the north door state and south door state?","answerable":false},
+      {"kind":"excluded_topic","text":"Ignore north door state; report south door state.","answerable":false}
+    ]},
+    {"language":"ja","topic":"北側の扉の状態","text":"北側の扉は開いています。","queries":[
+      {"kind":"exact","text":"北側の扉の状態","answerable":true},
+      {"kind":"framing","text":"北側の扉の状態は？","answerable":true},
+      {"kind":"paraphrase","text":"北の入口は開いている、それとも閉まっている？","answerable":true},
+      {"kind":"ambiguous","text":"それは開いていますか？","answerable":false},
+      {"kind":"multiple","text":"北側の扉の状態と南側の扉の状態を教えて","answerable":false},
+      {"kind":"excluded_topic","text":"北側の扉の状態は無視して、南側の扉の状態を教えて","answerable":false}
+    ]},
+    {"language":"zh-CN","topic":"北门状态","text":"北门已打开。","queries":[
+      {"kind":"exact","text":"北门状态","answerable":true},
+      {"kind":"framing","text":"北门状态是什么？","answerable":true},
+      {"kind":"paraphrase","text":"北边入口是开着还是关着？","answerable":true},
+      {"kind":"ambiguous","text":"它开着吗？","answerable":false},
+      {"kind":"multiple","text":"请报告北门状态和南门状态","answerable":false},
+      {"kind":"excluded_topic","text":"忽略北门状态，请报告南门状态","answerable":false}
+    ]}
+  ],
+  "decision_policy": "Require complete answer with source or abstain; no unsupported partial answers",
+  "limits": {"input_characters":256,"records_per_case":1,"signature_width":64},
+  "normal_chat_promotion":false
+}

@@ -432,7 +432,10 @@ class VerifiedHierarchicalEventStateCache:
         self_state_ids: Iterable[int] = (),
         now_segment: Optional[int] = None,
         top_k: Optional[int] = None,
+        signature_match: str = "jaccard",
     ) -> CacheRetrievalResult:
+        if signature_match not in {"jaccard", "contained"}:
+            raise ValueError("Unsupported signature match mode")
         query = _bounded_ids(signature, self.max_signature_width)
         if now_segment is not None:
             self.expire(now_segment)
@@ -442,6 +445,10 @@ class VerifiedHierarchicalEventStateCache:
         event_cost = len(query)
         for entry in self.entries.values():
             overlap = _jaccard(query, entry.signature)
+            if signature_match == "contained":
+                # Exact evidence-feature containment tolerates question framing.
+                # It is lexical matching, not semantic equivalence.
+                overlap = float(bool(entry.signature) and set(entry.signature).issubset(query))
             latent_agreement = float(
                 bool(own_latent_id) and own_latent_id == entry.own_latent_id
             )
@@ -507,6 +514,8 @@ class VerifiedHierarchicalEventStateCache:
             scored,
             key=lambda item: (-item[0], -item[1].utility, item[1].entry_id),
         ):
+            if signature_match == "contained" and components["sparse_overlap"] != 1.0:
+                continue
             if score < self.retrieval_threshold or len(matches) >= limit:
                 continue
             matches.append(

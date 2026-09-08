@@ -1,0 +1,13 @@
+{
+  "schema": "sara-verified-retrieval-compatibility-v1",
+  "scope": "Synthetic retrieval-component comparison, not full SaraAgent.chat or SNN evaluation",
+  "limits": {"records": 12, "text_chars": 256, "signature_width": 64},
+  "languages": [
+    {"language": "en", "evidence_topic": "north door state", "question": "What is the north door state?", "missing_question": "galaxy", "old": "The north door is closed.", "current": "The north door is open."},
+    {"language": "ja", "evidence_topic": "北側の扉の状態", "question": "北側の扉の状態は？", "missing_question": "銀河", "old": "北側の扉は閉じています。", "current": "北側の扉は開いています。"},
+    {"language": "zh-CN", "evidence_topic": "北门状态", "question": "北门状态是什么？", "missing_question": "银河", "old": "北门已关闭。", "current": "北门已打开。"}
+  ],
+  "scenarios": ["single", "missing", "conflicting_sources", "conflicting_sources_reversed", "revision", "revision_reversed", "expired", "missing_binding"],
+  "acceptance": {"answerable_correct_rate": 1.0, "required_abstention_rate": 1.0, "source_revision_exact_rate": 1.0},
+  "normal_chat_promotion": false
+}

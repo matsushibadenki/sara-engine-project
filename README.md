@@ -140,7 +140,11 @@ Current high-level state:
 | [Done] | Transactional tool integration | `SaraAgent.commit_verified_tool_state` binds accepted plans, paired results, verified outcomes, bounded atomic state commits, and verification receipts |
 | [Done] | Chat response provenance | `get_last_response_trace` exposes bounded ownership for tool, legacy retrieval, fallback, safety rejection, and generated continuation output |
 | [Done] | Verified-answer binding contract | Three-language fixtures verify exact text/source/revision binding, expiry, abstention, and no entry mutation; ordinary chat coverage is not yet established |
-| [Next] | Verified-memory retrieval compatibility | Compare question-to-entry selection and answer coverage against legacy chat before enabling verified-memory answers |
+| [Done] | Retrieval-component compatibility comparison | 24 synthetic multilingual cases: verified answers 4/9, required abstentions 15/15; legacy sparse search 6/9 and 3/15. Coverage gate failed; full chat comparison remains pending |
+| [Done] | Revision-binding and lexical-query regression | Fixture verifier binds revised text to admitted stable IDs; opt-in full-signature containment passes 9/9 answers and 15/15 abstentions on the 24 development cases |
+| [Done] | Isolated chat-encoder diagnosis | Actual encoder methods with fresh vocabulary: 12/18 correct at width 64; width 2048 gives 10/18 and incorrectly answers all six multiple/excluded-topic cases. Full chat remains untested |
+| [Done] | Explicit-topic answer contract | Fixed 36 multilingual cases pass with bounded requested/excluded topic IDs, topic-to-answer integrity binding, complete coverage, and no partial answers. Requires a trusted structured producer; does not parse natural language |
+| [Next] | Natural-language and evidence-selection boundary | Freeze fresh question-to-topic cases; validate exclusions, unresolved references, and complete bounded evidence snapshots before full chat integration. Existing encoder failures remain unresolved for raw questions |
 | [Later] | R2–R3: independent usefulness and measured CPU scaling | Reopen only with a new preregistration, fresh identities, and an identifiable timing signal |
 | [Later] | Implement Phase 39 anonymous local reuse | Paused by the R1 stop rule; preserve the frozen protocol and negative evidence |
 | [Later] | Verified concept condensation | Turn diverse repeated expressions into anonymous candidates, validate prediction/compression and counterexamples, then add optional multilingual names and bounded memory reinterpretation |
