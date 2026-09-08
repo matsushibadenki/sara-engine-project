@@ -7,6 +7,8 @@
 
 import random
 
+import pytest
+
 from sara_engine.learning.reward_modulated_stdp import (
     DopamineSignalModel,
     EligibilityTraceManager,
@@ -370,6 +372,37 @@ class TestThreeFactorLearningManager:
         mgr.reset()
         assert len(mgr._traces) == 0
         assert mgr.reward_baseline == 0.0
+
+    def test_trace_capacity_is_hard_bounded(self) -> None:
+        mgr = ThreeFactorLearningManager(max_traces=4, use_rpe=False)
+
+        for index in range(10):
+            mgr.update_trace(index, index + 1, strength=1.0, time=float(index))
+
+        assert mgr.trace_count == 4
+        assert len(mgr.apply_reward(1.0, time=10.0)) <= 4
+        assert mgr.eviction_count == 6
+        assert mgr.last_reward_event_cost <= 4
+
+    def test_event_time_decays_and_expires_traces(self) -> None:
+        mgr = ThreeFactorLearningManager(
+            trace_decay=0.5,
+            max_trace_age=3.0,
+            use_rpe=False,
+        )
+        mgr.update_trace(1, 2, strength=1.0, time=0.0)
+
+        updates = mgr.apply_reward(1.0, time=2.0)
+
+        assert updates[(1, 2)] == pytest.approx(mgr.lr * 0.25)
+        assert mgr.apply_reward(1.0, time=4.0) == {}
+
+    def test_event_time_must_be_monotonic(self) -> None:
+        mgr = ThreeFactorLearningManager()
+        mgr.update_trace(1, 2, strength=1.0, time=2.0)
+
+        with pytest.raises(ValueError, match="monotonic"):
+            mgr.update_trace(1, 2, strength=1.0, time=1.0)
 
 
 # ====================================================================

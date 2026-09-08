@@ -66,8 +66,9 @@ No combinatorial formula is used as a capacity claim. A new concept can create m
 ## Integration Order
 
 - [Done] The idea is mapped to SARA's evidence, anonymous structure, verification, lexical binding, and bounded replay layers.
-- [Next] Complete roadmap R0 and establish the selected prediction path and hard resource contracts.
-- [Later] Complete R1 and show causal local temporal learning on unseen streams.
+- [Done] Complete roadmap R0 and establish the selected prediction path and hard resource contracts.
+- [Done] Complete R1: two preregistered hypotheses did not establish timing causality or an advantage over the strongest bounded non-spiking control.
+- [Later] Resume implementation only after a future causal local-learning prerequisite passes with fresh evaluation data.
 - [Later] Use the frozen Phase 39 experiment for anonymous local reuse without adding naming to that protocol.
 - [Later] Preregister a separate lexicalization and bounded reinterpretation experiment after Phase 39 passes.
 - [Later] Feed validated factors into Phase 41 composition only after its explicit-factor prerequisites pass.

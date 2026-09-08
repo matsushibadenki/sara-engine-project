@@ -23,11 +23,16 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 | Status | Step | Deliverable and decision |
 | --- | --- | --- |
 | [Done] | Evidence and design review | Identify causal-readout gaps, ineffective inhibitory delivery in one primitive pair, missing pre-work bounds, and the delayed priority of basic credit learning. Preserve existing negative reports. |
-| [Next] | R0 — Select and validate the minimal core | Produce a path inventory for CLI/SaraInference, SpikingLLM, StrongSpikingLM, SaraAgent and bot/root-agent routes. Select one existing sparse core, document ownership of state/updates/readout, and fix or exclude incompatible primitives with regression evidence. |
-| [Later] | R1 — Prove local temporal learning | After R0, run one fixed-topology experiment with local eligibility and bounded outcome modulation. Require both learning benefit and a causal temporal contribution on untouched test streams. |
-| [Later] | R2 — Establish independent usefulness | After R1, test one independently collected temporal task and correction/retention under drift. Retain source/session-disjoint evaluation and equal information access for controls. |
+| [Done] | R0 — Select and validate the minimal core | Prediction-path inventory completed. The fixed-topology `Neuron/Synapse + ThreeFactorLearningManager` core now has signed inhibition, monotonic eligibility time/expiry, deterministic trace capacity, and pre-work event/state limits with regression evidence. |
+| [Done] | R1 — Prove local temporal learning | Two preregistered hypotheses completed. Local outcome modulation produced learning, but neither advantage over the strongest bounded non-spiking control nor timing causality passed. The negative result and stop rule are retained. |
+| [Done] | Consolidate verified sparse paths, tranche 1 | Event Memory lifecycle traces, ToolRegistry state, and SaraAgent trigger execution now have explicit hard bounds. Experimental SNN learning remains isolated from production. |
+| [Done] | Integrate transactional tool state | `SaraAgent.commit_verified_tool_state` now binds accepted plans, indexed result pairing, expected outcomes, bounded atomic commits, and verification receipts. |
+| [Done] | Attribute chat output | `SaraAgent.get_last_response_trace` now exposes bounded ownership for tool, legacy retrieval, fallback, safety rejection, and generated continuation output. |
+| [Done] | Verify answer binding | Read-only resolution passes 33 multilingual exact-binding and abstention cases. Receipts bind text/source/revision; no ordinary chat coverage claim follows. |
+| [Next] | Verify memory-chat retrieval compatibility | Compare question-to-entry selection, conflicting/revised sources, missing answers, and coverage against legacy chat before enabling verified-memory answers. |
+| [Later] | R2 — Establish independent usefulness | Reopen only under a new preregistration with fresh identities and an identifiable timing signal that matched non-spiking controls cannot recover. |
 | [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
-| [Later] | C0–C3 — Verified concept condensation | After R1 establishes causal local learning, test whether diverse episodes can form unnamed reusable structures, survive counterexamples, earn an optional lexical binding, and improve a bounded second pass over relevant memory. |
+| [Later] | C0–C3 — Verified concept condensation | Paused by the R1 stop rule. Preserve the design, but do not implement it until a future causal local-learning prerequisite passes. |
 | [Later] | Resume selected advanced phases | Resume Phase 39 or a specific Phase 40–46 mechanism only when the earlier results identify a failure it can test. Preserve preregistration and use fresh evaluation identities where exposure requires them. |
 
 日本語: SNN研究として継続する価値はあります。ただし、まず「入力→時間状態→予測→遅延した結果→局所更新→次の予測」の効果を実証します。匿名概念や大規模な階層構造は、その実証後に必要性を判断します。
@@ -60,6 +65,8 @@ Freeze the following before candidate tuning:
 
 Allow one bounded development search with a recorded configuration budget and one frozen evaluation per hypothesis version. If R1 fails, retain the negative result, identify whether encoding, plasticity, readout or capacity is limiting using development-only diagnostics, and permit one revised hypothesis with fresh evaluation data. If both fail to establish scoped benefit, stop architectural expansion and narrow the project to verified sparse memory/tooling while reassessing the SNN learner. This is a stop rule for this approach, not proof that all local-learning SNNs are impossible.
 
+Execution result on 2026-09-08: both registered hypotheses are complete and retained negative. Hypothesis 2 reached 84.53% primary accuracy, beat frozen and shuffled-feedback controls, and passed every resource contract. It did not beat bounded transition memory at 84.83%, and timing destruction did not reduce accuracy. The registered stop rule is active; see `workspace/evaluation/r1_hypothesis_2_assessment.md` for the frozen comparison intervals and claim boundary.
+
 ### R2 and R3: Useful Deployment Evidence
 
 - Choose one timestamped sensor/log prediction task whose outcome can be observed independently. Event-driven data is the first working hypothesis; do not begin with open-ended LLM replacement. Report acquisition/preprocessing costs and train/test source, device/session, time, license, and duplicate checks.
@@ -85,7 +92,9 @@ diverse episodes and expressions
 ```
 
 - [Done] Map the dialogue's concepts onto existing Phase 37–41 structures and preserve R0/R1 as prerequisites. The idea mainly extends Phase 39 anonymous reuse with a separate post-validation naming and bounded reinterpretation loop; it does not change the consumed Phase 39 protocol.
-- [Next] Complete R0. Concept condensation must not become another mechanism implemented before the prediction path and hard resource contracts are sound.
+- [Done] Complete R0 and keep concept condensation outside the runtime while the selected prediction path and hard resource contracts are established.
+- [Done] Complete R1: two hypotheses produced a retained negative result for timing causality and competitive advantage.
+- [Later] Reopen concept-condensation candidates only after a future causal local-learning prerequisite passes with fresh evaluation data.
 - [Later] **C0 — Undivided evidence reservoir:** retain source-aware episodes, differing expressions, local event fragments, unresolved residuals, and counterexamples without forcing an early concept label. Surface paraphrases from one source may raise recurrence counts but count as one independence group.
 - [Later] **C1 — Conceptual-pressure trigger:** queue a candidate only when bounded local reuse occurs across independent contexts and either prospective prediction residual or fully accounted description cost indicates missing reusable structure. Frequency alone cannot trigger promotion.
 - [Later] **C2 — Anonymous condensation:** use Phase 39-style overlapping assemblies to create an opaque `latent:*` candidate with explicit bindings, differences, exceptions, provenance, revision, expiry, and resource cost. Require held-out benefit and targeted-ablation loss before treating it as a useful concept-like factor.

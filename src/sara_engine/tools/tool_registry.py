@@ -108,10 +108,26 @@ class ToolRegistry:
         こんにちは、太郎さん！
     """
 
-    def __init__(self, default_permission: PermissionLevel = PermissionLevel.STANDARD) -> None:
+    def __init__(
+        self,
+        default_permission: PermissionLevel = PermissionLevel.STANDARD,
+        *,
+        max_tools: int = 64,
+        max_execution_log_entries: int = 128,
+    ) -> None:
+        if max_tools < 1 or max_execution_log_entries < 1:
+            raise ValueError("Tool registry limits must be positive.")
         self._tools: Dict[str, ToolDefinition] = {}
         self._default_permission = default_permission
+        self.max_tools = int(max_tools)
+        self.max_execution_log_entries = int(max_execution_log_entries)
         self._execution_log: List[ToolResult] = []
+
+    def _record_result(self, result: ToolResult) -> None:
+        self._execution_log.append(result)
+        overflow = len(self._execution_log) - self.max_execution_log_entries
+        if overflow > 0:
+            del self._execution_log[:overflow]
 
     def register(self, tool_def: ToolDefinition) -> None:
         """ツール定義をレジストリに登録する。
@@ -124,6 +140,8 @@ class ToolRegistry:
         """
         if tool_def.name in self._tools:
             raise ValueError(f"ツール '{tool_def.name}' は既に登録されています。")
+        if len(self._tools) >= self.max_tools:
+            raise ValueError("Tool registry capacity exceeded.")
         self._tools[tool_def.name] = tool_def
 
     def unregister(self, name: str) -> bool:
@@ -196,7 +214,7 @@ class ToolRegistry:
                 error_message=f"ツール '{name}' は登録されていません。",
                 tool_name=name,
             )
-            self._execution_log.append(result)
+            self._record_result(result)
             return result
 
         # 権限チェック
@@ -217,7 +235,7 @@ class ToolRegistry:
                 ),
                 tool_name=name,
             )
-            self._execution_log.append(result)
+            self._record_result(result)
             return result
 
         # パラメータバリデーション
@@ -228,7 +246,7 @@ class ToolRegistry:
                 error_message=validation_error,
                 tool_name=name,
             )
-            self._execution_log.append(result)
+            self._record_result(result)
             return result
 
         # デフォルト値の適用
@@ -265,7 +283,7 @@ class ToolRegistry:
                 tool_name=name,
             )
 
-        self._execution_log.append(result)
+        self._record_result(result)
         return result
 
     @property

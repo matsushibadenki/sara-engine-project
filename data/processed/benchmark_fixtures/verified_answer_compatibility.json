@@ -1,0 +1,13 @@
+{
+  "schema": "sara-verified-answer-compatibility-v1",
+  "scope": "Synthetic deterministic contract fixtures, not independent factual or SNN accuracy evidence",
+  "cases": [
+    {"id": "en", "language": "en", "text": "The fixture door is open.", "source_ref": "fixture:door/en", "source_revision": "r1"},
+    {"id": "ja", "language": "ja", "text": "試験用の扉は開いています。", "source_ref": "fixture:door/ja", "source_revision": "r1"},
+    {"id": "zh", "language": "zh-CN", "text": "测试门处于打开状态。", "source_ref": "fixture:door/zh", "source_revision": "r1"}
+  ],
+  "required_controls": ["missing_evidence", "tampered_text", "wrong_source", "stale_revision", "expired", "future", "unverified_entry", "contradicted_receipt", "language_mismatch", "oversized_answer", "valid_binding"],
+  "acceptance": {"valid_binding_exact_answer_rate": 1.0, "invalid_binding_abstention_rate": 1.0, "entry_mutation_count": 0},
+  "limits": {"answer_characters": 4096, "identity_characters": 512, "source_refs": 1},
+  "promotion": {"normal_chat_enabled": false, "legacy_coverage_equivalence_established": false}
+}

@@ -22,8 +22,11 @@ class DendriticBranch:
         return f"Branch {self.id}: Active={self.is_active}, Input={self.current_input}"
 
     def add_current(self, current: float):
-        """シナプスからの電流を蓄積する"""
-        if current > 0:
+        """Accumulate finite excitatory or inhibitory synaptic current."""
+        current = float(current)
+        if not math.isfinite(current):
+            raise ValueError("current must be finite")
+        if current != 0.0:
             self.current_input += current
             self.is_active = True
 
@@ -33,14 +36,16 @@ class DendriticBranch:
         同時入力(Coincidence)があった場合のみ超線形に増幅される。
         入力がない場合は演算を完全にスキップする。
         """
-        if not self.is_active or self.current_input <= 0:
+        if not self.is_active or self.current_input == 0.0:
             self.current_input = 0.0
             self.is_active = False
             return 0.0
-            
-        # 局所的な樹状突起スパイクをシグモイド関数で模倣
-        activation = 1.0 / (1.0 + math.exp(-5.0 * (self.current_input - self.threshold)))
-        out = activation * self.gain * self.current_input
+
+        # Apply the same bounded nonlinearity to the current magnitude while
+        # preserving its sign so inhibitory synapses can reach the soma.
+        magnitude = abs(self.current_input)
+        activation = 1.0 / (1.0 + math.exp(-5.0 * (magnitude - self.threshold)))
+        out = math.copysign(activation * self.gain * magnitude, self.current_input)
             
         self.current_input = 0.0  # 計算後にリセット
         self.is_active = False
@@ -67,8 +72,11 @@ class Neuron:
         self.active_branches: set[int] = set() # O(1)でアクティブな枝を管理
 
     def add_input_to_branch(self, branch_index: int, current: float):
-        """外部から特定の枝へ電流を注入する"""
-        if 0 <= branch_index < len(self.branches) and current > 0:
+        """Route finite signed current to one dendritic branch."""
+        current = float(current)
+        if not math.isfinite(current):
+            raise ValueError("current must be finite")
+        if 0 <= branch_index < len(self.branches) and current != 0.0:
             self.branches[branch_index].add_current(current)
             self.active_branches.add(branch_index)
 

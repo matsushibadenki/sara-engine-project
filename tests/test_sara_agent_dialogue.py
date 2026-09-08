@@ -50,6 +50,64 @@ def test_agent_records_tool_failures_without_breaking_chat():
     assert any("<FAIL>" in issue["message"] for issue in issues)
 
 
+def test_agent_bounds_tool_calls_and_result_size_per_turn():
+    agent = SaraAgent(
+        input_size=256,
+        hidden_size=256,
+        compartments=["general", "python_expert"],
+        max_registered_tools=3,
+        max_tool_calls_per_turn=1,
+        max_tool_result_chars=4,
+    )
+    calls = []
+    agent.register_tool("<ONE>", lambda _: calls.append("one") or "123456")
+    agent.register_tool("<TWO>", lambda _: calls.append("two") or "abcdef")
+
+    response = agent.chat("Run <ONE> and <TWO>", teaching_mode=False)
+
+    assert calls == ["one"]
+    assert "1234" in response
+    assert "123456" not in response
+    assert "Tool warnings" in response
+    trace = agent.get_last_response_trace()
+    assert trace["kind"] == "tool_result"
+    assert trace["owners"] == ["legacy_tool_callback"]
+    assert trace["source_refs"] == []
+    assert trace["tool_triggers"] == ["<ONE>"]
+    assert trace["verified_event_memory_used"] is False
+
+
+def test_agent_enforces_registered_tool_capacity():
+    agent = SaraAgent(
+        input_size=256,
+        hidden_size=256,
+        compartments=["general", "python_expert"],
+        max_registered_tools=1,
+    )
+    agent.register_tool("<ONE>", lambda _: "ok")
+    try:
+        agent.register_tool("<TWO>", lambda _: "no")
+        assert False, "Tool capacity must be enforced"
+    except ValueError as exc:
+        assert "capacity" in str(exc)
+
+
+def test_agent_marks_fallback_output_without_snn_attribution():
+    agent = SaraAgent(
+        input_size=256,
+        hidden_size=256,
+        compartments=["general", "python_expert"],
+    )
+
+    response = agent.chat("unseen-quasar-subject-8842について詳細を説明してください")
+    trace = agent.get_last_response_trace()
+
+    assert response
+    assert trace["kind"] == "fallback"
+    assert trace["owners"] == ["topic_fallback"]
+    assert trace["generated_continuation"] is False
+
+
 def test_agent_can_clear_runtime_issues():
     agent = SaraAgent(
         input_size=256,

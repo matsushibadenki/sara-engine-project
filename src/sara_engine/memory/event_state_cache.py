@@ -242,6 +242,7 @@ class VerifiedHierarchicalEventStateCache:
         min_metabolic_headroom: float = 0.2,
         retrieval_threshold: float = 0.35,
         merge_threshold: float = 0.75,
+        max_lifecycle_trace: int = 64,
     ) -> None:
         if retention_profile not in {"fixed", "linear", "logarithmic"}:
             raise ValueError("retention_profile must be fixed, linear, or logarithmic")
@@ -255,6 +256,7 @@ class VerifiedHierarchicalEventStateCache:
         self.min_metabolic_headroom = _clamp01(min_metabolic_headroom)
         self.retrieval_threshold = _clamp01(retrieval_threshold)
         self.merge_threshold = _clamp01(merge_threshold)
+        self.max_lifecycle_trace = max(1, int(max_lifecycle_trace))
         self.entries: Dict[str, EventStateEntry] = {}
         self.admission_count = 0
         self.block_count = 0
@@ -263,6 +265,13 @@ class VerifiedHierarchicalEventStateCache:
         self.expiry_count = 0
         self.retrieval_count = 0
         self.lifecycle_trace: List[Dict[str, Any]] = []
+
+    def _record_lifecycle(self, event: Mapping[str, Any]) -> None:
+        """Retain only the newest bounded operational evidence."""
+        self.lifecycle_trace.append(dict(event))
+        overflow = len(self.lifecycle_trace) - self.max_lifecycle_trace
+        if overflow > 0:
+            del self.lifecycle_trace[:overflow]
 
     def admit(self, candidate: EventStateCandidate) -> CacheAdmissionResult:
         normalized_signature = _bounded_ids(
@@ -281,7 +290,7 @@ class VerifiedHierarchicalEventStateCache:
                 state_budget_units=len(self.entries),
                 trace=self._admission_trace(candidate),
             )
-            self.lifecycle_trace.append({"operation": "admission", **result.to_dict()})
+            self._record_lifecycle({"operation": "admission", **result.to_dict()})
             return result
 
         utility = self._utility(candidate)
@@ -363,7 +372,7 @@ class VerifiedHierarchicalEventStateCache:
                 state_budget_units=len(self.entries),
                 trace=self._admission_trace(candidate),
             )
-            self.lifecycle_trace.append({"operation": "merge", **result.to_dict()})
+            self._record_lifecycle({"operation": "merge", **result.to_dict()})
             return result
 
         entry = EventStateEntry(
@@ -410,7 +419,7 @@ class VerifiedHierarchicalEventStateCache:
             state_budget_units=len(self.entries),
             trace={**self._admission_trace(candidate), "evicted_entry_ids": evicted},
         )
-        self.lifecycle_trace.append({"operation": "admission", **result.to_dict()})
+        self._record_lifecycle({"operation": "admission", **result.to_dict()})
         return result
 
     def retrieve(
@@ -535,7 +544,7 @@ class VerifiedHierarchicalEventStateCache:
                 for match in matches
             ),
         )
-        self.lifecycle_trace.append({"operation": "retrieval", **result.to_dict()})
+        self._record_lifecycle({"operation": "retrieval", **result.to_dict()})
         return result
 
     def refresh_from_consolidation(
@@ -572,7 +581,7 @@ class VerifiedHierarchicalEventStateCache:
                 new_utility=float(updated_entry.utility),
                 trace=trace,
             )
-            self.lifecycle_trace.append({"operation": "consolidation_refresh", **result.to_dict()})
+            self._record_lifecycle({"operation": "consolidation_refresh", **result.to_dict()})
             results.append(result)
         self._enforce_budget(preferred_entry_id="")
         return tuple(results)
@@ -587,7 +596,7 @@ class VerifiedHierarchicalEventStateCache:
             del self.entries[entry_id]
         self.expiry_count += len(expired)
         if expired:
-            self.lifecycle_trace.append(
+            self._record_lifecycle(
                 {
                     "operation": "expiry",
                     "now_segment": int(now_segment),
@@ -613,6 +622,7 @@ class VerifiedHierarchicalEventStateCache:
             "min_metabolic_headroom": self.min_metabolic_headroom,
             "retrieval_threshold": self.retrieval_threshold,
             "merge_threshold": self.merge_threshold,
+            "max_lifecycle_trace": self.max_lifecycle_trace,
             "tier_counts": tier_counts,
             "entry_count": len(self.entries),
             "admission_count": self.admission_count,
@@ -656,6 +666,7 @@ class VerifiedHierarchicalEventStateCache:
             ),
             retrieval_threshold=float(state.get("retrieval_threshold", 0.35)),
             merge_threshold=float(state.get("merge_threshold", 0.75)),
+            max_lifecycle_trace=int(state.get("max_lifecycle_trace", 64)),
         )
         if len(raw_entries) > cache.max_entries:
             raise ValueError("cache state exceeds max_entries")
@@ -733,6 +744,10 @@ class VerifiedHierarchicalEventStateCache:
             "retrieval_count",
         ):
             setattr(cache, name, max(0, int(state.get(name, 0))))
+        raw_trace = state.get("lifecycle_trace_tail", [])
+        if not isinstance(raw_trace, list) or any(not isinstance(item, Mapping) for item in raw_trace):
+            raise ValueError("lifecycle_trace_tail must be a list of mappings")
+        cache.lifecycle_trace = [dict(item) for item in raw_trace[-cache.max_lifecycle_trace:]]
         return cache
 
     def _admission_decision(

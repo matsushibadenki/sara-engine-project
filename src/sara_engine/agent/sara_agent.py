@@ -12,16 +12,22 @@ from ..core.cortex import CorticalColumn
 from ..memory.sdr import SDREncoder
 from ..utils.dialogue import AdaptiveTopicTracker
 from ..utils.retrieval_diagnostics import format_retrieval_diagnostics, normalize_retrieval_diagnostic
-from ..safety.safety_guard import SafetyGuard, SafetyCheckResult
+from ..safety.safety_guard import SafetyGuard, SafetyCheckResult, ToolPermissionGuard
 from .bounded_agent_loop import AgentPlanDecision, BoundedAgentLoop
 from ..memory.event_state_cache import VerifiedHierarchicalEventStateCache
+from ..memory.verification_receipt import issue_verification_receipt
+from .transactional_tools import (
+    BoundedTransactionalToolAdapter,
+    TransactionalToolRequest,
+)
+from .tool_result_pairing import IndexedToolCall, IndexedToolResult
 from ..risa.causal_reasoning import (
     BoundedCausalReasoner,
     CausalEvidence,
     causal_event_state_candidate,
 )
 from ..pipelines.text_generation import pipeline  # 追加: パイプライン
-from typing import List, Dict, Any, Callable, Union, Generator, Mapping, Optional, Sequence
+from typing import List, Dict, Any, Callable, Union, Generator, Mapping, MutableMapping, Optional, Sequence
 import hashlib
 import random
 import os
@@ -44,7 +50,14 @@ class SaraAgent:
         ],
         system_prompt: Optional[str] = None,
         safety_guard: Optional[SafetyGuard] = None,
+        tool_permission_guard: Optional[ToolPermissionGuard] = None,
+        max_registered_tools: int = 32,
+        max_tool_calls_per_turn: int = 4,
+        max_tool_result_chars: int = 4096,
+        transactional_tool_adapter: Optional[BoundedTransactionalToolAdapter] = None,
     ):
+        if min(max_registered_tools, max_tool_calls_per_turn, max_tool_result_chars) < 1:
+            raise ValueError("Tool limits must be positive.")
         self.encoder = SDREncoder(
             input_size=input_size, density=0.02, use_tokenizer=True, apply_vsa=True
         )
@@ -81,8 +94,31 @@ class SaraAgent:
         self.topic_tracker = AdaptiveTopicTracker()
 
         self.tools: Dict[str, Callable[[str], str]] = {}
+        self._owns_tool_permission_guard = tool_permission_guard is None
+        self.tool_permission_guard = tool_permission_guard or ToolPermissionGuard(
+            max_calls_per_tool=100
+        )
+        self.max_registered_tools = int(max_registered_tools)
+        self.max_tool_calls_per_turn = int(max_tool_calls_per_turn)
+        self.max_tool_result_chars = int(max_tool_result_chars)
+        self.transactional_tool_adapter = (
+            transactional_tool_adapter
+            if transactional_tool_adapter is not None
+            else BoundedTransactionalToolAdapter(allowed_tools=())
+        )
         self.runtime_issues: List[Dict[str, str]] = []
         self.retrieval_diagnostics: List[Dict[str, Any]] = []
+        self.last_response_trace: Dict[str, Any] = {
+            "schema": "sara-chat-response-provenance-v1",
+            "kind": "not_started",
+            "owners": [],
+            "source_refs": [],
+            "tool_triggers": [],
+            "verified_event_memory_used": False,
+            "generated_continuation": False,
+            "status": "idle",
+        }
+        self._last_executed_tool_triggers: List[str] = []
         self.system_prompt = system_prompt or ""
         self.safety_guard = safety_guard
         self.bounded_plan_loop = BoundedAgentLoop()
@@ -129,12 +165,99 @@ class SaraAgent:
             self._record_issue("load_agent", f"Failed to load memory state: {e}")
 
     def register_tool(self, trigger_spike: str, tool_func: Callable[[str], str]) -> None:
+        trigger_spike = str(trigger_spike)
+        if not trigger_spike:
+            raise ValueError("Tool trigger must not be empty.")
+        if trigger_spike not in self.tools and len(self.tools) >= self.max_registered_tools:
+            raise ValueError("Registered tool capacity exceeded.")
         self.tools[trigger_spike] = tool_func
         self._register_dynamic_vocab(f"tool_trigger {trigger_spike}")
+
+    def _set_response_trace(
+        self,
+        *,
+        kind: str,
+        owners: Sequence[str],
+        source_refs: Sequence[str] = (),
+        tool_triggers: Sequence[str] = (),
+        generated_continuation: bool = False,
+        status: str = "complete",
+        retrieval_count: int = 0,
+    ) -> None:
+        self.last_response_trace = {
+            "schema": "sara-chat-response-provenance-v1",
+            "kind": str(kind),
+            "owners": list(dict.fromkeys(str(item) for item in owners if str(item)))[:8],
+            "source_refs": list(dict.fromkeys(str(item) for item in source_refs if str(item)))[:8],
+            "tool_triggers": list(dict.fromkeys(str(item) for item in tool_triggers if str(item)))[: self.max_tool_calls_per_turn],
+            "verified_event_memory_used": False,
+            "generated_continuation": bool(generated_continuation),
+            "status": str(status),
+            "retrieval_count": max(0, int(retrieval_count)),
+        }
+
+    def get_last_response_trace(self) -> Dict[str, Any]:
+        """Return bounded ownership metadata for the most recent chat response."""
+        return {
+            **self.last_response_trace,
+            "owners": list(self.last_response_trace.get("owners", ())),
+            "source_refs": list(self.last_response_trace.get("source_refs", ())),
+            "tool_triggers": list(self.last_response_trace.get("tool_triggers", ())),
+        }
 
     def evaluate_structural_plan(self, **plan: Any) -> AgentPlanDecision:
         """Route action proposals through the bounded plan policy."""
         return self.bounded_plan_loop.evaluate_plan(**plan)
+
+    def commit_verified_tool_state(
+        self,
+        state: MutableMapping[str, Any],
+        *,
+        plan: AgentPlanDecision,
+        request: TransactionalToolRequest,
+        observed_outcome: str,
+        calls: Optional[Sequence[IndexedToolCall]] = None,
+        results: Optional[Sequence[IndexedToolResult]] = None,
+    ) -> Dict[str, Any]:
+        """Commit bounded operational state and issue evidence only after verification."""
+        if (calls is None) != (results is None):
+            raise ValueError("Tool calls and results must be supplied together.")
+        if calls is not None and results is not None:
+            transaction = self.transactional_tool_adapter.execute_paired(
+                state,
+                plan=plan,
+                request=request,
+                observed_outcome=observed_outcome,
+                calls=calls,
+                results=results,
+            )
+        else:
+            transaction = self.transactional_tool_adapter.execute(
+                state,
+                plan=plan,
+                request=request,
+                observed_outcome=observed_outcome,
+            )
+
+        receipt = None
+        if transaction.committed:
+            receipt = issue_verification_receipt(
+                verifier_id="sara-agent-transactional-tool-state",
+                verifier_version="v1",
+                decision=transaction.decision,
+                evidence=transaction.to_dict(),
+                source_refs=(request.source_ref,),
+                source_revision=transaction.after_digest,
+                observed=True,
+                source_backed=True,
+                verified=True,
+            ).to_dict()
+        return {
+            "schema": "sara-agent-verified-tool-state-v1",
+            "transaction": transaction.to_dict(),
+            "verification_receipt": receipt,
+            "durable_memory_mutation": False,
+        }
 
     def record_structural_outcome(
         self,
@@ -959,9 +1082,25 @@ class SaraAgent:
     def _execute_tools(self, user_text: str) -> tuple[List[str], List[str]]:
         tool_results: List[str] = []
         tool_failures: List[str] = []
+        executed_triggers: List[str] = []
+        matched_calls = 0
+        if self._owns_tool_permission_guard:
+            self.tool_permission_guard.reset_counts()
         for trigger_spike, tool_func in self.tools.items():
             if trigger_spike not in user_text:
                 continue
+            if matched_calls >= self.max_tool_calls_per_turn:
+                failure = "Tool call budget exceeded for this turn."
+                tool_failures.append(failure)
+                self._record_issue("tool_execution", failure)
+                break
+            permission = self.tool_permission_guard.check(trigger_spike)
+            if not permission.is_safe:
+                failure = f"{trigger_spike}: tool permission denied"
+                tool_failures.append(failure)
+                self._record_issue("tool_execution", failure)
+                continue
+            matched_calls += 1
             try:
                 res = tool_func(user_text)
             except Exception as exc:
@@ -970,14 +1109,18 @@ class SaraAgent:
                 self._record_issue("tool_execution", failure)
                 continue
             if res and res != "計算できませんでした":
-                tool_results.append(res)
+                tool_results.append(str(res)[: self.max_tool_result_chars])
+                executed_triggers.append(trigger_spike)
+        self._last_executed_tool_triggers = executed_triggers[: self.max_tool_calls_per_turn]
         return tool_results, tool_failures
 
     def chat(self, user_text: str, teaching_mode: bool = False, stream: bool = False) -> Union[str, Generator[str, None, None]]:
+        self._set_response_trace(kind="pending", owners=(), status="running")
         safety_input: Optional[SafetyCheckResult] = None
         if self.safety_guard is not None:
             safety_input = self.safety_guard.check_input(user_text)
             if not safety_input.is_safe:
+                self._set_response_trace(kind="input_rejected", owners=("safety_guard",))
                 return "Input was rejected by safety guard."
             user_text = safety_input.sanitized_text
         self._register_dynamic_vocab(user_text)
@@ -1066,6 +1209,10 @@ class SaraAgent:
                 metadata=memory_metadata,
             )
             response_text = f"[MoE Router: {context} Expert] 海馬とSpikingLLMに記憶を定着させました。"
+            self._set_response_trace(
+                kind="teaching_acknowledgement",
+                owners=("legacy_hippocampal_memory", "spiking_llm_training"),
+            )
             return response_text
 
         pre_tool_results, tool_failures = self._execute_tools(user_text)
@@ -1146,6 +1293,17 @@ class SaraAgent:
             has_demonstrative=has_demonstrative,
         )
         self._capture_retrieval_diagnostics(valid_retrievals)
+        retrieval_source_refs = []
+        for item in valid_retrievals:
+            if not isinstance(item, Mapping):
+                continue
+            metadata = item.get("metadata", {})
+            metadata_source = (
+                metadata.get("source_ref", "")
+                if isinstance(metadata, Mapping)
+                else ""
+            )
+            retrieval_source_refs.append(str(item.get("source_ref") or metadata_source))
 
         if not valid_retrievals and not tool_triggered_by_user:
             fallback_msg = self._build_topic_aware_fallback(
@@ -1159,6 +1317,7 @@ class SaraAgent:
             self._update_history("system", fallback_msg,
                                  self.encoder.encode(fallback_msg))
             router_suffix = "" if len(user_text) <= 10 and mode == "general" else " (Fallback)"
+            self._set_response_trace(kind="fallback", owners=("topic_fallback",))
             return f"[MoE Router: {active_experts[0]}{router_suffix}]\n >> {fallback_msg}"
 
         if tool_triggered_by_user:
@@ -1181,6 +1340,11 @@ class SaraAgent:
                 full_response += f"\n >> Tool warnings: {' | '.join(tool_failures[:2])}"
             self._update_history("system", final_generated_text,
                                  self.encoder.encode(final_generated_text))
+            self._set_response_trace(
+                kind="tool_result",
+                owners=("legacy_tool_callback",),
+                tool_triggers=tuple(self._last_executed_tool_triggers),
+            )
             return full_response
 
         # プロンプトの構築
@@ -1210,6 +1374,14 @@ class SaraAgent:
         stop_conditions = ["。", "？", "！", "!", "?"]
 
         if stream:
+            self._set_response_trace(
+                kind="hybrid_retrieval_generation",
+                owners=("legacy_hippocampal_retrieval", "spiking_llm_continuation"),
+                source_refs=retrieval_source_refs,
+                generated_continuation=True,
+                status="stream_pending",
+                retrieval_count=len(valid_retrievals),
+            )
             def response_generator() -> Generator[str, None, None]:
                 # ヘッダ情報と記憶情報を最初に送る
                 yield f"[MoE Router: {', '.join(active_experts)} 活性化 (Mode: {mode})]\n"
@@ -1233,9 +1405,22 @@ class SaraAgent:
                 if self.safety_guard is not None:
                     safety_output = self.safety_guard.check_output(final_text)
                     if not safety_output.is_safe:
+                        self._set_response_trace(
+                            kind="output_rejected",
+                            owners=("safety_guard",),
+                            source_refs=retrieval_source_refs,
+                        )
                         yield "\n[Output blocked by safety guard]"
                         return
                 self._update_history("system", final_text, self.encoder.encode(final_text))
+                self._set_response_trace(
+                    kind="hybrid_retrieval_generation",
+                    owners=("legacy_hippocampal_retrieval", "spiking_llm_continuation"),
+                    source_refs=retrieval_source_refs,
+                    generated_continuation=True,
+                    status="stream_complete",
+                    retrieval_count=len(valid_retrievals),
+                )
             
             return response_generator()
         else:
@@ -1280,6 +1465,7 @@ class SaraAgent:
 
             if len(best_candidate) < 10 or best_score < 15.0:
                 final_generated_text = memory_context
+                generated_continuation = False
             else:
                 sanitized_candidate = self._sanitize_generated_followup(
                     generated_text=best_candidate,
@@ -1287,6 +1473,7 @@ class SaraAgent:
                     context_keywords=context_keywords,
                 )
                 final_generated_text = memory_context + "\n[SNN生成による追記] " + sanitized_candidate
+                generated_continuation = bool(sanitized_candidate)
 
             full_response = f"[MoE Router: {', '.join(active_experts)} 活性化 (Mode: {mode})]\n"
             full_response += f" >> 海馬ブレンド記憶: {blended_memory}\n"
@@ -1296,5 +1483,21 @@ class SaraAgent:
             if self.safety_guard is not None:
                 safety_output = self.safety_guard.check_output(full_response)
                 if not safety_output.is_safe:
+                    self._set_response_trace(
+                        kind="output_rejected",
+                        owners=("safety_guard",),
+                        source_refs=retrieval_source_refs,
+                        retrieval_count=len(valid_retrievals),
+                    )
                     return "Output was blocked by safety guard."
+            owners = ["legacy_hippocampal_retrieval"]
+            if generated_continuation:
+                owners.append("spiking_llm_continuation")
+            self._set_response_trace(
+                kind=("hybrid_retrieval_generation" if generated_continuation else "legacy_retrieval"),
+                owners=owners,
+                source_refs=retrieval_source_refs,
+                generated_continuation=generated_continuation,
+                retrieval_count=len(valid_retrievals),
+            )
             return full_response

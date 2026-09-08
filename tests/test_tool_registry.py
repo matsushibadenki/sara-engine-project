@@ -157,6 +157,20 @@ def test_execution_log() -> None:
     assert len(registry.execution_log) == 0
 
 
+def test_registry_bounds_tools_and_execution_log() -> None:
+    registry = ToolRegistry(max_tools=1, max_execution_log_entries=2)
+    registry.register(ToolDefinition(name="one", description="", func=lambda: "ok"))
+    try:
+        registry.register(ToolDefinition(name="two", description="", func=lambda: "ok"))
+        assert False, "Tool capacity must be enforced"
+    except ValueError as exc:
+        assert "capacity" in str(exc)
+
+    for _ in range(5):
+        registry.execute("one")
+    assert len(registry.execution_log) == 2
+
+
 # --- 組み込みツールのテスト ---
 
 def test_calculator_basic_operations() -> None:

@@ -7,13 +7,19 @@ This roadmap starts after the v1.1 release-hardening work. Completed implementat
 The authoritative next-work queue is the [Research Focus Reset](ROADMAP_NEXT_LEVEL.md#research-focus-reset--2026-09-05). It supersedes unfinished phase-local priorities below while preserving completed experiments and their negative results.
 
 - [Done] Audited representative runtime, local-learning, memory/agent paths, recent stored experiment reports, and roadmap dependencies; identified gaps between SNN implementation, causal learning evidence, and resource-bound claims.
-- [Next] R0: establish the prediction-path inventory and correct inhibitory-delivery and pre-execution budget contracts in the selected learning core, with focused regression tests.
-- [Later] R1–R3: execute one controlled local temporal-learning experiment, validate an independent task, then optimize the demonstrated useful path.
-- [Later] Phase 39 anonymous reuse and Phases 40–46 architectural expansion; retain frozen protocols, but wait for the R1 causal-learning result. The minimal fixed-topology credit experiment does not depend on Phase 44.
+- [Done] R0: inventoried the prediction paths and selected the minimal `Neuron/Synapse + ThreeFactorLearningManager` core. Signed inhibition, monotonic eligibility time, expiry, deterministic trace capacity, and pre-work event/state limits now have focused regression evidence.
+- [Done] R1: completed two preregistered controlled temporal-learning hypotheses. Correctly paired local outcomes improved both candidates, but the final candidate tied the strongest bounded transition baseline and retained its accuracy after timing destruction. R1 therefore remains a retained negative result.
+- [Done] Sparse-core consolidation tranche 1: bounded Event Memory lifecycle traces, ToolRegistry definition/execution state, and SaraAgent trigger execution. Experimental SNN learning remains outside production.
+- [Done] Added `SaraAgent.commit_verified_tool_state` over accepted plans, indexed result pairing, expected-outcome verification, bounded atomic commit, and verification receipts.
+- [Done] Added bounded `SaraAgent.get_last_response_trace` ownership metadata for tools, legacy hippocampal retrieval, fallback, safety rejection, and generated continuation without changing response strings.
+- [Done] Added a read-only verified-answer binding contract and fixed English/Japanese/Simplified Chinese fixtures: exact text/source/revision integrity, expiry, abstention, size limits, and no entry mutation. All 33 binding cases pass; this does not establish chat retrieval accuracy or equivalent coverage.
+- [Next] Compare question-to-entry selection and answer coverage against legacy chat using separate query/evidence fixtures before enabling verified-memory answers. Include conflicting sources, source revisions, and missing answers.
+- [Later] R2–R3: reopen only with a new preregistration, fresh evaluation identities, and a task whose timing signal is identifiable against a matched non-spiking control.
+- [Later] Phase 39 anonymous reuse and Phases 40–46 architectural expansion are paused by the R1 stop rule. Preserve their frozen protocols and negative evidence.
 
-日本語: 機構追加より、SNNの局所学習が未知例の予測に寄与する実証を優先します。
+日本語: R1では局所的な結果学習を確認しましたが、時間因果性と非スパイク対照への優位性は確認できませんでした。検証済みの疎な中核を優先して整理します。
 
-简体中文: 优先证明 SNN 局部学习对未见样本预测的贡献，再扩展架构。
+简体中文: R1 证实了局部结果学习，但未证实时间因果性或相对非脉冲对照的优势。下一步优先巩固已验证的稀疏核心。
 
 ## Historical Release Baseline
 

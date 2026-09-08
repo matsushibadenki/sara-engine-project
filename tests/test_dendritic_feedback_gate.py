@@ -34,6 +34,8 @@ def test_dendritic_gate_falls_back_when_event_budget_is_exceeded():
 
     assert result.fallback_used is True
     assert result.gated_events == [1]
+    assert result.event_cost <= 2
+    assert result.trace["input_overflow"] is True
 
 
 def test_dendritic_gate_homeostatic_clipping_bounds_state():
@@ -45,6 +47,21 @@ def test_dendritic_gate_homeostatic_clipping_bounds_state():
     assert gate.state_budget_units() > 0
     assert all(abs(value) <= 0.25 for value in gate.local_weights.values())
     assert all(abs(value) <= 0.25 for value in gate.event_bias.values())
+
+
+def test_dendritic_learning_rejects_work_before_state_growth():
+    gate = SparseDendriticFeedbackGate(
+        max_active_events=10,
+        max_state_units=20,
+        max_link_updates_per_call=12,
+    )
+
+    gate.update_local_links(range(100), learning_rate=0.2)
+
+    assert gate.state_budget_units() <= 20
+    assert gate.last_update_trace["input_overflow"] is True
+    assert gate.last_update_trace["admitted_event_count"] == 10
+    assert gate.last_update_trace["link_updates"] <= 12
 
 
 def test_precision_at_expected_handles_empty_sets():

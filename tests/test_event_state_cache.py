@@ -162,6 +162,17 @@ def test_cache_state_round_trip_preserves_retrieval_and_source_revision():
     assert result.reactivation_hints[0]["mutates_durable_state"] is False
 
 
+def test_cache_bounds_and_restores_lifecycle_trace():
+    cache = VerifiedHierarchicalEventStateCache(max_lifecycle_trace=3)
+    for index in range(8):
+        cache.retrieve((index,))
+    assert len(cache.lifecycle_trace) == 3
+
+    restored = VerifiedHierarchicalEventStateCache.from_state_dict(cache.state_dict())
+    assert restored.max_lifecycle_trace == 3
+    assert len(restored.lifecycle_trace) == 3
+
+
 def test_cache_state_rejects_bad_schema_and_unverified_entry():
     cache = VerifiedHierarchicalEventStateCache()
     cache.admit(_candidate("valid"))
