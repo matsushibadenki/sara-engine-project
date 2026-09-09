@@ -35,7 +35,11 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 | [Done] | Implement explicit-topic answer contract | 36 fixed multilingual cases pass with bounded requested/excluded IDs, topic-answer integrity, and complete coverage. Requires a trusted structured producer and does not resolve raw-question encoder failures. |
 | [Done] | Consume bounded evidence streams | Exhaustion is required; overflow, producer errors, and ambiguous same-source revisions abstain. No claim of detecting evidence omitted by the producer. |
 | [Done] | Closed multilingual question producer | 24 fixed cases pass using handwritten grammar and declared aliases. Unsupported wording abstains; synthetic parser-to-answer integration passes. No learned semantic claim. |
-| [Next] | Validate authoritative evidence and full routing | Establish pagination, current-revision selection and snapshot consistency, then evaluate restricted full-path routing and resource limits. General paraphrases and reference resolution remain unsupported. |
+| [Done] | Local evidence store and restricted routing | Bounded complete snapshots, atomic replacement/read locking, stale generation rejection, refresh invalidation and conflict preservation; 141 related tests pass. |
+| [Done] | Local snapshot freshness | Bounded logical-time leases, monotonic clock validation and generation-checked refresh failure revocation; 149 related tests pass. |
+| [Done] | Bounded pagination adapter | Complete consistent page sets publish atomically; mismatches and fetch failures revoke matching-generation data. 160 related tests pass. |
+| [Done] | Time-aware page refresh | Optional clock checks reject over-budget or regressive fetches; source deadlines cap local snapshot leases. 166 related tests pass. |
+| [Next] | Validate external evidence and chat integration | Connect trusted transport with freshness, timeout and byte limits, then measure comparable resource costs before SaraAgent integration. Complete scope and current revisions remain publisher obligations. |
 | [Later] | R2 — Establish independent usefulness | Reopen only under a new preregistration with fresh identities and an identifiable timing signal that matched non-spiking controls cannot recover. |
 | [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
 | [Later] | C0–C3 — Verified concept condensation | Paused by the R1 stop rule. Preserve the design, but do not implement it until a future causal local-learning prerequisite passes. |
@@ -44,6 +48,77 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 日本語: SNN研究として継続する価値はあります。ただし、まず「入力→時間状態→予測→遅延した結果→局所更新→次の予測」の効果を実証します。匿名概念や大規模な階層構造は、その実証後に必要性を判断します。
 
 简体中文: 项目值得继续作为 SNN 研究推进，但应先验证“输入→时间状态→预测→延迟结果→局部更新→下一次预测”的实际效果。匿名概念和大规模层级结构应等待这一步的证据。
+
+### Future research: local logic gates and event-driven SNN integration
+
+[Later] Registered on 2026-09-09 at the user's request, prompted by [the Zenn article on logic-gate neural networks](https://zenn.dev/teba_eleven/articles/68955053ed75be). This adds a future research topic; the current execution queue and R1 stop rule remain in force.
+
+**Evidence boundary.** [Deep Differentiable Logic Gate Networks](https://arxiv.org/abs/2210.08277) uses continuous relaxation for training and discrete logic gates for inference. Efficient discrete inference does not establish backpropagation-free learning. [Recurrent Deep Differentiable Logic Gate Networks](https://arxiv.org/abs/2508.06097) explores recurrent Boolean sequence models; its abstract reports inference BLEU 4.39 versus a GRU comparison of 5.41. This is exploratory sequence-model evidence, not general language superiority or proof of an SNN advantage for SARA.
+
+The following are SARA research proposals, not findings from these sources:
+
+| Status | Topic | Experiment and boundary |
+| --- | --- | --- |
+| [Later] | Local Boolean gates and small LUTs | Test fixed-fan-in gates as dendritic/event conjunctions against scalar event processing. Preserve explicit temporal state; combinational gates alone are not an SNN. |
+| [Later] | Backpropagation-free gate selection | Explore bounded gate substitutions using branch-local history and outcome/reward. Cap proposals, history, fan-in and updates. This learning method is unproven and is not a port of differentiable training. |
+| [Later] | Compile verified sparse rules into CPU operations | Require replay equivalence, including conflict, expiry and abstention. Measure encoding, dispatch, memory movement and maintenance alongside gate execution. |
+| [Later] | Generalization of recurrent gate structures | Freeze unseen combinations, fresh identities, temporal-order changes and noise. Compare fixed gates, matched finite-state/transition-table controls and the bounded SNN core; separate declared priors from learned structure. |
+| [Later] | Optional FPGA/LUT investigation | Consider only after useful CPU results. No hardware purchase or implementation is scheduled. Gate counts or assumed one-clock layers cannot establish physical energy savings. |
+
+Before implementation, register numeric accuracy/abstention tolerances, complete-path resource budgets, seeds, fresh evaluation cases and stop criteria. Reopening temporal learning must meet the existing R2 entry conditions. Normal SARA learning must not require global gradient backpropagation, dense matrix calculations or GPUs. Stop promotion if correctness, generalization or full-path cost fails against the strongest matched baseline. Distinguish Boolean optimization from evidence that spike timing is useful; energy claims require comparable physical measurements.
+
+日本語: 論理ゲート・小規模LUTとSNNの局所イベント処理の組合せを将来研究に追加します。推論の軽量化と逆伝播不要の学習は別々に検証し、現在の優先課題は維持します。
+
+简体中文：将逻辑门、小型查找表与SNN局部事件处理的结合列为后续研究。分别验证推理效率和无需全局反向传播的学习，不改变当前优先级。
+
+### Future research: ternary connection graphs with event-driven logic
+
+[Later] User-proposed companion to the logic-gate theme: combine ternary connection signs, bounded Boolean/LUT computation and temporal event sparsity. Investigate this as a distinct SARA architecture hypothesis, not an established BitNet-to-SNN conversion. The current queue and R1/R2 entry conditions remain unchanged.
+
+**Reference and distinction.** [BitNet b1.58](https://arxiv.org/abs/2402.17764) motivates ternary weights in `{-1, 0, +1}`. The proposed SARA transfer is to represent these values as signed adjacency: positive contribution, absent edge, negative contribution. Low-bit weights do not themselves establish sparse execution, Boolean computation, spike dynamics or local learning. Quantization, graph representation, event scheduling and learning rules are separate design choices; they are not an automatic progression from Transformer to logic network.
+
+**Representation contract to investigate:** store only existing signed edges in bounded adjacency lists. Absence means structural non-connection; distinguish it from an existing edge receiving no event, a zero-valued signal, and unknown evidence. Positive/negative contributions denote engineering excitation/inhibition, not semantic truth/negation or a demonstrated biological correspondence. Specify event amplitude, accumulator precision, threshold, leak, delay and reset independently of the ternary edge sign. Three-valued weights do not imply three-valued neuron state or a one-bit complete model.
+
+| Status | Research question | Proposed controlled experiment |
+| --- | --- | --- |
+| [Later] | Does structural zero reduce total work? | Compare stored zero edges against absent edges on identical streams and outputs. Include adjacency storage, indexing, edge creation/deletion and bookkeeping; zero weights alone are not evidence of savings. |
+| [Later] | Does event scheduling help beyond ternary weights? | Compare clocked scalar signed-graph traversal with event-driven traversal, holding topology, dynamics and representation fixed. Include dense-activity bursts, idle intervals and queue overhead; no matrix/GPU runtime is required for either arm. |
+| [Later] | Do small logic gates add useful computation? | Add bounded fan-in gates to the signed event graph and compare with a no-gate control. Define simultaneous-event ordering, missing-input handling and time windows; test replay equivalence and noise sensitivity. |
+| [Later] | Can topology/signs learn locally? | Propose bounded edge addition/removal/sign changes from local eligibility and outcome/reward. Compare frozen topology, shuffled outcomes and the strongest matched non-spiking baseline. Prevent rapid sign oscillation and unbounded recurrent cascades. This learning rule remains unproven. |
+| [Later] | Is temporal state necessary for generalization? | Freeze unseen sequences/combinations and timing-destruction controls. Measure accuracy, abstention, forgetting, active-edge work, queue peaks, retained bytes and end-to-end CPU latency, including encoding and maintenance. |
+
+**Execution gates.** Register numeric budgets for fan-in/out, edges, gate arity, pending events, recurrent steps per input, local history and update proposals before implementation. State overflow behavior explicitly and never silently drop work while claiming equivalent output. Require fresh evaluation identities and preregistered accuracy/resource thresholds; stop if the strongest matched baseline is as useful at lower complete-path cost. Preserve the prohibition on required global backpropagation, matrix calculations and GPUs. Physical energy savings require measurement; no energy, semantic-learning or SNN-superiority claim follows from ternary storage alone.
+
+日本語: 「三値の接続グラフ × 論理ゲート × イベント駆動SNN」を独立した将来研究に追加します。構造的な非接続、変化した部分だけの処理、局所学習を個別に比較し、三値化だけで省エネや知能が向上するとは扱いません。
+
+简体中文：新增“三值连接图 × 逻辑门 × 事件驱动SNN”研究方向。分别检验结构性断连、事件稀疏执行和局部学习，不将三值化本身视为节能或智能提升的证据。
+
+### Future research: associative memory and context-conditioned sparse logic
+
+[Later] Extend the preceding logic-gate and ternary-graph themes with the user's supplied dialogue: **ternary representation + associative memory + sparse routing + recurrent event state + context-conditioned logic + bounded low-bit numeric state**. The dialogue is a source of hypotheses, not empirical evidence. This does not start implementation or override the current execution queue and R1/R2 research gates.
+
+The objective is to test whether these mechanisms preserve useful similarity, context sensitivity and generalization under SARA's constraints. The proposed correspondences to Transformer components are functional analogies, not mathematical equivalence or a demonstrated replacement architecture. Existing SDR, memory and routing code does not establish that the combined hypothesis works.
+
+| Status | Proposed element | Research question and controlled comparison |
+| --- | --- | --- |
+| [Later] | Distributed binary/ternary representations | Can local learning produce useful neighborhoods on unseen examples? Compare fixed/random codes, declared aliases and locally adapted codes; measure collision rate, retrieval recall and transfer. Hamming proximity alone does not establish semantic proximity. |
+| [Later] | Associative lookup and sparse conditional routing | Select a bounded candidate set and then at most K paths using similarity/thresholds. Compare against a matched bounded search control. Count index construction, updates, lookup and misses; top-K output does not imply sublinear candidate discovery. |
+| [Later] | Recurrent state and temporal feedback | Compare stateful logic with reset-state and timing-destruction controls. Specify bounded registers, leak, reset, delays and recurrent work. State memory is not automatically equivalent to a KV cache. |
+| [Later] | Context-conditioned gates | Select from a fixed small gate bank using bounded context. Compare fixed gates and shuffled context. Log the selected gate and its local causes; distinguish runtime selection from changes to learned parameters. |
+| [Later] | Dynamic sparse module paths | Route through a bounded set of logic/memory modules. Compare static routes, matched random routes and no-router controls; measure route collapse, utilization, switching overhead and missed evidence. Runtime path selection is distinct from persistent rewiring. |
+| [Later] | Low-bit confidence and numeric side state | Test 2-, 4- and 8-bit bounded scalar state against Boolean-only and ternary-only controls. Specify range, scale, saturation, rounding and calibration. These are quantized values, not continuous analog information; extra precision is adopted only when its measured benefit justifies its cost. |
+| [Later] | Bypass/skip paths and output merging | Test whether bounded bypasses preserve information without disabling useful logic. Define conflicting-path handling, merge precision and abstention; compare with no-bypass controls and attribute output to its actual producing path. |
+| [Later] | Structural relations shared with temporal SNN state | Represent declared or learned relations explicitly and compare relation removal/shuffling on unseen combinations. Treat the dialogue's RISA connection as conceptual inspiration, not an implemented or validated subsystem. |
+
+**Candidate composition:** sparse encoder → associative candidate lookup → bounded router → selected logic modules → recurrent event state → context-conditioned logic and optional scalar side path → verified merge/output. Structural relations may inform routing and temporal state. This is an experiment diagram expressed as a sequence, not a mandatory production stack; introduce one component at a time before testing interactions.
+
+**Correctness boundaries.** Preserve the distinction between absent connections, inactive signals, unknown evidence and low confidence. Confidence or similarity must not override source binding, expiry, contradiction or complete-answer requirements. Approximate routing may nominate candidates but must not certify evidence completeness; test a contradicting source omitted by top-K and require abstention or an independently justified complete-scope check.
+
+**Evaluation gates.** Before execution, freeze fresh cases, numerical resource limits and acceptance thresholds for representation quality, retrieval recall, answer accuracy/abstention, temporal usefulness and complete-path CPU cost. Bound candidate examinations, index state, K, module fan-in/out, context history, scalar widths, recurrence, local updates and merge work. Include learning, indexing and maintenance in resource accounting. Use local outcome/eligibility updates only; no required global backpropagation, matrix calculations or GPUs. Separate gains from declared priors, memory lookup, routing, precision and spike timing through ablation. Stop if added mechanisms do not improve the accuracy/cost tradeoff over the strongest matched bounded control. Energy savings require physical measurement; preserved Transformer generalization is an unproven hypothesis.
+
+日本語: 添付対話の「連想記憶・疎な経路選択・再帰状態・文脈依存ゲート・少量の低ビット数値状態」を将来研究に追加します。意味距離や汎化が保たれるかを個別に測り、検索の取りこぼしを確信度で隠さない設計を条件とします。
+
+简体中文：新增联想记忆、稀疏路由、循环状态、上下文条件逻辑门及少量低位数值状态的研究。分别验证语义邻近性、泛化与完整成本；置信度不得掩盖证据遗漏。
 
 ### R0: Core Correctness and Attribution
 
