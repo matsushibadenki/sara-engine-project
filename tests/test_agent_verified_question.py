@@ -72,3 +72,49 @@ def test_initialized_agent_preserves_dialogue_across_verified_answers():
     assert len(calls) == 1
     assert "pong" in agent.chat("Run <PING>")
     assert len(calls) == 2
+
+
+@pytest.mark.parametrize("language", PROTOCOL["languages"])
+def test_chat_opt_in_has_no_fallback_or_history_mutation(language):
+    import copy
+    agent = SaraAgent(input_size=256, hidden_size=256, compartments=["general"])
+    store = TopicEvidenceStore()
+    store.publish(FIXTURE.build_evidence(language, PROTOCOL["topics"]), expected_generation=0, now_segment=3)
+    questions = json.loads((ROOT / "data/processed/benchmark_fixtures/topic_question_v1.json").read_text())
+    row = next(row for row in questions["languages"] if row["language"] == language["language"])
+    kwargs = dict(evidence_store=store, evidence_language=language["language"],
+                  evidence_aliases=tuple(map(tuple, row["aliases"])), evidence_now_segment=3)
+    before = copy.deepcopy(agent.dialogue_history)
+    assert agent.chat(row["cases"][0][0], **kwargs) == language["texts"][0]
+    trace = agent.get_last_response_trace()
+    assert trace["kind"] == "verified_answer" and trace["evidence_generation"] == 1
+    assert trace["owners"] == ["verified_topic_store"] and not trace["generated_continuation"]
+    assert trace["source_refs"] == ["fixture:sensor:0"]
+    agent.register_tool("<DO>", lambda _: pytest.fail("Evidence mode invoked a tool"))
+    refusal = agent.chat("<DO>", **kwargs)
+    assert refusal and agent.get_last_response_trace()["kind"] == "verified_abstention"
+    store.refresh_failed(expected_generation=1)
+    assert agent.chat(row["cases"][0][0], **kwargs) == refusal
+    assert agent.get_last_response_trace()["status"] == "evidence_unavailable"
+    assert agent.dialogue_history == before
+
+
+@pytest.mark.parametrize("option", ["stream", "teaching_mode"])
+def test_chat_evidence_mode_rejects_mutating_or_streaming_modes(option):
+    agent = object.__new__(SaraAgent)
+    with pytest.raises(ValueError):
+        agent.chat("Report a.", evidence_store=TopicEvidenceStore(), **{option: True})
+
+
+def test_chat_evidence_mode_retains_input_guard():
+    from types import SimpleNamespace
+    agent = SaraAgent(input_size=256, hidden_size=256, compartments=["general"])
+    agent.safety_guard = SimpleNamespace(check_input=lambda _: SimpleNamespace(is_safe=False))
+    assert "rejected" in agent.chat("Report a.", evidence_store=TopicEvidenceStore())
+    assert agent.get_last_response_trace()["owners"] == ["safety_guard"]
+    agent.safety_guard = SimpleNamespace(check_input=lambda _: SimpleNamespace(is_safe=True, sanitized_text="changed"))
+    assert "not executed" in agent.chat("Report a.", evidence_store=TopicEvidenceStore())
+    assert agent.get_last_response_trace()["status"] == "modified_evidence_query"
+    agent.safety_guard = None
+    assert agent.chat("Report a.", evidence_store=TopicEvidenceStore(), evidence_language=[])
+    assert agent.get_last_response_trace()["kind"] == "verified_abstention"

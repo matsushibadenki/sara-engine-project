@@ -1131,7 +1131,17 @@ class SaraAgent:
         self._last_executed_tool_triggers = executed_triggers[: self.max_tool_calls_per_turn]
         return tool_results, tool_failures
 
-    def chat(self, user_text: str, teaching_mode: bool = False, stream: bool = False) -> Union[str, Generator[str, None, None]]:
+    def chat(self, user_text: str, teaching_mode: bool = False, stream: bool = False, *,
+             evidence_store: Optional[TopicEvidenceStore] = None,
+             evidence_language: str = "en", evidence_aliases: tuple[tuple[str, str], ...] = (),
+             evidence_now_segment: Optional[int] = None) -> Union[str, Generator[str, None, None]]:
+        """Chat normally, or explicitly request restricted verified-evidence mode.
+
+        Evidence mode is non-streaming, read-only and never falls back to tools
+        or generation. The caller supplies a trusted store and logical clock.
+        """
+        if evidence_store is not None and (teaching_mode or stream):
+            raise ValueError("Evidence mode does not support teaching or streaming")
         self._set_response_trace(kind="pending", owners=(), status="running")
         safety_input: Optional[SafetyCheckResult] = None
         if self.safety_guard is not None:
@@ -1139,7 +1149,31 @@ class SaraAgent:
             if not safety_input.is_safe:
                 self._set_response_trace(kind="input_rejected", owners=("safety_guard",))
                 return "Input was rejected by safety guard."
+            if evidence_store is not None and safety_input.sanitized_text != user_text:
+                self._set_response_trace(kind="input_rejected", owners=("safety_guard",), status="modified_evidence_query")
+                return "Input was modified by safety guard; evidence query was not executed."
             user_text = safety_input.sanitized_text
+        if evidence_store is not None:
+            resolved = self.answer_verified_question(
+                user_text, evidence_store=evidence_store, language=evidence_language,
+                aliases=evidence_aliases, now_segment=evidence_now_segment,
+            )
+            result = resolved.result
+            self._set_response_trace(
+                kind="verified_answer" if result.decision == "answer" else "verified_abstention",
+                owners=("verified_topic_store",), status=result.decision,
+                source_refs=tuple(value.source_ref for item in result.items for value in item.evidence),
+                retrieval_count=len(result.items),
+            )
+            self.last_response_trace["evidence_generation"] = resolved.generation
+            if result.decision == "answer":
+                return "\n".join(item.evidence[0].text for item in result.items)
+            return {
+                "en": "I cannot answer this question from verified evidence.",
+                "ja": "検証済みの証拠では、この質問に回答できません。",
+                "zh-CN": "无法根据已验证的证据回答这个问题。",
+            }.get(evidence_language if isinstance(evidence_language, str) else "en",
+                  "I cannot answer this question from verified evidence.")
         self._register_dynamic_vocab(user_text)
         user_ids = self._text_to_ids(user_text)
 
