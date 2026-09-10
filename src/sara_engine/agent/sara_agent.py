@@ -16,6 +16,7 @@ from ..safety.safety_guard import SafetyGuard, SafetyCheckResult, ToolPermission
 from .bounded_agent_loop import AgentPlanDecision, BoundedAgentLoop
 from ..memory.event_state_cache import VerifiedHierarchicalEventStateCache
 from ..memory.verification_receipt import issue_verification_receipt
+from ..memory.topic_evidence_store import TopicEvidenceStore, StoreAnswer
 from .transactional_tools import (
     BoundedTransactionalToolAdapter,
     TransactionalToolRequest,
@@ -204,6 +205,22 @@ class SaraAgent:
             "source_refs": list(self.last_response_trace.get("source_refs", ())),
             "tool_triggers": list(self.last_response_trace.get("tool_triggers", ())),
         }
+
+    def answer_verified_question(
+        self, user_text: str, *, evidence_store: TopicEvidenceStore,
+        language: str, aliases: tuple[tuple[str, str], ...], now_segment: int,
+    ) -> StoreAnswer:
+        """Explicit restricted evidence mode; never fall back to generated text.
+
+        Callers supply a trusted store, declared topic aliases and logical time.
+        Return complete structured provenance or an empty abstention result.
+        This separate API does not change chat routing, history, or chat traces.
+        """
+        if not isinstance(evidence_store, TopicEvidenceStore):
+            raise TypeError("A TopicEvidenceStore is required")
+        return evidence_store.answer_question(
+            user_text, language=language, aliases=aliases, now_segment=now_segment,
+        )
 
     def evaluate_structural_plan(self, **plan: Any) -> AgentPlanDecision:
         """Route action proposals through the bounded plan policy."""
