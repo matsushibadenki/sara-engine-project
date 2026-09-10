@@ -87,11 +87,40 @@ def main():
             texts = [item.evidence[0].text for item in answer.result.items]
             rows.append({"language": language["language"], "decision": result.decision,
                          "passed": result.decision == "published" and texts == [language["texts"][protocol["topics"].index(topic)] for topic in requested]})
+            kwargs = dict(evidence_store=store, evidence_language=language["language"],
+                          evidence_aliases=tuple(map(tuple, query_row["aliases"])))
+            expected_text = "\n".join(texts)
+            chat_text = agent.chat(question, **kwargs, evidence_now_segment=3)
+            trace = agent.get_last_response_trace()
+            rows.append({"language": language["language"], "stage": "chat_answer",
+                         "passed": chat_text == expected_text and trace["kind"] == "verified_answer"
+                         and trace["owners"] == ["verified_topic_store"] and trace["evidence_generation"] == 1})
+            failed_client = EvidenceHTTPClient(f"http://127.0.0.1:{server.server_port}/invalid",
+                                               lambda payload: decode_evidence_page(payload, now_segment=4))
+            failure = refresh_from_pages(store, failed_client, scope="local", expected_generation=1, now_segment=4)
+            refusal = agent.chat(question, **kwargs, evidence_now_segment=4)
+            trace = agent.get_last_response_trace()
+            rows.append({"language": language["language"], "stage": "chat_after_failed_fetch",
+                         "passed": failure.decision == "page_unavailable" and refusal != expected_text
+                         and trace["kind"] == "verified_abstention" and trace["status"] == "evidence_unavailable"
+                         and not trace["source_refs"] and not trace["generated_continuation"]})
+            recovered_client = EvidenceHTTPClient(f"http://127.0.0.1:{server.server_port}/{language['language']}",
+                                                  lambda payload: decode_evidence_page(payload, now_segment=5))
+            recovery = refresh_from_pages(store, recovered_client, scope="local", expected_generation=2, now_segment=5)
+            recovered = agent.chat(question, **kwargs, evidence_now_segment=5)
+            rows.append({"language": language["language"], "stage": "chat_after_recovery",
+                         "passed": recovery.decision == "published" and recovered == expected_text
+                         and agent.get_last_response_trace()["evidence_generation"] == 3})
+            expired = agent.chat(question, **kwargs, evidence_now_segment=8)
+            trace = agent.get_last_response_trace()
+            rows.append({"language": language["language"], "stage": "chat_after_expiry",
+                         "passed": expired == refusal and trace["kind"] == "verified_abstention"
+                         and trace["status"] == "snapshot_expired" and not trace["source_refs"]})
     finally:
         server.shutdown()
         server.server_close()
         worker.join(timeout=3)
-    report = {"scope": "Real loopback HTTP with initialized SaraAgent explicit API and multilingual fixtures; no TLS or external source",
+    report = {"scope": "Real loopback HTTP through initialized SaraAgent opt-in chat, failure, recovery and expiry; no TLS or external source",
               "cases": rows, "passed": all(row["passed"] for row in rows), "normal_chat_promotion": False}
     output = Path(ensure_parent_directory(workspace_path("evaluation", "live_evidence_http.json")))
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

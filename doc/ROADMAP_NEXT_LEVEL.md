@@ -46,6 +46,7 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 | [Done] | Explicit SaraAgent evidence entry point | Structured evidence-only answers or abstention; no generation fallback. 199 related plus 22 dialogue tests pass. |
 | [Done] | Initialized agent with live loopback | Six live cases pass; 27 focused agent/dialogue tests confirm explicit evidence behavior and dialogue-state preservation. |
 | [Done] | Opt-in evidence routing in chat | Explicit store selection, localized abstention, source/generation traces and no generation fallback; 228 related tests pass. |
+| [Done] | Live HTTP-to-chat lifecycle | 18 loopback checks pass with initialized agent, multilingual answers, failed-refresh abstention, recovery and expiry. |
 | [Next] | Validate authoritative source and automatic routing | Connect an authoritative V1 publisher, verify freshness/TLS and measure actual service costs before automatic routing. |
 | [Later] | R2 — Establish independent usefulness | Reopen only under a new preregistration with fresh identities and an identifiable timing signal that matched non-spiking controls cannot recover. |
 | [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
