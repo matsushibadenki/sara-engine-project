@@ -1,0 +1,21 @@
+{
+  "schema": "sara-authoritative-evidence-evaluation-v2",
+  "publisher_id": "fixture.publisher.local",
+  "scope": "fixture.sensors",
+  "max_snapshot_lifetime_seconds": 300,
+  "max_future_skew_seconds": 5,
+  "languages": [
+    ["en", "Report tank temperature."],
+    ["ja", "タンクの温度を教えてください。"],
+    ["zh-CN", "请告诉我水箱温度。"]
+  ],
+  "scenarios": [
+    ["initial_sequence", 1, 0, 120, "published"],
+    ["sequence_replay", 1, 0, 120, "publisher_rollback"],
+    ["newer_sequence", 2, 0, 120, "published"],
+    ["wrong_publisher", 3, 0, 120, "publisher_mismatch"],
+    ["expired_snapshot", 4, -120, 0, "snapshot_expired"],
+    ["future_issued_at", 5, 6, 120, "publisher_time_invalid"],
+    ["excessive_lifetime", 6, 0, 301, "publisher_time_invalid"]
+  ]
+}

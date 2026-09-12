@@ -55,7 +55,7 @@ class TopicEvidenceStore:
             return self._generation
 
     def publish(self, records: tuple[TopicEvidence, ...], *, expected_generation: int, now_segment: int,
-                valid_until_segment: int | None = None) -> PublishResult:
+                valid_until_segment: int | None = None, before_commit=None) -> PublishResult:
         with self._lock:
             if type(expected_generation) is not int or expected_generation != self._generation:
                 return PublishResult("stale_generation", self._generation)
@@ -67,6 +67,16 @@ class TopicEvidenceStore:
                     decision = "snapshot_expired"
             if decision is None:
                 decision = self._validate(records, now_segment)
+            if decision == "published" and before_commit is not None:
+                if not callable(before_commit):
+                    decision = "invalid_commit_callback"
+                else:
+                    try:
+                        commit_decision = before_commit()
+                    except Exception:
+                        commit_decision = "publication_unavailable"
+                    if commit_decision is not None:
+                        decision = commit_decision
             self._generation += 1
             if decision != "published":
                 self._records = ()

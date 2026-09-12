@@ -1,0 +1,15 @@
+{
+  "schema": "sara-authoritative-sequence-persistence-evaluation-v1",
+  "publisher_id": "fixture.publisher.local",
+  "scope": "fixture.sensors",
+  "initial_sequence": 7,
+  "next_sequence": 8,
+  "cases": [
+    ["cold_start_publish", "published"],
+    ["restart_replay", "publisher_rollback"],
+    ["restart_newer", "published"],
+    ["corrupt_state", "watermark_invalid"],
+    ["wrong_publisher_state", "watermark_invalid"],
+    ["wrong_scope_state", "watermark_invalid"]
+  ]
+}

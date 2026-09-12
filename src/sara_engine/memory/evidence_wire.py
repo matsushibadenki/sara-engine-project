@@ -1,6 +1,6 @@
-"""Strict V1 JSON decoding for trusted evidence publishers; never issue receipts."""
+"""Strict V1/V2 JSON decoding for evidence publishers; never issue receipts."""
 
-from dataclasses import fields
+from dataclasses import dataclass, fields
 import math
 
 from sara_engine.memory.event_state_cache import EventStateEntry
@@ -8,6 +8,20 @@ from sara_engine.memory.verification_receipt import VerificationReceipt
 from sara_engine.memory.verified_answer import VerifiedAnswer
 from sara_engine.memory.structured_query import TopicEvidence, TopicQuery, resolve_topic_query
 from sara_engine.memory.topic_evidence_pages import EvidencePage
+
+
+@dataclass(frozen=True)
+class AuthoritativeEvidencePage:
+    page: EvidencePage
+    publisher_id: str
+    snapshot_sequence: int
+    issued_at_epoch: int
+
+
+class AuthoritativeEvidenceError(ValueError):
+    def __init__(self, decision):
+        self.decision = decision
+        super().__init__(decision)
 
 
 def _object(value, keys):
@@ -103,3 +117,54 @@ def decode_evidence_page(payload, *, now_segment):
         records.append(item)
     return EvidencePage(payload["scope"], payload["snapshot"], payload["index"], payload["total_pages"],
                         payload["total_records"], tuple(records), deadline)
+
+
+def decode_authoritative_evidence_page(
+    payload, *, expected_publisher, expected_scope, now_epoch,
+    max_future_skew_seconds=30, max_snapshot_lifetime_seconds=3600,
+):
+    """Decode V2 publisher/time metadata and the existing verified records."""
+    try:
+        _object(payload, (
+            "schema", "publisher_id", "scope", "snapshot", "snapshot_sequence",
+            "issued_at_epoch", "expires_at_epoch", "index", "total_pages",
+            "total_records", "records",
+        ))
+        if payload["schema"] != "sara-evidence-page-v2":
+            raise AuthoritativeEvidenceError("invalid_page")
+        for value in (expected_publisher, expected_scope):
+            _text(value, 128)
+            if not value or value != value.strip():
+                raise AuthoritativeEvidenceError("invalid_page")
+        if payload["publisher_id"] != expected_publisher:
+            raise AuthoritativeEvidenceError("publisher_mismatch")
+        if payload["scope"] != expected_scope:
+            raise AuthoritativeEvidenceError("scope_mismatch")
+        sequence = payload["snapshot_sequence"]
+        issued = payload["issued_at_epoch"]
+        expires = payload["expires_at_epoch"]
+        limits = (max_future_skew_seconds, max_snapshot_lifetime_seconds)
+        if (
+            type(now_epoch) is not int or now_epoch < 0
+            or any(type(value) is not int or not 0 <= value <= 86400 for value in limits)
+            or type(sequence) is not int or not 0 <= sequence <= 2**63 - 1
+            or type(issued) is not int or type(expires) is not int
+            or not 0 <= issued < expires <= 2**63 - 1
+            or issued > now_epoch + max_future_skew_seconds
+            or expires - issued > max_snapshot_lifetime_seconds
+        ):
+            raise AuthoritativeEvidenceError("publisher_time_invalid")
+        if expires <= now_epoch:
+            raise AuthoritativeEvidenceError("snapshot_expired")
+        v1 = {
+            "schema": "sara-evidence-page-v1", "scope": payload["scope"],
+            "snapshot": payload["snapshot"], "index": payload["index"],
+            "total_pages": payload["total_pages"], "total_records": payload["total_records"],
+            "valid_until_segment": expires, "records": payload["records"],
+        }
+        page = decode_evidence_page(v1, now_segment=now_epoch)
+        return AuthoritativeEvidencePage(page, payload["publisher_id"], sequence, issued)
+    except AuthoritativeEvidenceError:
+        raise
+    except (KeyError, TypeError, ValueError):
+        raise AuthoritativeEvidenceError("invalid_page") from None

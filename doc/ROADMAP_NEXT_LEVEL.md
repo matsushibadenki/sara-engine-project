@@ -49,7 +49,8 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 | [Done] | Live HTTP-to-chat lifecycle | 18 loopback checks pass with initialized agent, multilingual answers, failed-refresh abstention, recovery and expiry. |
 | [Done] | TLS verification mechanics | Explicit CA-bundle support; three live TLS cases and 230 related tests pass without disabling hostname/certificate checks. |
 | [Done] | Conservative automatic routing option | Closed grammar plus declared aliases/markers routes protected scope to verified answer or abstention and unrelated input to ordinary chat. Default off; 18 fixed cases and 244 related tests pass. |
-| [Next] | Validate authoritative source and default routing | Connect an authoritative V1 publisher, validate identity/freshness and measure actual service costs before enabling automatic routing by default. |
+| [Done] | Authoritative evidence runtime V2 | HTTPS-only peer configuration, exact publisher/scope binding, Unix freshness, strictly increasing in-process sequence watermark, complete multipage publication and initialized-agent routing pass 10/10 frozen and 7/7 live local-TLS cases; 274 related tests pass. Default remains off. |
+| [Next] | External publisher pilot and durable replay boundary | Connect an independently operated V2 publisher, persist the accepted sequence across restarts, and measure availability, latency and complete-path cost. Reassess default routing only from that evidence. |
 | [Later] | R2 — Establish independent usefulness | Reopen only under a new preregistration with fresh identities and an identifiable timing signal that matched non-spiking controls cannot recover. |
 | [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
 | [Later] | C0–C3 — Verified concept condensation | Paused by the R1 stop rule. Preserve the design, but do not implement it until a future causal local-learning prerequisite passes. |
@@ -58,6 +59,12 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 日本語: SNN研究として継続する価値はあります。ただし、まず「入力→時間状態→予測→遅延した結果→局所更新→次の予測」の効果を実証します。匿名概念や大規模な階層構造は、その実証後に必要性を判断します。
 
 简体中文: 项目值得继续作为 SNN 研究推进，但应先验证“输入→时间状态→预测→延迟结果→局部更新→下一次预测”的实际效果。匿名概念和大规模层级结构应等待这一步的证据。
+
+Authoritative evidence status: V2 is implemented as a disabled runtime component and validated against synthetic local TLS. The sequence watermark currently survives refresh failures but not process restart; external authority and operations remain the next gate.
+
+日本語: 権威情報V2は既定無効の実行部品として実装し、ローカルTLSの合成公開者で検証しました。番号の透かしは更新失敗を越えて維持しますが、プロセス再起動では失われます。外部公開者と運用実測が次の判定条件です。
+
+简体中文：权威证据V2已作为默认关闭的运行组件实现，并通过本地TLS合成发布方验证。序列水位可跨刷新失败保留，但尚不能跨进程重启持久化；下一关是外部发布方和实际运维测量。
 
 ### Future research: local logic gates and event-driven SNN integration
 

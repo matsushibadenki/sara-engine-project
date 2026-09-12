@@ -64,6 +64,40 @@ def test_failed_refresh_invalidates_old_answers_and_can_recover(records, failure
     assert store.publish(records, expected_generation=2, now_segment=3).decision == "published"
 
 
+def test_commit_callback_runs_after_validation_before_visibility(records):
+    store = TopicEvidenceStore()
+    observations = []
+
+    def before_commit():
+        observations.append(store.answer(
+            TopicQuery((records[0].topic_id,)), now_segment=3,
+        ).result.decision)
+
+    result = store.publish(
+        records, expected_generation=0, now_segment=3, before_commit=before_commit,
+    )
+    assert result.decision == "published"
+    assert observations == ["evidence_unavailable"]
+    assert store.answer(TopicQuery((records[0].topic_id,)), now_segment=3).result.decision == "answer"
+
+
+def test_commit_callback_is_skipped_for_invalid_snapshot_and_can_fail_closed(records):
+    store = TopicEvidenceStore()
+    calls = []
+    invalid = (records[0], records[0])
+    result = store.publish(
+        invalid, expected_generation=0, now_segment=3,
+        before_commit=lambda: calls.append("called"),
+    )
+    assert result.decision == "duplicate_source" and calls == []
+    result = store.publish(
+        records, expected_generation=1, now_segment=3,
+        before_commit=lambda: "watermark_unavailable",
+    )
+    assert result.decision == "watermark_unavailable"
+    assert store.answer(TopicQuery((records[0].topic_id,)), now_segment=3).result.decision == "evidence_unavailable"
+
+
 def test_conflicting_sources_are_preserved_not_ranked_away(records):
     store = TopicEvidenceStore()
     conflict = revised(records[0], source="fixture:independent")

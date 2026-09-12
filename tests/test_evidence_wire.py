@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from sara_engine.memory.evidence_wire import decode_evidence_page
+from sara_engine.memory.evidence_wire import (
+    AuthoritativeEvidenceError, decode_authoritative_evidence_page,
+    decode_evidence_page,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("wire_fixture", ROOT / "scripts/eval/structured_query_contract.py")
@@ -20,6 +23,14 @@ def payload(language):
     return json.loads(json.dumps({"schema": "sara-evidence-page-v1", "scope": "local", "snapshot": "v1",
         "index": 0, "total_pages": 1, "total_records": 2, "valid_until_segment": 8,
         "records": [asdict(record) for record in records]}))
+
+
+def authoritative_payload(language, *, now=2000000000):
+    value = payload(language)
+    value.update(schema="sara-evidence-page-v2", publisher_id="fixture.publisher.local",
+                 snapshot_sequence=1, issued_at_epoch=now, expires_at_epoch=now + 120)
+    value.pop("valid_until_segment")
+    return value
 
 
 @pytest.mark.parametrize("language", PROTOCOL["languages"])
@@ -58,3 +69,37 @@ def test_invalid_wire_is_not_coerced_or_repaired(mutation):
         del row["answer"]["receipt"]
     with pytest.raises(ValueError):
         decode_evidence_page(raw, now_segment=3)
+
+
+def test_authoritative_wire_preserves_v1_records():
+    raw = authoritative_payload(PROTOCOL["languages"][0])
+    decoded = decode_authoritative_evidence_page(
+        raw, expected_publisher="fixture.publisher.local", expected_scope="local",
+        now_epoch=2000000000, max_future_skew_seconds=5,
+        max_snapshot_lifetime_seconds=300,
+    )
+    assert decoded.publisher_id == "fixture.publisher.local"
+    assert decoded.snapshot_sequence == 1 and decoded.issued_at_epoch == 2000000000
+    assert decoded.page.valid_until_segment == 2000000120
+    assert decoded.page.records[0].answer.text == PROTOCOL["languages"][0]["texts"][0]
+
+
+@pytest.mark.parametrize("mutation,decision", [
+    ({"publisher_id": "other"}, "publisher_mismatch"),
+    ({"scope": "other"}, "scope_mismatch"),
+    ({"issued_at_epoch": 1999999880, "expires_at_epoch": 2000000000}, "snapshot_expired"),
+    ({"issued_at_epoch": 2000000006}, "publisher_time_invalid"),
+    ({"expires_at_epoch": 2000000301}, "publisher_time_invalid"),
+    ({"snapshot_sequence": True}, "publisher_time_invalid"),
+    ({"unexpected": 1}, "invalid_page"),
+])
+def test_authoritative_metadata_fails_closed(mutation, decision):
+    raw = authoritative_payload(PROTOCOL["languages"][0])
+    raw.update(mutation)
+    with pytest.raises(AuthoritativeEvidenceError) as caught:
+        decode_authoritative_evidence_page(
+            raw, expected_publisher="fixture.publisher.local", expected_scope="local",
+            now_epoch=2000000000, max_future_skew_seconds=5,
+            max_snapshot_lifetime_seconds=300,
+        )
+    assert caught.value.decision == decision

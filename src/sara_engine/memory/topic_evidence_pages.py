@@ -6,6 +6,22 @@ from sara_engine.memory.structured_query import TopicEvidence
 from sara_engine.memory.topic_evidence_store import PublishResult, TopicEvidenceStore
 
 
+class EvidencePageError(Exception):
+    """Expose one bounded producer failure decision to the page collector."""
+
+    ALLOWED = frozenset((
+        "invalid_page", "publisher_mismatch", "publisher_rollback",
+        "publisher_time_invalid", "scope_mismatch", "snapshot_expired",
+        "snapshot_mismatch",
+    ))
+
+    def __init__(self, decision):
+        if decision not in self.ALLOWED:
+            raise ValueError("Invalid page error decision")
+        self.decision = decision
+        super().__init__(decision)
+
+
 @dataclass(frozen=True)
 class EvidencePage:
     scope: str
@@ -19,7 +35,8 @@ class EvidencePage:
 
 def refresh_from_pages(store: TopicEvidenceStore, fetch_page, *, scope: str,
                        expected_generation: int, now_segment: int,
-                       clock=None, max_fetch_segments: int = 8) -> PublishResult:
+                       clock=None, max_fetch_segments: int = 8,
+                       before_publish=None) -> PublishResult:
     """Publish only a complete, consistent snapshot with at most twelve pages.
 
     The callback receives zero-based page indices and must enforce transport
@@ -71,6 +88,8 @@ def refresh_from_pages(store: TopicEvidenceStore, fetch_page, *, scope: str,
             return fail(clock_failure)
         try:
             page = fetch_page(index)
+        except EvidencePageError as exc:
+            return fail(exc.decision)
         except Exception:
             return fail("page_unavailable")
         clock_failure = check_clock()
@@ -102,5 +121,6 @@ def refresh_from_pages(store: TopicEvidenceStore, fetch_page, *, scope: str,
             if len(records) != page.total_records:
                 return fail("record_count_mismatch")
             return store.publish(tuple(records), expected_generation=expected_generation, now_segment=current_time,
-                                 valid_until_segment=page.valid_until_segment)
+                                 valid_until_segment=page.valid_until_segment,
+                                 before_commit=before_publish)
     return fail("page_limit")
