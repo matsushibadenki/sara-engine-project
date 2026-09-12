@@ -47,7 +47,9 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 | [Done] | Initialized agent with live loopback | Six live cases pass; 27 focused agent/dialogue tests confirm explicit evidence behavior and dialogue-state preservation. |
 | [Done] | Opt-in evidence routing in chat | Explicit store selection, localized abstention, source/generation traces and no generation fallback; 228 related tests pass. |
 | [Done] | Live HTTP-to-chat lifecycle | 18 loopback checks pass with initialized agent, multilingual answers, failed-refresh abstention, recovery and expiry. |
-| [Next] | Validate authoritative source and automatic routing | Connect an authoritative V1 publisher, verify freshness/TLS and measure actual service costs before automatic routing. |
+| [Done] | TLS verification mechanics | Explicit CA-bundle support; three live TLS cases and 230 related tests pass without disabling hostname/certificate checks. |
+| [Done] | Conservative automatic routing option | Closed grammar plus declared aliases/markers routes protected scope to verified answer or abstention and unrelated input to ordinary chat. Default off; 18 fixed cases and 244 related tests pass. |
+| [Next] | Validate authoritative source and default routing | Connect an authoritative V1 publisher, validate identity/freshness and measure actual service costs before enabling automatic routing by default. |
 | [Later] | R2 — Establish independent usefulness | Reopen only under a new preregistration with fresh identities and an identifiable timing signal that matched non-spiking controls cannot recover. |
 | [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
 | [Later] | C0–C3 — Verified concept condensation | Paused by the R1 stop rule. Preserve the design, but do not implement it until a future causal local-learning prerequisite passes. |

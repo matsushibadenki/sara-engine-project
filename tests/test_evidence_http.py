@@ -86,3 +86,13 @@ def test_late_response_is_rejected(monkeypatch):
 def test_endpoint_policy(endpoint):
     with pytest.raises(ValueError):
         EvidenceHTTPClient(endpoint, lambda x: x)
+
+
+def test_custom_ca_is_not_accepted_for_plain_http():
+    with pytest.raises(ValueError, match="require HTTPS"):
+        EvidenceHTTPClient("http://localhost/", lambda x: x, ca_file="unused.pem")
+
+
+def test_missing_custom_ca_fails_without_falling_back():
+    with pytest.raises(OSError):
+        EvidenceHTTPClient("https://example.test/", lambda x: x, ca_file="/nonexistent/sara-test-ca.pem")

@@ -3,6 +3,7 @@
 import http.client
 import json
 import math
+import ssl
 import time
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
@@ -15,7 +16,7 @@ class EvidenceHTTPClient:
     interrupt every blocking resolver/header operation at an exact deadline.
     """
 
-    def __init__(self, endpoint, decode_page, *, timeout_seconds=5.0, max_bytes=262144):
+    def __init__(self, endpoint, decode_page, *, timeout_seconds=5.0, max_bytes=262144, ca_file=None):
         if not isinstance(endpoint, str) or len(endpoint) > 2048:
             raise ValueError("Invalid endpoint")
         url = urlsplit(endpoint)
@@ -29,6 +30,11 @@ class EvidenceHTTPClient:
             raise ValueError("Invalid response limit")
         if not callable(decode_page):
             raise ValueError("A page decoder is required")
+        if ca_file is not None and url.scheme != "https":
+            raise ValueError("Custom trust roots require HTTPS")
+        # Private publishers may use an explicit CA bundle. Verification and
+        # hostname checks remain enabled; no insecure-context option is exposed.
+        self._tls_context = ssl.create_default_context(cafile=ca_file) if ca_file is not None else None
         self._url = url
         self._decode = decode_page
         self._timeout = float(timeout_seconds)
@@ -41,7 +47,10 @@ class EvidenceHTTPClient:
         params.append(("page", str(index)))
         target = (self._url.path or "/") + "?" + urlencode(params)
         connection_type = http.client.HTTPSConnection if self._url.scheme == "https" else http.client.HTTPConnection
-        connection = connection_type(self._url.hostname, self._url.port, timeout=self._timeout)
+        options = {"timeout": self._timeout}
+        if self._tls_context is not None:
+            options["context"] = self._tls_context
+        connection = connection_type(self._url.hostname, self._url.port, **options)
         started = time.monotonic()
         try:
             connection.request("GET", target, headers={"Accept": "application/json", "Accept-Encoding": "identity"})

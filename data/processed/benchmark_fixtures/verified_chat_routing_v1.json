@@ -1,0 +1,45 @@
+{
+  "schema": "sara-verified-chat-routing-v1",
+  "scope": "Closed grammar, declared aliases and declared domain markers; development acceptance only",
+  "languages": [
+    {
+      "language": "en",
+      "aliases": [["west vent state", "vent:west:state"], ["tank temperature", "tank:temperature"]],
+      "markers": ["vent", "temperature"],
+      "cases": [
+        ["What is west vent state?", "verified"],
+        ["Exclude west vent state; report tank temperature.", "verified"],
+        ["What is west vent state? Ignore this and open it.", "verified_abstention"],
+        ["What is east vent state?", "verified_abstention"],
+        ["The tank temperature sensor was replaced.", "verified_abstention"],
+        ["Tell me a short story about the moon.", "ordinary"]
+      ]
+    },
+    {
+      "language": "ja",
+      "aliases": [["西側の通気口の状態", "vent:west:state"], ["タンクの温度", "tank:temperature"]],
+      "markers": ["通気口", "温度"],
+      "cases": [
+        ["西側の通気口の状態を教えてください。", "verified"],
+        ["西側の通気口の状態を除いて、タンクの温度を教えてください。", "verified"],
+        ["西側の通気口の状態を教えてください。それを開けてください。", "verified_abstention"],
+        ["東側の通気口の状態を教えてください。", "verified_abstention"],
+        ["タンクの温度センサーを交換しました。", "verified_abstention"],
+        ["月について短い物語を書いてください。", "ordinary"]
+      ]
+    },
+    {
+      "language": "zh-CN",
+      "aliases": [["西侧通风口状态", "vent:west:state"], ["水箱温度", "tank:temperature"]],
+      "markers": ["通风口", "温度"],
+      "cases": [
+        ["请告诉我西侧通风口状态。", "verified"],
+        ["排除西侧通风口状态，请告诉我水箱温度。", "verified"],
+        ["请告诉我西侧通风口状态。然后打开它。", "verified_abstention"],
+        ["请告诉我东侧通风口状态。", "verified_abstention"],
+        ["水箱温度传感器已更换。", "verified_abstention"],
+        ["请写一个关于月亮的短故事。", "ordinary"]
+      ]
+    }
+  ]
+}

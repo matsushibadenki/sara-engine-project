@@ -17,6 +17,7 @@ from .bounded_agent_loop import AgentPlanDecision, BoundedAgentLoop
 from ..memory.event_state_cache import VerifiedHierarchicalEventStateCache
 from ..memory.verification_receipt import issue_verification_receipt
 from ..memory.topic_evidence_store import TopicEvidenceStore, StoreAnswer
+from ..memory.verified_chat_router import route_verified_chat
 from .transactional_tools import (
     BoundedTransactionalToolAdapter,
     TransactionalToolRequest,
@@ -1134,12 +1135,15 @@ class SaraAgent:
     def chat(self, user_text: str, teaching_mode: bool = False, stream: bool = False, *,
              evidence_store: Optional[TopicEvidenceStore] = None,
              evidence_language: str = "en", evidence_aliases: tuple[tuple[str, str], ...] = (),
-             evidence_now_segment: Optional[int] = None) -> Union[str, Generator[str, None, None]]:
+             evidence_now_segment: Optional[int] = None, evidence_auto: bool = False,
+             evidence_markers: tuple[str, ...] = ()) -> Union[str, Generator[str, None, None]]:
         """Chat normally, or explicitly request restricted verified-evidence mode.
 
         Evidence mode is non-streaming, read-only and never falls back to tools
         or generation. The caller supplies a trusted store and logical clock.
         """
+        if type(evidence_auto) is not bool or (evidence_auto and evidence_store is None):
+            raise ValueError("Automatic evidence routing requires an evidence store")
         if evidence_store is not None and (teaching_mode or stream):
             raise ValueError("Evidence mode does not support teaching or streaming")
         self._set_response_trace(kind="pending", owners=(), status="running")
@@ -1153,6 +1157,25 @@ class SaraAgent:
                 self._set_response_trace(kind="input_rejected", owners=("safety_guard",), status="modified_evidence_query")
                 return "Input was modified by safety guard; evidence query was not executed."
             user_text = safety_input.sanitized_text
+        if evidence_auto:
+            route = route_verified_chat(
+                user_text, language=evidence_language, aliases=evidence_aliases,
+                markers=evidence_markers,
+            )
+            if route.decision == "ordinary":
+                evidence_store = None
+            elif route.decision == "verified_abstention":
+                self._set_response_trace(
+                    kind="verified_abstention", owners=("verified_chat_router",),
+                    status=route.parse_decision,
+                )
+                self.last_response_trace["evidence_generation"] = evidence_store.generation
+                return {
+                    "en": "I cannot answer this question from verified evidence.",
+                    "ja": "検証済みの証拠では、この質問に回答できません。",
+                    "zh-CN": "无法根据已验证的证据回答这个问题。",
+                }.get(evidence_language if isinstance(evidence_language, str) else "en",
+                      "I cannot answer this question from verified evidence.")
         if evidence_store is not None:
             resolved = self.answer_verified_question(
                 user_text, evidence_store=evidence_store, language=evidence_language,
@@ -1161,7 +1184,8 @@ class SaraAgent:
             result = resolved.result
             self._set_response_trace(
                 kind="verified_answer" if result.decision == "answer" else "verified_abstention",
-                owners=("verified_topic_store",), status=result.decision,
+                owners=(("verified_chat_router", "verified_topic_store") if evidence_auto else ("verified_topic_store",)),
+                status=result.decision,
                 source_refs=tuple(value.source_ref for item in result.items for value in item.evidence),
                 retrieval_count=len(result.items),
             )
