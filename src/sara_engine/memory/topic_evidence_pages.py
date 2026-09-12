@@ -12,7 +12,7 @@ class EvidencePageError(Exception):
     ALLOWED = frozenset((
         "invalid_page", "publisher_mismatch", "publisher_rollback",
         "publisher_time_invalid", "scope_mismatch", "snapshot_expired",
-        "snapshot_mismatch",
+        "snapshot_mismatch", "publisher_not_modified",
     ))
 
     def __init__(self, decision):
@@ -89,6 +89,10 @@ def refresh_from_pages(store: TopicEvidenceStore, fetch_page, *, scope: str,
         try:
             page = fetch_page(index)
         except EvidencePageError as exc:
+            if exc.decision == "publisher_not_modified":
+                if index == 0:
+                    return PublishResult(exc.decision, store.generation)
+                return fail("page_unavailable")
             return fail(exc.decision)
         except Exception:
             return fail("page_unavailable")

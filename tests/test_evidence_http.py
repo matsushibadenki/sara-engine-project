@@ -2,7 +2,7 @@ import io
 
 import pytest
 
-from sara_engine.memory.evidence_http import EvidenceHTTPClient
+from sara_engine.memory.evidence_http import EvidenceHTTPClient, EvidenceNotModified
 from sara_engine.memory.topic_evidence_pages import refresh_from_pages
 from sara_engine.memory.topic_evidence_store import TopicEvidenceStore
 
@@ -20,6 +20,7 @@ def transport(monkeypatch, body=b'{"page":0}', *, status=200, headers=None):
             state["timeout"] = timeout
         def request(self, method, target, headers):
             state["target"] = target
+            state["headers"] = headers
         def getresponse(self):
             return response
         def close(self):
@@ -32,7 +33,11 @@ def test_bounded_json_transport(monkeypatch):
     state = transport(monkeypatch)
     client = EvidenceHTTPClient("https://example.test/evidence?scope=sensor&page=9", lambda payload: payload)
     assert client(2) == {"page": 0}
-    assert state == {"timeout": 5.0, "target": "/evidence?scope=sensor&page=2", "closed": True}
+    assert state == {
+        "timeout": 5.0, "target": "/evidence?scope=sensor&page=2",
+        "headers": {"Accept": "application/json", "Accept-Encoding": "identity"},
+        "closed": True,
+    }
 
 
 @pytest.mark.parametrize("body", [b'{"x":1,"x":2}', b'{"x":NaN}', b'[]', b'not json', b'\xff'])
@@ -96,3 +101,34 @@ def test_custom_ca_is_not_accepted_for_plain_http():
 def test_missing_custom_ca_fails_without_falling_back():
     with pytest.raises(OSError):
         EvidenceHTTPClient("https://example.test/", lambda x: x, ca_file="/nonexistent/sara-test-ca.pem")
+
+
+def test_conditional_page_zero_accepts_empty_304(monkeypatch):
+    state = transport(
+        monkeypatch, b"", status=304,
+        headers={"Content-Length": "0", "Content-Encoding": "identity"},
+    )
+    client = EvidenceHTTPClient(
+        "https://example.test/evidence", lambda _: pytest.fail("304 decoded"),
+        after_sequence=7,
+    )
+    with pytest.raises(EvidenceNotModified):
+        client(0)
+    assert state["headers"]["If-None-Match"] == '"sara-sequence-7"'
+    assert state["closed"]
+    assert client.get_metrics().request_count == 1
+    assert client.get_metrics().response_bytes == 0
+
+
+@pytest.mark.parametrize("index,after_sequence,body", [
+    (0, None, b""), (1, 7, b""), (0, 7, b"unexpected"),
+])
+def test_unexpected_or_nonempty_304_is_rejected(monkeypatch, index, after_sequence, body):
+    transport(monkeypatch, body, status=304, headers={"Content-Length": str(len(body))})
+    client = EvidenceHTTPClient(
+        "https://example.test/evidence", lambda value: value,
+        after_sequence=after_sequence,
+    )
+    with pytest.raises(ValueError):
+        client(index)
+    assert client.get_metrics().response_bytes == min(1, len(body))

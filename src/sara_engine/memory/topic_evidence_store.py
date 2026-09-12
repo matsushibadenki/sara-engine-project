@@ -75,6 +75,11 @@ class TopicEvidenceStore:
                         commit_decision = before_commit()
                     except Exception:
                         commit_decision = "publication_unavailable"
+                    if commit_decision is not None and (
+                        not isinstance(commit_decision, str)
+                        or not 0 < len(commit_decision) <= 64
+                    ):
+                        commit_decision = "publication_unavailable"
                     if commit_decision is not None:
                         decision = commit_decision
             self._generation += 1

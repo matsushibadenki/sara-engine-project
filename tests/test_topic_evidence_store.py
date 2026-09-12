@@ -98,6 +98,16 @@ def test_commit_callback_is_skipped_for_invalid_snapshot_and_can_fail_closed(rec
     assert store.answer(TopicQuery((records[0].topic_id,)), now_segment=3).result.decision == "evidence_unavailable"
 
 
+def test_commit_callback_rejects_unbounded_decision(records):
+    store = TopicEvidenceStore()
+    result = store.publish(
+        records, expected_generation=0, now_segment=3,
+        before_commit=lambda: object(),
+    )
+    assert result.decision == "publication_unavailable"
+    assert store.generation == 1
+
+
 def test_conflicting_sources_are_preserved_not_ranked_away(records):
     store = TopicEvidenceStore()
     conflict = revised(records[0], source="fixture:independent")

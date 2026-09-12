@@ -1,11 +1,22 @@
 """Small bounded HTTP JSON transport for a caller-configured evidence source."""
 
+from dataclasses import dataclass
 import http.client
 import json
 import math
 import ssl
 import time
 from urllib.parse import parse_qsl, urlencode, urlsplit
+
+
+@dataclass(frozen=True)
+class EvidenceHTTPMetrics:
+    request_count: int
+    response_bytes: int
+
+
+class EvidenceNotModified(Exception):
+    """Signal a valid conditional page-zero HTTP 304 response."""
 
 
 class EvidenceHTTPClient:
@@ -16,7 +27,8 @@ class EvidenceHTTPClient:
     interrupt every blocking resolver/header operation at an exact deadline.
     """
 
-    def __init__(self, endpoint, decode_page, *, timeout_seconds=5.0, max_bytes=262144, ca_file=None):
+    def __init__(self, endpoint, decode_page, *, timeout_seconds=5.0,
+                 max_bytes=262144, ca_file=None, after_sequence=None):
         if not isinstance(endpoint, str) or len(endpoint) > 2048:
             raise ValueError("Invalid endpoint")
         url = urlsplit(endpoint)
@@ -28,6 +40,11 @@ class EvidenceHTTPClient:
             raise ValueError("Invalid timeout")
         if type(max_bytes) is not int or not 1 <= max_bytes <= 1048576:
             raise ValueError("Invalid response limit")
+        if (
+            after_sequence is not None
+            and (type(after_sequence) is not int or not 0 <= after_sequence <= 2**63 - 1)
+        ):
+            raise ValueError("Invalid conditional sequence")
         if not callable(decode_page):
             raise ValueError("A page decoder is required")
         if ca_file is not None and url.scheme != "https":
@@ -39,6 +56,12 @@ class EvidenceHTTPClient:
         self._decode = decode_page
         self._timeout = float(timeout_seconds)
         self._max_bytes = max_bytes
+        self._after_sequence = after_sequence
+        self._request_count = 0
+        self._response_bytes = 0
+
+    def get_metrics(self):
+        return EvidenceHTTPMetrics(self._request_count, self._response_bytes)
 
     def __call__(self, index):
         if type(index) is not int or not 0 <= index < 12:
@@ -52,9 +75,23 @@ class EvidenceHTTPClient:
             options["context"] = self._tls_context
         connection = connection_type(self._url.hostname, self._url.port, **options)
         started = time.monotonic()
+        body = bytearray()
+        self._request_count += 1
         try:
-            connection.request("GET", target, headers={"Accept": "application/json", "Accept-Encoding": "identity"})
+            headers = {"Accept": "application/json", "Accept-Encoding": "identity"}
+            if self._after_sequence is not None:
+                headers["If-None-Match"] = f'"sara-sequence-{self._after_sequence}"'
+            connection.request("GET", target, headers=headers)
             response = connection.getresponse()
+            if response.status == 304:
+                if index != 0 or self._after_sequence is None:
+                    raise ValueError("Unexpected evidence HTTP 304")
+                length = response.getheader("Content-Length")
+                encoding = response.getheader("Content-Encoding", "identity").lower()
+                body.extend(response.read(1))
+                if length not in (None, "0") or encoding != "identity" or body:
+                    raise ValueError("Invalid evidence HTTP 304")
+                raise EvidenceNotModified()
             if response.status != 200:
                 raise ValueError("Evidence HTTP status is not 200")
             if response.getheader("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
@@ -64,7 +101,6 @@ class EvidenceHTTPClient:
             length = response.getheader("Content-Length")
             if length is not None and (not length.isdecimal() or int(length) > self._max_bytes):
                 raise ValueError("Evidence response exceeds size limit")
-            body = bytearray()
             while True:
                 remaining = self._timeout - (time.monotonic() - started)
                 if remaining <= 0:
@@ -95,4 +131,5 @@ class EvidenceHTTPClient:
                 raise ValueError("Evidence response must be an object")
             return self._decode(payload)
         finally:
+            self._response_bytes += len(body)
             connection.close()

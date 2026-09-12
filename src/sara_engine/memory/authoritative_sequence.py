@@ -1,7 +1,6 @@
 """Crash-safe monotonic sequence state for one authoritative publisher scope."""
 
 from contextlib import contextmanager
-import fcntl
 import json
 import os
 from pathlib import Path
@@ -9,6 +8,12 @@ import tempfile
 from threading import RLock
 
 from sara_engine.utils.project_paths import ensure_allowed_output_path, ensure_parent_directory
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows only
+    fcntl = None
+    import msvcrt
 
 
 class AuthoritativeSequenceError(ValueError):
@@ -44,7 +49,14 @@ class AuthoritativeSequenceStore:
         try:
             descriptor = os.open(self.lock_path, os.O_RDWR | os.O_CREAT, 0o600)
             os.chmod(self.lock_path, 0o600)
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            if fcntl is not None:
+                fcntl.flock(descriptor, fcntl.LOCK_EX)
+            else:  # pragma: no cover - Windows only
+                if os.fstat(descriptor).st_size == 0:
+                    os.write(descriptor, b"\0")
+                    os.fsync(descriptor)
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
             yield
         except AuthoritativeSequenceError:
             raise
@@ -53,7 +65,11 @@ class AuthoritativeSequenceStore:
         finally:
             if descriptor is not None:
                 try:
-                    fcntl.flock(descriptor, fcntl.LOCK_UN)
+                    if fcntl is not None:
+                        fcntl.flock(descriptor, fcntl.LOCK_UN)
+                    else:  # pragma: no cover - Windows only
+                        os.lseek(descriptor, 0, os.SEEK_SET)
+                        msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
                 finally:
                     os.close(descriptor)
 
@@ -105,14 +121,18 @@ class AuthoritativeSequenceStore:
             "scope": self.scope,
             "accepted_sequence": sequence,
         }
-        body = (json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+        body = (
+            json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+            + "\n"
+        ).encode("utf-8")
         descriptor = None
         temporary = None
         try:
             descriptor, temporary = tempfile.mkstemp(
                 prefix="." + self.path.name + ".", suffix=".tmp", dir=self.path.parent,
             )
-            os.fchmod(descriptor, 0o600)
+            if hasattr(os, "fchmod"):
+                os.fchmod(descriptor, 0o600)
             with os.fdopen(descriptor, "wb") as handle:
                 descriptor = None
                 handle.write(body)
@@ -120,11 +140,12 @@ class AuthoritativeSequenceStore:
                 os.fsync(handle.fileno())
             os.replace(temporary, self.path)
             temporary = None
-            parent = os.open(self.path.parent, os.O_RDONLY)
-            try:
-                os.fsync(parent)
-            finally:
-                os.close(parent)
+            if os.name != "nt":
+                parent = os.open(self.path.parent, os.O_RDONLY)
+                try:
+                    os.fsync(parent)
+                finally:
+                    os.close(parent)
         except OSError:
             raise AuthoritativeSequenceError("watermark_unavailable") from None
         finally:

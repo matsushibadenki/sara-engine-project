@@ -50,7 +50,9 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 | [Done] | TLS verification mechanics | Explicit CA-bundle support; three live TLS cases and 230 related tests pass without disabling hostname/certificate checks. |
 | [Done] | Conservative automatic routing option | Closed grammar plus declared aliases/markers routes protected scope to verified answer or abstention and unrelated input to ordinary chat. Default off; 18 fixed cases and 244 related tests pass. |
 | [Done] | Authoritative evidence runtime V2 | HTTPS-only peer configuration, exact publisher/scope binding, Unix freshness, strictly increasing in-process sequence watermark, complete multipage publication and initialized-agent routing pass 10/10 frozen and 7/7 live local-TLS cases; 274 related tests pass. Default remains off. |
-| [Next] | External publisher pilot and durable replay boundary | Connect an independently operated V2 publisher, persist the accepted sequence across restarts, and measure availability, latency and complete-path cost. Reassess default routing only from that evidence. |
+| [Done] | Durable replay boundary | Exact publisher/scope state is stored under managed paths using cooperative process locking, owner-only temporary files, flush/`fsync`, atomic replacement and commit-before-publication ordering. Frozen persistence evaluation passes 6/6; live TLS restart, four-process collision and 292 related tests pass. |
+| [Done] | Conditional refresh and pilot runner | A bounded `If-None-Match` validator permits only empty page-zero 304 as unchanged, preserving the original lease. Sanitized finite-run reports expose decisions, request count, bytes and elapsed time; configured questions cannot enter ordinary generation. Frozen lifecycle 5/5, local TLS 8/8 and 309 related tests pass. |
+| [Next] | Execute external publisher pilot | Use a reviewed independently operated V2 publisher and measure authority, revision completeness, availability, latency and complete-path cost. Reassess default routing only from that evidence. |
 | [Later] | R2 — Establish independent usefulness | Reopen only under a new preregistration with fresh identities and an identifiable timing signal that matched non-spiking controls cannot recover. |
 | [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
 | [Later] | C0–C3 — Verified concept condensation | Paused by the R1 stop rule. Preserve the design, but do not implement it until a future causal local-learning prerequisite passes. |
@@ -60,11 +62,11 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 
 简体中文: 项目值得继续作为 SNN 研究推进，但应先验证“输入→时间状态→预测→延迟结果→局部更新→下一次预测”的实际效果。匿名概念和大规模层级结构应等待这一步的证据。
 
-Authoritative evidence status: V2 is implemented as a disabled runtime component and validated against synthetic local TLS. The sequence watermark currently survives refresh failures but not process restart; external authority and operations remain the next gate.
+Authoritative evidence status: V2 is implemented as a disabled runtime component and validated against synthetic local TLS. Its optional managed-path sequence watermark survives restart and rejects equal-sequence process collisions. External authority and operations remain the next gate.
 
-日本語: 権威情報V2は既定無効の実行部品として実装し、ローカルTLSの合成公開者で検証しました。番号の透かしは更新失敗を越えて維持しますが、プロセス再起動では失われます。外部公開者と運用実測が次の判定条件です。
+日本語: 権威情報V2は既定無効の実行部品として実装し、ローカルTLSの合成公開者で検証しました。任意の管理対象パスへ保存した番号の透かしは再起動を越えて維持され、同一番号のプロセス競合も拒否します。外部公開者と運用実測が次の判定条件です。
 
-简体中文：权威证据V2已作为默认关闭的运行组件实现，并通过本地TLS合成发布方验证。序列水位可跨刷新失败保留，但尚不能跨进程重启持久化；下一关是外部发布方和实际运维测量。
+简体中文：权威证据V2已作为默认关闭的运行组件实现，并通过本地TLS合成发布方验证。可选的托管路径序列水位可跨重启保存，并拒绝相同序列的进程竞争；下一关是外部发布方和实际运维测量。
 
 ### Future research: local logic gates and event-driven SNN integration
 

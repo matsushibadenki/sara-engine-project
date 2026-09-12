@@ -1,0 +1,13 @@
+{
+  "schema": "sara-authoritative-conditional-refresh-evaluation-v1",
+  "publisher_id": "fixture.publisher.local",
+  "scope": "fixture.sensors",
+  "sequence": 11,
+  "cases": [
+    ["initial_200", "published"],
+    ["unchanged_304", "publisher_not_modified"],
+    ["replayed_200", "publisher_rollback"],
+    ["cold_restart_304", "publisher_not_modified"],
+    ["expired_local_304", "publisher_not_modified"]
+  ]
+}

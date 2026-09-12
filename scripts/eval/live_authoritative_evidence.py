@@ -22,10 +22,19 @@ from sara_engine.utils.project_paths import processed_data_path, workspace_path,
 
 class Handler(BaseHTTPRequestHandler):
     payload = {}
+    not_modified_etag = None
     lock = Lock()
 
     def do_GET(self):
         with self.lock:
+            if (
+                self.not_modified_etag is not None
+                and self.headers.get("If-None-Match") == self.not_modified_etag
+            ):
+                self.send_response(304)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             body = json.dumps(self.payload, ensure_ascii=False).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -37,9 +46,13 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
-def set_payload(payload):
+def set_payload(payload, *, not_modified_sequence=None):
     with Handler.lock:
         Handler.payload = payload
+        Handler.not_modified_etag = (
+            None if not_modified_sequence is None
+            else f'"sara-sequence-{not_modified_sequence}"'
+        )
 
 
 def main():
@@ -66,10 +79,13 @@ def main():
             runtimes = {}
             for language, question in protocol["languages"]:
                 base = configuration(protocol, language, questions)
-                config = AuthoritativeEvidenceConfig(**{
+                values = {
                     **base.__dict__, "endpoint": f"https://localhost:{server.server_port}/evidence",
                     "ca_file": str(cert),
-                })
+                }
+                if language == "en":
+                    values["sequence_state_path"] = str(Path(directory) / "sequence.json")
+                config = AuthoritativeEvidenceConfig(**values)
                 runtime = AuthoritativeEvidenceRuntime(config, clock=lambda: NOW)
                 set_payload(make_payload(protocol, evidence, language, sequence=1,
                                          issued_offset=0, expiry_offset=120)[0])
@@ -79,24 +95,41 @@ def main():
                 trace = agent.get_last_response_trace()
                 rows.append({"language": language, "case": "initial",
                              "decision": refreshed.decision,
+                             "refresh_trace": runtime.get_last_refresh_trace(),
                              "passed": refreshed.decision == "published" and answer == source["texts"][1]
                              and trace["owners"] == ["verified_chat_router", "verified_topic_store"]})
-                runtimes[language] = (runtime, question, source["texts"][1])
+                runtimes[language] = (runtime, question, source["texts"][1], config)
 
-            runtime, question, expected = runtimes["en"]
+            runtime, question, expected, config = runtimes["en"]
+            generation = runtime.store.generation
+            set_payload(Handler.payload, not_modified_sequence=1)
+            unchanged = runtime.refresh()
+            rows.append({
+                "language": "en", "case": "not_modified",
+                "decision": unchanged.decision,
+                "refresh_trace": runtime.get_last_refresh_trace(),
+                "passed": unchanged.decision == "publisher_not_modified"
+                and runtime.store.generation == generation
+                and runtime.chat(agent, question) == expected,
+            })
+
             set_payload(make_payload(protocol, evidence, "en", sequence=1,
                                      issued_offset=0, expiry_offset=120)[0])
+            runtime = AuthoritativeEvidenceRuntime(config, clock=lambda: NOW)
             replay = runtime.refresh()
             refused = runtime.chat(agent, question)
             rows.append({"language": "en", "case": "replay",
                          "decision": replay.decision,
+                         "refresh_trace": runtime.get_last_refresh_trace(),
                          "passed": replay.decision == "publisher_rollback" and refused != expected
                          and agent.get_last_response_trace()["kind"] == "verified_abstention"})
 
             set_payload(make_payload(protocol, evidence, "en", sequence=2,
                                      issued_offset=0, expiry_offset=120)[0])
+            runtime = AuthoritativeEvidenceRuntime(config, clock=lambda: NOW)
             recovery = runtime.refresh()
             rows.append({"language": "en", "case": "recovery", "decision": recovery.decision,
+                         "refresh_trace": runtime.get_last_refresh_trace(),
                          "passed": recovery.decision == "published" and runtime.chat(agent, question) == expected
                          and runtime.accepted_sequence == 2})
 
@@ -105,6 +138,7 @@ def main():
             set_payload(wrong)
             mismatch = runtime.refresh()
             rows.append({"language": "en", "case": "publisher_mismatch", "decision": mismatch.decision,
+                         "refresh_trace": runtime.get_last_refresh_trace(),
                          "passed": mismatch.decision == "publisher_mismatch"
                          and runtime.chat(agent, question) != expected and runtime.accepted_sequence == 2})
 
@@ -115,6 +149,7 @@ def main():
             untrusted = AuthoritativeEvidenceRuntime(bad_config, clock=lambda: NOW)
             untrusted_result = untrusted.refresh()
             rows.append({"language": "en", "case": "untrusted_tls", "decision": untrusted_result.decision,
+                         "refresh_trace": untrusted.get_last_refresh_trace(),
                          "passed": untrusted_result.decision == "page_unavailable"
                          and untrusted.store.generation == 1})
         finally:
@@ -124,6 +159,7 @@ def main():
     report = {
         "scope": "Real local TLS V2 publisher runtime; synthetic records and ephemeral certificate",
         "cases": rows, "passed": all(row["passed"] for row in rows),
+        "durable_sequence_restart_tested": True,
         "automatic_default_enabled": False,
     }
     output = Path(ensure_parent_directory(workspace_path("evaluation", "live_authoritative_evidence.json")))

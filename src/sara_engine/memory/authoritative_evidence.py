@@ -6,7 +6,7 @@ from threading import RLock
 import time
 from urllib.parse import urlsplit
 
-from sara_engine.memory.evidence_http import EvidenceHTTPClient
+from sara_engine.memory.evidence_http import EvidenceHTTPClient, EvidenceNotModified
 from sara_engine.memory.evidence_wire import (
     AuthoritativeEvidenceError, decode_authoritative_evidence_page,
 )
@@ -43,7 +43,8 @@ class AuthoritativeEvidenceRuntime:
     source's facts or completeness and performs no background refresh.
     """
 
-    def __init__(self, config, *, clock=None, client_factory=EvidenceHTTPClient):
+    def __init__(self, config, *, clock=None, client_factory=EvidenceHTTPClient,
+                 performance_clock=None):
         if not isinstance(config, AuthoritativeEvidenceConfig):
             raise TypeError("AuthoritativeEvidenceConfig is required")
         url = urlsplit(config.endpoint) if isinstance(config.endpoint, str) else None
@@ -82,12 +83,17 @@ class AuthoritativeEvidenceRuntime:
                 and (not isinstance(config.ca_file, str) or not config.ca_file))
         ):
             raise ValueError("Invalid transport configuration")
-        if (clock is not None and not callable(clock)) or not callable(client_factory):
+        if (
+            (clock is not None and not callable(clock))
+            or not callable(client_factory)
+            or (performance_clock is not None and not callable(performance_clock))
+        ):
             raise ValueError("Invalid runtime dependency")
         # Validate endpoint, trust material and transport limits before storing
         # the configuration. The client performs no request during construction.
         client_factory(config.endpoint, lambda value: value, timeout_seconds=config.timeout_seconds,
-                       max_bytes=config.max_bytes, ca_file=config.ca_file)
+                       max_bytes=config.max_bytes, ca_file=config.ca_file,
+                       after_sequence=None)
         sequence_store = None
         accepted_sequence = None
         if config.sequence_state_path is not None:
@@ -100,8 +106,10 @@ class AuthoritativeEvidenceRuntime:
         self.store = TopicEvidenceStore(max_age_segments=config.max_snapshot_lifetime_seconds)
         self._clock = clock or time.time
         self._client_factory = client_factory
+        self._performance_clock = performance_clock or time.perf_counter
         self._sequence_store = sequence_store
         self._accepted_sequence = accepted_sequence
+        self._last_refresh_trace = None
         self._lock = RLock()
 
     def _now(self):
@@ -118,23 +126,73 @@ class AuthoritativeEvidenceRuntime:
         with self._lock:
             return self._accepted_sequence
 
+    def _performance_now(self):
+        try:
+            value = self._performance_clock()
+        except Exception:
+            return None
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            return None
+        return float(value)
+
+    def _finish_refresh(self, result, client, performance_started):
+        performance_ended = self._performance_now()
+        elapsed = None
+        if (
+            performance_started is not None and performance_ended is not None
+            and performance_ended >= performance_started
+        ):
+            elapsed = round(performance_ended - performance_started, 9)
+        request_count = None
+        response_bytes = None
+        metrics_method = getattr(client, "get_metrics", None)
+        if callable(metrics_method):
+            try:
+                metrics = metrics_method()
+                request_count = metrics.request_count
+                response_bytes = metrics.response_bytes
+            except Exception:
+                request_count = None
+                response_bytes = None
+        self._last_refresh_trace = {
+            "schema": "sara-authoritative-refresh-trace-v1",
+            "decision": result.decision,
+            "generation": result.generation,
+            "accepted_sequence": self._accepted_sequence,
+            "request_count": request_count,
+            "response_bytes": response_bytes,
+            "elapsed_seconds": elapsed,
+            "sequence_persistence_enabled": self._sequence_store is not None,
+            "automatic_default_enabled": False,
+        }
+        return result
+
+    def get_last_refresh_trace(self):
+        """Return bounded metrics without endpoint, trust path or evidence content."""
+        with self._lock:
+            return None if self._last_refresh_trace is None else dict(self._last_refresh_trace)
+
     def refresh(self):
         with self._lock:
+            performance_started = self._performance_now()
             expected_generation = self.store.generation
             try:
                 started = self._now()
             except Exception:
                 revoked = self.store.refresh_failed(expected_generation=expected_generation)
-                return type(revoked)("clock_unavailable", revoked.generation)
+                result = type(revoked)("clock_unavailable", revoked.generation)
+                return self._finish_refresh(result, None, performance_started)
             try:
                 client = self._client_factory(
                     self.config.endpoint, lambda value: value,
                     timeout_seconds=self.config.timeout_seconds, max_bytes=self.config.max_bytes,
                     ca_file=self.config.ca_file,
+                    after_sequence=self._accepted_sequence,
                 )
             except Exception:
                 revoked = self.store.refresh_failed(expected_generation=expected_generation)
-                return type(revoked)("page_unavailable", revoked.generation)
+                result = type(revoked)("page_unavailable", revoked.generation)
+                return self._finish_refresh(result, None, performance_started)
             metadata = None
 
             def fetch(index):
@@ -146,6 +204,8 @@ class AuthoritativeEvidenceRuntime:
                         max_future_skew_seconds=self.config.max_future_skew_seconds,
                         max_snapshot_lifetime_seconds=self.config.max_snapshot_lifetime_seconds,
                     )
+                except EvidenceNotModified:
+                    raise EvidencePageError("publisher_not_modified") from None
                 except AuthoritativeEvidenceError as exc:
                     raise EvidencePageError(exc.decision) from None
                 current = (decoded.publisher_id, decoded.snapshot_sequence, decoded.issued_at_epoch)
@@ -174,7 +234,7 @@ class AuthoritativeEvidenceRuntime:
             )
             if result.decision == "published" and self._sequence_store is None:
                 self._accepted_sequence = metadata[1]
-            return result
+            return self._finish_refresh(result, client, performance_started)
 
     def chat(self, agent, text):
         """Route one input through the configured default-off evidence scope."""

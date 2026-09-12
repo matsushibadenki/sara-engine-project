@@ -1,6 +1,8 @@
 import importlib.util
 import json
+import multiprocessing
 import os
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -24,16 +26,28 @@ def load(name):
 
 MODULE = load("authoritative_evidence_v2")
 PERSISTENCE_MODULE = load("authoritative_sequence_persistence")
+CONDITIONAL_MODULE = load("authoritative_conditional_refresh")
 PROTOCOL_RAW = (ROOT / "data/processed/benchmark_fixtures/authoritative_evidence_v2.json").read_bytes()
 PROTOCOL = json.loads(PROTOCOL_RAW)
 PERSISTENCE_RAW = (ROOT / "data/processed/benchmark_fixtures/authoritative_sequence_persistence_v1.json").read_bytes()
 PERSISTENCE_PROTOCOL = json.loads(PERSISTENCE_RAW)
+CONDITIONAL_RAW = (ROOT / "data/processed/benchmark_fixtures/authoritative_conditional_refresh_v1.json").read_bytes()
+CONDITIONAL_PROTOCOL = json.loads(CONDITIONAL_RAW)
 EVIDENCE = json.loads((ROOT / "data/processed/benchmark_fixtures/structured_query_contract_v1.json").read_text())
 QUESTIONS = json.loads((ROOT / "data/processed/benchmark_fixtures/verified_chat_routing_v1.json").read_text())
 
 
+def advance_in_process(path, publisher_id, scope, sequence, start, results):
+    store = AuthoritativeSequenceStore(path, publisher_id=publisher_id, scope=scope)
+    start.wait()
+    try:
+        store.advance(sequence)
+        results.put("advanced")
+    except AuthoritativeSequenceError as exc:
+        results.put(exc.decision)
+
+
 def test_frozen_runtime_acceptance():
-    from hashlib import sha256
     assert sha256(PROTOCOL_RAW).hexdigest() == "b496539cf6c3627d27499aaabf587ca08da2f2a6730aafa5e9a39414a863ed9b"
     report = MODULE.evaluate(PROTOCOL, EVIDENCE, QUESTIONS)
     assert report["correct"] == report["case_count"] == 10
@@ -61,6 +75,7 @@ def test_status_omits_transport_and_catalog_details():
     {"markers": ["sensor"]}, {"max_snapshot_lifetime_seconds": 0},
     {"max_future_skew_seconds": True}, {"max_fetch_seconds": 61},
     {"timeout_seconds": float("nan")}, {"max_bytes": True}, {"ca_file": ""},
+    {"sequence_state_path": str(ROOT / "unmanaged-sequence.json")},
 ])
 def test_configuration_fails_before_any_request(change):
     transport = MODULE.FixtureTransport()
@@ -76,6 +91,32 @@ def test_non_callable_clock_is_rejected_even_when_falsey():
     config = MODULE.configuration(PROTOCOL, "en", QUESTIONS)
     with pytest.raises(ValueError):
         AuthoritativeEvidenceRuntime(config, clock=0, client_factory=transport)
+
+
+def test_refresh_trace_is_bounded_and_does_not_expose_configuration():
+    transport = MODULE.FixtureTransport()
+    transport.payloads = MODULE.make_payload(
+        PROTOCOL, EVIDENCE, "en", sequence=1, issued_offset=0, expiry_offset=120,
+    )
+    ticks = iter((10.0, 10.25))
+    config = MODULE.configuration(PROTOCOL, "en", QUESTIONS)
+    runtime = AuthoritativeEvidenceRuntime(
+        config, clock=lambda: MODULE.NOW, client_factory=transport,
+        performance_clock=lambda: next(ticks),
+    )
+    assert runtime.get_last_refresh_trace() is None
+    assert runtime.refresh().decision == "published"
+    trace = runtime.get_last_refresh_trace()
+    assert trace == {
+        "schema": "sara-authoritative-refresh-trace-v1",
+        "decision": "published", "generation": 1, "accepted_sequence": 1,
+        "request_count": None, "response_bytes": None, "elapsed_seconds": 0.25,
+        "sequence_persistence_enabled": False,
+        "automatic_default_enabled": False,
+    }
+    assert config.endpoint not in repr(trace)
+    trace["decision"] = "tampered"
+    assert runtime.get_last_refresh_trace()["decision"] == "published"
 
 
 def test_clock_failure_revokes_current_store():
@@ -117,7 +158,8 @@ def test_multipage_publisher_metadata_mismatch_is_auditable(field, value):
 def sequence_path(request):
     directory = Path(workspace_path("tests", "authoritative-sequence"))
     directory.mkdir(parents=True, exist_ok=True)
-    path = directory / f"{request.node.name}.json"
+    identity = sha256(request.node.nodeid.encode("utf-8")).hexdigest()[:20]
+    path = directory / f"{identity}.json"
     for candidate in (path, Path(str(path) + ".lock")):
         candidate.unlink(missing_ok=True)
     yield path
@@ -143,6 +185,9 @@ def test_sequence_store_is_atomic_private_and_monotonic(sequence_path):
     b"not-json", b"{}", b'{"schema":"sara-authoritative-sequence-v1","publisher_id":"other","scope":"fixture.sensors","accepted_sequence":7}',
     b'{"schema":"sara-authoritative-sequence-v1","publisher_id":"fixture.publisher.local","scope":"other","accepted_sequence":7}',
     b'{"schema":"sara-authoritative-sequence-v1","publisher_id":"fixture.publisher.local","scope":"fixture.sensors","accepted_sequence":true}',
+    b'{"schema":"sara-authoritative-sequence-v1","publisher_id":"fixture.publisher.local","scope":"fixture.sensors","accepted_sequence":7,"extra":0}',
+    b'{"schema":"sara-authoritative-sequence-v1","publisher_id":"fixture.publisher.local","scope":"fixture.sensors","accepted_sequence":7,"accepted_sequence":8}',
+    b"x" * 1025,
 ])
 def test_sequence_store_rejects_corrupt_or_foreign_state(sequence_path, payload):
     sequence_path.write_bytes(payload)
@@ -173,6 +218,7 @@ def test_runtime_rejects_replay_after_restart_and_accepts_newer(sequence_path):
     )
     assert restarted.accepted_sequence == 7
     assert restarted.status()["sequence_persistence_enabled"] is True
+    assert str(sequence_path) not in repr(restarted.status())
     assert restarted.refresh().decision == "publisher_rollback"
     assert restarted.store.generation == 1 and restarted.accepted_sequence == 7
 
@@ -205,7 +251,6 @@ def test_invalid_snapshot_does_not_advance_durable_sequence(sequence_path):
 
 
 def test_frozen_sequence_persistence_acceptance(sequence_path):
-    from hashlib import sha256
     assert sha256(PERSISTENCE_RAW).hexdigest() == "924747e35341f6d2d8dfd83d9569ffc3c48d89ee4688aae3b0d240703a0a876b"
     report = PERSISTENCE_MODULE.evaluate(
         PERSISTENCE_PROTOCOL, PROTOCOL, EVIDENCE, QUESTIONS, sequence_path,
@@ -231,3 +276,55 @@ def test_persistence_failure_revokes_without_exposing_snapshot(sequence_path, mo
     monkeypatch.setattr(runtime._sequence_store, "advance", fail)
     assert runtime.refresh().decision == "watermark_unavailable"
     assert runtime.accepted_sequence is None and runtime.store.generation == 1
+
+
+def test_process_lock_allows_one_equal_sequence_advance(sequence_path):
+    context = multiprocessing.get_context("spawn")
+    start = context.Event()
+    results = context.Queue()
+    processes = [context.Process(
+        target=advance_in_process,
+        args=(str(sequence_path), PROTOCOL["publisher_id"], PROTOCOL["scope"], 9,
+              start, results),
+    ) for _ in range(4)]
+    for process in processes:
+        process.start()
+    start.set()
+    decisions = [results.get(timeout=5) for _ in processes]
+    for process in processes:
+        process.join(timeout=5)
+        assert process.exitcode == 0
+    assert decisions.count("advanced") == 1
+    assert decisions.count("publisher_rollback") == 3
+    store = AuthoritativeSequenceStore(
+        str(sequence_path), publisher_id=PROTOCOL["publisher_id"], scope=PROTOCOL["scope"],
+    )
+    assert store.load() == 9
+
+
+def test_frozen_conditional_refresh_acceptance(sequence_path):
+    assert sha256(CONDITIONAL_RAW).hexdigest() == "2022bd98112cc6abe97305da34337f4f293881331feb44de994d3ad7b487ce31"
+    report = CONDITIONAL_MODULE.evaluate(
+        CONDITIONAL_PROTOCOL, PROTOCOL, EVIDENCE, QUESTIONS, sequence_path,
+    )
+    assert report["correct"] == report["case_count"] == 5
+    assert report["passed"] and not report["freshness_extended_by_304"]
+
+
+def test_not_modified_on_later_page_revokes_snapshot(sequence_path):
+    transport = CONDITIONAL_MODULE.ConditionalTransport()
+    transport.payloads = MODULE.make_payload(
+        PROTOCOL, EVIDENCE, "en", sequence=12, issued_offset=0,
+        expiry_offset=120, pages=2,
+    )
+    transport.not_modified = True
+    transport.not_modified_index = 1
+    config = AuthoritativeEvidenceConfig(**{
+        **MODULE.configuration(PROTOCOL, "en", QUESTIONS).__dict__,
+        "sequence_state_path": str(sequence_path),
+    })
+    runtime = AuthoritativeEvidenceRuntime(
+        config, clock=lambda: MODULE.NOW, client_factory=transport,
+    )
+    assert runtime.refresh().decision == "page_unavailable"
+    assert runtime.store.generation == 1 and runtime.accepted_sequence is None
