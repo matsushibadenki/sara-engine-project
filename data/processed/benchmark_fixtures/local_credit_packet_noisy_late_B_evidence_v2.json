@@ -1,0 +1,27 @@
+{
+  "schema": "sara-local-credit-packet-noisy-late-B-evidence-preregistration-v2",
+  "experiment_id": "local-credit-packet-noisy-late-B-evidence-v2-2026-09-16",
+  "reason_for_v2": "V1 runner used namespace|order|seed|index and namespace|flip|seed|cue|index, while V1 text omitted the order and flip domain separators. V1 result is exploratory, not a protocol-conformant pass. V2 freezes the actual label-blind selector before fresh data are generated.",
+  "parent_v1_protocol_sha256": "601c66675dd38b01e680ca3713ac49d660ef3a362154075b39f8a521a885e05a",
+  "parent_v1_runner_sha256": "057b50bb0c46457eedf1d96cbee80d1b6e8c0d16d6419cd1a2c9ae9ff0c2621c",
+  "parent_v1_result_sha256": "0122358ed13e567b89f68229796f2f3da9b22d2b6cbf0702379f26a50fa05983",
+  "inheritance": "Use V1 conditions, arms, interventions, acceptance, resource budgets and stop rules unchanged. Override only fresh identity and the exact SHA selector descriptions below.",
+  "identity": {
+    "namespace": "local-credit-packet-noisy-late-B-evidence-v2",
+    "seeds": [1021013, 1021119, 1021223, 1021331, 1021437],
+    "A_cues": [910, 911, 912, 913, 914, 915, 916, 917],
+    "B_cues": [1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017]
+  },
+  "exact_selection_rules": {
+    "training_order": "SHA-256 of namespace|order|seed|original training-row index; lexicographic ascending digest order.",
+    "corruption": "Within each B cue, SHA-256 of namespace|flip|seed|B cue|permuted episode index; lexicographic ascending digest order. Flip exactly 0, 16 or 32 of 64 occurrences per cue.",
+    "target_and_outcome_blind": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "one_execution_no_retuning": true,
+    "v1_result_not_preregistered_evidence": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}

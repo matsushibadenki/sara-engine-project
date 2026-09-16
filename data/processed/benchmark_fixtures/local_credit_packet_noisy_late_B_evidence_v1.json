@@ -1,0 +1,71 @@
+{
+  "schema": "sara-local-credit-packet-noisy-late-B-evidence-preregistration-v1",
+  "experiment_id": "local-credit-packet-noisy-late-B-evidence-v1-2026-09-16",
+  "parent_candidate_sha256": "68e87e58ceb1be949680f760d66cc46118520c2d489933e7720a146d7143cc61",
+  "parent_materializer_sha256": "7010283d84dbc09c1df8ccb792a3a39d4dc6a95b7c81ccd71575758a9068c8f9",
+  "parent_delayed_runner_sha256": "814b0e6f6f31790cf655064f4202ecf6ddb36a1ace358c0ed7d511773b13fa7e",
+  "parent_delayed_result_sha256": "3bc174fa1b8b8a266d121bf97e8b201353f84e5644c64d4b411bf89b8ed68410",
+  "research_question": "Does B-interpreted credit remain useful with corrupted B-local teaching, and where does learning fail when clean teaching arrives near the training deadline?",
+  "identity": {
+    "namespace": "local-credit-packet-noisy-late-B-evidence-v1",
+    "seeds": [1011013, 1011119, 1011223, 1011331, 1011437],
+    "A_cues": [710, 711, 712, 713, 714, 715, 716, 717],
+    "B_cues": [810, 811, 812, 813, 814, 815, 816, 817]
+  },
+  "schedule": {
+    "B_calibration_rows_used": 0,
+    "main_training_rows_per_seed": 512,
+    "development_rows_per_seed": 128,
+    "training_order": "SHA-256 rank of namespace|seed|original training-row index, independent of targets and outcomes; the same permutation is used for every arm and condition.",
+    "conditions": [
+      {"name": "clean_immediate", "delay": 0, "flip_fraction": "0/4"},
+      {"name": "quarter_noise_immediate", "delay": 0, "flip_fraction": "1/4"},
+      {"name": "half_noise_immediate", "delay": 0, "flip_fraction": "2/4"},
+      {"name": "clean_late_480", "delay": 480, "flip_fraction": "0/4"},
+      {"name": "clean_late_504", "delay": 504, "flip_fraction": "0/4"},
+      {"name": "clean_after_deadline_512", "delay": 512, "flip_fraction": "0/4"}
+    ],
+    "corruption_rule": "For each B cue, rank its 64 training occurrences by SHA-256 of namespace|seed|B cue|permuted episode index. Flip exactly 0, 16 or 32 targets per cue, selected without consulting target values or outcomes.",
+    "delivery_rule": "Deliver due B-local evidence before the episode packet; delay zero delivers current evidence before packet. No post-training delivery or A replay before scoring.",
+    "A_eligibility": "Consumed once at outcome; late B evidence cannot retroactively revise an earlier A update.",
+    "development_updates": false
+  },
+  "arms": ["local_credit_packet", "direct_anchor_shortcut", "capacity_matched_direct_shortcut"],
+  "interventions_at_quarter_noise": ["B_local_map_reset", "B_to_A_route_shuffle", "B_to_A_sign_shuffle"],
+  "acceptance": {
+    "clean_immediate_minimum_accuracy": 0.95,
+    "quarter_noise_minimum_accuracy": 0.70,
+    "quarter_noise_minimum_shortcut_gain": 0.15,
+    "half_noise_maximum_accuracy": 0.60,
+    "late_504_maximum_accuracy": 0.80,
+    "after_deadline_maximum_accuracy": 0.60,
+    "quarter_noise_minimum_map_reset_drop": 0.10,
+    "quarter_noise_minimum_route_shuffle_drop": 0.10,
+    "quarter_noise_minimum_sign_shuffle_drop": 0.10,
+    "mean_accuracy_clean_at_least_quarter_at_least_half": true,
+    "mean_accuracy_late_480_at_least_late_504_at_least_after_deadline": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_pending_B_evidence_entries": 512,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_packet_bytes": 64,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_backward_events_per_episode": 2,
+    "maximum_tuning_attempts": 1
+  },
+  "stop_rules": {
+    "retain_negative_result_on_gate_failure": true,
+    "do_not_modify_parent_candidate_or_results": true,
+    "do_not_tune_after_first_development_run": true,
+    "no_retroactive_replay_in_this_experiment": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "noise_is_deterministic_label_blind_flip_not_real_sensor_noise": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}

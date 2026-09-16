@@ -1,0 +1,32 @@
+{
+  "schema": "sara-local-credit-packet-prior-error-repair-heldout-execution-v1",
+  "experiment_id": "local-credit-packet-prior-error-repair-heldout-v1-2026-09-16",
+  "protocol_sha256": "b56539b08a950b60c352ae64ad0c8484317971a6a02695569f7faa6b143f2170",
+  "candidate_source_sha256": "08dbb7b0cba32d5f2414384b652a267f17d441747116816276b44ee40fbe67c2",
+  "materializer_source_sha256": "944ae0219ffe4ffb63049f190bed17ebb5528af9c1483920760545fb65224b17",
+  "rows_sha256": "9ca389ff99582d951f410510f8f178ae11c1a96209febfdee9137c45a0b3ae04",
+  "pre_execution_audit_sha256": "34e9f3788177978440060f575d122a1adc0bd9882b13ffd141b55b1108f01016",
+  "runtime": "CPython 3.10, CPU only, PYTHONDONTWRITEBYTECODE=1",
+  "row_adapter": {
+    "training_order": "Preserve frozen JSONL per-seed training row order and pass (A_cue, B_cue, forced_A_action, forced_B_action, global_success).",
+    "maps": "Reconstruct A and B private-cue targets from audited training rows only, checking consistency and complete cue coverage. Test targets are scorer-only.",
+    "test": "Pass (A_cue, B_cue, A_target, B_local_target) in frozen JSONL order. No candidate updates occur while scoring."
+  },
+  "comparison": {
+    "arms": ["wrong_credit_only", "simple_replay", "correction_packet", "direct_outcome_correction", "oracle_control"],
+    "controls": ["B_local_map_reset_on_replay", "B_to_A_route_shuffle_on_replay", "B_to_A_sign_shuffle_on_replay", "A_anchor_erased_before_replay", "replay_disabled", "magnitude_capped_at_one", "capacity_matched_direct_correction"],
+    "same_forward_rows_and_forced_actions": true,
+    "one_shot_result_path": "workspace/evaluation/local_credit_packet_prior_error_repair_heldout_result_v1.json"
+  },
+  "stop_rules": {
+    "verify_all_hashes_and_audit_before_candidate_import_or_scoring": true,
+    "refuse_if_result_already_exists": true,
+    "do_not_rewrite_result_after_failure": true,
+    "do_not_change_candidate_or_thresholds_after_scoring": true
+  },
+  "boundaries": {
+    "synthetic_heldout_only": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}

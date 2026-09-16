@@ -1,0 +1,92 @@
+{
+  "schema": "sara-local-credit-packet-prior-error-repair-heldout-preregistration-v1",
+  "experiment_id": "local-credit-packet-prior-error-repair-heldout-v1-2026-09-16",
+  "parent_development_protocol_sha256": "12062cc5c57aa9e780fdfc90bcb369300f8c252c586ca1d359765fc00e5aee4d",
+  "parent_development_result_sha256": "76184603dcb958480455a2cde4524d0823f0e3f11115941e8b48d20f1dd07694",
+  "candidate_source_sha256": "08dbb7b0cba32d5f2414384b652a267f17d441747116816276b44ee40fbe67c2",
+  "parent_generator_sha256": "4c2f161d3ad9b11010820d5cbd8b2cdf0bbd1938e42714ea35a4d8b6b2240316",
+  "research_question": "Does a source-addressed magnitude-two local credit packet repair prior wrong A updates on unseen, independently materialized private-cue maps?",
+  "identity": {
+    "namespace": "local-credit-packet-prior-error-repair-heldout-v1",
+    "seeds": [1071013, 1071119, 1071223, 1071331, 1071437],
+    "A_cues": [1910, 1911, 1912, 1913, 1914, 1915, 1916, 1917],
+    "B_cues": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017],
+    "train_test_identity_overlap_allowed": false
+  },
+  "independent_materialization": {
+    "python_runtime": "CPython 3.10",
+    "generator": "Reuse the separately implemented, hash-pinned online-budget held-out row generator, not the development selector or candidate. Generate new seed/cue identities and private maps.",
+    "map_rule": "Rank cues by SHA-256 of seed|cue|A-map or seed|cue|B-map; first four map to 0, last four to 1.",
+    "training_rows": "Complete 8x8x2x2 action factorial repeated twice, then random.Random(seed+2111).shuffle.",
+    "test_rows": "Complete 8x8 cue factorial repeated twice, then random.Random(seed+2221).shuffle.",
+    "row_counts_per_seed": {"training": 512, "test": 128},
+    "oracle": "Independently reconstruct SHA rank as integers for all private targets and verify each XOR/global outcome. For the first encountered training event of each A cue, verify that B's inverted and correct local codes imply opposite A packet signs."
+  },
+  "repair_schedule": {
+    "initial_B_labels": "One inverted private target per B cue before training, deliberately adversarial.",
+    "early_A_updates": "Exactly one wrong packet update on the first encountered event of each A cue; eight source-matched A/B anchors retained.",
+    "late_B_revision": "After all training episodes, clear inverted B local votes and observe one exact correct target per B cue.",
+    "post_revision_online_updates": 0,
+    "replay": "One source-keyed B-to-A packet per replay tick, eight ticks maximum. Magnitude bucket two is permitted only when revised sign opposes recorded prior sign; A applies at most two signed local steps.",
+    "numerical_gradient_allowed": false,
+    "global_history_scan_allowed": false
+  },
+  "evaluation": {
+    "arms": ["wrong_credit_only", "simple_replay", "correction_packet", "direct_outcome_correction", "oracle_control"],
+    "controls": ["B_local_map_reset_on_replay", "B_to_A_route_shuffle_on_replay", "B_to_A_sign_shuffle_on_replay", "A_anchor_erased_before_replay", "replay_disabled", "magnitude_capped_at_one", "capacity_matched_direct_correction"],
+    "one_shot": true,
+    "candidate_changes_allowed": false,
+    "test_updates": false
+  },
+  "acceptance": {
+    "minimum_correction_accuracy": 0.95,
+    "maximum_wrong_credit_accuracy": 0.05,
+    "maximum_simple_replay_accuracy": 0.55,
+    "minimum_gain_over_simple_replay": 0.40,
+    "maximum_direct_outcome_accuracy": 0.65,
+    "minimum_oracle_accuracy": 0.95,
+    "minimum_B_map_reset_drop": 0.25,
+    "minimum_route_shuffle_drop": 0.40,
+    "minimum_sign_shuffle_drop": 0.40,
+    "minimum_anchor_erasure_drop": 0.40,
+    "all_five_seed_correction_gains_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_anchors": 8,
+    "maximum_B_anchors": 8,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_packet_bytes": 64,
+    "maximum_replay_lookups": 8,
+    "maximum_replay_packets": 8,
+    "maximum_total_state_bytes": 1048576
+  },
+  "pre_execution_audit": {
+    "all_rows_match_independent_oracle": true,
+    "balanced_private_maps_and_outcomes": true,
+    "complete_training_action_factorial": true,
+    "opaque_ids_unique_and_split_disjoint": true,
+    "direct_outcome_shortcut_A_target_majority_accuracy_maximum": 0.55,
+    "eight_early_anchor_cues_covered": true,
+    "inverted_vs_correct_packet_signs_opposite_for_all_anchors": true,
+    "independent_weight_repair_oracle_accuracy": 1.0,
+    "training_and_test_rows_frozen_before_execution": true
+  },
+  "stop_rules": {
+    "do_not_score_if_pre_execution_audit_fails": true,
+    "refuse_if_result_already_exists": true,
+    "do_not_modify_candidate_or_thresholds_after_test": true,
+    "retain_negative_result_on_failure": true,
+    "do_not_repeat_one_shot_scoring": true
+  },
+  "boundaries": {
+    "synthetic_binary_factorization_only": true,
+    "initial_B_labels_adversarially_inverted": true,
+    "late_B_revision_exact_and_cue_complete": true,
+    "only_eight_early_A_updates": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}

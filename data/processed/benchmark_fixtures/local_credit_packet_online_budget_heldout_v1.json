@@ -1,0 +1,81 @@
+{
+  "schema": "sara-local-credit-packet-online-budget-heldout-preregistration-v1",
+  "experiment_id": "local-credit-packet-online-budget-heldout-v1-2026-09-16",
+  "parent_development_protocol_sha256": "69a021da296f2c97674dd3c2f5ad9554f8c51cab763246c1024524b2b7f5e71e",
+  "parent_development_result_sha256": "27ec328c6d15b8145c78ace6e50ab3587d352377de477d96113c5f3f498ea309",
+  "candidate_source_sha256": "a8f45a6f6ea8e76389b2dc0a23a513d85910a7dd256830878dad0412e7c33f29",
+  "research_question": "Does eight-source local replay preserve its advantage over zero or two ordinary post-teaching updates on independently generated, unseen private-cue maps?",
+  "identity": {
+    "namespace": "local-credit-packet-online-budget-heldout-v1",
+    "seeds": [1051013, 1051119, 1051223, 1051331, 1051437],
+    "A_cues": [1510, 1511, 1512, 1513, 1514, 1515, 1516, 1517],
+    "B_cues": [1610, 1611, 1612, 1613, 1614, 1615, 1616, 1617],
+    "train_test_identity_overlap_allowed": false
+  },
+  "independent_materialization": {
+    "python_runtime": "CPython 3.10",
+    "map_rule": "For each circuit, rank eight cues by SHA-256 of seed|cue|A-map or seed|cue|B-map; the first four map to 0 and the last four map to 1.",
+    "training_rows": "Complete 8x8x2x2 action factorial repeated twice, then shuffle with random.Random(seed+2111).",
+    "test_rows": "Complete 8x8 cue factorial repeated twice, then shuffle with random.Random(seed+2221).",
+    "training_outcome": "success = int(forced_B_action == (A_target XOR B_target)).",
+    "oracle": "Separately reconstruct SHA ranks as integers and independently verify every target/outcome before candidate execution.",
+    "row_counts_per_seed": {"training": 512, "test": 128},
+    "opaque_identifiers": "SHA-256(namespace|phase|seed|source index|kind), first 24 hex characters; identities are split-specific and never used as target features."
+  },
+  "evaluation": {
+    "online_budgets": [0, 2],
+    "arms": ["no_A_credit", "online_only_packet", "targeted_replay_packet", "targeted_replay_direct_shortcut", "oracle_control"],
+    "zero_budget_controls": ["B_local_map_reset_on_replay", "B_to_A_route_shuffle_on_replay", "B_to_A_sign_shuffle_on_replay", "A_anchor_erased_before_replay", "replay_disabled", "capacity_matched_direct_shortcut"],
+    "one_shot": true,
+    "candidate_changes_allowed": false,
+    "development_updates": false
+  },
+  "acceptance": {
+    "zero_budget_minimum_packet_accuracy": 0.95,
+    "zero_budget_minimum_gain_over_online_only": 0.40,
+    "zero_budget_maximum_direct_shortcut_accuracy": 0.75,
+    "two_budget_minimum_packet_accuracy": 0.95,
+    "two_budget_minimum_gain_over_online_only": 0.25,
+    "zero_budget_minimum_map_reset_drop": 0.30,
+    "zero_budget_minimum_route_shuffle_drop": 0.30,
+    "zero_budget_minimum_sign_shuffle_drop": 0.30,
+    "zero_budget_minimum_anchor_erasure_drop": 0.30,
+    "all_five_seed_zero_and_two_gains_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_anchors": 8,
+    "maximum_B_anchors": 8,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_packet_bytes": 64,
+    "maximum_replay_lookups": 8,
+    "maximum_replay_packets": 8,
+    "maximum_total_state_bytes": 1048576
+  },
+  "pre_execution_audit": {
+    "all_rows_match_independent_oracle": true,
+    "balanced_private_maps": true,
+    "complete_training_action_factorial": true,
+    "balanced_train_outcomes_and_test_targets": true,
+    "opaque_ids_unique_and_split_disjoint": true,
+    "direct_outcome_shortcut_A_target_majority_accuracy_maximum": 0.55,
+    "anchor_coverage_before_first_teaching": true,
+    "training_and_test_rows_frozen_before_execution": true
+  },
+  "stop_rules": {
+    "do_not_score_if_pre_execution_audit_fails": true,
+    "do_not_modify_candidate_or_thresholds_after_test": true,
+    "retain_negative_result_on_failure": true,
+    "do_not_repeat_one_shot_scoring": true
+  },
+  "boundaries": {
+    "synthetic_binary_factorization_only": true,
+    "exact_cue_complete_B_teaching": true,
+    "A_updates_deferred_before_B_teaching": true,
+    "not_correction_of_prior_wrong_A_updates": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}

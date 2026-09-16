@@ -1,0 +1,32 @@
+{
+  "schema": "sara-local-credit-packet-online-budget-heldout-execution-v1",
+  "experiment_id": "local-credit-packet-online-budget-heldout-v1-2026-09-16",
+  "protocol_sha256": "0f49b9b131a88a6d50b516e4a9d01df39b7d36b7170ff118c86329c4d2bd3d8c",
+  "generator_source_sha256": "4c2f161d3ad9b11010820d5cbd8b2cdf0bbd1938e42714ea35a4d8b6b2240316",
+  "rows_sha256": "ee56a23128160752feb3316d6f69c52ff7dd6a2012ce22db96d5ff63b2af2d50",
+  "pre_execution_audit_sha256": "e39198b1acd17a69b6886627a22eb4e21dca7023c4281e27f0d94269ea4f16fa",
+  "candidate_source_sha256": "a8f45a6f6ea8e76389b2dc0a23a513d85910a7dd256830878dad0412e7c33f29",
+  "runtime": "CPython 3.10, CPU only, PYTHONDONTWRITEBYTECODE=1",
+  "row_adapter": {
+    "training_order": "Preserve JSONL per-seed training row order; pass tuples (A_cue, B_cue, forced_A_action, forced_B_action, global_success) without reordering.",
+    "maps": "Reconstruct A and B cue maps only from audited training-row targets; verify consistency for every cue. Test-row targets are scorer-only.",
+    "test": "Pass per-seed test tuples (A_cue, B_cue, A_target, B_local_target) in JSONL order; no updates are permitted during scoring."
+  },
+  "comparison": {
+    "online_budgets": [0, 2],
+    "zero_budget_controls": ["B_local_map_reset_on_replay", "B_to_A_route_shuffle_on_replay", "B_to_A_sign_shuffle_on_replay", "A_anchor_erased_before_replay", "replay_disabled", "capacity_matched_direct_shortcut"],
+    "forward_rows_and_forced_actions_equal_across_arms": true,
+    "one_shot_result_path": "workspace/evaluation/local_credit_packet_online_budget_heldout_result_v1.json"
+  },
+  "stop_rules": {
+    "verify_all_hashes_and_pre_execution_audit_before_candidate_import_or_scoring": true,
+    "refuse_if_result_already_exists": true,
+    "do_not_rewrite_result_after_failure": true,
+    "no_threshold_or_candidate_changes_after_scoring": true
+  },
+  "boundaries": {
+    "synthetic_heldout_only": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}

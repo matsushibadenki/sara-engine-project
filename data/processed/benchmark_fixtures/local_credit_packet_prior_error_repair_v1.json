@@ -1,0 +1,95 @@
+{
+  "schema": "sara-local-credit-packet-prior-error-repair-preregistration-v1",
+  "experiment_id": "local-credit-packet-prior-error-repair-v1-2026-09-16",
+  "parent_online_budget_candidate_sha256": "a8f45a6f6ea8e76389b2dc0a23a513d85910a7dd256830878dad0412e7c33f29",
+  "parent_online_budget_heldout_result_sha256": "fa19cc5a0d5e691c08bf915fac1e0099a5b06776b5398b73eb03a029c05ee4c7",
+  "parent_packet_source_sha256": "c675e6886ac1a488b57998f65c825d66a3b3ffc92a2e7b640d6e1ff957091ec1",
+  "parent_selector_runner_sha256": "a9608e86c938e8e8170c1f3115c61101f8ddc7f2f8091225852896e6c21a5da0",
+  "parent_selector_protocol_sha256": "601c66675dd38b01e680ca3713ac49d660ef3a362154075b39f8a521a885e05a",
+  "research_question": "Can a bounded, source-addressed local credit packet repair eight A weights previously pushed in the wrong direction by an incorrect B-local map?",
+  "identity": {
+    "namespace": "local-credit-packet-prior-error-repair-v1",
+    "seeds": [1061013, 1061119, 1061223, 1061331, 1061437],
+    "A_cues": [1710, 1711, 1712, 1713, 1714, 1715, 1716, 1717],
+    "B_cues": [1810, 1811, 1812, 1813, 1814, 1815, 1816, 1817]
+  },
+  "task": {
+    "training_rows_per_seed": 512,
+    "development_rows_per_seed": 128,
+    "training_order": "SHA-256 rank of namespace|order|seed|original row index, with independent selector audit.",
+    "maps": "Independent balanced binary A and B private-cue maps; global target is A target XOR B target.",
+    "initial_B_evidence": "Before training, B receives exactly one adversarially inverted target for each private B cue. This deliberately guarantees incorrect early B decoding, not realistic sensor noise.",
+    "early_A_updates": "For the first encountered event of each private A cue only, A records one active branch, receives one B-interpreted outcome packet under the inverted B map, and makes exactly one signed local update. Eight incorrect updates in total are required.",
+    "other_pre_teaching_A_updates": false,
+    "late_B_revision": "After all 512 training episodes, B discards its inverted local votes and receives exactly one correct target for each of its eight cues. A sees no B private cue or target.",
+    "post_revision_online_updates": 0,
+    "development_updates": false
+  },
+  "anchor_and_packet_contract": {
+    "A_anchor": "The source ID, A private cue, active branch, and prior signed update for each selected event.",
+    "B_anchor": "The same source ID, B private cue, forced B action, global success, and prior packet sign. A and B each store at most eight anchors.",
+    "replay": "After B revision, A requests one stored source per tick in insertion order. B performs one keyed lookup, reinterprets the stored outcome using its revised local map, and emits one 21-byte packet. No 512-event history scan is permitted.",
+    "simple_replay": "A applies the corrected sign once. The earlier wrong update is expected to cancel, leaving an unresolved tie.",
+    "correction_packet": "If the revised sign opposes the stored prior sign, set magnitude_bucket=2 and apply at most two signed unit updates to the recorded A branch. This is a bounded local reversal-plus-replacement, not a numerical gradient.",
+    "packet_age": "min(255, 512-anchor episode index), a saturated age bucket.",
+    "maximum_replay_packets": 8,
+    "maximum_replay_lookups": 8,
+    "maximum_local_update_steps_per_packet": 2,
+    "numerical_gradient_allowed": false,
+    "global_history_scan_allowed": false
+  },
+  "arms": [
+    "wrong_credit_only",
+    "simple_replay",
+    "correction_packet",
+    "direct_outcome_correction",
+    "oracle_control"
+  ],
+  "controls": [
+    "B_local_map_reset_on_replay",
+    "B_to_A_route_shuffle_on_replay",
+    "B_to_A_sign_shuffle_on_replay",
+    "A_anchor_erased_before_replay",
+    "replay_disabled",
+    "magnitude_capped_at_one",
+    "capacity_matched_direct_correction"
+  ],
+  "acceptance": {
+    "minimum_correction_accuracy": 0.95,
+    "maximum_wrong_credit_only_accuracy": 0.05,
+    "maximum_simple_replay_accuracy": 0.55,
+    "minimum_gain_over_simple_replay": 0.40,
+    "maximum_direct_outcome_correction_accuracy": 0.65,
+    "minimum_oracle_accuracy": 0.95,
+    "minimum_B_map_reset_drop": 0.25,
+    "minimum_route_shuffle_drop": 0.40,
+    "minimum_sign_shuffle_drop": 0.40,
+    "minimum_anchor_erasure_drop": 0.40,
+    "all_five_seed_correction_gains_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_anchors": 8,
+    "maximum_B_anchors": 8,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_packet_bytes": 64,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_tuning_attempts": 1
+  },
+  "stop_rules": {
+    "retain_negative_result_on_gate_failure": true,
+    "do_not_modify_parent_candidate_or_heldout": true,
+    "do_not_tune_after_first_development_run": true,
+    "do_not_open_heldout_on_development_failure": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "initial_B_evidence_is_adversarially_inverted": true,
+    "late_B_teaching_is_exact_and_cue_complete": true,
+    "only_eight_early_A_updates_are_tested": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}

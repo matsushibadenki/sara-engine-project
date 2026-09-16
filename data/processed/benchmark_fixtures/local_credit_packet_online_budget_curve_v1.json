@@ -1,0 +1,90 @@
+{
+  "schema": "sara-local-credit-packet-online-budget-curve-preregistration-v1",
+  "experiment_id": "local-credit-packet-online-budget-curve-v1-2026-09-16",
+  "parent_replay_runner_sha256": "a8a4604c6f81c78b5e1c81738be89c0cf41e61be0def4672398dfc02d71e320a",
+  "parent_replay_result_sha256": "5e14fe69258fb8c12ff53313dd16c0af9cd595c02d6cedefb483f1ac5d94188b",
+  "parent_selector_runner_sha256": "a9608e86c938e8e8170c1f3115c61101f8ddc7f2f8091225852896e6c21a5da0",
+  "parent_selector_protocol_sha256": "601c66675dd38b01e680ca3713ac49d660ef3a362154075b39f8a521a885e05a",
+  "research_question": "How does the incremental value of eight targeted local replay packets change as the number of ordinary post-teaching outcome updates increases?",
+  "identity": {
+    "namespace": "local-credit-packet-online-budget-curve-v1",
+    "seeds": [1041013, 1041119, 1041223, 1041331, 1041437],
+    "A_cues": [1310, 1311, 1312, 1313, 1314, 1315, 1316, 1317],
+    "B_cues": [1410, 1411, 1412, 1413, 1414, 1415, 1416, 1417]
+  },
+  "task": {
+    "training_rows_per_seed": 512,
+    "development_rows_per_seed": 128,
+    "training_order": "SHA-256 rank of namespace|order|seed|original row index, inherited from pinned selector and independently audited.",
+    "A_target_and_B_target_maps": "independent balanced binary maps",
+    "global_target": "A_target XOR B_target",
+    "forced_training_actions": true
+  },
+  "teaching_and_replay": {
+    "post_teaching_online_episode_budgets": [0, 2, 4, 8, 16, 32],
+    "teaching_time": "Before training episode 512-budget; for budget zero, after all 512 training episodes. B receives one exact local target for each of its eight cues at that instant.",
+    "A_updates_before_teaching": false,
+    "anchor_selection": "Before teaching, A retains its first encountered event per private A cue and requests that B retain the same source ID with only B-local cue, B action and success. At most eight source-matched anchors per circuit.",
+    "replay_time": "After all 512 training episodes, run exactly eight replay ticks without new outcomes or online training. A requests one retained source per tick in insertion order; B performs one keyed lookup and sends at most one signed packet.",
+    "packet_age": "min(255, 512-anchor episode index), a saturated age bucket rather than exact timestamp",
+    "numerical_gradient_allowed": false,
+    "global_history_scan_allowed": false,
+    "A_cannot_read_B_private_cue_or_target": true,
+    "B_cannot_read_A_private_cue_or_target": true
+  },
+  "arms": [
+    "no_A_credit",
+    "online_only_packet",
+    "targeted_replay_packet",
+    "targeted_replay_direct_shortcut",
+    "oracle_control"
+  ],
+  "zero_budget_controls": [
+    "B_local_map_reset_on_replay",
+    "B_to_A_route_shuffle_on_replay",
+    "B_to_A_sign_shuffle_on_replay",
+    "A_anchor_erased_before_replay",
+    "replay_disabled",
+    "capacity_matched_direct_shortcut"
+  ],
+  "acceptance": {
+    "minimum_targeted_packet_accuracy_at_zero": 0.95,
+    "minimum_targeted_packet_accuracy_at_two": 0.95,
+    "minimum_gain_over_online_only_at_zero": 0.40,
+    "minimum_gain_over_online_only_at_two": 0.25,
+    "maximum_direct_shortcut_accuracy_at_zero": 0.75,
+    "minimum_oracle_accuracy_at_zero": 0.95,
+    "minimum_B_map_reset_drop_at_zero": 0.30,
+    "minimum_route_shuffle_drop_at_zero": 0.30,
+    "minimum_sign_shuffle_drop_at_zero": 0.30,
+    "minimum_anchor_erasure_drop_at_zero": 0.30,
+    "all_five_seed_zero_budget_gains_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_A_anchors": 8,
+    "maximum_B_anchors": 8,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_packet_bytes": 64,
+    "maximum_replay_lookups": 8,
+    "maximum_replay_packets": 8,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_tuning_attempts": 1
+  },
+  "stop_rules": {
+    "retain_negative_result_on_gate_failure": true,
+    "do_not_modify_pinned_parent_sources_or_result": true,
+    "do_not_tune_after_first_development_run": true,
+    "do_not_open_heldout_on_development_failure": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "B_teaching_is_exact_and_cue_complete": true,
+    "A_updates_are_deferred_before_teaching": true,
+    "not_correction_of_prior_wrong_A_updates": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}
