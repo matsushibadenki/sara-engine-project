@@ -1,0 +1,65 @@
+{
+  "schema": "sara-local-credit-packet-nonoracle-anchor-acquisition-preregistration-v1",
+  "experiment_id": "local-credit-packet-nonoracle-anchor-acquisition-development-v1-2026-09-16",
+  "parent_two_change_protocol_sha256": "ae747d8ba49b2231332cd9681ff300587463c1ce293dba91ee5a4f14c7e093aa",
+  "parent_two_change_result_sha256": "701586852b6f36a1a95ad7313d5b85d50c78f689abdfc9b44747d763eb950a77",
+  "research_question": "With no access to which B cues are initially wrong during anchor acquisition, does changed-sign detection preserve the two-step repair while saving replay events relative to unconditional replacement?",
+  "identity": {
+    "namespace": "local-credit-packet-nonoracle-anchor-acquisition-v1",
+    "seeds": [1111013, 1111119, 1111223, 1111331, 1111437],
+    "A_cues": [2710, 2711, 2712, 2713, 2714, 2715, 2716, 2717, 2718, 2719, 2720, 2721, 2722, 2723, 2724, 2725],
+    "B_cues": [2810, 2811, 2812, 2813, 2814, 2815, 2816, 2817]
+  },
+  "fixture": {
+    "A_map": "Rank A cues by SHA-256(seed|cue|A-map); first eight target 0, last eight target 1.",
+    "B_map": "Rank B cues by SHA-256(seed|cue|B-map); first four target 0, last four target 1.",
+    "initial_wrong_B_cues": "Rank B cues by SHA-256(namespace|initial_wrong|seed|cue) and invert the first four labels. This set is hidden from the anchor acquisition rule.",
+    "training_stream": "Generate complete 16x8x2x2 A/B cue-action factorial (512 events), with global success from true XOR target. Sort by SHA-256(namespace|order|seed|original_index). No label or wrong-cue value enters the sorting key.",
+    "anchor_rule": "In stream order retain and update from the first two events for each A cue, regardless of B cue, action, target or outcome; exactly 32 source-matched anchors. All later training events are observed but do not update A.",
+    "late_B_revision": "After the 512-event stream, replace B local codes with one exact label per B cue. No ordinary A update follows.",
+    "test": "Complete 16x8 A/B cue factorial, 128 predictions per seed; no test-time updates.",
+    "numerical_gradient_allowed": false,
+    "global_history_scan_allowed": false
+  },
+  "arms": {
+    "prior_only": "No replay; retain the 32 early local A updates.",
+    "simple_tie_zero": "For each old/revised sign change, one revised local update; predict 0 on a tie.",
+    "simple_tie_one": "Same one-step packets and updates as simple_tie_zero; predict 1 on a tie.",
+    "selective_two_step": "For each old/revised sign change, one magnitude-two packet and two revised local updates on the recorded branch.",
+    "unconditional_two_step": "One magnitude-two packet for every retained source, even when its sign is unchanged; two revised local updates on the recorded branch.",
+    "sign_shuffle_two_step": "Select changed sources, then invert each delivered revised sign.",
+    "route_shuffle_two_step": "Select changed sources, then deliver each revised packet to the opposite recorded branch."
+  },
+  "acceptance": {
+    "selective_accuracy_minimum": 0.95,
+    "unconditional_accuracy_minimum": 0.95,
+    "simple_zero_accuracy_by_changed_count_0_or_1": 1.0,
+    "simple_zero_two_change_target0_accuracy": 1.0,
+    "simple_zero_two_change_target1_accuracy": 0.0,
+    "simple_one_two_change_target0_accuracy": 0.0,
+    "simple_one_two_change_target1_accuracy": 1.0,
+    "at_least_one_two_change_cue_per_target_in_pooled_seeds": true,
+    "selective_fewer_replay_packets_than_unconditional": true,
+    "minimum_accuracy_drop_on_wrong_sign_or_route": 0.10,
+    "all_five_seed_selective_accuracy_minimum": 0.95
+  },
+  "resource_budgets": {
+    "maximum_A_anchors": 32,
+    "maximum_B_anchors": 32,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_A_features": 32,
+    "maximum_B_features": 8,
+    "maximum_packet_bytes": 64,
+    "maximum_replay_lookups": 32,
+    "maximum_replay_packets": 32,
+    "maximum_local_steps_per_packet": 2,
+    "maximum_total_state_bytes": 1048576
+  },
+  "stop_rules": {
+    "development_only": true,
+    "one_scored_run": true,
+    "retain_negative_result_on_failure": true,
+    "do_not_change_parent_or_prior_heldout": true,
+    "do_not_claim_real_event_transfer": true
+  }
+}
