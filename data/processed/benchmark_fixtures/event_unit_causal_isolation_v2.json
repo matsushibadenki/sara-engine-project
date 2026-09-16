@@ -1,0 +1,104 @@
+{
+  "schema": "sara-event-unit-causal-isolation-preregistration-v2",
+  "experiment_id": "event-unit-causal-isolation-v2-2026-09-16",
+  "supersedes": null,
+  "preserved_negative_result": "event-unit-causal-isolation-v1 refractory targeted-ablation failure",
+  "research_question": "Does refractory state add causal value beyond matched local temporal state, and does fixed branch structure add value without refractory dynamics?",
+  "runtime": {
+    "python_major_minor": "3.10",
+    "global_gradient_backpropagation": false,
+    "dense_matrix_training": false,
+    "gpu_required": false
+  },
+  "arms": {
+    "B_compact_event": {
+      "temporal_pair_state": false,
+      "membrane_state": false,
+      "refractory_state": false,
+      "branch_structure": false
+    },
+    "C_temporal_state": {
+      "temporal_pair_state": true,
+      "membrane_state": false,
+      "refractory_state": false,
+      "branch_structure": false
+    },
+    "R_temporal_refractory": {
+      "temporal_pair_state": true,
+      "membrane_state": true,
+      "refractory_state": true,
+      "branch_structure": false
+    },
+    "D_temporal_dendritic": {
+      "temporal_pair_state": true,
+      "membrane_state": false,
+      "refractory_state": false,
+      "branch_structure": true,
+      "structural_plasticity_enabled": false
+    }
+  },
+  "ordered_contrasts": {
+    "temporal_state": ["B_compact_event", "C_temporal_state"],
+    "refractory": ["C_temporal_state", "R_temporal_refractory"],
+    "branch_structure": ["C_temporal_state", "D_temporal_dendritic"]
+  },
+  "held_constant": [
+    "route identities and chronological event order",
+    "training and development episodes",
+    "temporal pair key and gap buckets for C R and D",
+    "prediction rule and bounded local update",
+    "outcome signal and online update schedule",
+    "feature and state budgets",
+    "one tuning attempt"
+  ],
+  "fresh_identity": {
+    "generator_namespace": "event-unit-v2",
+    "seeds": [917003, 917117, 917231, 917347, 917459],
+    "v1_seed_overlap": 0,
+    "development_count_per_family_per_seed": 10,
+    "training_count_per_family_per_seed": 20,
+    "held_out_count_per_family_per_seed": 10,
+    "held_out_consumed": false
+  },
+  "controls": [
+    "time_shuffle_on_C",
+    "temporal_state_reset_on_C",
+    "refractory_disable_on_R",
+    "branch_assignment_shuffle_on_D",
+    "outcome_shuffle_on_D",
+    "capacity_matched_compact_event"
+  ],
+  "resource_budgets": {
+    "maximum_routes": 512,
+    "maximum_active_routes": 8,
+    "maximum_labels": 8,
+    "maximum_learned_scalars": 8192,
+    "maximum_retained_state_bytes": 4194304,
+    "maximum_event_work": 512,
+    "maximum_backward_events": 0,
+    "maximum_tuning_attempts": 1
+  },
+  "acceptance": {
+    "minimum_targeted_accuracy_delta": 0.02,
+    "exact_deterministic_replay": true,
+    "all_five_seed_gain_signs_must_agree": true,
+    "all_resource_budgets_must_pass": true,
+    "holm_bonferroni_contrasts": 3,
+    "thresholds_selected_from_v1_scores": false
+  },
+  "decision_rules": [
+    "Credit temporal state only if C beats B and time/state controls remove the gain",
+    "Credit refractory only if R beats C and disabling refractory removes the same gain",
+    "Credit branch structure only if D beats C and branch shuffle removes the same gain",
+    "Exact C and R equivalence is evidence that refractory state is unnecessary on this task",
+    "Stop at the smallest arm that retains each supported gain"
+  ],
+  "boundaries": {
+    "v1_held_out_split_must_remain_closed": true,
+    "v2_held_out_split_must_remain_closed_until_development_controls_pass": true,
+    "bpi_sepsis_frozen_tests_used_for_selection": false,
+    "local_credit_packet_allowed": false,
+    "structural_growth_allowed": false,
+    "production_authorized": false
+  }
+}
