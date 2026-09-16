@@ -1,6 +1,6 @@
 {
   "load_only": true,
-  "passed": true,
+  "passed": false,
   "production_authorized": false,
   "results": {
     "bpi2012": {
@@ -15,11 +15,11 @@
         "no_checkpoint_refit": true,
         "payload": true,
         "prediction_count": true,
-        "prediction_digest": true,
+        "prediction_digest": false,
         "resource_identity": true,
         "source_manifest": true
       },
-      "prediction_trace_sha256": "7a502631a3fa5b2ede5159869f8106feb84f2ec6e5c34bd4de3eb2e49972a89f",
+      "prediction_trace_sha256": "e428e0a65a00291a773bb4b724cff77a974c50db66127d15a643582406302985",
       "predictions": 32694
     },
     "sepsis": {
@@ -34,12 +34,21 @@
         "no_checkpoint_refit": true,
         "payload": true,
         "prediction_count": true,
-        "prediction_digest": true,
+        "prediction_digest": false,
         "resource_identity": true,
         "source_manifest": true
       },
-      "prediction_trace_sha256": "83071fffc7c971a5daecf0ce775b5a7f0befc158d0c3364297b7145523acfd83",
+      "prediction_trace_sha256": "d7337b10d0ab143a9c09f8732d351fffa508bd161d2d1d7c82c58c5b2e92a9f8",
       "predictions": 2035
+    }
+  },
+  "runtime_identity": {
+    "python_executable": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "python_version": "3.14.7 (main, Aug  5 2026, 10:29:49) [Clang 21.0.0 (clang-2100.1.1.101)]",
+    "sources": {
+      "scripts/eval/research_checkpoint_release.py": "92d1e2d4ccbfc245e960732c11636833e1c2c2763bf826e26f76ce8e8aaf9b86",
+      "src/sara_engine/learning/event_stream_engine.py": "533d56e2195fe9c13e5b9c7a7516beaf6dfd3f2d1aaa7af9014e4bf2e84925d7",
+      "src/sara_engine/learning/normalized_hybrid.py": "3abdbca605654b2418d349e8460b403ca60b236e7daedc2d4aafee3ac5356dfe"
     }
   },
   "schema": "sara-event-stream-research-package-verification-v1"

@@ -10,6 +10,7 @@ assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 _read_sums = MODULE._read_sums
+_command_exit_code = MODULE._command_exit_code
 
 
 def test_sha256sums_requires_exact_package_files(tmp_path: Path):
@@ -30,3 +31,15 @@ def test_sha256sums_rejects_non_hex_digest(tmp_path: Path):
     sums.write_text(f"{'z' * 64}  {artifact}\n{'a' * 64}  manifest.json\n")
     with pytest.raises(ValueError, match="digest"):
         _read_sums(sums, artifact)
+
+
+@pytest.mark.parametrize("command", ("verify", "verify-package"))
+def test_verification_commands_fail_closed(command: str):
+    assert _command_exit_code(command, {"passed": True}) == 0
+    assert _command_exit_code(command, {"passed": False}) == 1
+    assert _command_exit_code(command, {}) == 1
+
+
+@pytest.mark.parametrize("command", ("build", "package"))
+def test_materialization_commands_keep_success_exit(command: str):
+    assert _command_exit_code(command, {}) == 0

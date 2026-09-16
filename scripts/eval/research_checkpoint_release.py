@@ -7,9 +7,16 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 from dataclasses import asdict
 from pathlib import Path
 from typing import Callable, Sequence
+
+# Verification must use this checkout, not an unrelated installed sara_engine.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = REPOSITORY_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
 from sara_engine.evaluation.bpi2012_data import load_traces as load_bpi
 from sara_engine.evaluation.bpi2012_data import split_name as bpi_split
@@ -28,6 +35,11 @@ PACKAGE_FILES = {
     "bpi2012": "sara-bpi2012-pretest-v1.sara",
     "sepsis": "sara-sepsis-pretest-v1.sara",
 }
+RUNTIME_SOURCES = (
+    "scripts/eval/research_checkpoint_release.py",
+    "src/sara_engine/learning/event_stream_engine.py",
+    "src/sara_engine/learning/normalized_hybrid.py",
+)
 
 
 def _sha256(path: Path) -> str:
@@ -40,6 +52,14 @@ def _sha256(path: Path) -> str:
 
 def _canonical_sha256(value: object) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def _runtime_identity() -> dict:
+    return {
+        "python_executable": sys.executable,
+        "python_version": sys.version,
+        "sources": {name: _sha256(REPOSITORY_ROOT / name) for name in RUNTIME_SOURCES},
+    }
 
 
 def _configuration(dataset: str) -> tuple[Callable, Callable, EventRouteConfig, NormalizedHybridConfig, str, str]:
@@ -360,6 +380,7 @@ def verify_packages(selected: str | None = None) -> dict:
         "schema": "sara-event-stream-research-package-verification-v1",
         "load_only": True,
         "production_authorized": False,
+        "runtime_identity": _runtime_identity(),
         "results": results,
         "passed": passed,
     }
@@ -450,12 +471,20 @@ def verify() -> dict:
         "manifest_sha256": _sha256(manifest_path),
         "load_only": True,
         "production_authorized": False,
+        "runtime_identity": _runtime_identity(),
         "results": results,
         "passed": passed,
     }
     output = Path(ensure_parent_directory(workspace_path("evaluation", "research_checkpoint_release_v1.json")))
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     return {"output": str(output), **report}
+
+
+def _command_exit_code(command: str, result: dict) -> int:
+    """Fail closed when a verification command reports any failed check."""
+    if command in ("verify", "verify-package"):
+        return 0 if result.get("passed") is True else 1
+    return 0
 
 
 def main() -> int:
@@ -468,7 +497,7 @@ def main() -> int:
     actions = {"build": build, "verify": verify, "package": package}
     result = verify_packages(args.dataset) if args.command == "verify-package" else actions[args.command]()
     print(json.dumps(result, sort_keys=True))
-    return 0
+    return _command_exit_code(args.command, result)
 
 
 if __name__ == "__main__":
