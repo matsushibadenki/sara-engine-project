@@ -104,7 +104,9 @@
 
 [Done] A separately preregistered five-seed development test reduced B-local target coverage by cue from eight to six, four, and zero. Packet global accuracy was respectively 100%, 87.5%, 77.5%, and 50%; at six cues the matched direct shortcut was 50%. Label-blind cue selection, capacity matching, B-map reset, route/sign interventions, exact replay and resource checks passed. Protocol digest: `cb48e2d6…7887`; result digest: `ea1b2763…61314`.
 
-[Next] Test delayed or noisy B-local supervision under a separately frozen protocol. Partial coverage still supplies exact labels for selected cues, and the development task remains a balanced synthetic XOR decomposition; it does not establish end-to-end unsupervised credit, real-event transfer or physical-energy gains.
+[Done] A further preregistered five-seed development test removed B calibration and delayed every exact B-local label by 0/16/64/256/512 training episodes. Packet accuracy was 100% through delay 256 and 50% at delay 512, when no labels were available before scoring. The delay-64 direct shortcut was 50%; B-map reset and wrong packet route/sign removed the gain. The maximum pending queue was 512 entries and maximum measured Python state was 7,709 bytes. Protocol digest: `78ee896b…40115f`; result digest: `3bc174fa…68410`.
+
+[Next] Test noisy or misleading B-local evidence and a late-teaching schedule with insufficient post-teaching updates. This synthetic delay result does not prove long-delay credit in a general task: once exact B labels arrive, many later training episodes remain, and no retroactive A replay is attempted. Real-event transfer and physical-energy gains remain untested.
 
 日本語: 2回路の局所creditは、新しいseedとcueを使った独立held-outでも成功しました。ただし、Bに補助的な教師信号を与えた合成課題に限られ、教師信号なしの深い学習と実イベントへの転移は未検証です。
 

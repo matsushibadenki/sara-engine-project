@@ -1,0 +1,62 @@
+{
+  "schema": "sara-local-credit-packet-delayed-B-evidence-preregistration-v1",
+  "experiment_id": "local-credit-packet-delayed-B-evidence-v1-2026-09-16",
+  "parent_candidate_sha256": "68e87e58ceb1be949680f760d66cc46118520c2d489933e7720a146d7143cc61",
+  "parent_materializer_sha256": "7010283d84dbc09c1df8ccb792a3a39d4dc6a95b7c81ccd71575758a9068c8f9",
+  "parent_partial_coverage_result_sha256": "ea1b276319cb26ab5e285d3266f68a1e4757c5ea5f8031fa2bda0692a0d61314",
+  "research_question": "Does a bounded B-interpreted credit packet retain its advantage when exact B-local teaching arrives only after a fixed episode delay?",
+  "identity": {
+    "namespace": "local-credit-packet-delayed-B-evidence-v1",
+    "seeds": [1009013, 1009119, 1009223, 1009331, 1009437],
+    "A_cues": [510, 511, 512, 513, 514, 515, 516, 517],
+    "B_cues": [610, 611, 612, 613, 614, 615, 616, 617]
+  },
+  "schedule": {
+    "B_calibration_rows_used": 0,
+    "main_training_rows_per_seed": 512,
+    "development_rows_per_seed": 128,
+    "B_evidence_delays_in_episodes": [0, 16, 64, 256, 512],
+    "evidence_visibility_rule": "At the start of episode t, deliver evidence from episode t-delay; for delay zero deliver the current B target before the packet. Current evidence otherwise enters a FIFO after the outcome. Pending evidence after the final training episode is not delivered before scoring.",
+    "B_evidence_value": "Exact B-local target for the current B cue; the outcome and target are not delivered to A.",
+    "A_eligibility": "Consumed once at each outcome; late B evidence never retroactively reissues a packet or changes A.",
+    "development_updates": false,
+    "same_forward_rows_and_forced_actions_for_all_arms": true
+  },
+  "arms": ["local_credit_packet", "direct_anchor_shortcut", "capacity_matched_direct_shortcut"],
+  "interventions_at_delay_64": ["B_local_map_reset", "B_to_A_sign_shuffle", "B_to_A_route_shuffle"],
+  "acceptance": {
+    "zero_delay_minimum_packet_accuracy": 0.95,
+    "delay_64_minimum_packet_accuracy": 0.70,
+    "delay_64_minimum_shortcut_gain": 0.15,
+    "delay_512_maximum_packet_accuracy": 0.60,
+    "delay_64_minimum_map_reset_drop": 0.10,
+    "delay_64_minimum_route_shuffle_drop": 0.10,
+    "delay_64_minimum_sign_shuffle_drop": 0.10,
+    "all_five_seed_delay_64_gains_positive": true,
+    "monotone_mean_packet_accuracy_by_delay": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_pending_B_evidence_entries": 512,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_packet_bytes": 64,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_backward_events_per_episode": 2,
+    "maximum_tuning_attempts": 1
+  },
+  "stop_rules": {
+    "retain_negative_result_on_gate_failure": true,
+    "do_not_modify_frozen_parent_candidate_or_partial_coverage_result": true,
+    "do_not_tune_after_first_development_run": true,
+    "no_retroactive_replay_in_this_experiment": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "exact_B_evidence_eventually_arrives": true,
+    "noisy_B_evidence_not_tested": true,
+    "real_event_credit_claim_authorized": false,
+    "production_authorized": false
+  }
+}
