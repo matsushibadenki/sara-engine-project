@@ -6,7 +6,7 @@
 
 The engine rejects serialization while an outcome receipt is pending. State loading revalidates schemas, sorted bounds, route order, route/context/weight caps, labels and numeric limits. A model artifact contains both the encoder mapping and learner state, preventing route-ID drift after restart. Atomic files are restricted to `models/event_stream_engine/`.
 
-[Done] The v1 packages retain the recorded pre-test boundary sizes: BPI has 1,018 routes, 5,181 weights and 107 transition contexts; Sepsis has 995 routes, 3,820 weights and 102 contexts. These are artifact-identity facts, not a current reproducibility claim. The earlier exact-replay claim was invalidated by the current-checkout audit described below.
+[Done] The v1 packages retain the recorded pre-test boundary sizes: BPI has 1,018 routes, 5,181 weights and 107 transition contexts; Sepsis has 995 routes, 3,820 weights and 102 contexts. Python 3.10.21 exactly reproduces the accepted prediction digests; Python 3.14.7 does not.
 
 [Done] Future real event-stream experiments should use this engine instead of duplicating dataset-specific route and learner implementations. Immutable historical evaluators remain unchanged as evidence.
 
@@ -16,7 +16,7 @@ The engine rejects serialization while an outcome receipt is pending. State load
 
 [Done] Materialized generation-1 research checkpoints at the pre-test boundary for BPI and Sepsis under `models/event_stream_engine/`. `research-checkpoints-v1-manifest.json` pins the whole-artifact SHA-256, canonical payload SHA-256, accepted-result SHA-256, accepted prediction trace and runtime configuration digest. Publication refuses an existing generation instead of silently replacing research evidence.
 
-[Next] Reissue the research packages with exact source and import-environment binding. A 2026-09-16 audit forced the current checkout through `PYTHONPATH=src`: artifact, manifest, source, configuration, accepted-result, generation, payload, resource and prediction-count checks passed, while the frozen prediction digest failed for both BPI and Sepsis. The v1 packages are retained unchanged as negative evidence. Verification now exits non-zero whenever `passed` is false; `production_authorized` remains `false`.
+[Done] Re-audited the packages from the current checkout. Python 3.10.21 passes all package and prediction checks; Python 3.14.7 preserves structural identities but changes both prediction digests. The verifier now forces repository `src/`, records interpreter and runtime-source hashes, requires Python 3.10 for v1 and exits non-zero whenever `passed` is false. `production_authorized` remains `false`.
 
 Build the research-only artifacts once, then verify them without refitting:
 

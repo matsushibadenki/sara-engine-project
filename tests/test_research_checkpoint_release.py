@@ -11,6 +11,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 _read_sums = MODULE._read_sums
 _command_exit_code = MODULE._command_exit_code
+_runtime_identity = MODULE._runtime_identity
 
 
 def test_sha256sums_requires_exact_package_files(tmp_path: Path):
@@ -43,3 +44,9 @@ def test_verification_commands_fail_closed(command: str):
 @pytest.mark.parametrize("command", ("build", "package"))
 def test_materialization_commands_keep_success_exit(command: str):
     assert _command_exit_code(command, {}) == 0
+
+
+def test_runtime_identity_binds_every_declared_source():
+    identity = _runtime_identity()
+    assert set(identity["sources"]) == set(MODULE.RUNTIME_SOURCES)
+    assert all(len(digest) == 64 for digest in identity["sources"].values())

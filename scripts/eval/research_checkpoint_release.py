@@ -40,6 +40,7 @@ RUNTIME_SOURCES = (
     "src/sara_engine/learning/event_stream_engine.py",
     "src/sara_engine/learning/normalized_hybrid.py",
 )
+V1_RUNTIME_PYTHON = (3, 10)
 
 
 def _sha256(path: Path) -> str:
@@ -349,6 +350,7 @@ def verify_packages(selected: str | None = None) -> dict:
         checkpoint = manifest["checkpoint"]
         evaluation = manifest["evaluation"]
         checks = {
+            "runtime_compatibility": sys.version_info[:2] == V1_RUNTIME_PYTHON,
             "artifact_sum": _sha256(artifact) == sums[artifact.name] == checkpoint["artifact_sha256"],
             "manifest_sum": _sha256(manifest_path) == sums["manifest.json"],
             "source_manifest": manifest["data"] == source,
@@ -358,7 +360,7 @@ def verify_packages(selected: str | None = None) -> dict:
             "accepted_trace": evaluation["frozen_prediction_sha256"] == accepted_trace,
             "no_checkpoint_refit": evaluation["checkpoint_refitting"] is False,
         }
-        if not all(checks.values()):
+        if not all(value for key, value in checks.items() if key != "runtime_compatibility"):
             raise ValueError(f"Research package binding failed for {dataset}")
         engine, generation = BoundedEventStreamEngine.load_from_model_path(artifact)
         state = engine.state_dict()

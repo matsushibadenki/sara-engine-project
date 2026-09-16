@@ -1,0 +1,115 @@
+{
+  "schema": "sara-event-unit-causal-isolation-preregistration-v1",
+  "experiment_id": "event-unit-causal-isolation-v1-2026-09-16",
+  "research_question": "Which minimum local event-computing mechanism causes held-out quality under equal routing, memory, learning signal and resource accounting?",
+  "runtime": {
+    "python_major_minor": "3.10",
+    "global_gradient_backpropagation": false,
+    "dense_matrix_training": false,
+    "gpu_required": false
+  },
+  "arms": {
+    "A_scalar_local": {
+      "spike": false,
+      "retained_temporal_state": false,
+      "refractory_state": false,
+      "branch_structure": false
+    },
+    "B_compact_event": {
+      "spike": true,
+      "retained_temporal_state": false,
+      "refractory_state": false,
+      "branch_structure": false
+    },
+    "C_stateful_spiking": {
+      "spike": true,
+      "retained_temporal_state": true,
+      "refractory_state": true,
+      "branch_structure": false
+    },
+    "D_dendritic_structural": {
+      "spike": true,
+      "retained_temporal_state": true,
+      "refractory_state": true,
+      "branch_structure": true,
+      "structural_plasticity_enabled": false
+    }
+  },
+  "held_constant": [
+    "route identities and active-route order",
+    "chronological examples and outcome delay",
+    "context memory and prediction head",
+    "bounded local update rule and learning rate",
+    "outcome signal and update opportunities",
+    "label vocabulary and initialization seed",
+    "tuning attempts and evaluator identities"
+  ],
+  "synthetic_families": [
+    "order_sensitive_timing",
+    "persistent_state",
+    "refractory_suppression",
+    "branch_specific_conjunction",
+    "stateless_route_control"
+  ],
+  "causal_controls": [
+    "time_shuffle",
+    "state_reset",
+    "spike_count_preserving_shuffle",
+    "refractory_disable",
+    "branch_assignment_shuffle",
+    "outcome_shuffle",
+    "capacity_matched_scalar_state"
+  ],
+  "splits": {
+    "seeds": [916101, 916211, 916319, 916427, 916531],
+    "training_families": 20,
+    "development_families": 10,
+    "held_out_causal_families": 10,
+    "generator_disjoint": true,
+    "frozen_real_event_tests_used_for_tuning": false
+  },
+  "resource_budgets": {
+    "maximum_routes": 512,
+    "maximum_active_routes": 8,
+    "maximum_labels": 8,
+    "maximum_learned_scalars": 8192,
+    "maximum_retained_state_bytes": 4194304,
+    "maximum_event_work": 512,
+    "maximum_backward_events": 0,
+    "maximum_tuning_attempts": 1
+  },
+  "primary_metrics": [
+    "held_out_top1_accuracy",
+    "held_out_macro_f1",
+    "multiclass_brier",
+    "targeted_ablation_delta",
+    "inactive_route_change_rate",
+    "deterministic_replay",
+    "updates_per_event",
+    "event_work",
+    "retained_state_bytes",
+    "process_cpu_time"
+  ],
+  "acceptance": {
+    "minimum_accuracy_gain_over_preceding_simpler_arm": 0.02,
+    "minimum_targeted_ablation_accuracy_drop": 0.02,
+    "maximum_inactive_route_change_rate": 0.0,
+    "exact_deterministic_replay": true,
+    "all_resource_budgets_must_pass": true,
+    "all_five_seeds_must_have_same_gain_sign": true,
+    "multiple_comparison_correction": "Holm-Bonferroni across the three ordered mechanism additions"
+  },
+  "ordered_decisions": [
+    "A_vs_B tests whether explicit stateless events add quality beyond scalar routing",
+    "B_vs_C tests whether retained membrane and refractory time add quality",
+    "C_vs_D tests whether branch-local structure adds quality with growth disabled"
+  ],
+  "stop_rules": [
+    "Stop at the smallest arm that passes its targeted causal gate",
+    "Retain exact equivalence as evidence against mechanism-specific quality",
+    "Do not add Local Credit Packet or backward events in this experiment",
+    "Do not enable structural growth before the fixed-structure D comparison passes",
+    "Do not open BPI or Sepsis frozen partitions for mechanism selection"
+  ],
+  "production_authorized": false
+}
