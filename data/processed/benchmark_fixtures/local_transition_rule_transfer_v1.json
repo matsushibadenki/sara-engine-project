@@ -1,0 +1,35 @@
+{
+  "schema": "sara-local-transition-rule-transfer-preregistration-v1",
+  "experiment_id": "local-transition-rule-transfer-v1-2026-09-16",
+  "research_question": "Can a bounded symbol-invariant local transition rule transfer to unseen symbol combinations where categorical pair lookup cannot?",
+  "arms": {
+    "L_categorical_pair": {"categorical_pair_keys": true, "relational_features": false, "relation_composition": false},
+    "R_relational_transition": {"categorical_pair_keys": false, "relational_features": true, "relation_composition": false},
+    "S_relational_composition": {"categorical_pair_keys": false, "relational_features": true, "relation_composition": true}
+  },
+  "families": ["relative_direction", "relative_equality", "relative_distance", "two_transition_composition", "categorical_control"],
+  "fresh_identity": {
+    "namespace": "local-transition-rule-v1",
+    "seeds": [919019, 919133, 919249, 919357, 919471],
+    "training_symbols": [0, 1, 2, 3, 4, 5],
+    "development_symbols": [10, 11, 12, 13, 14, 15],
+    "symbol_overlap": 0,
+    "training_count_per_family_per_seed": 24,
+    "development_count_per_family_per_seed": 12,
+    "held_out_consumed": false
+  },
+  "controls": ["relation_shuffle_R", "composition_reset_S", "symbol_offset_invariance_R", "outcome_shuffle_S", "capacity_matched_lookup"],
+  "resource_budgets": {"maximum_features": 1024, "maximum_state_bytes": 1048576, "maximum_event_work": 128, "maximum_backward_events": 0, "maximum_tuning_attempts": 1},
+  "acceptance": {
+    "maximum_lookup_accuracy_on_relational_families": 0.60,
+    "minimum_relational_accuracy": 0.85,
+    "minimum_relational_gain_over_lookup": 0.20,
+    "minimum_composition_gain_on_composition_family": 0.20,
+    "minimum_control_drop": 0.20,
+    "minimum_categorical_control_accuracy": 0.90,
+    "all_five_seed_gain_signs_positive": true,
+    "exact_replay": true,
+    "all_resource_budgets_must_pass": true
+  },
+  "boundaries": {"prior_held_out_used": false, "bpi_sepsis_frozen_used": false, "local_credit_packet_allowed": false, "production_authorized": false}
+}

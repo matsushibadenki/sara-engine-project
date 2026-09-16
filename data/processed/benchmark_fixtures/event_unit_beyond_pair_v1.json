@@ -1,0 +1,87 @@
+{
+  "schema": "sara-event-unit-beyond-pair-preregistration-v1",
+  "experiment_id": "event-unit-beyond-pair-v1-2026-09-16",
+  "research_question": "What is the smallest bounded local state that solves dependencies deliberately ambiguous to an adjacent temporal-pair readout?",
+  "runtime": {
+    "python_major_minor": "3.10",
+    "global_gradient_backpropagation": false,
+    "dense_matrix_training": false,
+    "gpu_required": false
+  },
+  "arms": {
+    "P_temporal_pair": {
+      "history_events": 2,
+      "branch_structure": false
+    },
+    "T_bounded_triplet": {
+      "history_events": 3,
+      "branch_structure": false
+    },
+    "D_triplet_branch": {
+      "history_events": 3,
+      "branch_structure": true,
+      "structural_plasticity_enabled": false
+    }
+  },
+  "families": [
+    "delayed_parity",
+    "nonadjacent_match",
+    "three_event_composition",
+    "branch_specific_conjunction",
+    "pair_sufficient_control"
+  ],
+  "generator_constraints": [
+    "binary labels are balanced within each seed and family",
+    "delayed families use matched adjacent-pair support across labels",
+    "distractor identities are independent of labels",
+    "development and held-out generator namespaces are disjoint",
+    "no evaluator label is present in an input field"
+  ],
+  "fresh_identity": {
+    "namespace": "event-unit-beyond-pair-v1",
+    "seeds": [918011, 918127, 918239, 918347, 918461],
+    "training_count_per_family_per_seed": 24,
+    "development_count_per_family_per_seed": 12,
+    "held_out_count_per_family_per_seed": 12,
+    "held_out_consumed": false
+  },
+  "controls": [
+    "history_truncate_T_to_pair",
+    "event_order_shuffle_T",
+    "distractor_identity_shuffle_T",
+    "branch_assignment_shuffle_D",
+    "outcome_shuffle_D",
+    "capacity_matched_pair"
+  ],
+  "resource_budgets": {
+    "maximum_routes": 64,
+    "maximum_active_features": 16,
+    "maximum_learned_scalars": 4096,
+    "maximum_retained_state_bytes": 2097152,
+    "maximum_event_work": 256,
+    "maximum_backward_events": 0,
+    "maximum_tuning_attempts": 1
+  },
+  "acceptance": {
+    "minimum_triplet_gain_on_ambiguous_families": 0.10,
+    "minimum_branch_gain_on_branch_family": 0.10,
+    "minimum_targeted_control_drop": 0.10,
+    "maximum_pair_accuracy_on_ambiguous_families": 0.60,
+    "minimum_pair_control_accuracy": 0.90,
+    "all_five_seed_gain_signs_positive": true,
+    "exact_deterministic_replay": true,
+    "all_resource_budgets_must_pass": true
+  },
+  "stop_rules": [
+    "Stop if adjacent pair state already solves the ambiguous families",
+    "Stop if triplet gain survives history or order destruction",
+    "Stop if capacity-matched pair state recovers the gain",
+    "Do not add replay, backward events or Local Credit Packet",
+    "Do not consume held-out identities until development controls pass"
+  ],
+  "boundaries": {
+    "bpi_sepsis_frozen_tests_used_for_selection": false,
+    "event_unit_v1_v2_held_out_used": false,
+    "production_authorized": false
+  }
+}

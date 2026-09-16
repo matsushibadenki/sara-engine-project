@@ -1,0 +1,64 @@
+{
+  "schema": "sara-local-transition-rule-transfer-preregistration-v2",
+  "experiment_id": "local-transition-rule-transfer-v2-2026-09-16",
+  "preserved_negative_result": "v1 mixed rules were not identifiable without an observable rule context",
+  "research_question": "Can context-conditioned relational transition rules transfer to unseen symbols when every observable signature has one target label?",
+  "arms": {
+    "L_contextual_categorical": {"rule_context": true, "categorical_pairs": true, "relational_features": false, "composition": false},
+    "R_contextual_relation": {"rule_context": true, "categorical_pairs": false, "relational_features": true, "composition": false},
+    "S_contextual_composition": {"rule_context": true, "categorical_pairs": false, "relational_features": true, "composition": true}
+  },
+  "rule_contexts": {
+    "direction": 0,
+    "equality": 1,
+    "distance": 2,
+    "composition": 3,
+    "categorical_control": 4
+  },
+  "fresh_identity": {
+    "namespace": "local-transition-rule-v2",
+    "seeds": [920021, 920137, 920243, 920359, 920471],
+    "training_symbols": [20, 21, 22, 23, 24, 25],
+    "development_symbols": [30, 31, 32, 33, 34, 35],
+    "symbol_overlap": 0,
+    "held_out_consumed": false
+  },
+  "pre_execution_audit": {
+    "observable_signature": "rule_context plus ordered relational descriptors plus fixed public control marker",
+    "maximum_labels_per_signature": 1,
+    "balanced_labels_per_context_and_seed": true,
+    "future_or_evaluator_fields_allowed": false
+  },
+  "controls": [
+    "context_shuffle_R",
+    "relation_shuffle_R",
+    "composition_reset_S",
+    "context_relation_decouple_R",
+    "outcome_shuffle_S",
+    "capacity_matched_L"
+  ],
+  "resource_budgets": {
+    "maximum_features": 2048,
+    "maximum_state_bytes": 1048576,
+    "maximum_event_work": 160,
+    "maximum_backward_events": 0,
+    "maximum_tuning_attempts": 1
+  },
+  "acceptance": {
+    "signature_audit_must_pass": true,
+    "maximum_lookup_relational_accuracy": 0.60,
+    "minimum_contextual_relational_accuracy": 0.85,
+    "minimum_gain_over_lookup": 0.20,
+    "minimum_composition_gain": 0.20,
+    "minimum_targeted_control_drop": 0.20,
+    "all_five_seed_gain_signs_positive": true,
+    "exact_replay": true
+  },
+  "boundaries": {
+    "v1_held_out_used": false,
+    "v2_held_out_consumed": false,
+    "bpi_sepsis_frozen_used": false,
+    "local_credit_packet_allowed": false,
+    "production_authorized": false
+  }
+}

@@ -20,7 +20,31 @@
 
 [Done] The v1 conclusion therefore replicates on fresh identities: local temporal pair state and fixed branch structure are useful in this synthetic scope; membrane/refractory dynamics provide no benefit and are slightly harmful in four of five seed-level comparisons. The v2 runner exits non-zero, and both v1/v2 held-out splits remain unopened.
 
-[Next] Stop the refractory line. The smallest supported forward unit is currently a compact event plus bounded local temporal-pair state; branch structure is added only for tasks with branch-specific conjunction. Before any deeper credit mechanism, create a source-/generator-disjoint real or semi-synthetic development task that cannot be solved by an explicit pair lookup alone.
+[Done] Stopped the refractory line and retained compact event plus bounded local temporal-pair state as the smallest supported forward unit, with branch structure only for branch-specific conjunction. The requested beyond-pair development task was frozen and executed below.
+
+## Beyond-pair development result — 2026-09-16
+
+[Done] Frozen the beyond-pair protocol before implementation at SHA-256 `9a8005ed0d9e08adabadbf44249386dba332fdac9e758e1e366281adac6dd1af`. Five fresh seeds compare adjacent pair state, bounded triplet state and triplet-plus-fixed-branch state on balanced parity, nonadjacent match, three-event composition, branch conjunction and pair-sufficient controls.
+
+[Done] The development harness passes but the causal gate fails. Pair-state ambiguous-family accuracy is `0.483`; triplet reaches `0.617`, a nominal `+0.133`, and history truncation removes `0.133`. However event-order shuffle reaches `0.622`, so the targeted order-control delta is `-0.006`, and seed-level triplet gains do not have a consistent positive sign. Fixed branch structure solves its conjunction family (`1.000` versus `0.483`) and branch shuffle removes `0.500`, but this does not rescue the failed triplet causal claim.
+
+[Done] Retain this as a negative result: a categorical triplet key can increase development accuracy without demonstrating order-dependent computation. The runner exits non-zero; held-out identities remain unopened.
+
+[Done] Did not increase lookup order; instead froze and executed the symbol-disjoint transition-rule task below.
+
+## Symbol-disjoint transition-rule result — 2026-09-16
+
+[Done] Frozen protocol `58c1959ced4f3ede26f2bc4c85066b826bb4c7d60cc5219ec29fcce1deb5393e` before implementation, with disjoint training symbols `0–5`, development symbols `10–15`, and five fresh seeds. Categorical lookup reaches `0.538` on relational families, relational transition reaches `0.575`, and relational composition reaches `0.758`.
+
+[Done] The development gate fails. Relational transition gains only `0.038`, reaches neither the `0.85` accuracy gate nor the `0.20` gain gate, and relation shuffle removes only `0.083`. The task combines direction, equality and distance rules without an observable context cue, so identical relation observations can require conflicting labels. This is retained as a task-identifiability negative result, not evidence against relational transfer in a well-specified context.
+
+[Done] The isolated composition result is positive but insufficient for overall adoption: composition accuracy improves from `0.350` to `0.900`, and composition reset removes `0.550`. Held-out remains unopened and the runner exits non-zero.
+
+[Done] Preregistered the context-observable version below; implementation remains gated on its identifiability audit.
+
+[Done] Frozen the context-observable v2 protocol before candidate implementation at SHA-256 `c79206dc8bde4d6ef8b0fb593a6a3da2982d718ffb70d89f2c492076da9d3082`. It uses five fresh seeds, disjoint symbols `20–25` versus `30–35`, and supplies the same bounded rule-context cue to categorical, relational and compositional arms.
+
+[Next] Implement the mandatory pre-execution signature audit. Candidate execution is forbidden unless every observable `context + relational signature` maps to exactly one label with balanced labels per context and seed. Then implement the three arms and frozen context/relation/composition controls without opening held-out identities.
 
 The causal comparison will use four arms:
 
