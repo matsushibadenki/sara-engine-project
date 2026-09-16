@@ -14,7 +14,18 @@ The engine rejects serialization while an outcome receipt is pending. State load
 
 [Done] Added generation-checked publication under an owner-only advisory lock. Four equal-generation processes admit exactly one writer and advance generation once. Artifacts and locks are owner-only, files are capped at 32 MB, and file plus parent directory are synced around atomic replacement. The durable gate also verifies checksum, permission and oversize rejection.
 
-[Next] Produce hash-pinned research checkpoints at the pre-test boundary for BPI and Sepsis, then verify that loading those durable artifacts reproduces the accepted frozen predictions without refitting. Keep them research-only until an explicit production gate exists.
+[Done] Materialized generation-1 research checkpoints at the pre-test boundary for BPI and Sepsis under `models/event_stream_engine/`. `research-checkpoints-v1-manifest.json` pins the whole-artifact SHA-256, canonical payload SHA-256, accepted-result SHA-256, accepted prediction trace and runtime configuration digest. Publication refuses an existing generation instead of silently replacing research evidence.
+
+[Done] A separate load-only verification process checked every pinned identity before opening the frozen partitions. It reproduced the accepted BPI trace across 32,694 predictions and the accepted Sepsis trace across 2,035 predictions. Frozen replay updates only the private in-memory copy and leaves the pre-test artifact unchanged. The report is `workspace/evaluation/research_checkpoint_release_v1.json`; `production_authorized` remains `false`.
+
+Build the research-only artifacts once, then verify them without refitting:
+
+```bash
+python3 scripts/eval/research_checkpoint_release.py build
+python3 scripts/eval/research_checkpoint_release.py verify
+```
+
+The build command is intentionally fail-closed when the generation-1 files or release manifest already exist. Delete or replace published research evidence only through a separately reviewed release procedure.
 
 日本語: event符号化表と局所学習状態を一つのartifactへ統合し、BPIとSepsisで学習後checkpointを復元して受理済み予測列を完全再現しました。今後の実イベント研究はこのengineを共通基盤にします。
 
