@@ -1,0 +1,15 @@
+{
+  "schema": "sara-r2-sepsis-task-v1",
+  "source_sha256": "709c52340306415952811b9b9c5dc6bcc8f8d47d583eba39df9a538459dc543a",
+  "source_doi": "10.4121/uuid:915d2bfb-7e84-49ad-a286-dc35f063a460",
+  "target": "next activity after each non-terminal event",
+  "split_unit": "complete case",
+  "split_order": "case start timestamp then case identifier",
+  "split_counts": {"training": 735, "development": 157, "frozen_test": 158},
+  "allowed_inputs": ["observed activity prefix", "lifecycle", "within-trace elapsed time", "bounded prefix length"],
+  "forbidden_inputs": ["future events", "case outcome attributes", "test labels", "absolute timestamp as semantic signal"],
+  "timing_ablation": "replace every positive elapsed-time bucket with one constant while preserving event order and count",
+  "timestamp_caveat": "publisher randomized absolute timestamps but preserved within-trace intervals",
+  "frozen_test_policy": "sealed until a separately preregistered development gate passes",
+  "production_promotion": false
+}

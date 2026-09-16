@@ -1,0 +1,40 @@
+{
+  "schema": "sara-r2-sepsis-manifest-v1",
+  "source_sha256": "709c52340306415952811b9b9c5dc6bcc8f8d47d583eba39df9a538459dc543a",
+  "labels": [
+    "Admission IC",
+    "Admission NC",
+    "CRP",
+    "ER Registration",
+    "ER Sepsis Triage",
+    "ER Triage",
+    "IV Antibiotics",
+    "IV Liquid",
+    "LacticAcid",
+    "Leucocytes",
+    "Release A",
+    "Release B",
+    "Release C",
+    "Release D",
+    "Release E",
+    "Return ER"
+  ],
+  "case_counts": {
+    "training": 735,
+    "development": 157,
+    "frozen_test": 158
+  },
+  "prediction_counts": {
+    "training": 10083,
+    "development": 2046,
+    "frozen_test": 2035
+  },
+  "case_overlap": 0,
+  "absolute_time_features_forbidden": true,
+  "frozen_test_metrics_computed": false,
+  "table_states": {
+    "first_order": 15,
+    "second_order": 102,
+    "timing_aware": 90
+  }
+}

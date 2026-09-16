@@ -1,0 +1,34 @@
+{
+  "schema": "sara-r2-sepsis-normalized-router-preregistration-v1",
+  "experiment_id": "r2-sepsis-normalized-router-v1-2026-09-16",
+  "registered_before_implementation": true,
+  "parent_negative_result_sha256": "d9209c674d94656260319846fc45255467a8887a486f6b5714ef5914e0244678",
+  "source_sha256": "709c52340306415952811b9b9c5dc6bcc8f8d47d583eba39df9a538459dc543a",
+  "scope": "Training-only diagnostic; exposed development and sealed test partitions are forbidden",
+  "chronological_training_case_folds": {"calibration_fraction": 0.70, "confirmation_fraction": 0.30},
+  "router": {
+    "score": "local top-two score margin divided by base maximum probability",
+    "minimum_base_support": 16,
+    "requires_prediction_disagreement": true,
+    "target_override_fraction_of_all_predictions": 0.10,
+    "threshold_rule": "smallest calibration score in the top ceil(10 percent of all calibration predictions); infinity if fewer eligible disagreements",
+    "tie_rule": "score greater than or equal to threshold",
+    "threshold_source": "candidate real-gap spiking arm only; reuse unchanged for scalar, constant-gap and shuffled controls",
+    "probability_rule": "swap base and local predicted-class probabilities on override"
+  },
+  "inherited_unchanged": {"learning_rate": 0.30, "weight_cap": 2.0, "routes": 7, "gap_bounds_seconds": [0, 60, 300, 1800, 7200, 28800, 86400, 259200]},
+  "arms": ["snn_normalized", "scalar_normalized", "constant_gap_normalized", "shuffled_outcome_normalized", "online_second_order_transition"],
+  "shuffled_outcome_seed": 916905,
+  "confirmation_acceptance": {
+    "minimum_top1_gain_over_base": 0.0,
+    "minimum_macro_f1_gain_over_base": 0.01,
+    "maximum_brier_increase_over_base": 0.0,
+    "minimum_constant_gap_macro_f1_drop": 0.002,
+    "minimum_shuffled_outcome_macro_f1_drop": 0.10,
+    "maximum_candidate_override_rate": 0.12,
+    "exact_scalar_prediction_equivalence": true,
+    "all_resource_contracts_pass": true
+  },
+  "execution_policy": {"attempts": 1, "post_result_tuning": false, "development_metrics_forbidden": true, "frozen_test_metrics_forbidden": true, "negative_results_retained": true, "passing_is_diagnostic_only": true},
+  "claim_boundaries": {"training_internal_confirmation_is_not_independent_evidence": true, "scalar_equivalence_blocks_snn_superiority": true, "production_promotion": false}
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "sara-r2-sepsis-normalized-final-preregistration-v1",
+  "experiment_id": "r2-sepsis-normalized-final-v1-2026-09-16",
+  "registered_before_final_evaluator_implementation": true,
+  "source_sha256": "709c52340306415952811b9b9c5dc6bcc8f8d47d583eba39df9a538459dc543a",
+  "diagnostic_result_sha256": "312012a19188a9e2c1096a0b592d0a93d4cfc4fc3019d6a08a5e3fe3a6bb4d9d",
+  "fixed_normalized_score_threshold": 0.6223091976516634,
+  "minimum_base_support": 16,
+  "learning_rate": 0.30,
+  "weight_cap": 2.0,
+  "routes": 7,
+  "probability_rule": "swap base and local predicted-class probabilities on override",
+  "fit_partitions": ["training", "development"],
+  "evaluation_partition": "frozen_test",
+  "arms": ["snn_normalized", "scalar_normalized", "constant_gap_normalized", "shuffled_outcome_normalized", "online_second_order_transition"],
+  "shuffled_outcome_seed": 916906,
+  "final_acceptance": {
+    "minimum_top1_gain_over_base": 0.0,
+    "minimum_macro_f1_gain_over_base": 0.01,
+    "maximum_brier_increase_over_base": 0.0,
+    "minimum_constant_gap_macro_f1_drop": 0.002,
+    "maximum_shuffled_macro_f1_gain_over_base": 0.0,
+    "maximum_candidate_override_rate": 0.12,
+    "exact_scalar_prediction_equivalence": true,
+    "all_resource_contracts_pass": true
+  },
+  "resource_budgets": {"max_routes": 4096, "max_neurons": 4096, "max_weight_entries": 65536, "max_state_bytes": 16777216, "max_event_work": 240, "cpu_latency_p99_ms": 1.0, "cpu_latency_watchdog_ms": 25.0, "max_peak_rss_bytes": 536870912},
+  "gate_amendment": "After the negative training-only diagnostic, the absolute 10-point shuffled gap was found incompatible with an approximately 10-percent override budget. The final gate requires shuffled local learning to provide no positive macro-F1 gain over base. Model and threshold are unchanged.",
+  "execution_policy": {"final_attempts": 1, "post_result_model_tuning": false, "negative_results_retained": true, "production_promotion": false},
+  "claim_boundaries": {"single_small_external_log_is_limited_replication": true, "scalar_equivalence_blocks_snn_superiority": true, "physical_energy_unmeasured": true}
+}

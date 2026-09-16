@@ -1,0 +1,36 @@
+{
+  "schema": "sara-r2-sepsis-confidence-hybrid-preregistration-v1",
+  "experiment_id": "r2-sepsis-confidence-hybrid-v1-2026-09-16",
+  "registered_before_candidate_implementation": true,
+  "task_sha256": "f1bbcc37919ac55431327ab065bccfb0a6d84b686f34029da1dd77ca23cd360a",
+  "manifest_sha256": "770fc58f32758df5f99422644d8b7f3022f0c0959291ab3d6aff1c021d23e4b3",
+  "baseline_sha256": "78a02b1c2568e7fd75b2ffcf3b2d0ba65da5e32136d6f91892c8630641506b22",
+  "source_sha256": "709c52340306415952811b9b9c5dc6bcc8f8d47d583eba39df9a538459dc543a",
+  "fit_partition": "training",
+  "evaluation_partition": "development",
+  "feature_routes": ["current_activity", "previous_x_current_activity", "previous2_x_previous_x_current_activity", "current_activity_x_lifecycle", "current_activity_x_lifecycle_x_gap_bucket", "previous_x_current_x_gap_bucket", "prefix_length_bucket"],
+  "removed_bpi_route": "hour_bucket_x_weekday is prohibited because the publisher randomized absolute timestamps",
+  "inherited_without_tuning": {
+    "learning_rate": 0.30,
+    "weight_cap": 2.0,
+    "base_probability_cap": 0.75,
+    "local_score_margin": 0.10,
+    "minimum_base_support": 16,
+    "gap_bounds_seconds": [0, 60, 300, 1800, 7200, 28800, 86400, 259200],
+    "prefix_length_bounds": [1, 2, 4, 8, 16, 32, 64, 128]
+  },
+  "arms": ["snn_hybrid", "scalar_hybrid", "constant_gap_hybrid", "shuffled_outcome_hybrid", "online_second_order_transition"],
+  "shuffled_outcome_seed": 916904,
+  "development_acceptance": {
+    "minimum_top1_gain_over_base": 0.0,
+    "minimum_macro_f1_gain_over_base": 0.01,
+    "maximum_brier_increase_over_base": 0.0,
+    "minimum_constant_gap_macro_f1_drop": 0.002,
+    "minimum_shuffled_outcome_macro_f1_drop": 0.10,
+    "exact_scalar_prediction_equivalence": true,
+    "all_resource_contracts_pass": true
+  },
+  "resource_budgets": {"max_routes": 4096, "max_neurons": 4096, "max_weight_entries": 65536, "max_state_bytes": 16777216, "max_event_work": 240, "cpu_latency_p99_ms": 1.0, "cpu_latency_watchdog_ms": 25.0, "max_peak_rss_bytes": 536870912},
+  "execution_policy": {"development_attempts": 1, "post_result_tuning": false, "frozen_test_only_if_all_gates_pass": true, "negative_results_retained": true},
+  "claim_boundaries": {"development_pass_is_not_replication": true, "scalar_equivalence_blocks_snn_superiority": true, "physical_energy_unmeasured": true, "production_promotion": false}
+}
