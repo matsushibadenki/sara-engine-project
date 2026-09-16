@@ -1,0 +1,73 @@
+{
+  "schema": "sara-local-outcome-snn-integration-preregistration-v1",
+  "experiment_id": "local-outcome-snn-integration-v1-2026-09-16",
+  "registered_before_integration_implementation": true,
+  "scope": "Fixed-topology SNN encoder and selected readout integration; not R2, representation learning, PC-ALM replication, production promotion or evidence of an SNN advantage",
+  "seeds": [916103, 916109, 916121, 916127, 916129],
+  "symbols": 8,
+  "intervals": [2, 5, 10],
+  "address_space": 192,
+  "training_episodes": 1536,
+  "evaluation_episodes": 1536,
+  "feedback_delay": 1,
+  "arms": [
+    "snn_residual",
+    "snn_three_factor",
+    "snn_timing_destroyed_residual",
+    "scalar_residual",
+    "snn_frozen",
+    "snn_shuffled_feedback"
+  ],
+  "configuration": {
+    "branches_per_neuron": 1,
+    "branch_inputs": [0.8, 0.8],
+    "learning_rate": 0.15,
+    "trace_decay": 0.99,
+    "max_feedback_age": 64,
+    "max_active_routes": 1,
+    "max_readout_routes": 192,
+    "max_delta": 0.5,
+    "weight_cap": 1.0,
+    "integral_rate": 0.0,
+    "tie_prediction": 0
+  },
+  "task": "Each seed deterministically shuffles every one of the 192 ordered-symbol and interval-bin addresses, assigns balanced labels by shuffled address rank parity, and repeats the full address set eight times for training and eight times for evaluation with separately shuffled order. The target is revealed only after prediction. Timing destruction preserves symbols, labels and episode order but replaces every interval with 2. The scalar residual arm computes the same address directly and must exactly match intact SNN residual predictions. Shuffled feedback uses a separately seeded permutation of the actual training and evaluation labels. No post-result tuning or second evaluation run is allowed.",
+  "metrics": {
+    "accuracy": "prediction before feedback over every evaluation episode",
+    "brier": "squared probability error before feedback where probability=(clipped_score+1)/2",
+    "timing_loss": "intact SNN residual accuracy minus timing-destroyed SNN residual accuracy",
+    "event_work": "two input deliveries, one neuron step, one readout prediction, and visited local updates",
+    "state_bytes": "recursive Python object size after training and after evaluation"
+  },
+  "acceptance": {
+    "minimum_brier_gain_over_three_factor": 0.01,
+    "maximum_accuracy_regression_vs_three_factor": 0.02,
+    "minimum_accuracy_gain_over_shuffled": 0.15,
+    "minimum_timing_loss": 0.15,
+    "all_seed_brier_gains_positive": true,
+    "exact_scalar_prediction_equivalence": true,
+    "all_resource_contracts_pass": true
+  },
+  "budgets": {
+    "max_units": 192,
+    "max_active_units_per_episode": 1,
+    "max_readout_routes": 192,
+    "max_updates_per_episode": 1,
+    "max_state_bytes": 2097152,
+    "max_event_work_per_episode": 8,
+    "max_cpu_ms_per_episode": 25.0
+  },
+  "evidence_boundaries": {
+    "same_addresses_seen_in_training_and_evaluation": true,
+    "fresh_episode_identities": true,
+    "independent_external_data": false,
+    "learned_encoder": false,
+    "matrix_calculation": false,
+    "global_backpropagation": false,
+    "gpu_required": false,
+    "physical_energy_claim": false,
+    "snn_superiority_claim": false,
+    "production_mutation": false
+  },
+  "failure_policy": "Retain the result and keep production integration disabled if any acceptance or resource condition fails. A passed result authorizes only the next fresh integration question; it cannot be relabeled as R2."
+}

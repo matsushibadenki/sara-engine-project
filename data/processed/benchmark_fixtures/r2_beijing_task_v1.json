@@ -1,0 +1,74 @@
+{
+  "schema": "sara-r2-real-outcome-task-selection-v1",
+  "task_id": "r2-beijing-next-hour-pm25-direction-v1",
+  "selected_at": "2026-09-16",
+  "status": "source_and_task_contract_frozen_before_model_preregistration",
+  "source": {
+    "title": "Beijing Multi-Site Air Quality",
+    "publisher": "UCI Machine Learning Repository",
+    "dataset_id": 501,
+    "doi": "10.24432/C5RK5G",
+    "landing_page": "https://archive.ics.uci.edu/dataset/501/beijing",
+    "license": "CC BY 4.0",
+    "outer_archive_sha256": "b04da438b2f331ac0ffd45aebdfec0d20d2367feb5f6948c4b1f7ce1191e33c4",
+    "inner_archive_sha256": "d1b9261c54132f04c374f762f1e5e512af19f95c95fd6bfa1e8ac7e927e3b0b8",
+    "stations": 12,
+    "rows": 420768,
+    "valid_consecutive_pm25_pairs": 409180,
+    "observed_period_start": "2013-03-01T00:00:00",
+    "observed_period_end": "2017-02-28T23:00:00"
+  },
+  "prediction_contract": {
+    "prediction_time": "After all allowed measurements at hour t are observed",
+    "outcome_time": "Hour t+1",
+    "binary_target": "1 when PM2.5(t+1) > PM2.5(t), otherwise 0",
+    "label_available_before_prediction": false,
+    "future_covariates_allowed": false,
+    "cross_station_future_rows_allowed": false,
+    "missing_pair_policy": "Exclude a pair when PM2.5 at t or t+1 is missing or timestamps are not exactly one hour apart",
+    "other_missing_feature_policy": "Must be fixed using training-only state or explicit missing events before model preregistration",
+    "prediction_unit": "station-hour"
+  },
+  "chronological_split": {
+    "training": {"start": "2013-03-01T00:00:00", "end": "2015-12-31T23:00:00"},
+    "development": {"start": "2016-01-01T00:00:00", "end": "2016-06-30T23:00:00"},
+    "frozen_test": {"start": "2016-07-01T00:00:00", "end": "2017-02-28T23:00:00"},
+    "ordering": "Strictly chronological within each station; no random row split",
+    "test_visibility": "The immutable source archive contains all outcomes and the source audit computed whole-source aggregate completeness and class-rate statistics before this contract. Model design, feature fitting and threshold selection must not inspect test-period-specific metrics or records; the single-use evaluator may compute test-period metrics only after the model protocol is frozen."
+  },
+  "required_baselines": [
+    "training-majority constant",
+    "current-hour change-direction persistence",
+    "bounded station-hour transition table",
+    "bounded sparse non-spiking learner with the same visible events and update budget",
+    "frozen-plasticity SNN",
+    "shuffled-outcome SNN",
+    "temporal-order-destroyed SNN"
+  ],
+  "required_metrics": [
+    "balanced_accuracy",
+    "accuracy",
+    "brier",
+    "per_station_balanced_accuracy",
+    "worst_station_balanced_accuracy",
+    "seasonal_slice_accuracy",
+    "missingness_slice_accuracy",
+    "adaptation_over_time",
+    "event_work_per_prediction",
+    "state_bytes",
+    "cpu_ms_per_prediction",
+    "peak_rss",
+    "deterministic_replay"
+  ],
+  "promotion_boundaries": {
+    "r2_requires_advantage_over_strongest_bounded_baseline": true,
+    "timing_claim_requires_temporal_ablation": true,
+    "snn_superiority_requires_non_spiking_difference": true,
+    "physical_energy_claim_requires_paired_measurement": true,
+    "production_promotion_from_this_task": false,
+    "global_backpropagation": false,
+    "dense_matrix_runtime": false,
+    "gpu_required": false
+  },
+  "next_gate": "Build a deterministic processed manifest and training/development-only baseline characterization. Freeze feature bins, missingness handling, model arms, numerical thresholds and resource ceilings before any frozen-test execution."
+}

@@ -1,0 +1,104 @@
+{
+  "schema": "sara-r2-beijing-model-preregistration-v1",
+  "experiment_id": "r2-beijing-sparse-events-v1-2026-09-16",
+  "registered_before_candidate_implementation": true,
+  "task_contract_sha256": "1f552477c672214de862682ff7b86543f0faaecc439860ff94376bce816bbe07",
+  "source_manifest_sha256": "eed9ff4c86a688004001810e52e39b7b94d7e3b1b3ce94666213badd9aa08587",
+  "development_baselines_sha256": "1883af06fd640f8813c3f40b1e72064295e949bda771d1b2850a378d4220ec3a",
+  "source_inner_sha256": "d1b9261c54132f04c374f762f1e5e512af19f95c95fd6bfa1e8ac7e927e3b0b8",
+  "scope": "Training/development gate for next-hour PM2.5 direction on independently recorded hourly station data; frozen test remains sealed until every development gate passes",
+  "target": "PM2.5(t+1) > PM2.5(t)",
+  "feedback_delay_hours": 1,
+  "shuffled_outcome_seed": 916701,
+  "split_policy": {
+    "training": ["2013-03-01T00:00:00", "2015-12-31T23:00:00"],
+    "development": ["2016-01-01T00:00:00", "2016-06-30T23:00:00"],
+    "frozen_test": ["2016-07-01T00:00:00", "2017-02-28T23:00:00"],
+    "development_updates_enabled": true,
+    "frozen_test_execution_authorized_before_development_pass": false
+  },
+  "feature_contract": {
+    "base_events": [
+      "station", "hour", "month", "pm25_level", "pm25_delta_1h", "pm25_delta_3h",
+      "pm25_delta_24h", "temperature", "dew_point", "pressure", "wind_speed",
+      "rain", "wind_direction", "missingness_mask"
+    ],
+    "fixed_cross_events": [
+      "station_x_hour_x_delta1", "station_x_pm25level_x_delta1",
+      "pm25level_x_delta1_x_delta24"
+    ],
+    "numeric_bins": {
+      "pm25_level": [12, 35, 55, 75, 100, 150, 250, 400],
+      "pm25_delta": [-25, -10, -2, 2, 10, 25],
+      "temperature": [-20, -10, 0, 10, 20, 30, 40],
+      "dew_point": [-30, -20, -10, 0, 10, 20, 30],
+      "pressure": [990, 1000, 1010, 1020, 1030, 1040],
+      "wind_speed": [0.5, 1, 2, 4, 8, 16],
+      "rain": [0, 0.1]
+    },
+    "lag_missingness_is_explicit": true,
+    "future_covariates": false,
+    "learned_encoder": false,
+    "maximum_active_routes": 18,
+    "maximum_route_vocabulary": 4096
+  },
+  "arms": [
+    "snn_local_residual",
+    "scalar_local_residual",
+    "snn_three_factor",
+    "snn_frozen",
+    "snn_shuffled_outcomes",
+    "snn_temporal_order_destroyed",
+    "online_station_hour_direction_transition"
+  ],
+  "learning": {
+    "local_residual_rate": 0.15,
+    "three_factor_rate": 0.15,
+    "trace_decay_per_hour": 0.99,
+    "max_feedback_age_hours": 2,
+    "max_delta": 0.50,
+    "weight_cap": 1.0,
+    "one_pending_prediction": true,
+    "global_backpropagation": false,
+    "matrix_calculation": false,
+    "gpu_required": false
+  },
+  "development_acceptance": {
+    "minimum_candidate_balanced_accuracy": 0.5640,
+    "minimum_balanced_accuracy_gain_over_online_transition": 0.0100,
+    "minimum_brier_gain_over_online_transition": 0.0050,
+    "minimum_temporal_order_ablation_drop": 0.0050,
+    "minimum_shuffled_outcome_balanced_accuracy_gap": 0.0300,
+    "maximum_worst_station_balanced_accuracy_drop_from_baseline": 0.0200,
+    "exact_scalar_prediction_equivalence": true,
+    "deterministic_replay": true,
+    "all_resource_contracts_pass": true
+  },
+  "resource_budgets": {
+    "max_neurons": 4096,
+    "max_active_neurons_per_prediction": 18,
+    "max_readout_routes": 4096,
+    "max_updates_per_outcome": 18,
+    "max_state_bytes": 33554432,
+    "max_event_work_per_prediction": 128,
+    "max_cpu_ms_per_prediction": 5.0,
+    "max_peak_rss_bytes": 536870912
+  },
+  "execution_policy": {
+    "development_attempts": 1,
+    "post_result_parameter_tuning": false,
+    "frozen_test_run_only_if_all_development_gates_pass": true,
+    "frozen_test_attempts_if_authorized": 1,
+    "negative_results_retained": true
+  },
+  "pre_execution_amendments": [
+    "Before any predictions or development metrics were computed, deterministic train/development route enumeration found 4,383 routes, exceeding the initial 4,096 local-readout safety cap. The month_x_4hour_band_x_delta1 cross was removed, leaving all base events and three registered crosses within the original 4,096 route, neuron, readout and 32 MiB state limits. Learning settings, acceptance thresholds and test authorization rules were unchanged."
+  ],
+  "claim_boundaries": {
+    "development_pass_is_not_r2": true,
+    "scalar_equivalence_blocks_snn_superiority": true,
+    "temporal_ablation_required_for_timing_claim": true,
+    "physical_energy_unmeasured": true,
+    "production_promotion": false
+  }
+}

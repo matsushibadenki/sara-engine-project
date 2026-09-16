@@ -1,0 +1,95 @@
+{
+  "schema": "sara-r2-beijing-processed-manifest-v1",
+  "source_inner_sha256": "d1b9261c54132f04c374f762f1e5e512af19f95c95fd6bfa1e8ac7e927e3b0b8",
+  "source_members": [
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Aotizhongxin_20130301-20170228.csv",
+      "bytes": 2835916,
+      "sha256": "a94fbcfc71708b6ffdc033360163d91efb7f675e496f6b5860929aa96b96351b"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Changping_20130301-20170228.csv",
+      "bytes": 2722295,
+      "sha256": "a2e21402a6d95fb7043f87959e6e3dcbecb957aac356a6f8028a85b047c772e7"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Dingling_20130301-20170228.csv",
+      "bytes": 2675856,
+      "sha256": "3d8dff81f18a80d9f455876a785642bffe1e9b9924ec1e6b7ce8cca790432eeb"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Dongsi_20130301-20170228.csv",
+      "bytes": 2636684,
+      "sha256": "9c0020214425e5ee2a64d42f97a1f632e1d8f6b53ad50edd85a686cc7999f27e"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Guanyuan_20130301-20170228.csv",
+      "bytes": 2695860,
+      "sha256": "59390fee3b032597b387491f5230e7edb90a8558e30217ebd6d9befbe669fbf9"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Gucheng_20130301-20170228.csv",
+      "bytes": 2654625,
+      "sha256": "10ae48801ea55869fee56a48b885fb1127859c130551888d71673f34216ba951"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Huairou_20130301-20170228.csv",
+      "bytes": 2641027,
+      "sha256": "812dcbe848b3ba2c2d25731064797bff803c46eb0c602156a1fa044df136dc26"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Nongzhanguan_20130301-20170228.csv",
+      "bytes": 2839705,
+      "sha256": "572cf87b65ef543cd55d3a711b28474def224a46b0ec3fc8add8aaf13b67a487"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Shunyi_20130301-20170228.csv",
+      "bytes": 2620654,
+      "sha256": "520b59e4ead3b0cfe7f1ed673e30275de8441e999db6f413d5172d2277b8c15a"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Tiantan_20130301-20170228.csv",
+      "bytes": 2655061,
+      "sha256": "0743e34799cf1ee36195b73321b91baa5625276532e7263c588f68cdef3b4daa"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Wanliu_20130301-20170228.csv",
+      "bytes": 2659544,
+      "sha256": "0b1a6d754a07f0def2f55434ddfa3870dcd0063b7f766a6f66b6c11bb05a377a"
+    },
+    {
+      "name": "PRSA_Data_20130301-20170228/PRSA_Data_Wanshouxigong_20130301-20170228.csv",
+      "bytes": 2871076,
+      "sha256": "ab1d6a356d6997a45f6d657ad47de1e05a4a08d4a7015b38a329a90665ab74d0"
+    }
+  ],
+  "chronological_split": {
+    "training": [
+      "2013-03-01T00:00:00",
+      "2015-12-31T23:00:00"
+    ],
+    "development": [
+      "2016-01-01T00:00:00",
+      "2016-06-30T23:00:00"
+    ],
+    "frozen_test": [
+      "2016-07-01T00:00:00",
+      "2017-02-28T23:00:00"
+    ]
+  },
+  "eligible_pair_counts": {
+    "training": 290312,
+    "development": 50825,
+    "frozen_test": 68019
+  },
+  "excluded_pair_counts": {
+    "missing_pm25": 11576,
+    "cross_split": 24,
+    "outside_split": 0
+  },
+  "baseline_fit_scope": "training only",
+  "development_label_access": true,
+  "frozen_test_period_metrics_computed": false,
+  "transition_table_capacity": 864,
+  "transition_table_occupied": 855
+}

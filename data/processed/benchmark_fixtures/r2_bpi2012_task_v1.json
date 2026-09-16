@@ -1,0 +1,88 @@
+{
+  "schema": "sara-r2-irregular-real-event-task-selection-v1",
+  "task_id": "r2-bpi2012-next-activity-v1",
+  "selected_at": "2026-09-16",
+  "status": "source_and_task_contract_frozen_before_baseline_or_model_implementation",
+  "source": {
+    "title": "BPI Challenge 2012",
+    "publisher": "Eindhoven University of Technology / 4TU.ResearchData",
+    "doi": "10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f",
+    "landing_page": "https://data.4tu.nl/articles/dataset/BPI_Challenge_2012/12689204/1",
+    "file_id": 24027287,
+    "terms": "4TU General Terms of Use",
+    "md5": "74c7ba9aba85bfcb181a22c9d565e5b5",
+    "sha256": "5cd9cc16b9bcb20bd4aae45666a5d87479ddbf47e6371618b6ad217174cecdf3",
+    "trace_count": 13087,
+    "event_count": 262200,
+    "activity_count": 24,
+    "time_start": "2011-10-01T00:38:44.546000+02:00",
+    "time_end": "2012-03-14T16:04:54.681000+01:00"
+  },
+  "prediction_contract": {
+    "prediction_time": "Immediately after an event within one case",
+    "outcome": "concept:name of the next recorded event in the same case",
+    "terminal_events": "Excluded because no next event exists",
+    "allowed_inputs": [
+      "current and bounded previous activity names",
+      "current and bounded previous lifecycle transitions",
+      "elapsed times between already observed events",
+      "hour, weekday and bounded prefix length"
+    ],
+    "future_case_events_allowed": false,
+    "case_identifier_as_feature": false,
+    "case_attributes_as_features": false,
+    "case_isolation": "All events of one case belong to exactly one chronological split"
+  },
+  "chronological_case_split": {
+    "training": "case start < 2012-01-19T10:02:23.184000+01:00",
+    "development": "2012-01-19T10:02:23.184000+01:00 <= case start < 2012-02-11T10:46:32.413000+01:00",
+    "frozen_test": "case start >= 2012-02-11T10:46:32.413000+01:00",
+    "boundary_basis": "70th and 85th percentiles of case start time",
+    "random_event_split": false
+  },
+  "timing_contract": {
+    "observed_gap_distinct_values": 148911,
+    "median_seconds": 47.875,
+    "p90_seconds": 72319.605,
+    "p99_seconds": 684691.994,
+    "negative_gap_count": 0,
+    "primary_ablation": "Replace every positive observed inter-event gap with one constant bucket while preserving case, activity order, lifecycle and event counts",
+    "timing_claim_requires_candidate_minus_ablation_gain": true
+  },
+  "required_baselines": [
+    "training next-activity majority",
+    "bounded first-order activity transition",
+    "bounded second-order activity transition",
+    "bounded activity+lifecycle+gap-bucket transition",
+    "equal-information sparse non-spiking online learner",
+    "frozen-plasticity SNN",
+    "shuffled-outcome SNN",
+    "constant-gap SNN"
+  ],
+  "required_metrics": [
+    "top1_accuracy",
+    "macro_f1",
+    "multiclass_brier",
+    "per_activity_recall",
+    "rare_activity_recall",
+    "timing_sensitive_slice_accuracy",
+    "case_prefix_slice_accuracy",
+    "state_bytes",
+    "events_per_prediction",
+    "cpu_latency_p50_p95_p99_and_watchdog",
+    "peak_rss",
+    "deterministic_replay"
+  ],
+  "promotion_boundaries": {
+    "development_gate_required_before_frozen_test": true,
+    "r2_requires_strongest_bounded_baseline_advantage": true,
+    "timing_claim_requires_constant_gap_ablation": true,
+    "snn_superiority_requires_non_spiking_difference": true,
+    "global_backpropagation": false,
+    "dense_matrix_runtime": false,
+    "gpu_required": false,
+    "physical_energy_claim": false,
+    "production_promotion": false
+  },
+  "next_gate": "Build a deterministic case manifest and training/development-only baseline report. Freeze gap buckets, sparse routes, class update rule, thresholds and percentile/watchdog resource limits before any frozen-test metric is computed."
+}

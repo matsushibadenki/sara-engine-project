@@ -1,0 +1,82 @@
+{
+  "schema": "sara-observable-revision-policy-preregistration-v1",
+  "experiment_id": "observable-revision-policy-v1-2026-09-16",
+  "registered_before_candidate_implementation": true,
+  "scope": "Synthetic verified-revision notification and bounded local rule selection; not R2, autonomous change detection, production promotion, external validity or evidence of an SNN advantage",
+  "seeds": [916201, 916213, 916217, 916219, 916231],
+  "symbols": 8,
+  "intervals": [2, 5, 10],
+  "address_space": 192,
+  "training_episodes": 1536,
+  "pre_revision_evaluation_episodes": 768,
+  "post_revision_evaluation_episodes": 2304,
+  "adaptation_horizon": 1152,
+  "early_post_revision_episodes": 1152,
+  "feedback_delay": 1,
+  "arms": [
+    "observable_policy_snn",
+    "always_three_factor_snn",
+    "always_residual_snn",
+    "ignored_revision_snn",
+    "observable_policy_scalar",
+    "shuffled_feedback_snn"
+  ],
+  "scenarios": ["true_revision", "false_revision"],
+  "configuration": {
+    "branches_per_neuron": 1,
+    "branch_inputs": [0.8, 0.8],
+    "learning_rate": 0.15,
+    "trace_decay": 0.99,
+    "max_feedback_age": 64,
+    "max_active_routes": 1,
+    "max_readout_routes": 192,
+    "max_delta": 0.5,
+    "weight_cap": 1.0,
+    "tie_prediction": 0
+  },
+  "task": "Each seed creates the same balanced fixed 192-address family used only as a structural format, with wholly fresh seed and episode identities. Training and the first 768 scored episodes use revision 1. Before scored episode 768, a visible revision notification with strictly increasing revision ID 2 is delivered. In true_revision every address label flips; in false_revision labels remain unchanged. The candidate uses residual updates for exactly 1152 decisions after a valid notification, then returns to constant signed three-factor updates. The signal contains no route IDs, labels, weights or error. Always controls receive the same notification for accounting but follow their fixed rule. ignored_revision_snn receives no policy transition. Shuffled feedback receives a deterministic permutation of outcomes. The scalar candidate receives identical addresses and notifications and must exactly match candidate predictions. Labels remain hidden until after each prediction. No post-result tuning, retry or second evaluation run is allowed.",
+  "metrics": {
+    "pre_revision_accuracy_and_brier": "all scored episodes before notification",
+    "early_post_revision_accuracy_and_brier": "first 1152 scored episodes after notification",
+    "late_post_revision_accuracy_and_brier": "remaining scored episodes",
+    "adaptation_latency": "episodes after the true notification until trailing 192 predictions reach at least 0.90 accuracy",
+    "false_switch_harm": "candidate false-revision Brier minus always-three-factor false-revision Brier",
+    "event_work": "encoder deliveries, neuron step, signal handling, prediction and local update visits",
+    "state_bytes": "recursive Python object size after training and after evaluation"
+  },
+  "acceptance": {
+    "minimum_early_accuracy_gain_over_three_factor": 0.03,
+    "minimum_full_post_brier_gain_over_best_static": 0.005,
+    "maximum_pre_revision_brier_regression": 0.002,
+    "maximum_false_switch_brier_harm": 0.002,
+    "maximum_adaptation_latency_episodes": 1152,
+    "all_seed_early_accuracy_gains_positive": true,
+    "exact_scalar_prediction_equivalence": true,
+    "all_resource_contracts_pass": true
+  },
+  "budgets": {
+    "max_units": 192,
+    "max_active_units_per_episode": 1,
+    "max_readout_routes": 192,
+    "max_updates_per_episode": 1,
+    "max_revision_state": 1,
+    "max_state_bytes": 2097152,
+    "max_event_work_per_episode": 9,
+    "max_cpu_ms_per_episode": 25.0
+  },
+  "evidence_boundaries": {
+    "revision_signal_is_supplied_and_not_detected": true,
+    "revision_signal_is_trusted_for_routing_not_factual_truth": true,
+    "same_addresses_seen_during_training": true,
+    "fresh_episode_identities": true,
+    "independent_external_data": false,
+    "learned_encoder": false,
+    "matrix_calculation": false,
+    "global_backpropagation": false,
+    "gpu_required": false,
+    "physical_energy_claim": false,
+    "snn_superiority_claim": false,
+    "production_mutation": false
+  },
+  "failure_policy": "Retain negative results and keep the policy isolated if any acceptance or resource condition fails. A pass authorizes only a later external or structurally held-out question; it cannot be relabeled as R2 or autonomous revision detection."
+}

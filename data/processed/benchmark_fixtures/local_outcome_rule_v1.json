@@ -1,0 +1,31 @@
+{
+  "experiment_id": "local-outcome-rule-v1-2026-09-16",
+  "scope": "Synthetic scalar readout component comparison; not R2, PC-ALM replication or evidence of an SNN advantage",
+  "seeds": [916031, 916037, 916039, 916049, 916057],
+  "routes": 16,
+  "warmup": 256,
+  "evaluation": 1024,
+  "scenarios": ["stationary", "reversal", "noisy", "expired_feedback"],
+  "arms": ["three_factor", "residual", "integrated", "scalar_ema", "frozen", "shuffled"],
+  "learning_rate": 0.15,
+  "trace_decay": 0.99,
+  "max_age": 64,
+  "integral_rate": 0.25,
+  "integral_decay": 0.999,
+  "integral_cap": 1.0,
+  "integral_max_age": 4096,
+  "weight_cap": 1.0,
+  "max_delta": 0.5,
+  "max_active": 8,
+  "max_routes": 32,
+  "selection": {
+    "residual_mean_brier_gain_over_three_factor": 0.01,
+    "max_scenario_accuracy_regression": 0.02,
+    "integrated_mean_brier_gain_over_residual": 0.005,
+    "integrated_max_scenario_brier_regression": 0.002,
+    "all_seed_mean_gains_positive": true,
+    "max_state_bytes": 131072,
+    "max_episode_ms": 25.0
+  },
+  "method": "Each seed assigns random binary targets to 16 route IDs. Same deterministic route/delay/noise stream is used by every arm. Warmup precedes scored predict-then-feedback episodes. Stationary and reversal are noiseless; reversal flips every 256 scored episodes. Noisy flips labels with probability 0.2. Delay alternates randomly between 1 and 8 ticks; expired_feedback uses 80 ticks. Each episode starts 100 ticks after the preceding one. Single supplied route has eligibility 1. Shuffled receives an independent balanced outcome. Frozen remains zero. scalar_ema uses a non-spiking scalar error update at the same rate and delay attenuation. No hyperparameter tuning on these seeds. Score is clipped to [-1,1], p=(score+1)/2, prediction=(score>0). Brier is (p-label)^2. Accuracy and Brier are computed before feedback. Aggregate each scenario and seed equally; exclude expired_feedback from utility means, and require it to produce no updates. Store per-seed metrics, full deterministic trace digest, source hashes and resource observations. Select residual only if its gain threshold and every scenario accuracy tolerance pass; select integrated only if the residual gate and its own threshold, every scenario Brier tolerance and all positive seed gains pass. Otherwise retain three_factor. Scalar parity is not an SNN advantage. One exclusive result artifact per protocol; failed runs consume the attempt."
+}
