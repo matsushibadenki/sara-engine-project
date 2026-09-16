@@ -1,0 +1,52 @@
+{
+  "schema": "sara-r2-bpi2012-confidence-hybrid-final-preregistration-v1",
+  "experiment_id": "r2-bpi2012-confidence-hybrid-final-v1-2026-09-16",
+  "registered_before_final_evaluator_implementation": true,
+  "source_sha256": "5cd9cc16b9bcb20bd4aae45666a5d87479ddbf47e6371618b6ad217174cecdf3",
+  "diagnostic_protocol_sha256": "82a5a7a411b1932b1b3de9523466938753ae9ae0a3b6fb70f4a1c1b7e26257a5",
+  "diagnostic_result_sha256": "6d50e6aded38fa4ad2bda2c535d899ace66fa8e26bd808f57b59f12e98ec2ad0",
+  "fit_partitions": ["training", "development"],
+  "evaluation_partition": "frozen_test",
+  "selected_router": {
+    "base_probability_cap": 0.75,
+    "local_score_margin": 0.10,
+    "minimum_base_support": 16,
+    "probability_rule": "swap base and local predicted-class probabilities on override"
+  },
+  "models": {
+    "base": "online second-order transition with Laplace alpha 1",
+    "local": "unchanged bounded sparse mistake learner and eight registered routes",
+    "online_outcome_updates_after_prediction": true
+  },
+  "arms": ["snn_hybrid", "scalar_hybrid", "constant_gap_hybrid", "shuffled_outcome_hybrid", "online_second_order_transition"],
+  "shuffled_outcome_seed": 916903,
+  "final_acceptance": {
+    "minimum_top1_gain_over_base": 0.0,
+    "minimum_macro_f1_gain_over_base": 0.01,
+    "maximum_brier_increase_over_base": 0.0,
+    "minimum_constant_gap_macro_f1_drop": 0.002,
+    "minimum_shuffled_outcome_macro_f1_drop": 0.10,
+    "exact_scalar_prediction_equivalence": true,
+    "max_routes": 4096,
+    "max_neurons": 4096,
+    "max_weight_entries": 98304,
+    "max_state_bytes": 33554432,
+    "max_event_work": 272,
+    "cpu_latency_p99_ms": 1.0,
+    "cpu_latency_watchdog_ms": 25.0,
+    "max_peak_rss_bytes": 536870912
+  },
+  "execution_policy": {
+    "final_attempts": 1,
+    "post_result_tuning": false,
+    "negative_results_retained": true,
+    "test_metrics_written_only_after_complete_run": true,
+    "production_promotion": false
+  },
+  "claim_boundaries": {
+    "single_source_test_pass_is_not_general_usefulness": true,
+    "scalar_equivalence_blocks_snn_superiority": true,
+    "physical_energy_unmeasured": true,
+    "independent_second_event_log_required": true
+  }
+}

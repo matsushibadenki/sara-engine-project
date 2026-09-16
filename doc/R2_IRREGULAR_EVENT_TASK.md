@@ -20,8 +20,16 @@ Cases are split by start time, never by individual event:
 - Development: next 15%
 - Frozen test: final 15%
 
-[Next] Build the deterministic case manifest and training/development-only majority, first-order, second-order and timing-aware transition baselines. Then freeze gap buckets, sparse routes, multiclass local updates, acceptance thresholds and percentile/watchdog resource limits before evaluating a candidate.
+[Done] The deterministic manifest contains 9,160 training cases, 1,963 development cases and 1,964 sealed test cases, with zero case overlap. These provide 177,026 training, 39,393 development and 32,694 sealed next-activity predictions.
 
-日本語: 次のR2課題には、実際の融資申請プロセス13,087件を含むBPI Challenge 2012を選びました。次活動を予測し、活動順と件数を保ったままイベント間隔だけを一定化することで、時間情報の因果的な有用性を検証します。
+Development top-1 accuracy is 20.86% for the global majority, 65.66% for first-order activity transition, 80.07% for second-order activity transition, 75.35% for activity+lifecycle+observed-gap transition and 70.11% for its constant-gap control. Real gaps therefore add 5.24 points within the timing-aware baseline, while second-order activity remains the strongest overall bounded baseline.
 
-简体中文：下一项R2任务选用包含13,087个真实贷款申请流程的BPI Challenge 2012。任务预测下一活动，并在保留活动顺序和事件数量的同时把事件间隔固定，以检验时间信息是否真正有用。
+[Done] The sparse multiclass protocol was frozen and its single development attempt was executed. The candidate reached 79.93% top-1 and 60.49% macro-F1 versus 80.06% and 55.49% for the second-order control. Timing ablation, shuffled outcomes, rare recall, scalar equivalence and resources passed, but both accuracy gates failed. The frozen test remains sealed. See [the decision](R2_BPI2012_DEVELOPMENT.md).
+
+[Done] A training-only diagnostic fixed the confidence router, and a separate preregistered run passed all gates on the never-opened chronological test. Top-1 improved from 80.62% to 82.13%, macro-F1 from 53.60% to 56.67%, and Brier from 0.2728 to 0.2659. See [the final result](R2_BPI2012_HYBRID_FINAL.md).
+
+[Next] Replicate the architecture on a second independent irregular event log before making a general usefulness claim.
+
+日本語: BPI Challenge 2012の局所多クラス候補は時間情報と希少活動で効果を示しましたが、二次遷移対照の正解率を超えず不採用です。凍結テストは封印したまま、次は訓練期間内で固定する信頼度付きハイブリッドを検証します。
+
+简体中文：BPI Challenge 2012的局部多分类候选在时间信息和稀有活动上有效，但准确率未超过二阶转移对照，因此不采用。冻结测试集继续封存；下一步验证仅用训练期确定的置信度混合方案。

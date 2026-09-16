@@ -1,0 +1,57 @@
+{
+  "schema": "sara-r2-bpi2012-processed-manifest-v1",
+  "source_sha256": "5cd9cc16b9bcb20bd4aae45666a5d87479ddbf47e6371618b6ad217174cecdf3",
+  "labels": [
+    "A_ACCEPTED",
+    "A_ACTIVATED",
+    "A_APPROVED",
+    "A_CANCELLED",
+    "A_DECLINED",
+    "A_FINALIZED",
+    "A_PARTLYSUBMITTED",
+    "A_PREACCEPTED",
+    "A_REGISTERED",
+    "A_SUBMITTED",
+    "O_ACCEPTED",
+    "O_CANCELLED",
+    "O_CREATED",
+    "O_DECLINED",
+    "O_SELECTED",
+    "O_SENT",
+    "O_SENT_BACK",
+    "W_Afhandelen leads",
+    "W_Beoordelen fraude",
+    "W_Completeren aanvraag",
+    "W_Nabellen incomplete dossiers",
+    "W_Nabellen offertes",
+    "W_Valideren aanvraag",
+    "W_Wijzigen contractgegevens"
+  ],
+  "case_counts": {
+    "training": 9160,
+    "development": 1963,
+    "frozen_test": 1964
+  },
+  "prediction_counts": {
+    "training": 177026,
+    "development": 39393,
+    "frozen_test": 32694
+  },
+  "gap_bounds_seconds": [
+    0.0,
+    60.0,
+    300.0,
+    1800.0,
+    7200.0,
+    28800.0,
+    86400.0,
+    259200.0
+  ],
+  "case_overlap": 0,
+  "frozen_test_metrics_computed": false,
+  "table_states": {
+    "first_order": 24,
+    "second_order": 106,
+    "timing_aware": 185
+  }
+}

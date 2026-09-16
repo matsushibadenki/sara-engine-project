@@ -1,0 +1,65 @@
+{
+  "schema": "sara-r2-bpi2012-confidence-hybrid-preregistration-v1",
+  "experiment_id": "r2-bpi2012-confidence-hybrid-v1-2026-09-16",
+  "registered_before_hybrid_implementation": true,
+  "source_sha256": "5cd9cc16b9bcb20bd4aae45666a5d87479ddbf47e6371618b6ad217174cecdf3",
+  "parent_result_sha256": "83b0f531dc68a8061998ef41f67fd48761cd6f87f37341d35f368ac63921da00",
+  "scope": "Training-period-only diagnostic of a bounded confidence-routed hybrid; existing development and frozen-test cases are forbidden",
+  "chronological_case_folds": {
+    "warmup_fraction": 0.70,
+    "selection_fraction": 0.15,
+    "confirmation_fraction": 0.15,
+    "case_order": "trace start timestamp then case identifier"
+  },
+  "base_model": {
+    "kind": "online_second_order_transition",
+    "laplace_alpha": 1.0
+  },
+  "local_model": {
+    "kind": "bounded_sparse_mistake",
+    "parent_feature_routes_and_learning_are_unchanged": true
+  },
+  "router": {
+    "override_requires_prediction_disagreement": true,
+    "base_max_probability_caps": [0.45, 0.55, 0.65, 0.75],
+    "minimum_local_score_margins": [0.05, 0.10, 0.20, 0.40],
+    "minimum_second_order_support": [0, 4, 16],
+    "probability_rule": "On override, swap the base prediction probability with the local prediction probability; otherwise retain the base distribution",
+    "candidate_count": 48
+  },
+  "selection_rule": {
+    "eligible_if_accuracy_loss_vs_base_at_most": 0.001,
+    "eligible_if_brier_increase_vs_base_at_most": 0.005,
+    "rank": [
+      "highest_macro_f1",
+      "highest_top1_accuracy",
+      "lowest_multiclass_brier",
+      "fewest_overrides",
+      "lexicographic_parameters"
+    ],
+    "fallback": "base_only"
+  },
+  "confirmation_acceptance": {
+    "minimum_top1_gain_over_base": 0.0,
+    "minimum_macro_f1_gain_over_base": 0.01,
+    "maximum_brier_increase_over_base": 0.0,
+    "minimum_constant_gap_macro_f1_drop": 0.002,
+    "minimum_shuffled_outcome_macro_f1_drop": 0.10,
+    "exact_scalar_prediction_equivalence": true,
+    "all_parent_resource_contracts_pass": true
+  },
+  "execution_policy": {
+    "attempts": 1,
+    "post_result_tuning": false,
+    "existing_development_metrics_forbidden": true,
+    "frozen_test_metrics_forbidden": true,
+    "negative_results_retained": true,
+    "passing_is_diagnostic_only": true
+  },
+  "claim_boundaries": {
+    "training_internal_confirmation_is_not_independent_evidence": true,
+    "explicit_neuron_scalar_equivalence_blocks_snn_superiority": true,
+    "physical_energy_unmeasured": true,
+    "production_promotion": false
+  }
+}

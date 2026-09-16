@@ -11,12 +11,17 @@ from typing import Dict, Tuple
 
 
 _LAZY_EXPORTS: Dict[str, Tuple[str, str]] = {
+    "ConfidenceRouteConfig": ("sara_engine.learning.confidence_router", "ConfidenceRouteConfig"),
+    "ConfidenceRouteDecision": ("sara_engine.learning.confidence_router", "ConfidenceRouteDecision"),
+    "route_prediction": ("sara_engine.learning.confidence_router", "route_prediction"),
     "BoundedLocalOutcomeReadout": ("sara_engine.learning.local_outcome", "BoundedLocalOutcomeReadout"),
     "LocalOutcomeConfig": ("sara_engine.learning.local_outcome", "LocalOutcomeConfig"),
     "BoundedObservableRevisionReadout": ("sara_engine.learning.observable_revision", "BoundedObservableRevisionReadout"),
     "ObservableRevisionConfig": ("sara_engine.learning.observable_revision", "ObservableRevisionConfig"),
     "BoundedRevisionGainReadout": ("sara_engine.learning.revision_gain", "BoundedRevisionGainReadout"),
     "RevisionGainConfig": ("sara_engine.learning.revision_gain", "RevisionGainConfig"),
+    "BoundedSparseMulticlassReadout": ("sara_engine.learning.sparse_multiclass", "BoundedSparseMulticlassReadout"),
+    "SparseMulticlassConfig": ("sara_engine.learning.sparse_multiclass", "SparseMulticlassConfig"),
     "ForceReadout": ("sara_engine.learning.force", "ForceReadout"),
     "export_force_artifact": ("sara_engine.learning.force_io", "export_force_artifact"),
     "load_force_artifact": ("sara_engine.learning.force_io", "load_force_artifact"),

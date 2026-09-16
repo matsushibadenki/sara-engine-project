@@ -1,0 +1,85 @@
+{
+  "schema": "sara-r2-bpi2012-sparse-multiclass-preregistration-v1",
+  "experiment_id": "r2-bpi2012-sparse-multiclass-v1-2026-09-16",
+  "registered_before_candidate_implementation": true,
+  "task_contract_sha256": "7f20d4f6061c2f9557b0bf8034cb3e8e0c954cdd22dbf5d1b1c67908902ebe67",
+  "source_manifest_sha256": "24e3417d2cc48eb25cb747d9d5d6e38c0a89ab15e3144cd8470f0907f2e6b1c9",
+  "development_baselines_sha256": "fb80af676eca58d8a5a93b1376665bd13261466936e54fcca9a6a0d854192889",
+  "source_sha256": "5cd9cc16b9bcb20bd4aae45666a5d87479ddbf47e6371618b6ad217174cecdf3",
+  "scope": "Training/development gate for sparse local multiclass next-activity learning on a real irregular event log; frozen test remains sealed unless every gate passes",
+  "shuffled_outcome_seed": 916901,
+  "feature_routes": [
+    "current_activity",
+    "previous_x_current_activity",
+    "previous2_x_previous_x_current_activity",
+    "current_activity_x_lifecycle",
+    "current_activity_x_lifecycle_x_gap_bucket",
+    "previous_x_current_x_gap_bucket",
+    "hour_bucket_x_weekday",
+    "prefix_length_bucket"
+  ],
+  "gap_bounds_seconds": [0, 60, 300, 1800, 7200, 28800, 86400, 259200],
+  "prefix_length_bounds": [1, 2, 4, 8, 16, 32, 64, 128],
+  "arms": [
+    "snn_sparse_mistake",
+    "scalar_sparse_mistake",
+    "snn_constant_gap",
+    "snn_frozen",
+    "snn_shuffled_outcomes",
+    "online_second_order_transition"
+  ],
+  "learning": {
+    "rule": "On a mistake, add rate/active_count to target-class weights and subtract it from predicted-class weights on active routes only",
+    "learning_rate": 0.30,
+    "weight_cap": 2.0,
+    "maximum_active_routes": 8,
+    "maximum_route_vocabulary": 4096,
+    "maximum_class_count": 24,
+    "one_pending_prediction": true,
+    "label_revealed_after_prediction": true,
+    "global_backpropagation": false,
+    "matrix_calculation": false,
+    "gpu_required": false
+  },
+  "development_acceptance": {
+    "minimum_candidate_top1_accuracy": 0.8107,
+    "minimum_top1_gain_over_second_order": 0.0100,
+    "minimum_candidate_macro_f1": 0.5649,
+    "minimum_macro_f1_gain_over_second_order": 0.0100,
+    "minimum_constant_gap_accuracy_drop": 0.0050,
+    "minimum_shuffled_outcome_accuracy_gap": 0.2000,
+    "minimum_rare_activity_recall_ratio_to_second_order": 1.0,
+    "exact_scalar_prediction_equivalence": true,
+    "deterministic_replay": true,
+    "all_resource_contracts_pass": true
+  },
+  "resource_budgets": {
+    "max_neurons": 4096,
+    "max_active_neurons_per_prediction": 8,
+    "max_weight_entries": 98304,
+    "max_updates_per_outcome": 16,
+    "max_state_bytes": 33554432,
+    "max_event_work_per_prediction": 256,
+    "cpu_latency_p99_ms": 1.0,
+    "cpu_latency_watchdog_ms": 25.0,
+    "max_peak_rss_bytes": 536870912
+  },
+  "rare_activity_definition": "Development support below 1 percent of development predictions and nonzero training support",
+  "execution_policy": {
+    "development_attempts": 1,
+    "post_result_parameter_tuning": false,
+    "frozen_test_run_only_if_all_development_gates_pass": true,
+    "frozen_test_attempts_if_authorized": 1,
+    "negative_results_retained": true
+  },
+  "pre_execution_amendments": [
+    "Before any predictions or development metrics were computed, operation accounting showed that eight active routes times 24 bounded class score reads already requires 192 scalar reads. The event-work ceiling was corrected from 96 to 256; routes, learning settings, accuracy gates, latency gates and test authorization were unchanged."
+  ],
+  "claim_boundaries": {
+    "development_pass_is_not_r2": true,
+    "scalar_equivalence_blocks_snn_superiority": true,
+    "constant_gap_ablation_required_for_timing_claim": true,
+    "physical_energy_unmeasured": true,
+    "production_promotion": false
+  }
+}
