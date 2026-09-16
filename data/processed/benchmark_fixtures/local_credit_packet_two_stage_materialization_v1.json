@@ -1,0 +1,51 @@
+{
+  "schema": "sara-local-credit-packet-two-stage-materialization-v1",
+  "parent_protocol_sha256": "d7cdfc6550fa1e1b2bf2441a401442a50ca2ebfb9e8df709f37bd24b4e0bfaa5",
+  "generator": {
+    "implementation_allowed_before_audit": true,
+    "candidate_import_allowed": false,
+    "context_count": 8,
+    "branch_ids": [0, 1],
+    "target_rule": "seed-specific balanced context permutation fixed from training into development",
+    "route_aliases": ["route-alpha", "route-beta"],
+    "route_alias_permutation_counterbalanced": true,
+    "outcome_id_source": "sha256 of namespace, split, seed and row index before target lookup",
+    "source_event_id_source": "sha256 of namespace, split, seed, row index and source-event tag",
+    "development_identity_disjoint": true
+  },
+  "observable_boundaries": {
+    "prediction_input": ["context_id", "active_branch_ids"],
+    "post_prediction_forward_trace": [
+      "selected_branch_id",
+      "route_alias",
+      "delay_steps",
+      "distractor_count"
+    ],
+    "delayed_outcome": ["outcome_id", "success"],
+    "target_branch_visible_before_prediction": false,
+    "source_event_id_visible_before_prediction": false,
+    "outcome_id_visible_before_prediction": false
+  },
+  "audit": {
+    "exact_label_balance_per_seed_split": true,
+    "all_contexts_present_per_seed_split": true,
+    "target_rule_stable_between_training_and_development": true,
+    "identity_disjoint_between_splits": true,
+    "outcome_and_source_ids_unique": true,
+    "id_low_bit_label_accuracy_maximum": 0.55,
+    "route_alias_label_accuracy_maximum": 0.55,
+    "final_stage_signature_label_accuracy_maximum": 0.55,
+    "counterfactual_actions_per_template": 2,
+    "forward_template_digest_shared_by_all_arms": true
+  },
+  "outputs": {
+    "rows": "data/processed/benchmark_fixtures/local_credit_packet_two_stage_rows_v1.jsonl",
+    "audit_report": "workspace/evaluation/local_credit_packet_two_stage_identifiability.json"
+  },
+  "boundaries": {
+    "candidate_implemented": false,
+    "heldout_materialized": false,
+    "heldout_consumed": false,
+    "production_authorized": false
+  }
+}

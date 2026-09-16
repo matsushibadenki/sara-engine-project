@@ -1,0 +1,51 @@
+{
+  "schema": "sara-local-credit-packet-three-stage-materialization-v1",
+  "parent_protocol_sha256": "ea61d37c8cf55d8c125d9b1be7c359fd659b9002f50fe775b449cf7cf9daf709",
+  "schedule": {
+    "contexts": [0, 1, 2, 3, 4, 5, 6, 7],
+    "wave_size": 8,
+    "wave_spacing_steps": 64,
+    "start_offset_steps": 0,
+    "intermediate_offset_steps": 1,
+    "anchor_offset_steps": 2,
+    "delay_cycle_steps": [12, 24, 48],
+    "forced_action": "wave_index modulo two",
+    "target_rule": "one seed-specific balanced context permutation shared by training and development",
+    "outcome_success": "one iff forced action equals target branch",
+    "anchor_expiry": "outcome step plus one",
+    "direct_eligibility_expiry": "source step plus eight"
+  },
+  "identity_construction": {
+    "source_event": "SHA-256 namespace, split, seed, row index, source tag",
+    "outcome_id": "SHA-256 namespace, split, seed, row index, outcome tag",
+    "route_digest": "SHA-256 namespace, selected branch and route alias only",
+    "route_alias": "branch-specific alias with wave-parity counterbalancing",
+    "identifiers_computed_before_target_lookup": true
+  },
+  "pre_candidate_audit": {
+    "exact_target_balance_per_seed_split": true,
+    "exact_forced_action_balance_per_context_seed_split": true,
+    "minimum_concurrent_eligibilities": 4,
+    "maximum_concurrent_eligibilities": 8,
+    "maximum_anchor_occupancy": 8,
+    "all_outcomes_after_direct_ttl": true,
+    "outcomes_before_anchor_expiry": true,
+    "context_rule_stable_across_splits": true,
+    "source_outcome_ids_unique": true,
+    "training_development_identity_disjoint": true,
+    "final_stage_majority_accuracy_maximum": 0.55,
+    "route_digest_majority_accuracy_maximum": 0.55,
+    "opaque_id_low_bit_accuracy_maximum": 0.55,
+    "development_updates": false
+  },
+  "outputs": {
+    "rows": "data/processed/benchmark_fixtures/local_credit_packet_three_stage_rows_v1.jsonl",
+    "audit_report": "workspace/evaluation/local_credit_packet_three_stage_identifiability.json"
+  },
+  "boundaries": {
+    "candidate_implemented": false,
+    "heldout_materialized": false,
+    "heldout_consumed": false,
+    "production_authorized": false
+  }
+}

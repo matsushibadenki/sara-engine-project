@@ -76,7 +76,21 @@
 
 [Done] Frozen the two-stage Local Credit Packet protocol at `d7cdfc6550fa1e1b2bf2441a401442a50ca2ebfb9e8df709f37bd24b4e0bfaa5`. It fixes no-credit, broadcast, non-adoptable gradient-like and sparse branch-addressed arms; the seven packet fields; depth/TTL/fanout; equal forward/update budgets; eight interventions; leakage bans; five seeds; resource ceilings and stop rules. Candidate and development rows do not yet exist.
 
-[Next] Audit task identifiability before candidate implementation. Materialize only training/development identities, prove that outcome IDs and route addresses do not encode labels, verify matched forward traces across arms, and confirm that depth-two delayed outcomes cannot be solved from the final-stage observation alone.
+[Done] Frozen materialization supplement `49b53490c85cfeb9328289e38b61efe084bb36070d40dce9dfa61c668bc8a0bd` and audited 1,920 training/development templates. The row digest is `fc8b8395…11b91b`. Labels and scheduled actions are exactly balanced per seed/context, train/development identities are disjoint, the target rule is stable, and both counterfactual actions are present. Final-stage, route-alias, outcome-ID-bit and source-ID-bit accuracies are `0.500`, `0.500`, `0.516` and `0.504`, all below the frozen `0.55` leakage ceiling. Held-out remains absent.
+
+[Done] Implemented a 21-byte seven-field packet and bounded depth-two eligibility path. Across five seeds, no-credit/broadcast/gradient-like/packet accuracy is `0.500/0.500/1.000/1.000`. Packet gain is `+0.500` over both adoptable controls. Route and sign destruction reduce accuracy to `0.000`; eligibility reset, TTL zero and depth one reduce it to `0.500`. Forward traces match across arms, peak eligibility is one entry, state is 2,272 bytes, and all replay/resource gates pass. Result digest: `e64d2e54…0b801`.
+
+[Done] Replay-disabled remains exactly `1.000`, so replay is not credited for this short delayed task. The positive result isolates sparse branch-addressed delayed credit, not replay, autonomous structure discovery, real-event generalization or a backpropagation replacement claim.
+
+[Done] Frozen the harder three-stage targeted-replay protocol at `ea61d37c8cf55d8c125d9b1be7c359fd659b9002f50fe775b449cf7cf9daf709` before materialization. All delays (`12/24/48`) exceed direct TTL `8`; at least four and at most eight eligibilities overlap. A targeted anchor is capped at eight 48-byte entries and one lookup per outcome; global history scans and label-bearing keys are forbidden. Five arms and eight replay/anchor controls are fixed.
+
+[Done] Frozen materialization supplement `afbe5cb3eb5c2703bab3fb7ea17dce8b0f0bec9ef0934c0f8dd4fbc3767218df` and audited 2,880 rows (`dcde1cc4…c481a`). In 360 waves, exactly eight eligibilities overlap. Every outcome arrives after direct TTL and before anchor expiry; peak anchor occupancy is eight. Final-stage and route-digest majority probes are `0.500`; source/outcome ID low-bit probes are `0.506`/`0.510`. These bounded probes do not prove information-theoretic independence, but identifiers are constructed before target lookup and forced actions are balanced within each context.
+
+[Done] Targeted-replay development passes the frozen gate on five seeds. No-credit/broadcast/direct-packet/replay/gradient-like accuracy is `0.500/0.500/0.500/1.000/1.000`. Replay-disabled, anchor-expired and depth-two controls fall to `0.500`; wrong route falls to `0.000`, wrong context to `0.400`. All direct traces expire, and each of 384 training outcomes per seed uses one anchor lookup and at most one backward event. The anchor wire payload is 33 bytes, the credit packet is 21 bytes, peak deep-counted Python state is 5,492 bytes, and the result digest is `3372c0d7…de712`.
+
+[Done] Scope limit: the intermediate stage is a recorded route, not an independently trained circuit. Anchor replay reconstructs that route directly by source ID. Thus this is evidence for bounded targeted delayed credit under overlapping routes, not yet for learned credit passing through multiple trainable layers or for real-event generalization.
+
+[Next] Freeze a genuinely multi-hop local-credit task in which two trainable intermediate circuits have private eligibility and packets may move only one causal edge per hop. Include route-only and direct-anchor shortcut controls before opening any credit held-out split.
 
 The causal comparison will use four arms:
 

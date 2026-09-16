@@ -1,0 +1,103 @@
+{
+  "schema": "sara-local-credit-packet-three-stage-preregistration-v1",
+  "experiment_id": "local-credit-packet-three-stage-v1-2026-09-16",
+  "parent_result_sha256": "e64d2e54d8ebc71e1b9e84fa618d440b7dfdc35cf0e514cc50e6ac55d380b801",
+  "research_question": "Does targeted replay extend sparse branch-addressed credit beyond direct eligibility TTL when multiple causal routes overlap?",
+  "task": {
+    "stages": ["input_branch", "intermediate_route", "episodic_anchor", "delayed_outcome"],
+    "causal_depth": 3,
+    "direct_eligibility_ttl": 8,
+    "outcome_delay_steps": [12, 24, 48],
+    "maximum_outstanding_eligibilities": 8,
+    "minimum_overlapping_eligibilities": 4,
+    "active_branches_per_episode": 2,
+    "rewarded_branch_count": 1,
+    "final_stage_observation_must_be_insufficient": true
+  },
+  "episodic_anchor": {
+    "fields": ["source_event", "route_digest", "context_bucket", "created_step", "expiry_step"],
+    "maximum_entries": 8,
+    "maximum_bytes_per_entry": 48,
+    "lookup_key_may_encode_label": false,
+    "targeted_lookup_only": true,
+    "global_history_scan_allowed": false
+  },
+  "arms": {
+    "no_credit": "no delayed backward event",
+    "outcome_broadcast": "bucketed outcome sent to all active eligible branches",
+    "direct_packet": "branch-addressed packet limited to direct TTL eight",
+    "packet_targeted_replay": "expired direct eligibility is reconstructed from one bounded episodic anchor",
+    "gradient_like_control": "bounded oracle scalar sensitivity; comparison only and not adoptable"
+  },
+  "controls": [
+    "replay_disabled",
+    "anchor_route_shuffle",
+    "anchor_context_shuffle",
+    "packet_sign_shuffle",
+    "outcome_shuffle",
+    "anchor_expired",
+    "causal_depth_two",
+    "capacity_matched_direct_packet"
+  ],
+  "fairness": {
+    "same_forward_topology": true,
+    "same_forced_training_actions": true,
+    "same_training_and_development_templates": true,
+    "same_outcome_schedule": true,
+    "same_maximum_update_opportunities": true,
+    "non_replay_arms_receive_equal_reserved_state": true
+  },
+  "identity": {
+    "namespace": "local-credit-packet-three-stage-v1",
+    "seeds": [966029, 966131, 966233, 966337, 966439],
+    "training_episode_count_per_seed": 384,
+    "development_episode_count_per_seed": 192,
+    "heldout_materialized": false,
+    "heldout_consumed": false
+  },
+  "acceptance": {
+    "minimum_packet_replay_accuracy": 0.75,
+    "minimum_gain_over_broadcast": 0.10,
+    "minimum_gain_over_direct_packet": 0.15,
+    "maximum_gap_to_gradient_like_control": 0.05,
+    "minimum_replay_disabled_drop": 0.15,
+    "minimum_anchor_route_shuffle_drop": 0.15,
+    "minimum_anchor_context_shuffle_drop": 0.10,
+    "minimum_anchor_expiry_drop": 0.15,
+    "minimum_depth_two_drop": 0.10,
+    "all_five_seed_replay_gains_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_packet_bytes": 64,
+    "maximum_packets_per_outcome": 3,
+    "maximum_backward_events_per_episode": 3,
+    "maximum_anchor_lookups_per_outcome": 1,
+    "maximum_anchor_entries": 8,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_forward_event_work_per_episode": 128,
+    "maximum_tuning_attempts": 1
+  },
+  "leakage_boundaries": {
+    "outcome_or_anchor_id_may_encode_label": false,
+    "route_digest_may_encode_label": false,
+    "future_activity_in_anchor": false,
+    "development_updates": false,
+    "global_loss_differentiation": false,
+    "cross_network_jacobian": false
+  },
+  "stop_rules": {
+    "stop_if_direct_packet_matches_replay": true,
+    "stop_if_wrong_anchor_preserves_gain": true,
+    "stop_if_global_scan_is_needed": true,
+    "stop_if_any_budget_is_exceeded": true,
+    "do_not_open_heldout_on_development_failure": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "candidate_implemented": false,
+    "structural_growth_allowed": false,
+    "durable_memory_mutation_allowed": false,
+    "production_authorized": false
+  }
+}
