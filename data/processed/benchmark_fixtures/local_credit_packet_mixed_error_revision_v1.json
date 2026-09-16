@@ -1,0 +1,81 @@
+{
+  "schema": "sara-local-credit-packet-mixed-error-revision-preregistration-v1",
+  "experiment_id": "local-credit-packet-mixed-error-revision-v1-2026-09-16",
+  "parent_prior_error_candidate_sha256": "08dbb7b0cba32d5f2414384b652a267f17d441747116816276b44ee40fbe67c2",
+  "parent_prior_error_heldout_result_sha256": "16ab0fd1c854807083e1f32f84faec12175a6ff3ff9b25621836832fab639337",
+  "parent_selector_source_sha256": "a9608e86c938e8e8170c1f3115c61101f8ddc7f2f8091225852896e6c21a5da0",
+  "parent_selector_protocol_sha256": "601c66675dd38b01e680ca3713ac49d660ef3a362154075b39f8a521a885e05a",
+  "research_question": "Can sparse source-addressed correction still help when prior B errors are mixed, A has two prior updates per cue, and late B revision is incomplete or contains one wrong label?",
+  "identity": {
+    "namespace": "local-credit-packet-mixed-error-revision-v1",
+    "seeds": [1081013, 1081119, 1081223, 1081331, 1081437],
+    "A_cues": [2110, 2111, 2112, 2113, 2114, 2115, 2116, 2117],
+    "B_cues": [2210, 2211, 2212, 2213, 2214, 2215, 2216, 2217]
+  },
+  "task": {
+    "training_rows_per_seed": 512,
+    "development_rows_per_seed": 128,
+    "training_order": "SHA-256 rank of namespace|order|seed|original row index, inherited from pinned selector and audited independently.",
+    "private_maps": "Independent balanced binary A and B cue maps; global target is A target XOR B target.",
+    "initial_B_map": "Rank B cues by SHA-256 of namespace|initial_wrong|seed|B cue; invert the first four true B targets and retain the other four. Selection is target- and outcome-blind.",
+    "early_A_updates": "During training, retain the first two encountered events for each A cue. For each selected event, emit one B-interpreted packet under the mixed initial B map and apply one signed update to its active A branch. Exactly 16 early A updates and 16 source-matched anchors are required; other training events do not update A.",
+    "late_revision_time": "After all 512 training episodes, before 16 replay ticks.",
+    "revision_conditions": {
+      "full": "All eight B cues receive exact target revision events.",
+      "partial_six": "Rank B cues by SHA-256 of namespace|revision_visible|seed|B cue; the first six receive exact target revision events, while two retain their initial local code.",
+      "one_corrupt": "All eight B cues receive revision events, but the first cue ranked by SHA-256 of namespace|revision_corrupt|seed|B cue is flipped; other seven are exact."
+    },
+    "development_updates": false
+  },
+  "packet_contract": {
+    "A_anchor": "Source ID, A cue, active branch and prior signed update; at most 16 entries.",
+    "B_anchor": "Same source ID, B cue, B action, global success and prior signed packet; at most 16 entries.",
+    "replay": "One source-keyed lookup per tick for 16 ticks. Reinterpret the outcome under the revised B-local code. Emit one 21-byte packet only if revised sign differs from stored prior sign; otherwise leave the previous A update unchanged.",
+    "simple_replay": "For each changed sign, apply one revised signed local step; an old wrong update may only be cancelled.",
+    "correction_packet": "For each changed sign, magnitude_bucket=2 permits exactly two revised signed local steps on the recorded branch, reversing and replacing one prior update. Never update an unrecorded branch.",
+    "maximum_packet_age_bucket": 255,
+    "maximum_local_update_steps_per_packet": 2,
+    "numerical_gradient_allowed": false,
+    "global_history_scan_allowed": false
+  },
+  "arms": ["prior_credit_only", "simple_replay", "correction_packet", "direct_outcome_correction", "oracle_control"],
+  "full_revision_controls": ["B_local_map_reset_on_replay", "B_to_A_route_shuffle_on_replay", "B_to_A_sign_shuffle_on_replay", "A_anchor_erased_before_replay", "replay_disabled", "magnitude_capped_at_one", "capacity_matched_direct_correction"],
+  "acceptance": {
+    "full_minimum_correction_accuracy": 0.95,
+    "full_minimum_gain_over_prior_credit": 0.10,
+    "full_minimum_gain_over_simple_replay": 0.05,
+    "full_maximum_direct_outcome_accuracy": 0.75,
+    "full_minimum_oracle_accuracy": 0.95,
+    "full_minimum_B_map_reset_drop": 0.20,
+    "full_minimum_route_shuffle_drop": 0.20,
+    "full_minimum_sign_shuffle_drop": 0.20,
+    "full_minimum_anchor_erasure_drop": 0.10,
+    "full_accuracy_at_least_partial_and_corrupt": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_anchors": 16,
+    "maximum_B_anchors": 16,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_packet_bytes": 64,
+    "maximum_replay_lookups": 16,
+    "maximum_replay_packets": 16,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_tuning_attempts": 1
+  },
+  "stop_rules": {
+    "retain_negative_result_on_gate_failure": true,
+    "do_not_modify_parent_candidate_or_heldout": true,
+    "do_not_tune_after_first_development_run": true,
+    "do_not_open_heldout_on_development_failure": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "exact_B_targets_still_supplied_for_full_revision": true,
+    "one_corrupt_condition_is_deterministic_not_real_sensor_noise": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}
