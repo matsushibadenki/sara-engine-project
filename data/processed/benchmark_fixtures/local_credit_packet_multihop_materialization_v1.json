@@ -1,0 +1,52 @@
+{
+  "schema": "sara-local-credit-packet-multihop-materialization-v1",
+  "parent_protocol_sha256": "be5a941959c7919efb236b16495e604d8822716fbeeeef8fcab315a42aa38fb2",
+  "map_construction": {
+    "A_target": "shuffle cues 0..7 with seed plus 101, then assign four zeros and four ones",
+    "B_local_target": "shuffle cues 0..7 with seed plus 202, then assign four zeros and four ones",
+    "maps_independent_by_seed_offset": true,
+    "maps_stable_across_training_and_development": true
+  },
+  "row_construction": {
+    "B_calibration": "each B cue repeats sixteen times with its local target; A is absent",
+    "main_training": "Cartesian product of eight A cues, eight B cues, two forced A actions, two forced B actions, repeated twice",
+    "development": "Cartesian product of eight A cues and eight B cues, repeated twice; actions are model-selected",
+    "training_order": "deterministic seed-specific shuffle after complete factorial construction",
+    "development_order": "deterministic seed-specific shuffle after complete factorial construction",
+    "source_event": "SHA-256 namespace, phase, seed, original row index and source tag before target lookup",
+    "outcome_id": "SHA-256 namespace, phase, seed, original row index and outcome tag before target lookup",
+    "global_success": "one iff forced B action equals A target XOR B local target",
+    "B_auxiliary_label_release": "only after the forced B action, through B-local outcome API"
+  },
+  "observable_api": {
+    "A_forward_input": ["A_cue"],
+    "B_forward_input": ["A_action", "B_cue"],
+    "B_local_outcome": ["B_local_target"],
+    "global_outcome_to_B": ["outcome_id", "global_success"],
+    "B_to_A_packet": ["source_event", "outcome_id", "sign", "magnitude_bucket", "age", "causal_depth", "confidence"],
+    "A_global_outcome_direct": false,
+    "A_B_private_cue_or_target_direct": false,
+    "B_A_private_cue_or_target_direct": false
+  },
+  "pre_candidate_audit": {
+    "map_balance_exact": true,
+    "all_four_forced_action_pairs_per_cue_pair": true,
+    "global_target_and_success_balance_exact_per_seed": true,
+    "calibration_and_main_identity_disjoint": true,
+    "training_and_development_identity_disjoint": true,
+    "B_private_target_needed_for_exact_A_target_decoding": true,
+    "shortcut_majority_accuracy_maximum": 0.55,
+    "outcome_only_majority_accuracy_maximum": 0.55,
+    "opaque_id_low_bit_accuracy_maximum": 0.55,
+    "no_candidate_implementation_before_audit": true
+  },
+  "outputs": {
+    "rows": "data/processed/benchmark_fixtures/local_credit_packet_multihop_rows_v1.jsonl",
+    "report": "workspace/evaluation/local_credit_packet_multihop_identifiability.json"
+  },
+  "boundaries": {
+    "heldout_materialized": false,
+    "heldout_consumed": false,
+    "production_authorized": false
+  }
+}

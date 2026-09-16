@@ -1,0 +1,19 @@
+{
+  "schema": "sara-local-credit-packet-multihop-heldout-execution-v1",
+  "parent_protocol_sha256": "5b542db726cf652c69158fa15cb007c3afa06ff615016a201bde9c809470402f",
+  "materialized_rows_sha256": "529923443cb4ff1b912493fbd96be1dd1ff3a2234c96ea12b10c8a8d0ec1cb4c",
+  "shuffle_controls": {
+    "B_local_target_shuffle_seed": "seed plus 1606",
+    "global_outcome_shuffle_seed": "seed plus 1707"
+  },
+  "capacity_matched_direct_shortcut_reserve_bytes": 512,
+  "outcome": {
+    "result_path": "workspace/evaluation/local_credit_packet_multihop_heldout_result_v1.json",
+    "one_execution_only": true,
+    "failed_gate_is_retained_without_retry": true
+  },
+  "boundaries": {
+    "heldout_consumed_before_run": false,
+    "production_authorized": false
+  }
+}

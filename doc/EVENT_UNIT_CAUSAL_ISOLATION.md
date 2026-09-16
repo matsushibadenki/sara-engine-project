@@ -90,7 +90,25 @@
 
 [Done] Scope limit: the intermediate stage is a recorded route, not an independently trained circuit. Anchor replay reconstructs that route directly by source ID. Thus this is evidence for bounded targeted delayed credit under overlapping routes, not yet for learned credit passing through multiple trainable layers or for real-event generalization.
 
-[Next] Freeze a genuinely multi-hop local-credit task in which two trainable intermediate circuits have private eligibility and packets may move only one causal edge per hop. Include route-only and direct-anchor shortcut controls before opening any credit held-out split.
+[Done] Froze the trainable multi-hop protocol `be5a941959c7919efb236b16495e604d8822716fbeeeef8fcab315a42aa38fb2` before implementation. Circuit A sees only its own cue and selects a branch; circuit B sees that branch plus a private cue and learns a local binary code from an explicitly disclosed auxiliary target. The global target is the XOR of the two private maps. Outcome→B and B→A are separate edges; A may receive only the seven-field packet. Broadcast, direct-anchor shortcut, no-credit and non-adoptable oracle arms share forced training actions and update opportunities.
+
+[Done] Frozen materialization supplement `ef3cf6f26122ca1964c7bf49a53ef3bc0d7c4430b8ec7689dd05cddca86f1bc5` and audited 3,840 rows (`789b8a77…c71b1b`). Each cue pair has all four forced A/B action pairs twice; both private maps and global outcomes are balanced. Without B's private state, the direct shortcut and global outcome identify A's target at only `0.500`; with the B-local target, the bounded local inverse identifies it at `1.000`. Opaque-ID low-bit probes stay at or below `0.511`.
+
+[Done] The synthetic development gate passes on five fresh seeds. No-A-credit/broadcast/direct-shortcut/packet/oracle global accuracy is `0.500/0.500/0.500/1.000/1.000`. B-map reset at packet interpretation falls to `0.500` while B forward local accuracy remains `1.000`; shuffled B-local teaching falls to `0.525`, and wrong route/sign to `0.000`. Packet delivery disable, A eligibility reset and global outcome shuffle fall to `0.500`. Packet size is 21 bytes, at most two backward events cross the two edges, A/B use 16/8 learned features, and peak deep-counted state is at most 3,232 bytes. The direct shortcut receives at least as much state allowance without changing its `0.500` predictions. Result digest: `bb3ce15e…cb6284`.
+
+[Done] Scope limit: B receives an auxiliary local target, training actions are forced and balanced, and the task is a synthetic binary XOR decomposition. This establishes that a learned B-local code can turn a delayed outcome into a sparse A-directed packet under these conditions. It does not establish end-to-end learning without B supervision, general deep credit assignment, or real-event transfer.
+
+[Done] Frozen independent two-circuit held-out protocol `5b542db726cf652c69158fa15cb007c3afa06ff615016a201bde9c809470402f` with candidate source `68e87e58…3cc61`, packet source `c675e688…91ec1`, five fresh seeds and disjoint A/B cue spaces. An independent SHA-rank map generator and separately coded oracle agree on all 3,840 rows (`52992344…cb4c`). The pre-execution audit passes complete action factorial, train/held-out identity isolation, balanced outcomes and 0.500 direct-shortcut/outcome-only probes. Control shuffles and state reserve were frozen in execution supplement `ed4c4f54…e992d` before scoring.
+
+[Done] The one-shot held-out gate passes without candidate changes or threshold adjustment. No-A-credit/broadcast/direct-shortcut/packet/oracle accuracy is `0.500/0.500/0.500/1.000/1.000`; all five seed gains are positive. B-local map reset during packet interpretation falls to `0.500`, shuffled B-local teaching to `0.5625`, and wrong route/sign to `0.000`. Packet bytes, two backward events, 16/8 feature counts, ≤3,512-byte peak Python state, capacity allowance and exact replay pass. The exclusive result artifact was consumed once and has SHA-256 `6c4beca8…2ec87`; rerunning the held-out scorer is forbidden.
+
+[Done] A separately preregistered five-seed development test reduced B-local target coverage by cue from eight to six, four, and zero. Packet global accuracy was respectively 100%, 87.5%, 77.5%, and 50%; at six cues the matched direct shortcut was 50%. Label-blind cue selection, capacity matching, B-map reset, route/sign interventions, exact replay and resource checks passed. Protocol digest: `cb48e2d6…7887`; result digest: `ea1b2763…61314`.
+
+[Next] Test delayed or noisy B-local supervision under a separately frozen protocol. Partial coverage still supplies exact labels for selected cues, and the development task remains a balanced synthetic XOR decomposition; it does not establish end-to-end unsupervised credit, real-event transfer or physical-energy gains.
+
+日本語: 2回路の局所creditは、新しいseedとcueを使った独立held-outでも成功しました。ただし、Bに補助的な教師信号を与えた合成課題に限られ、教師信号なしの深い学習と実イベントへの転移は未検証です。
+
+简体中文：双回路局部信用分配在新的种子和线索构成的独立留出测试中也成功了，但仍限于给 B 提供辅助监督的合成任务；无辅助监督的深层学习和真实事件迁移尚未验证。
 
 The causal comparison will use four arms:
 

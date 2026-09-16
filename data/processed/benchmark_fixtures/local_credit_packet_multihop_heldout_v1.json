@@ -1,0 +1,87 @@
+{
+  "schema": "sara-local-credit-packet-multihop-heldout-preregistration-v1",
+  "experiment_id": "local-credit-packet-multihop-heldout-v1-2026-09-16",
+  "development_result_sha256": "bb3ce15e0461c81c31abcfce9c269bd99731b0a347082565144a98a33acb6284",
+  "frozen_sources": {
+    "candidate_path": "src/sara_engine/evaluation/local_credit_packet_multihop.py",
+    "candidate_sha256": "68e87e58ceb1be949680f760d66cc46118520c2d489933e7720a146d7143cc61",
+    "packet_path": "src/sara_engine/evaluation/local_credit_packet.py",
+    "packet_sha256": "c675e6886ac1a488b57998f65c825d66a3b3ffc92a2e7b640d6e1ff957091ec1"
+  },
+  "independence": {
+    "new_generator_required": true,
+    "prior_multihop_generator_import_allowed": false,
+    "prior_multihop_episode_rows_reused": false,
+    "separate_label_evaluator_required": true,
+    "new_seed_and_cue_namespace_required": true,
+    "outcome_id_source": "SHA-256 over namespace, split, seed, index and tag before label lookup"
+  },
+  "identity": {
+    "namespace": "local-credit-packet-multihop-heldout-v1",
+    "seeds": [988031, 988127, 988229, 988343, 988441],
+    "A_cues": [110, 111, 112, 113, 114, 115, 116, 117],
+    "B_cues": [210, 211, 212, 213, 214, 215, 216, 217],
+    "B_calibration_rows_per_seed": 128,
+    "main_training_rows_per_seed": 512,
+    "heldout_rows_per_seed": 128,
+    "heldout_materialized": false,
+    "heldout_consumed": false
+  },
+  "task": {
+    "A_target_map": "balanced binary assignment from SHA-256 ranks over seed, A cue and A-map tag",
+    "B_local_target_map": "independent balanced binary assignment from SHA-256 ranks over seed, B cue and B-map tag",
+    "global_target": "A target XOR B local target",
+    "training_actions": "all four forced A/B action pairs twice per cue pair",
+    "heldout_actions": "model-selected A then model-selected B",
+    "B_auxiliary_local_target_available_after_forward": true,
+    "A_B_private_cue_or_target_directly_visible": false,
+    "development_updates": false
+  },
+  "arms": [
+    "no_A_credit",
+    "global_outcome_broadcast",
+    "direct_anchor_shortcut",
+    "local_credit_packet",
+    "oracle_control"
+  ],
+  "controls": [
+    "B_local_map_reset",
+    "B_local_target_shuffle",
+    "B_to_A_route_shuffle",
+    "B_to_A_sign_shuffle",
+    "A_eligibility_reset",
+    "packet_delivery_disabled",
+    "global_outcome_shuffle",
+    "capacity_matched_direct_shortcut"
+  ],
+  "acceptance": {
+    "minimum_packet_accuracy": 0.85,
+    "minimum_gain_over_broadcast": 0.20,
+    "minimum_gain_over_direct_shortcut": 0.20,
+    "maximum_gap_to_oracle": 0.05,
+    "minimum_B_map_reset_drop": 0.20,
+    "minimum_B_local_target_shuffle_drop": 0.20,
+    "minimum_route_shuffle_drop": 0.20,
+    "minimum_sign_shuffle_drop": 0.20,
+    "all_five_seed_packet_gains_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_features": 16,
+    "maximum_B_features": 16,
+    "maximum_packet_bytes": 64,
+    "maximum_backward_events_per_episode": 2,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_peak_state_bytes": 1048576,
+    "maximum_forward_event_work_per_episode": 96
+  },
+  "execution_boundary": {
+    "maximum_heldout_executions": 1,
+    "output_must_not_exist_before_execution": true,
+    "candidate_changes_after_materialization_allowed": false,
+    "heldout_updates": false,
+    "composition_or_structural_growth_allowed": false,
+    "BPI_Sepsis_frozen_used": false,
+    "production_authorized": false
+  }
+}

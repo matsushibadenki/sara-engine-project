@@ -1,0 +1,111 @@
+{
+  "schema": "sara-local-credit-packet-multihop-preregistration-v1",
+  "experiment_id": "local-credit-packet-multihop-v1-2026-09-16",
+  "parent_development_result_sha256": "3372c0d7a11c3b9e27d4c3b63f83a18c09324a4f5df6493d6efd5844e94de712",
+  "research_question": "Can two locally trainable circuits learn a private-cue composition through one-edge-at-a-time, non-gradient credit messages when a direct outcome shortcut lacks the downstream private cue?",
+  "task": {
+    "forward_edges": ["input_to_circuit_A", "circuit_A_to_circuit_B", "circuit_B_to_outcome"],
+    "backward_edges": ["outcome_to_circuit_B", "circuit_B_to_circuit_A"],
+    "A_private_cue_count": 8,
+    "B_private_cue_count": 8,
+    "A_actions": [0, 1],
+    "B_actions": [0, 1],
+    "A_target_map": "seed-specific balanced binary map of A cues",
+    "B_local_target_map": "independent seed-specific balanced binary map of B cues",
+    "global_target": "A_target(A_cue) XOR B_local_target(B_cue)",
+    "B_forward_rule": "A_action XOR learned_B_local_target(B_cue)",
+    "A_cannot_observe_B_cue_or_B_local_target": true,
+    "B_cannot_observe_A_cue_or_A_target": true,
+    "A_cannot_receive_global_target_or_B_local_target_directly": true,
+    "B_local_target_is_auxiliary_supervision": true
+  },
+  "training_schedule": {
+    "B_local_calibration_rows_per_seed": 128,
+    "main_training_rows_per_seed": 512,
+    "development_rows_per_seed": 128,
+    "forced_A_and_B_actions_in_main_training": true,
+    "all_four_action_pairs_per_cue_pair": true,
+    "main_training_updates_B_from_local_target": true,
+    "main_training_updates_A_only_from_received_credit": true,
+    "development_updates": false,
+    "same_forward_rows_and_forced_actions_for_all_arms": true
+  },
+  "packet_contract": {
+    "fields": ["source_event", "outcome_id", "sign", "magnitude_bucket", "age", "causal_depth", "confidence"],
+    "fanout_per_hop": 1,
+    "maximum_causal_depth": 2,
+    "maximum_packet_bytes": 64,
+    "maximum_backward_events_per_episode": 2,
+    "B_to_A_packet_rule": "B derives desired A action from the binary global outcome, the forced B action, and its own learned local target; it sends signed credit only to the active A branch",
+    "numerical_gradient_allowed": false,
+    "global_history_scan_allowed": false,
+    "B_private_cue_or_local_target_in_packet_allowed": false,
+    "direct_outcome_to_A_allowed": false
+  },
+  "arms": {
+    "no_A_credit": "B learns locally; A receives no backward information",
+    "global_outcome_broadcast": "B learns locally; global success/failure is broadcast to both A branches without B interpretation",
+    "direct_anchor_shortcut": "B learns locally; A receives global success/failure addressed to the forced A branch but no B-local interpretation",
+    "local_credit_packet": "B learns locally and sends one signed, branch-addressed packet to A after interpreting the global outcome with its private local state",
+    "oracle_control": "A receives its private target directly for an upper-bound comparison only"
+  },
+  "controls": [
+    "B_local_map_reset",
+    "B_local_target_shuffle",
+    "B_to_A_route_shuffle",
+    "B_to_A_sign_shuffle",
+    "A_eligibility_reset",
+    "packet_delivery_disabled",
+    "global_outcome_shuffle",
+    "capacity_matched_direct_shortcut"
+  ],
+  "identity": {
+    "namespace": "local-credit-packet-multihop-v1",
+    "seeds": [977021, 977123, 977227, 977329, 977431],
+    "training_development_identity_disjoint": true,
+    "heldout_materialized": false,
+    "heldout_consumed": false
+  },
+  "acceptance": {
+    "minimum_packet_global_accuracy": 0.80,
+    "minimum_gain_over_broadcast": 0.20,
+    "minimum_gain_over_direct_shortcut": 0.20,
+    "maximum_gap_to_oracle": 0.05,
+    "minimum_B_map_reset_drop": 0.20,
+    "minimum_B_local_target_shuffle_drop": 0.20,
+    "minimum_route_shuffle_drop": 0.20,
+    "minimum_sign_shuffle_drop": 0.20,
+    "all_five_seed_packet_gains_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_features": 16,
+    "maximum_B_features": 16,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_forward_event_work_per_episode": 96,
+    "maximum_tuning_attempts": 1
+  },
+  "leakage_audit": {
+    "A_only_cue_target_majority_accuracy_minimum": 0.95,
+    "B_only_cue_target_majority_accuracy_minimum": 0.95,
+    "A_without_B_private_state_outcome_accuracy_maximum": 0.55,
+    "global_outcome_only_A_target_accuracy_maximum": 0.55,
+    "opaque_id_low_bit_accuracy_maximum": 0.55,
+    "every_A_B_cue_pair_and_action_pair_present": true,
+    "B_calibration_development_identity_overlap": 0
+  },
+  "stop_rules": {
+    "stop_if_direct_shortcut_matches_packet": true,
+    "stop_if_B_map_reset_preserves_gain": true,
+    "stop_if_one_hop_delivery_is_bypassed": true,
+    "stop_if_A_can_read_B_private_target": true,
+    "do_not_open_heldout_on_development_failure": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "B_auxiliary_supervision_limits_generalization_claim": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false,
+    "candidate_implemented": false
+  }
+}

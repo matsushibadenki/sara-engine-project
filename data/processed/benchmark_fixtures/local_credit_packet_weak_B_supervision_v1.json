@@ -1,0 +1,67 @@
+{
+  "schema": "sara-local-credit-packet-weak-B-supervision-preregistration-v1",
+  "experiment_id": "local-credit-packet-weak-B-supervision-v1-2026-09-16",
+  "parent_candidate_sha256": "68e87e58ceb1be949680f760d66cc46118520c2d489933e7720a146d7143cc61",
+  "parent_heldout_result_sha256": "6c4beca8b9917485ef1d532c0483964b1caf837e7c964fa9c63fc1368cf2ec87",
+  "research_question": "How much B-local auxiliary supervision can be removed before a B-interpreted, non-gradient credit packet loses its advantage?",
+  "identity": {
+    "namespace": "local-credit-packet-weak-B-supervision-v1",
+    "seeds": [999013, 999119, 999223, 999331, 999437],
+    "A_cues": [310, 311, 312, 313, 314, 315, 316, 317],
+    "B_cues": [410, 411, 412, 413, 414, 415, 416, 417],
+    "cue_selection": "For each seed, rank B cues by SHA-256 of namespace|seed|cue; the first 8, 6, 4, or 0 are observed. Ranking is independent of targets and outcomes."
+  },
+  "task": {
+    "A_target_map": "independent seed-specific balanced binary map",
+    "B_target_map": "independent seed-specific balanced binary map",
+    "global_target": "A_target XOR B_target",
+    "B_forward_rule": "A_action XOR learned_B_target",
+    "B_local_target_visibility": "Only selected B cues expose local targets during calibration and main training; all targets are retained solely by the evaluator for scoring.",
+    "A_private_target_or_B_private_cue_visible_to_A": false,
+    "B_private_target_visible_to_direct_shortcut": false
+  },
+  "schedule": {
+    "B_calibration_rows_per_seed": 128,
+    "main_training_rows_per_seed": 512,
+    "development_rows_per_seed": 128,
+    "main_training": "full 8x8 cue factorial with all four forced action pairs, twice",
+    "development": "full 8x8 cue factorial, twice",
+    "development_updates": false,
+    "same_rows_and_forced_actions_for_all_arms": true
+  },
+  "coverage_cue_counts": [8, 6, 4, 0],
+  "arms": ["local_credit_packet", "direct_anchor_shortcut", "capacity_matched_direct_shortcut"],
+  "interventions_at_six_cues": ["B_local_map_reset", "B_to_A_sign_shuffle", "B_to_A_route_shuffle"],
+  "acceptance": {
+    "six_cue_minimum_packet_accuracy": 0.70,
+    "six_cue_minimum_gain_over_shortcut": 0.15,
+    "six_cue_minimum_B_local_accuracy": 0.70,
+    "zero_cue_maximum_packet_accuracy": 0.60,
+    "six_cue_minimum_map_reset_drop": 0.10,
+    "six_cue_minimum_sign_shuffle_drop": 0.10,
+    "six_cue_minimum_route_shuffle_drop": 0.10,
+    "all_five_seed_six_cue_gains_positive": true,
+    "monotone_mean_packet_accuracy_by_coverage": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_packet_bytes": 64,
+    "maximum_backward_events_per_episode": 2,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_tuning_attempts": 1
+  },
+  "stop_rules": {
+    "retain_negative_result_on_gate_failure": true,
+    "do_not_modify_parent_candidate_or_heldout": true,
+    "do_not_tune_after_first_development_run": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "B_auxiliary_supervision_not_eliminated_by_partial_coverage": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}
