@@ -1,0 +1,112 @@
+{
+  "algorithm": {
+    "artifact_schema": "sara-bounded-event-stream-artifact-v1",
+    "configuration_sha256": "bd52664d2e81219bdb39d63a2ed779d126c6821d0b3a3d24a1190f9cb4a0131d",
+    "dense_matrix_training": false,
+    "engine_schema": "sara-bounded-event-stream-engine-v1",
+    "global_gradient_backpropagation": false,
+    "gpu_required": false,
+    "hybrid_configuration": {
+      "base_probability_cap": 0.75,
+      "compact_event_units": true,
+      "explicit_neurons": true,
+      "learning_rate": 0.3,
+      "local_score_margin": 0.1,
+      "max_active": 7,
+      "max_classes": 16,
+      "max_context_parts": 4,
+      "max_contexts": 4096,
+      "max_routes": 4096,
+      "minimum_base_support": 16,
+      "normalized_threshold": 0.6223091976516634,
+      "routing_mode": "normalized",
+      "weight_cap": 2.0
+    },
+    "learning": "bounded normalized local hybrid",
+    "route_configuration": {
+      "constant_gap": false,
+      "gap_bounds_seconds": [
+        0.0,
+        60.0,
+        300.0,
+        1800.0,
+        7200.0,
+        28800.0,
+        86400.0,
+        259200.0
+      ],
+      "include_calendar_route": false,
+      "max_routes": 4096,
+      "prefix_length_bounds": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128
+      ]
+    }
+  },
+  "checkpoint": {
+    "artifact_sha256": "c10120c1dc54d974984c1532ae62d1eba37592ef8c8c5dc9ab489d494ddf4c9d",
+    "contexts": 102,
+    "file": "sara-sepsis-pretest-v1.sara",
+    "generation": 1,
+    "payload_sha256": "520d2a52e4465690f37f0a80eb2fbbf0500308c84d6bda1cc59821ea2bf67042",
+    "pretest_only": true,
+    "routes": 995,
+    "training_predictions": 12129,
+    "weights": 3820
+  },
+  "data": {
+    "case_counts": {
+      "development": 157,
+      "frozen_test": 158,
+      "training": 735
+    },
+    "case_overlap": 0,
+    "manifest": "data/processed/r2_sepsis/source_manifest_v1.json",
+    "manifest_sha256": "770fc58f32758df5f99422644d8b7f3022f0c0959291ab3d6aff1c021d23e4b3",
+    "prediction_counts": {
+      "development": 2046,
+      "frozen_test": 2035,
+      "training": 10083
+    },
+    "source_sha256": "709c52340306415952811b9b9c5dc6bcc8f8d47d583eba39df9a538459dc543a"
+  },
+  "dataset": "sepsis",
+  "evaluation": {
+    "accepted_result": "workspace/evaluation/r2_sepsis_normalized_final_v1_result.json",
+    "accepted_result_sha256": "472c55315bbaf6c54c914b5425426e43fb34b093096086b632916a99085bf4a1",
+    "checkpoint_refitting": false,
+    "command": "python3 scripts/eval/research_checkpoint_release.py verify-package --dataset sepsis",
+    "frozen_prediction_sha256": "83071fffc7c971a5daecf0ce775b5a7f0befc158d0c3364297b7145523acfd83",
+    "frozen_predictions": 2035,
+    "method": "Load the immutable pre-test checkpoint, predict each frozen event in chronological order, then apply its observed outcome only to the private in-memory replay state.",
+    "online_updates_during_frozen_replay": true,
+    "prediction_digest_encoding": "SHA-256 of compact JSON [target,predicted] pairs in frozen chronological order"
+  },
+  "negative_results": [
+    {
+      "id": "no-spike-specific-quality-advantage",
+      "result": "Explicit-neuron and matched scalar prediction traces are exactly identical."
+    },
+    {
+      "id": "physical-energy-unmeasured",
+      "result": "CPU time and state size are proxies; no joule or hardware-energy advantage is claimed."
+    },
+    {
+      "id": "inherited-absolute-router-negative",
+      "result": "The inherited absolute router failed the Sepsis development gate before normalization."
+    },
+    {
+      "id": "explicit-neuron-cpu-overhead",
+      "result": "The explicit-neuron implementation used 14.97% more median CPU time than scalar mode."
+    }
+  ],
+  "production_authorized": false,
+  "research_only": true,
+  "schema": "sara-event-stream-research-package-v1"
+}

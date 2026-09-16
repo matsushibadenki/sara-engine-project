@@ -12,7 +12,21 @@ __pycache__/
 # ============================================
 # Distribution / Packaging
 # ============================================
-models/
+# Generated and private models stay excluded. Only the two reviewed,
+# deterministic research packages below are publication artifacts.
+**/models/
+!/models/
+/models/*
+!/models/bpi2012/
+/models/bpi2012/*
+!/models/bpi2012/sara-bpi2012-pretest-v1.sara
+!/models/bpi2012/SHA256SUMS
+!/models/bpi2012/manifest.json
+!/models/sepsis/
+/models/sepsis/*
+!/models/sepsis/sara-sepsis-pretest-v1.sara
+!/models/sepsis/SHA256SUMS
+!/models/sepsis/manifest.json
 build/
 develop-eggs/
 dist/
@@ -112,8 +126,15 @@ data/*.db
 # Logs
 *.log
 
-# 作業領域
-workspace/
+# 作業領域。再現性に必要な、レビュー済みの最終研究結果だけを公開する。
+**/workspace/
+!/workspace/
+/workspace/*
+!/workspace/evaluation/
+/workspace/evaluation/*
+!/workspace/evaluation/r2_bpi2012_hybrid_final_v1_result.json
+!/workspace/evaluation/r2_sepsis_normalized_final_v1_result.json
+!/workspace/evaluation/research_package_verification_v1.json
 
 # 整理・分類された古いファイル群
 scripts/old/

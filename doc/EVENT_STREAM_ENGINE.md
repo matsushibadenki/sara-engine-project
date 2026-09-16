@@ -6,7 +6,7 @@
 
 The engine rejects serialization while an outcome receipt is pending. State loading revalidates schemas, sorted bounds, route order, route/context/weight caps, labels and numeric limits. A model artifact contains both the encoder mapping and learner state, preventing route-ID drift after restart. Atomic files are restricted to `models/event_stream_engine/`.
 
-[Done] Both accepted real workloads were replayed with a real checkpoint boundary immediately before the frozen partition. BPI restored 1,024 routes, 5,260 weights and 107 transition contexts, then exactly reproduced 32,694 accepted frozen predictions. Sepsis restored 1,021 routes, 3,997 weights and 105 contexts, then reproduced 2,035 accepted predictions. Checkpoint and prediction digests are recorded in `workspace/evaluation/event_stream_engine_replay_v1.json`.
+[Done] Both accepted real workloads were replayed with a real checkpoint boundary immediately before the frozen partition. The BPI pre-test checkpoint contains 1,018 routes, 5,181 weights and 107 transition contexts; after its private online frozen replay it contains 1,024/5,260/107 and exactly reproduces 32,694 accepted predictions. The Sepsis pre-test checkpoint contains 995 routes, 3,820 weights and 102 contexts; after replay it contains 1,021/3,997/105 and reproduces 2,035 accepted predictions. Checkpoint and prediction digests are recorded in `workspace/evaluation/event_stream_engine_replay_v1.json` and the formal package manifests.
 
 [Done] Future real event-stream experiments should use this engine instead of duplicating dataset-specific route and learner implementations. Immutable historical evaluators remain unchanged as evidence.
 
@@ -26,6 +26,33 @@ python3 scripts/eval/research_checkpoint_release.py verify
 ```
 
 The build command is intentionally fail-closed when the generation-1 files or release manifest already exist. Delete or replace published research evidence only through a separately reviewed release procedure.
+
+### Formal dataset packages
+
+[Done] The research release is also materialized as two self-contained dataset packages:
+
+```text
+models/
+├── bpi2012/
+│   ├── sara-bpi2012-pretest-v1.sara
+│   ├── SHA256SUMS
+│   └── manifest.json
+└── sepsis/
+    ├── sara-sepsis-pretest-v1.sara
+    ├── SHA256SUMS
+    └── manifest.json
+```
+
+Each manifest binds the algorithm configuration, processed source manifest, source digest, chronological split counts, pre-test checkpoint identity and resource counts, accepted result, evaluation procedure, prediction digest, and known negative results. `SHA256SUMS` independently binds the `.sara` artifact and manifest. Verification checks those identities before loading, performs no checkpoint refit, updates only a private in-memory replay state, and confirms that the artifact hash remains unchanged afterward.
+
+```bash
+python3 scripts/eval/research_checkpoint_release.py package
+python3 scripts/eval/research_checkpoint_release.py verify-package
+python3 scripts/eval/research_checkpoint_release.py verify-package --dataset bpi2012
+python3 scripts/eval/research_checkpoint_release.py verify-package --dataset sepsis
+```
+
+The formal package verification passes all thirteen identity/replay checks for each dataset. Its machine-readable report is `workspace/evaluation/research_package_verification_v1.json`.
 
 日本語: event符号化表と局所学習状態を一つのartifactへ統合し、BPIとSepsisで学習後checkpointを復元して受理済み予測列を完全再現しました。今後の実イベント研究はこのengineを共通基盤にします。
 

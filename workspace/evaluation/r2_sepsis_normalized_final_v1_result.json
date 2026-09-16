@@ -1,0 +1,302 @@
+{
+  "schema": "sara-r2-sepsis-normalized-final-result-v1",
+  "arms": {
+    "snn_normalized": {
+      "frozen_test": {
+        "count": 2035,
+        "top1_accuracy": 0.568058968058968,
+        "macro_f1": 0.4030799761772632,
+        "multiclass_brier": 0.5624599285800099,
+        "per_activity_recall": {
+          "Admission IC": 0.0,
+          "Admission NC": 0.49707602339181284,
+          "CRP": 0.6188436830835118,
+          "ER Registration": 0.6,
+          "ER Sepsis Triage": 0.8670886075949367,
+          "ER Triage": 0.9683544303797469,
+          "IV Antibiotics": 0.6083333333333333,
+          "IV Liquid": 0.14545454545454545,
+          "LacticAcid": 0.18627450980392157,
+          "Leucocytes": 0.679324894514768,
+          "Release A": 0.0707070707070707,
+          "Release B": 0.0,
+          "Release C": 0.0,
+          "Release D": 0.0,
+          "Release E": 0.0,
+          "Return ER": 0.9428571428571428
+        },
+        "rare_activity_mean_recall": 0.0,
+        "overrides": 200,
+        "override_rate": 0.09828009828009827,
+        "prediction_trace_sha256": "83071fffc7c971a5daecf0ce775b5a7f0befc158d0c3364297b7145523acfd83"
+      },
+      "base_frozen_test": {
+        "count": 2035,
+        "top1_accuracy": 0.5597051597051597,
+        "macro_f1": 0.35426782310560406,
+        "multiclass_brier": 0.5642786731815097,
+        "per_activity_recall": {
+          "Admission IC": 0.0,
+          "Admission NC": 0.47953216374269003,
+          "CRP": 0.6188436830835118,
+          "ER Registration": 0.2,
+          "ER Sepsis Triage": 0.8670886075949367,
+          "ER Triage": 0.9683544303797469,
+          "IV Antibiotics": 0.5833333333333334,
+          "IV Liquid": 0.1,
+          "LacticAcid": 0.03431372549019608,
+          "Leucocytes": 0.7510548523206751,
+          "Release A": 0.0,
+          "Release B": 0.0,
+          "Release C": 0.0,
+          "Release D": 0.0,
+          "Release E": 0.0,
+          "Return ER": 0.9428571428571428
+        },
+        "rare_activity_mean_recall": 0.0
+      },
+      "resources": {
+        "routes": 1021,
+        "neurons": 1021,
+        "weight_entries": 3997,
+        "state_bytes": 1456857,
+        "max_event_work": 177,
+        "latency_p50_ms": 0.031917,
+        "latency_p95_ms": 0.036083,
+        "latency_p99_ms": 0.041,
+        "latency_watchdog_ms": 0.207125,
+        "peak_rss_bytes": 37634048,
+        "contracts_passed": true
+      }
+    },
+    "scalar_normalized": {
+      "frozen_test": {
+        "count": 2035,
+        "top1_accuracy": 0.568058968058968,
+        "macro_f1": 0.4030799761772632,
+        "multiclass_brier": 0.5624599285800099,
+        "per_activity_recall": {
+          "Admission IC": 0.0,
+          "Admission NC": 0.49707602339181284,
+          "CRP": 0.6188436830835118,
+          "ER Registration": 0.6,
+          "ER Sepsis Triage": 0.8670886075949367,
+          "ER Triage": 0.9683544303797469,
+          "IV Antibiotics": 0.6083333333333333,
+          "IV Liquid": 0.14545454545454545,
+          "LacticAcid": 0.18627450980392157,
+          "Leucocytes": 0.679324894514768,
+          "Release A": 0.0707070707070707,
+          "Release B": 0.0,
+          "Release C": 0.0,
+          "Release D": 0.0,
+          "Release E": 0.0,
+          "Return ER": 0.9428571428571428
+        },
+        "rare_activity_mean_recall": 0.0,
+        "overrides": 200,
+        "override_rate": 0.09828009828009827,
+        "prediction_trace_sha256": "83071fffc7c971a5daecf0ce775b5a7f0befc158d0c3364297b7145523acfd83"
+      },
+      "base_frozen_test": {
+        "count": 2035,
+        "top1_accuracy": 0.5597051597051597,
+        "macro_f1": 0.35426782310560406,
+        "multiclass_brier": 0.5642786731815097,
+        "per_activity_recall": {
+          "Admission IC": 0.0,
+          "Admission NC": 0.47953216374269003,
+          "CRP": 0.6188436830835118,
+          "ER Registration": 0.2,
+          "ER Sepsis Triage": 0.8670886075949367,
+          "ER Triage": 0.9683544303797469,
+          "IV Antibiotics": 0.5833333333333334,
+          "IV Liquid": 0.1,
+          "LacticAcid": 0.03431372549019608,
+          "Leucocytes": 0.7510548523206751,
+          "Release A": 0.0,
+          "Release B": 0.0,
+          "Release C": 0.0,
+          "Release D": 0.0,
+          "Release E": 0.0,
+          "Return ER": 0.9428571428571428
+        },
+        "rare_activity_mean_recall": 0.0
+      },
+      "resources": {
+        "routes": 1021,
+        "neurons": 0,
+        "weight_entries": 3997,
+        "state_bytes": 785615,
+        "max_event_work": 149,
+        "latency_p50_ms": 0.02625,
+        "latency_p95_ms": 0.030416,
+        "latency_p99_ms": 0.035708,
+        "latency_watchdog_ms": 0.243833,
+        "peak_rss_bytes": 37928960,
+        "contracts_passed": true
+      }
+    },
+    "constant_gap_normalized": {
+      "frozen_test": {
+        "count": 2035,
+        "top1_accuracy": 0.5636363636363636,
+        "macro_f1": 0.40029756672263234,
+        "multiclass_brier": 0.5648516590312221,
+        "per_activity_recall": {
+          "Admission IC": 0.0,
+          "Admission NC": 0.4853801169590643,
+          "CRP": 0.6167023554603854,
+          "ER Registration": 0.6,
+          "ER Sepsis Triage": 0.8670886075949367,
+          "ER Triage": 0.9746835443037974,
+          "IV Antibiotics": 0.6083333333333333,
+          "IV Liquid": 0.12727272727272726,
+          "LacticAcid": 0.24509803921568626,
+          "Leucocytes": 0.6476793248945147,
+          "Release A": 0.050505050505050504,
+          "Release B": 0.0,
+          "Release C": 0.0,
+          "Release D": 0.0,
+          "Release E": 0.0,
+          "Return ER": 0.9428571428571428
+        },
+        "rare_activity_mean_recall": 0.0,
+        "overrides": 230,
+        "override_rate": 0.11302211302211303,
+        "prediction_trace_sha256": "74a7b6ddc8a6c60e0e627c4d16146cc8a0a5a018e0a8265f11f8d9e2dab3e8de"
+      },
+      "base_frozen_test": {
+        "count": 2035,
+        "top1_accuracy": 0.5597051597051597,
+        "macro_f1": 0.35426782310560406,
+        "multiclass_brier": 0.5642786731815097,
+        "per_activity_recall": {
+          "Admission IC": 0.0,
+          "Admission NC": 0.47953216374269003,
+          "CRP": 0.6188436830835118,
+          "ER Registration": 0.2,
+          "ER Sepsis Triage": 0.8670886075949367,
+          "ER Triage": 0.9683544303797469,
+          "IV Antibiotics": 0.5833333333333334,
+          "IV Liquid": 0.1,
+          "LacticAcid": 0.03431372549019608,
+          "Leucocytes": 0.7510548523206751,
+          "Release A": 0.0,
+          "Release B": 0.0,
+          "Release C": 0.0,
+          "Release D": 0.0,
+          "Release E": 0.0,
+          "Return ER": 0.9428571428571428
+        },
+        "rare_activity_mean_recall": 0.0
+      },
+      "resources": {
+        "routes": 674,
+        "neurons": 674,
+        "weight_entries": 2976,
+        "state_bytes": 1061581,
+        "max_event_work": 177,
+        "latency_p50_ms": 0.031333,
+        "latency_p95_ms": 0.035291,
+        "latency_p99_ms": 0.040292,
+        "latency_watchdog_ms": 0.148666,
+        "peak_rss_bytes": 38027264,
+        "contracts_passed": true
+      }
+    },
+    "shuffled_outcome_normalized": {
+      "frozen_test": {
+        "count": 2035,
+        "top1_accuracy": 0.544963144963145,
+        "macro_f1": 0.34805119979866395,
+        "multiclass_brier": 0.5713207427819207,
+        "per_activity_recall": {
+          "Admission IC": 0.0,
+          "Admission NC": 0.49122807017543857,
+          "CRP": 0.6059957173447538,
+          "ER Registration": 0.2,
+          "ER Sepsis Triage": 0.8670886075949367,
+          "ER Triage": 0.9683544303797469,
+          "IV Antibiotics": 0.5916666666666667,
+          "IV Liquid": 0.10909090909090909,
+          "LacticAcid": 0.049019607843137254,
+          "Leucocytes": 0.6856540084388185,
+          "Release A": 0.0,
+          "Release B": 0.0,
+          "Release C": 0.0,
+          "Release D": 0.0,
+          "Release E": 0.0,
+          "Return ER": 0.9428571428571428
+        },
+        "rare_activity_mean_recall": 0.0,
+        "overrides": 151,
+        "override_rate": 0.0742014742014742,
+        "prediction_trace_sha256": "9562e12c488e6c825a59991222c6c3324fe4d716f8394de463a5b039457c311c"
+      },
+      "base_frozen_test": {
+        "count": 2035,
+        "top1_accuracy": 0.5597051597051597,
+        "macro_f1": 0.35426782310560406,
+        "multiclass_brier": 0.5642786731815097,
+        "per_activity_recall": {
+          "Admission IC": 0.0,
+          "Admission NC": 0.47953216374269003,
+          "CRP": 0.6188436830835118,
+          "ER Registration": 0.2,
+          "ER Sepsis Triage": 0.8670886075949367,
+          "ER Triage": 0.9683544303797469,
+          "IV Antibiotics": 0.5833333333333334,
+          "IV Liquid": 0.1,
+          "LacticAcid": 0.03431372549019608,
+          "Leucocytes": 0.7510548523206751,
+          "Release A": 0.0,
+          "Release B": 0.0,
+          "Release C": 0.0,
+          "Release D": 0.0,
+          "Release E": 0.0,
+          "Return ER": 0.9428571428571428
+        },
+        "rare_activity_mean_recall": 0.0
+      },
+      "resources": {
+        "routes": 1021,
+        "neurons": 1021,
+        "weight_entries": 7135,
+        "state_bytes": 1936319,
+        "max_event_work": 177,
+        "latency_p50_ms": 0.035917,
+        "latency_p95_ms": 0.042667,
+        "latency_p99_ms": 0.104458,
+        "latency_watchdog_ms": 1.91925,
+        "peak_rss_bytes": 40861696,
+        "contracts_passed": true
+      }
+    }
+  },
+  "decision": {
+    "checks": {
+      "accuracy": true,
+      "macro_f1": true,
+      "brier": true,
+      "timing": true,
+      "shuffled_relative": true,
+      "override_budget": true,
+      "scalar_equivalence": true,
+      "resources": true
+    },
+    "passed": true,
+    "status": "final_pass",
+    "production_authorized": false
+  },
+  "provenance": {
+    "protocol_sha256": "114ccfdacf9747f537d33ff03c85dc56b78f8c7a016b50bd848cb875d1b35707",
+    "sources": {
+      "src/sara_engine/learning/normalized_router.py": "7d9086e67f67ebe0a21ed163f6cbf6fffb9b6145f55759d7a53c05e971346a97",
+      "src/sara_engine/evaluation/r2_sepsis_normalized_final.py": "f3ff94f4f68785c0ae2ef491da228455d5f7922d3570b4bce787b2c904df05ae",
+      "scripts/eval/r2_sepsis_normalized_final.py": "8dcaaf4f04f423192a4ecbecc10f1a06932d9210eb49e8a794639293fe9c8442"
+    },
+    "python": "3.10.18 (main, Jul 11 2025, 22:25:58) [Clang 20.1.4 ]",
+    "platform": "macOS-27.0-arm64-arm-64bit"
+  }
+}

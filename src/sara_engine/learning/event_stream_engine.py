@@ -129,5 +129,10 @@ class BoundedEventStreamEngine:
     def load_with_generation(cls,filename):
         if type(filename) is not str or Path(filename).name!=filename:raise ValueError("filename must be a plain file name")
         payload,generation=cls._read_artifact(Path(model_path("event_stream_engine",filename)));return cls.from_state_dict(payload),generation
+    @classmethod
+    def load_from_model_path(cls,path):
+        artifact=Path(path).resolve();models=Path(model_path()).resolve()
+        if os.path.commonpath((artifact,models))!=str(models):raise ValueError("event stream artifact must be under models")
+        payload,generation=cls._read_artifact(artifact);return cls.from_state_dict(payload),generation
 
 __all__=["BoundedEventRouteEncoder","BoundedEventStreamEngine","CheckpointReceipt","EventRouteConfig"]

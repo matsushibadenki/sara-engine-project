@@ -51,6 +51,9 @@ def test_generation_checked_publication_and_owner_permissions():
     with pytest.raises(ValueError,match="generation conflict"):engine.publish(path.name,expected_generation=0)
     second=engine.publish(path.name,expected_generation=1);assert second.generation==2
     loaded,generation=BoundedEventStreamEngine.load_with_generation(path.name);assert generation==2 and loaded.state_dict()==engine.state_dict()
+    loaded_by_path,path_generation=BoundedEventStreamEngine.load_from_model_path(path)
+    assert path_generation==2 and loaded_by_path.state_dict()==engine.state_dict()
+    with pytest.raises(ValueError,match="under models"):BoundedEventStreamEngine.load_from_model_path(Path("/tmp/outside.sara"))
     path.unlink();path.with_suffix(path.suffix+".lock").unlink()
 
 def test_four_process_equal_generation_collision_admits_one_writer():

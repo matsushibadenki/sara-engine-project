@@ -1,0 +1,46 @@
+{
+  "load_only": true,
+  "passed": true,
+  "production_authorized": false,
+  "results": {
+    "bpi2012": {
+      "checks": {
+        "accepted_result": true,
+        "accepted_trace": true,
+        "artifact_immutable": true,
+        "artifact_sum": true,
+        "configuration": true,
+        "generation": true,
+        "manifest_sum": true,
+        "no_checkpoint_refit": true,
+        "payload": true,
+        "prediction_count": true,
+        "prediction_digest": true,
+        "resource_identity": true,
+        "source_manifest": true
+      },
+      "prediction_trace_sha256": "7a502631a3fa5b2ede5159869f8106feb84f2ec6e5c34bd4de3eb2e49972a89f",
+      "predictions": 32694
+    },
+    "sepsis": {
+      "checks": {
+        "accepted_result": true,
+        "accepted_trace": true,
+        "artifact_immutable": true,
+        "artifact_sum": true,
+        "configuration": true,
+        "generation": true,
+        "manifest_sum": true,
+        "no_checkpoint_refit": true,
+        "payload": true,
+        "prediction_count": true,
+        "prediction_digest": true,
+        "resource_identity": true,
+        "source_manifest": true
+      },
+      "prediction_trace_sha256": "83071fffc7c971a5daecf0ce775b5a7f0befc158d0c3364297b7145523acfd83",
+      "predictions": 2035
+    }
+  },
+  "schema": "sara-event-stream-research-package-verification-v1"
+}

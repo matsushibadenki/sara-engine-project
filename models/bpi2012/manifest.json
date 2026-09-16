@@ -1,0 +1,108 @@
+{
+  "algorithm": {
+    "artifact_schema": "sara-bounded-event-stream-artifact-v1",
+    "configuration_sha256": "12774f35f18e8ce16f2fe7c3904c4a13c643039805cb5fe877c8f011fb241f24",
+    "dense_matrix_training": false,
+    "engine_schema": "sara-bounded-event-stream-engine-v1",
+    "global_gradient_backpropagation": false,
+    "gpu_required": false,
+    "hybrid_configuration": {
+      "base_probability_cap": 0.75,
+      "compact_event_units": true,
+      "explicit_neurons": true,
+      "learning_rate": 0.3,
+      "local_score_margin": 0.1,
+      "max_active": 8,
+      "max_classes": 24,
+      "max_context_parts": 4,
+      "max_contexts": 4096,
+      "max_routes": 4096,
+      "minimum_base_support": 16,
+      "normalized_threshold": 0.6223091976516634,
+      "routing_mode": "absolute",
+      "weight_cap": 2.0
+    },
+    "learning": "bounded normalized local hybrid",
+    "route_configuration": {
+      "constant_gap": false,
+      "gap_bounds_seconds": [
+        0.0,
+        60.0,
+        300.0,
+        1800.0,
+        7200.0,
+        28800.0,
+        86400.0,
+        259200.0
+      ],
+      "include_calendar_route": true,
+      "max_routes": 4096,
+      "prefix_length_bounds": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128
+      ]
+    }
+  },
+  "checkpoint": {
+    "artifact_sha256": "8fd38b81063aeae349a8148e08aaedccce3f4ebcd4bac43e1b38205949f5743e",
+    "contexts": 107,
+    "file": "sara-bpi2012-pretest-v1.sara",
+    "generation": 1,
+    "payload_sha256": "c33e664dd4eaed89526be1ecb45d82a77503dd25b8e52b090a14b99fd403e4f6",
+    "pretest_only": true,
+    "routes": 1018,
+    "training_predictions": 216419,
+    "weights": 5181
+  },
+  "data": {
+    "case_counts": {
+      "development": 1963,
+      "frozen_test": 1964,
+      "training": 9160
+    },
+    "case_overlap": 0,
+    "manifest": "data/processed/r2_bpi2012/source_manifest_v1.json",
+    "manifest_sha256": "24e3417d2cc48eb25cb747d9d5d6e38c0a89ab15e3144cd8470f0907f2e6b1c9",
+    "prediction_counts": {
+      "development": 39393,
+      "frozen_test": 32694,
+      "training": 177026
+    },
+    "source_sha256": "5cd9cc16b9bcb20bd4aae45666a5d87479ddbf47e6371618b6ad217174cecdf3"
+  },
+  "dataset": "bpi2012",
+  "evaluation": {
+    "accepted_result": "workspace/evaluation/r2_bpi2012_hybrid_final_v1_result.json",
+    "accepted_result_sha256": "c84d65e619eba5a2dba986ba0a9c397e8db761f525db3a0799a5e1dca7dbd4fd",
+    "checkpoint_refitting": false,
+    "command": "python3 scripts/eval/research_checkpoint_release.py verify-package --dataset bpi2012",
+    "frozen_prediction_sha256": "7a502631a3fa5b2ede5159869f8106feb84f2ec6e5c34bd4de3eb2e49972a89f",
+    "frozen_predictions": 32694,
+    "method": "Load the immutable pre-test checkpoint, predict each frozen event in chronological order, then apply its observed outcome only to the private in-memory replay state.",
+    "online_updates_during_frozen_replay": true,
+    "prediction_digest_encoding": "SHA-256 of compact JSON [target,predicted] pairs in frozen chronological order"
+  },
+  "negative_results": [
+    {
+      "id": "no-spike-specific-quality-advantage",
+      "result": "Explicit-neuron and matched scalar prediction traces are exactly identical."
+    },
+    {
+      "id": "physical-energy-unmeasured",
+      "result": "CPU time and state size are proxies; no joule or hardware-energy advantage is claimed."
+    },
+    {
+      "id": "explicit-neuron-cpu-overhead",
+      "result": "The explicit-neuron implementation used 13.11% more median CPU time than scalar mode."
+    }
+  ],
+  "production_authorized": false,
+  "research_only": true,
+  "schema": "sara-event-stream-research-package-v1"
+}
