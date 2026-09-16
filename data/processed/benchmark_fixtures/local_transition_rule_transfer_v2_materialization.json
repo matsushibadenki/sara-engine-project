@@ -1,0 +1,23 @@
+{
+  "schema": "sara-local-transition-rule-transfer-v2-materialization-v1",
+  "parent_protocol_sha256": "c79206dc8bde4d6ef8b0fb593a6a3da2982d718ffb70d89f2c492076da9d3082",
+  "generator": "contextual-transition-generator-v1",
+  "training_count_per_context_per_seed": 24,
+  "development_count_per_context_per_seed": 12,
+  "held_out_count_per_context_per_seed": 12,
+  "label_schedule": "index modulo 2",
+  "signature": {
+    "direction": ["context", "comparison_sign"],
+    "equality": ["context", "comparison_sign"],
+    "distance": ["context", "distance_bucket_0_equal_1_near_2_far"],
+    "composition": ["context", "first_comparison_sign", "second_comparison_sign"],
+    "categorical_control": ["context", "public_marker_98_or_99"]
+  },
+  "audit": {
+    "maximum_labels_per_signature": 1,
+    "required_label_count_per_context_seed": 2,
+    "training_development_symbol_overlap": 0,
+    "identity_overlap": 0,
+    "held_out_materialized": false
+  }
+}

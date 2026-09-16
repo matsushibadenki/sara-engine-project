@@ -44,7 +44,39 @@
 
 [Done] Frozen the context-observable v2 protocol before candidate implementation at SHA-256 `c79206dc8bde4d6ef8b0fb593a6a3da2982d718ffb70d89f2c492076da9d3082`. It uses five fresh seeds, disjoint symbols `20–25` versus `30–35`, and supplies the same bounded rule-context cue to categorical, relational and compositional arms.
 
-[Next] Implement the mandatory pre-execution signature audit. Candidate execution is forbidden unless every observable `context + relational signature` maps to exactly one label with balanced labels per context and seed. Then implement the three arms and frozen context/relation/composition controls without opening held-out identities.
+[Done] Added materialization protocol `7681511e5b63d0a3fdf10d3e6bafa7129fd5b610431a80ab11459a9f13cbfffd` without modifying the parent. The pre-execution audit materializes 600 training and 300 development episodes and passes signature uniqueness, per-context/seed balance, v2 namespace, symbol disjointness and identity disjointness across 39 signatures. Held-out is not materialized; candidate execution is now authorized.
+
+[Done] Implemented the contextual arms and controls below while keeping held-out closed.
+
+[Done] Implemented the three contextual arms and all frozen development controls. Relational accuracy is categorical `0.796`, relational `0.900`, compositional `0.996`. Context shuffle removes `0.313`, relation shuffle `0.454`, and composition reset `0.383`; mechanism controls are strong. However categorical lookup exceeds its frozen `0.60` ceiling and relational gain is only `0.104` versus the required `0.20`.
+
+[Done] The gate fails because development outcomes were observed online, allowing the categorical arm to memorize repeated development combinations. The v2 protocol did not freeze whether development updates were disabled, so this is retained as an evaluation-boundary negative result rather than repaired post hoc. The runner exits non-zero and held-out remains closed.
+
+[Done] Froze and executed the zero-shot transfer protocol below; online adaptation remains intentionally unexecuted.
+
+[Done] Frozen zero-shot protocol `5216b01ae192e82aad94c2bb8add001bb9ab42f79d00ae67ffd695189146efc5` with five fresh seeds and symbols. Development performs no learning; online adaptation is a separate, non-gating copy and was not executed.
+
+[Done] Zero-shot relational transfer is strong: categorical lookup `0.500`, contextual relation `0.963`, contextual composition `1.000`. Relation gain is `0.463`; context and relation destruction remove `0.425` and `0.433`. However composition adds only `0.150` and composition reset removes `0.150`, below the frozen `0.20` gates. The overall runner exits non-zero, held-out remains closed, and thresholds are unchanged.
+
+[Done] Retained the positive zero-shot relational result and negative composition gate separately, stopped composition tuning, and preregistered the independent replication below.
+
+[Done] Frozen independent replication protocol `bc7ff8cb7891e02e3df57c5f15cd88ba3155494543837c82b76563ceea61f4cf` before generator implementation. It requires a new generator that cannot import prior transition generation, a separately implemented label evaluator, five fresh seeds, disjoint prime-valued symbol sets, unique zero-shot development pairs and train-only updates. Composition is explicitly non-gating.
+
+[Done] The exhaustive pre-generator feasibility audit correctly blocks v1. All frozen training and development values are odd primes, so `same_parity` produces only label `1`; balanced generation is impossible in both splits. Ascending/equal, bounded jump and interval direction have both labels. No candidate or held-out data was generated, and the audit exits non-zero.
+
+[Done] Preserved v1 unchanged and froze v2 at `b382a2fca20e8bf9a7eae010c88af8ec818048e64a15db222add30c780b41c5f`. Its fresh disjoint value sets contain both parities. The exhaustive pre-generator audit confirms both labels for every context and split, at least 12 unique examples per label where development requires eight, and keeps held-out closed.
+
+[Done] Implemented a new generator without importing the prior transition generator, a separately coded evaluation oracle, and two zero-shot arms. Across five fresh seeds, categorical accuracy is `0.500` and contextual relational accuracy is `1.000`; every seed gains `0.500`. Context shuffle removes `0.200` and relation shuffle removes `0.509375`. Exact replay, capacity matching, event/state/feature ceilings, per-seed development uniqueness and zero development updates pass. This is independent synthetic development evidence, not held-out or production evidence.
+
+[Done] Frozen independent held-out protocol `d79c3463fe74debc85d92348944a7425303d3aa9a221a5954684f97cc4c05e51` pins candidate source `388181f9…e343c5f`, uses fresh values and seeds, forbids candidate changes after materialization, and permits one execution only.
+
+[Done] The one-shot held-out gate passes. Categorical/relational accuracy is `0.500`/`1.000`; every seed gains `0.500`. Context and relation destruction remove `0.209375` and `0.515625`. Exact replay, zero held-out updates, capacity matching and all resource ceilings pass. The immutable result digest is `8e8d298dead511a61807fcc4eaf690ced10245ea998d73651006787c68115581`.
+
+[Done] Minimal-unit conclusion: this line supports sparse events plus explicit local relational state under a bounded local update. It does not support membrane potential, refractory dynamics or spike emission as the cause of the gain. The relation descriptors are supplied inductive structure, so this result is not evidence of autonomous relation discovery or deep credit assignment.
+
+[Done] Frozen the two-stage Local Credit Packet protocol at `d7cdfc6550fa1e1b2bf2441a401442a50ca2ebfb9e8df709f37bd24b4e0bfaa5`. It fixes no-credit, broadcast, non-adoptable gradient-like and sparse branch-addressed arms; the seven packet fields; depth/TTL/fanout; equal forward/update budgets; eight interventions; leakage bans; five seeds; resource ceilings and stop rules. Candidate and development rows do not yet exist.
+
+[Next] Audit task identifiability before candidate implementation. Materialize only training/development identities, prove that outcome IDs and route addresses do not encode labels, verify matched forward traces across arms, and confirm that depth-two delayed outcomes cannot be solved from the final-stage observation alone.
 
 The causal comparison will use four arms:
 

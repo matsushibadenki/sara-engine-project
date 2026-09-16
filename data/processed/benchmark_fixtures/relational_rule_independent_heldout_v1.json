@@ -1,0 +1,63 @@
+{
+  "schema": "sara-relational-rule-independent-heldout-preregistration-v1",
+  "experiment_id": "relational-rule-independent-heldout-v1-2026-09-16",
+  "development_protocol_sha256": "b382a2fca20e8bf9a7eae010c88af8ec818048e64a15db222add30c780b41c5f",
+  "frozen_candidate": {
+    "module": "src/sara_engine/evaluation/independent_relational_replication.py",
+    "sha256": "388181f99fb38bbaf5e0556073df4e6c1ccd45d2664d665d2bc57fb55e343c5f",
+    "development_runner_sha256": "a5fb9483119120146573bdc747956d2c9e66804be7fe013860dcdcc8e8cab2f4",
+    "changes_after_materialization_allowed": false
+  },
+  "contexts": [
+    "ascending_or_equal",
+    "same_parity",
+    "bounded_jump",
+    "interval_direction"
+  ],
+  "arms": ["categorical_zero_shot", "contextual_relational_zero_shot"],
+  "fresh_identity": {
+    "namespace": "relational-rule-independent-heldout-v1",
+    "seeds": [944021, 944123, 944227, 944329, 944431],
+    "training_values": [370, 371, 374, 375, 378, 379],
+    "heldout_values": [490, 491, 494, 495, 498, 499],
+    "prior_value_overlap": 0,
+    "training_count_per_context_per_seed": 32,
+    "heldout_count_per_context_per_seed": 16,
+    "heldout_materialized": false,
+    "heldout_consumed": false
+  },
+  "evaluation_boundary": {
+    "training_updates": true,
+    "heldout_updates": false,
+    "score_before_any_adaptation": true,
+    "heldout_value_tuples_unique_within_seed_context": true,
+    "maximum_executions": 1
+  },
+  "controls": [
+    "context_shuffle",
+    "relation_shuffle",
+    "capacity_matched_categorical"
+  ],
+  "acceptance": {
+    "maximum_categorical_accuracy": 0.60,
+    "minimum_relational_accuracy": 0.85,
+    "minimum_gain_over_categorical": 0.20,
+    "minimum_context_shuffle_drop": 0.20,
+    "minimum_relation_shuffle_drop": 0.20,
+    "all_five_seed_gain_signs_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_features": 2048,
+    "maximum_state_bytes": 1048576,
+    "maximum_event_work": 160,
+    "maximum_backward_events": 0
+  },
+  "boundaries": {
+    "composition_allowed": false,
+    "local_credit_packet_allowed": false,
+    "bpi_sepsis_frozen_used": false,
+    "physical_energy_claim_allowed": false,
+    "production_authorized": false
+  }
+}

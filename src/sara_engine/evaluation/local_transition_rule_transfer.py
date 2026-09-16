@@ -18,7 +18,7 @@ def _pair(rng,symbols,predicate,wanted):
   if bool(predicate(a,b))==bool(wanted):return a,b
  raise RuntimeError("cannot generate balanced pair")
 
-def generate_transition_episodes(*,seeds:Sequence[int],symbols:Sequence[int],count_per_family:int,split:str)->list[TransitionEpisode]:
+def generate_transition_episodes(*,seeds:Sequence[int],symbols:Sequence[int],count_per_family:int,split:str,namespace:str="local-transition-rule-v1")->list[TransitionEpisode]:
  rows=[]
  for seed in seeds:
   for fi,family in enumerate(FAMILIES):
@@ -33,7 +33,7 @@ def generate_transition_episodes(*,seeds:Sequence[int],symbols:Sequence[int],cou
       if bool(r1==r2 and r1!=0)==bool(label):break
      else:raise RuntimeError("cannot generate composition")
     else: values=(rng.choice(symbols),99 if label else 98)
-    rows.append(TransitionEpisode(f"local-transition-rule-v1:{split}:{seed}:{family}:{index}",family,tuple(values),label))
+    rows.append(TransitionEpisode(f"{namespace}:{split}:{seed}:{family}:{index}",family,tuple(values),label))
  random.Random(sum(seeds)+(1 if split=="development" else 0)).shuffle(rows);return rows
 
 class TransitionRuleLearner:
@@ -82,3 +82,35 @@ def run_transition_arm(arm,training,development,*,intervention="none",outcome_sh
  by={f:correct[f]/totals[f] for f in FAMILIES};return {"accuracy":sum(correct.values())/len(development),"relational_accuracy":sum(correct[f] for f in RELATIONAL_FAMILIES)/sum(totals[f] for f in RELATIONAL_FAMILIES),"accuracy_by_family":by,"trace_sha256":hashlib.sha256(json.dumps(rows,separators=(",",":")).encode()).hexdigest(),"rows":rows,"updates":updates,"maximum_event_work":work,"state_bytes":learner.state_bytes(),"feature_count":len(learner.ids)}
 
 __all__=["FAMILIES","RELATIONAL_FAMILIES","TransitionRuleLearner","generate_transition_episodes","run_transition_arm"]
+
+CONTEXT_BY_FAMILY={family:index for index,family in enumerate(FAMILIES)}
+class ContextualTransitionLearner(TransitionRuleLearner):
+ ARMS=("L_contextual_categorical","R_contextual_relation","S_contextual_composition")
+ def __init__(self,arm,*,intervention="none",reserve=0):
+  if arm not in self.ARMS or intervention not in ("none","context_shuffle","relation_shuffle","composition_reset","context_relation_decouple"):raise ValueError("invalid contextual arm")
+  self.arm=arm;self.intervention=intervention;self.weights={};self.ids={};self.pending=None;self.reserve=bytearray(reserve)
+ def predict(self,episode):
+  if self.pending is not None:raise ValueError("pending")
+  values=episode.symbols;ctx=CONTEXT_BY_FAMILY[episode.family];rng=random.Random(sum(ord(c) for c in episode.identity)+920701)
+  if self.intervention=="context_shuffle":ctx=rng.randrange(len(FAMILIES))
+  relations=[self._relation(values[i-1],v) for i,v in enumerate(values) if i]
+  if self.intervention=="relation_shuffle":relations=[(rng.randrange(-1,2),rng.randrange(3)) for _ in relations]
+  if self.arm=="L_contextual_categorical":keys=[("ctxpair",ctx,values[i-1],v) for i,v in enumerate(values) if i]+[("marker",ctx,v) for v in values if v in (98,99)]
+  else:
+   keys=[]
+   for relation in relations:
+    keys.extend((("ctx",ctx),("rel",*relation))) if self.intervention=="context_relation_decouple" else keys.append(("ctxrel",ctx,*relation))
+   keys.extend(("marker",ctx,v) for v in values if v in (98,99))
+   if self.arm=="S_contextual_composition" and self.intervention!="composition_reset" and len(relations)>=2:keys.append(("ctxcompose",ctx,relations[-2],relations[-1]))
+  features=tuple(dict.fromkeys(self._id(k) for k in keys));score=sum(self.weights.get(f,0.) for f in features);r=TransitionReceipt(id(self),int(score>0),features,len(values)+len(keys));self.pending=r;return r
+
+def run_contextual_arm(arm,training,development,*,intervention="none",outcome_shuffle_seed=None,reserve=0,development_updates=True):
+ learner=ContextualTransitionLearner(arm,intervention=intervention,reserve=reserve);train_y=[e.label for e in training];dev_y=[e.label for e in development]
+ if outcome_shuffle_seed is not None:random.Random(outcome_shuffle_seed).shuffle(train_y);random.Random(outcome_shuffle_seed+1).shuffle(dev_y)
+ updates=0;work=0
+ for e,y in zip(training,train_y):r=learner.predict(e);work=max(work,r.work);updates+=learner.observe(r,y)
+ totals={f:0 for f in FAMILIES};correct={f:0 for f in FAMILIES};rows=[]
+ for e,y in zip(development,dev_y):r=learner.predict(e);work=max(work,r.work);totals[e.family]+=1;correct[e.family]+=int(r.predicted==e.label);rows.append((e.identity,r.predicted));updates+=learner.observe(r,y if development_updates else r.predicted)
+ by={f:correct[f]/totals[f] for f in FAMILIES};return {"accuracy":sum(correct.values())/len(development),"relational_accuracy":sum(correct[f] for f in RELATIONAL_FAMILIES)/sum(totals[f] for f in RELATIONAL_FAMILIES),"accuracy_by_family":by,"trace_sha256":hashlib.sha256(json.dumps(rows,separators=(",",":")).encode()).hexdigest(),"rows":rows,"updates":updates,"maximum_event_work":work,"state_bytes":learner.state_bytes(),"feature_count":len(learner.ids)}
+
+__all__.extend(["CONTEXT_BY_FAMILY","ContextualTransitionLearner","run_contextual_arm"])

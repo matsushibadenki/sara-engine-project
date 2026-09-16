@@ -1,0 +1,110 @@
+{
+  "schema": "sara-local-credit-packet-two-stage-preregistration-v1",
+  "experiment_id": "local-credit-packet-two-stage-v1-2026-09-16",
+  "research_question": "Can a sparse branch-addressed causal message assign delayed outcome credit across two local stages without numerical gradients?",
+  "task": {
+    "stages": ["input_branch", "intermediate_route", "delayed_outcome"],
+    "causal_depth": 2,
+    "outcome_delay_steps": [3, 5, 8],
+    "distractor_events_per_episode": [2, 4],
+    "active_branches_per_episode": 2,
+    "rewarded_branch_count": 1,
+    "observable_outcome_before_prediction": false,
+    "branch_identity_shared_across_stages": false
+  },
+  "packet_schema": {
+    "fields": [
+      "source_event",
+      "outcome_id",
+      "sign",
+      "magnitude_bucket",
+      "age",
+      "causal_depth",
+      "confidence"
+    ],
+    "magnitude_buckets": [0, 1, 2, 3],
+    "maximum_age": 8,
+    "maximum_causal_depth": 2,
+    "numerical_gradient_allowed": false,
+    "inactive_branch_delivery_allowed": false,
+    "packet_fanout": 1
+  },
+  "arms": {
+    "no_credit": "forward local updates only; delayed outcome is not returned",
+    "outcome_broadcast": "same bucketed outcome is sent to every eligible active branch",
+    "gradient_like_control": "bounded oracle scalar sensitivity is returned for comparison only",
+    "local_credit_packet": "one bucketed packet follows the recorded active causal route"
+  },
+  "fairness": {
+    "same_forward_routes": true,
+    "same_initial_state": true,
+    "same_training_episodes": true,
+    "same_prediction_budget": true,
+    "same_delayed_outcome": true,
+    "same_maximum_update_opportunities": true,
+    "gradient_like_control_not_eligible_for_adoption": true
+  },
+  "identity": {
+    "namespace": "local-credit-packet-two-stage-v1",
+    "seeds": [955019, 955127, 955229, 955333, 955439],
+    "training_episode_count_per_seed": 256,
+    "development_episode_count_per_seed": 128,
+    "heldout_materialized": false,
+    "heldout_consumed": false
+  },
+  "controls": [
+    "packet_route_shuffle",
+    "packet_sign_shuffle",
+    "eligibility_reset_before_outcome",
+    "packet_ttl_zero",
+    "causal_depth_one",
+    "replay_disabled",
+    "outcome_shuffle",
+    "capacity_matched_broadcast"
+  ],
+  "acceptance": {
+    "minimum_packet_accuracy": 0.75,
+    "minimum_gain_over_no_credit": 0.15,
+    "minimum_gain_over_broadcast": 0.10,
+    "maximum_gap_to_gradient_like_control": 0.05,
+    "minimum_route_shuffle_drop": 0.15,
+    "minimum_sign_shuffle_drop": 0.15,
+    "minimum_eligibility_reset_drop": 0.15,
+    "minimum_ttl_zero_drop": 0.15,
+    "minimum_depth_one_drop": 0.10,
+    "all_five_seed_packet_gains_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_packet_bytes": 64,
+    "maximum_packets_per_outcome": 2,
+    "maximum_backward_events_per_episode": 2,
+    "maximum_forward_event_work_per_episode": 96,
+    "maximum_total_state_bytes": 1048576,
+    "maximum_features": 4096,
+    "maximum_tuning_attempts": 1
+  },
+  "leakage_boundaries": {
+    "outcome_id_may_encode_label": false,
+    "source_event_may_encode_label": false,
+    "route_address_may_encode_label": false,
+    "future_activity_in_eligibility": false,
+    "development_updates": false,
+    "global_loss_differentiation": false,
+    "cross_network_jacobian": false
+  },
+  "stop_rules": {
+    "stop_if_broadcast_matches_packet": true,
+    "stop_if_route_shuffle_preserves_gain": true,
+    "stop_if_gradient_like_control_is_required_at_runtime": true,
+    "stop_if_any_resource_budget_is_exceeded": true,
+    "do_not_open_heldout_on_development_failure": true
+  },
+  "boundaries": {
+    "synthetic_development_only": true,
+    "structural_growth_allowed": false,
+    "durable_memory_mutation_allowed": false,
+    "bpi_sepsis_frozen_used": false,
+    "production_authorized": false
+  }
+}

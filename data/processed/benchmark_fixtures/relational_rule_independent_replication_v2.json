@@ -1,0 +1,75 @@
+{
+  "schema": "sara-relational-rule-independent-replication-preregistration-v2",
+  "experiment_id": "relational-rule-independent-replication-v2-2026-09-16",
+  "supersedes_protocol": "relational-rule-independent-replication-v1-2026-09-16",
+  "supersession_reason": "The v1 pre-generator audit found that all prime-valued identities were odd, making balanced same-parity labels impossible.",
+  "replicates": "zero-shot context-conditioned relational transition component only",
+  "generator_independence": {
+    "new_generator_required": true,
+    "prior_transition_generator_import_allowed": false,
+    "prior_family_names_reused": false,
+    "prior_episode_rows_reused": false,
+    "label_evaluator_implemented_separately_from_candidate": true
+  },
+  "contexts": {
+    "ascending_or_equal": "label 1 when second value is not smaller",
+    "same_parity": "label 1 when values have equal parity",
+    "bounded_jump": "label 1 when absolute difference is at most two",
+    "interval_direction": "label 1 when the second interval exceeds the first"
+  },
+  "arms": ["categorical_zero_shot", "contextual_relational_zero_shot"],
+  "fresh_identity": {
+    "namespace": "relational-rule-independent-v2",
+    "seeds": [933019, 933127, 933233, 933337, 933443],
+    "training_values": [130, 131, 134, 135, 138, 139],
+    "development_values": [250, 251, 254, 255, 258, 259],
+    "value_overlap": 0,
+    "training_count_per_context_per_seed": 32,
+    "development_count_per_context_per_seed": 16,
+    "held_out_consumed": false
+  },
+  "evaluation_boundary": {
+    "training_updates": true,
+    "development_updates": false,
+    "score_before_any_adaptation": true,
+    "development_value_pairs_unique_within_context": true
+  },
+  "controls": [
+    "context_shuffle",
+    "relation_shuffle",
+    "context_relation_decouple",
+    "outcome_shuffle",
+    "capacity_matched_categorical"
+  ],
+  "pre_execution_audit": {
+    "one_label_per_observable_signature": true,
+    "balanced_labels_per_context_seed": true,
+    "training_development_pair_overlap": 0,
+    "candidate_evaluator_agreement_required": true,
+    "both_labels_reachable_per_context_split": true
+  },
+  "acceptance": {
+    "maximum_categorical_accuracy": 0.60,
+    "minimum_relational_accuracy": 0.85,
+    "minimum_gain_over_categorical": 0.20,
+    "minimum_context_shuffle_drop": 0.20,
+    "minimum_relation_shuffle_drop": 0.20,
+    "all_five_seed_gain_signs_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_features": 2048,
+    "maximum_state_bytes": 1048576,
+    "maximum_event_work": 160,
+    "maximum_backward_events": 0,
+    "maximum_tuning_attempts": 1
+  },
+  "boundaries": {
+    "composition_is_non_gating": true,
+    "prior_held_out_used": false,
+    "bpi_sepsis_frozen_used": false,
+    "local_credit_packet_allowed": false,
+    "candidate_implementation_authorized_only_after_feasibility_pass": true,
+    "production_authorized": false
+  }
+}

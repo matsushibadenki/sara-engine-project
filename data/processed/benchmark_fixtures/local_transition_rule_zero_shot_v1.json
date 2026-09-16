@@ -1,0 +1,35 @@
+{
+  "schema": "sara-local-transition-rule-zero-shot-preregistration-v1",
+  "experiment_id": "local-transition-rule-zero-shot-v1-2026-09-16",
+  "preserved_negative_result": "contextual v2 allowed online development memorization",
+  "arms": ["L_contextual_categorical", "R_contextual_relation", "S_contextual_composition"],
+  "fresh_identity": {
+    "namespace": "local-transition-zero-shot-v1",
+    "seeds": [921023, 921139, 921251, 921367, 921479],
+    "training_symbols": [40, 41, 42, 43, 44, 45],
+    "development_symbols": [50, 51, 52, 53, 54, 55],
+    "training_count_per_context_per_seed": 24,
+    "development_count_per_context_per_seed": 12,
+    "symbol_overlap": 0,
+    "held_out_consumed": false
+  },
+  "evaluation_boundary": {
+    "training_updates": true,
+    "zero_shot_development_updates": false,
+    "zero_shot_digest_finalized_before_online_phase": true,
+    "online_adaptation_uses_separate_learner_copy": true,
+    "online_metrics_used_for_acceptance": false
+  },
+  "controls": ["context_shuffle_R", "relation_shuffle_R", "composition_reset_S", "context_relation_decouple_R", "outcome_shuffle_S", "capacity_matched_L"],
+  "acceptance": {
+    "maximum_lookup_relational_accuracy": 0.60,
+    "minimum_relational_accuracy": 0.85,
+    "minimum_gain_over_lookup": 0.20,
+    "minimum_composition_gain": 0.20,
+    "minimum_targeted_control_drop": 0.20,
+    "all_five_seed_gain_signs_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {"maximum_features": 2048, "maximum_state_bytes": 1048576, "maximum_event_work": 160, "maximum_backward_events": 0, "maximum_tuning_attempts": 1},
+  "boundaries": {"prior_held_out_used": false, "bpi_sepsis_frozen_used": false, "local_credit_packet_allowed": false, "production_authorized": false}
+}
