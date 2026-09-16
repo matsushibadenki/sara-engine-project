@@ -1,0 +1,11 @@
+{
+  "schema": "sara-local-credit-packet-mixed-error-revision-heldout-execution-v1",
+  "protocol_sha256": "e332b8bc5d6626d212bc7e553fc7499bf9a93728265964fef7d5d6f65fbfa638",
+  "candidate_source_sha256": "3505b7378b80506a1a270eabe006b39436a084c5af9b1f3ec28001a772a7ec72",
+  "materializer_source_sha256": "5c9bfb4e74f5bb9eeab0a30d840261c23b9af2de285e06f90e3527810478d7ba",
+  "rows_sha256": "f0e77447eede419b0ef6c7362b34539c1c4eb21d043f5302c4253a1e51ee42d1",
+  "pre_execution_audit_sha256": "697d27199ebd6cbb7a1beb6b296f5397a3ed924b30382986d4bee6d76e21640e",
+  "one_shot": true,
+  "candidate_changes_allowed": false,
+  "negative_result_retained": true
+}

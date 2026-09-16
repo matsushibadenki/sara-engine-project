@@ -124,11 +124,17 @@
 
 [Done] A separately frozen mixed-error development protocol (`da250503…5a6`) varies prior sign across B cues, gives each A cue two early updates, and compares full, six-of-eight, and one-corrupt B revision. The replay selector is source-addressed and emits a magnitude-two packet only when the retained old sign differs from the revised local sign. Its five-seed result (`55ab1e24…f8`) passes the frozen development gate: full-revision prior-only/simple replay/correction/direct/oracle accuracy is 57.5%/87.5%/100%/57.5%/100%; partial and corrupt correction reaches 73.75% and 81.875%, while their oracles reach only 82.5% and 87.5%. Replay-off, anchor erasure, magnitude-one cap and route/sign corruption reduce the full-revision gain. Sixteen source anchors, exact replay, 21-byte packets and ≤7,173-byte peak deep-counted Python state pass.
 
-[Next] Freeze a separate mixed-error held-out generator and oracle, audit the rows, then score once without changing the candidate or thresholds. This development result uses deterministic target-blind corruption and B-local labels; it does not establish realistic-noise repair, unsupervised B learning, real-event transfer or physical-energy gains. Partial and wrong B revisions leave irreducible downstream errors in this task, so the A credit packet alone should not be credited with fixing them.
+[Done] Independent mixed-error held-out protocol (`e332b8bc…a638`) freezes five new seeds/cues, a separate row generator and integer-weight oracle, and the same candidate with fixed gates. The 3,200-row audit passes balanced/factorial/split checks, a 0.500 direct-shortcut probe, 16 early anchors, target-blind selections and full two-step oracle accuracy. Candidate, generator, rows and audit were hash-pinned before scoring (`e953312e…9f5`).
 
-日本語: 2回路の局所creditは、新しいseedとcueを使った独立held-outでも成功しました。ただし、Bに補助的な教師信号を与えた合成課題に限られ、教師信号なしの深い学習と実イベントへの転移は未検証です。
+[Done] The one-shot result (`4e44d579…5d81`) fails the preregistered all-five-seed gain gate, despite 100% mean full-revision correction versus 90% simple replay and 50% prior-only. Simple replay already reaches 100% in two seeds; the packet has positive gain in only three. Full direct outcome is 42.5% and oracle 100%. With two missing revisions, correction is 80%; with one corrupt revision, 78.125%; both condition oracles are 87.5%. All other checks, separate-oracle agreement, exact replay and budgets pass (≤7,621-byte peak deep-counted Python state). No candidate or threshold change follows this result.
 
-简体中文：双回路局部信用分配在新的种子和线索构成的独立留出测试中也成功了，但仍限于给 B 提供辅助监督的合成任务；无辅助监督的深层学习和真实事件迁移尚未验证。
+[Done] A development-only diagnostic (`b7138bd2…c2`, result `b18a1cde…23d`) reconstructs the two early source anchors and both A-branch integer weights independently of the candidate, matching the frozen development accuracies. Of 40 A cues, 9 have zero changed signs, 21 have one, and 10 have two. One-step replay is already correct for every zero/one-change cue. For all ten two-change cues it merely cancels the old votes into a tie: the hard-coded tie-to-zero rule succeeds on five target-0 cues and fails on five target-1 cues. Magnitude-two replacement is necessary for exactly those five target-1 cues in this development set. This explains a route to seed-level parity without reopening the held-out result.
+
+[Next] Preregister fresh, target-balanced two-change cases and compare tie rules under equal packet/update budgets before claiming a general need for magnitude two. This deterministic synthetic task still uses B-local labels and does not establish realistic-noise repair, unsupervised B learning, real-event transfer or physical-energy gains. Residual B errors cannot be attributed to A credit repair.
+
+日本語: 2回路の局所creditは、新しいseedとcueを使った先行の独立held-outで成功しました。一方、混合誤り条件の独立held-outでは、平均精度は改善したものの「全seedで単純replayより改善」という事前ゲートに失敗しました。Bに補助的な教師信号を与えた合成課題に限られ、教師信号なしの深い学習と実イベントへの転移は未検証です。
+
+简体中文：双回路局部信用分配在先前使用新种子和线索的独立留出测试中成功；但在混合错误条件的独立留出测试中，虽然平均准确率提高，仍未达到预先规定的“每个种子都优于简单重放”门槛。结果仍限于给 B 提供辅助监督的合成任务；无辅助监督的深层学习和真实事件迁移尚未验证。
 
 The causal comparison will use four arms:
 

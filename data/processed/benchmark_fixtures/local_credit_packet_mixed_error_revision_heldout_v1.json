@@ -1,0 +1,97 @@
+{
+  "schema": "sara-local-credit-packet-mixed-error-revision-heldout-preregistration-v1",
+  "experiment_id": "local-credit-packet-mixed-error-revision-heldout-v1-2026-09-16",
+  "parent_development_protocol_sha256": "da2505032b701762d4ecf20772bdcfe2a56ff3a83f56aa429c011af5148745a6",
+  "parent_development_result_sha256": "55ab1e24d5fb540bb4f99b335a42752a56a92cac0a2ec7e94cfbef45b87e74f8",
+  "candidate_source_sha256": "3505b7378b80506a1a270eabe006b39436a084c5af9b1f3ec28001a772a7ec72",
+  "parent_generator_sha256": "4c2f161d3ad9b11010820d5cbd8b2cdf0bbd1938e42714ea35a4d8b6b2240316",
+  "research_question": "Does source-addressed local correction survive new private maps, mixed early B errors, two early A updates per cue, and incomplete or one-corrupt late B revision?",
+  "identity": {
+    "namespace": "local-credit-packet-mixed-error-revision-heldout-v1",
+    "seeds": [1091013, 1091119, 1091223, 1091331, 1091437],
+    "A_cues": [2310, 2311, 2312, 2313, 2314, 2315, 2316, 2317],
+    "B_cues": [2410, 2411, 2412, 2413, 2414, 2415, 2416, 2417],
+    "train_test_identity_overlap_allowed": false
+  },
+  "independent_materialization": {
+    "python_runtime": "CPython 3.10",
+    "generator": "Reuse the hash-pinned held-out row generator, not the development selector or candidate; use fresh seed and cue identities.",
+    "map_rule": "Rank cues by SHA-256 of seed|cue|A-map or seed|cue|B-map; first four map to 0, last four to 1.",
+    "training_rows": "Complete 8x8x2x2 action factorial repeated twice, then random.Random(seed+2111).shuffle.",
+    "test_rows": "Complete 8x8 cue factorial repeated twice, then random.Random(seed+2221).shuffle.",
+    "row_counts_per_seed": {"training": 512, "test": 128},
+    "oracle": "Independently reconstruct private maps, target-blind B error/revision selections, the first two source anchors per A cue, and integer signed A branch weights under each revision condition."
+  },
+  "schedule": {
+    "initial_B_labels": "Rank B cues by SHA-256 of namespace|initial_wrong|seed|cue and invert the first four true labels; retain the other four.",
+    "early_A_updates": "First two shuffled training events per A cue, one old-sign update each; retain exactly 16 source-matched A/B anchors.",
+    "late_B_revision": {
+      "full": "All eight true B labels.",
+      "partial_six": "Only the first six B cues ranked by namespace|revision_visible|seed|cue receive true labels; two keep their old code.",
+      "one_corrupt": "All eight cues receive labels; flip the first cue ranked by namespace|revision_corrupt|seed|cue."
+    },
+    "post_revision_online_updates": 0,
+    "replay": "At most 16 source-keyed lookups. Emit one 21-byte magnitude-two packet and apply two signed local steps only where the revised B sign opposes the stored old sign.",
+    "numerical_gradient_allowed": false,
+    "global_history_scan_allowed": false
+  },
+  "evaluation": {
+    "arms": ["prior_credit_only", "simple_replay", "correction_packet", "direct_outcome_correction", "oracle_control"],
+    "full_revision_controls": ["B_local_map_reset_on_replay", "B_to_A_route_shuffle_on_replay", "B_to_A_sign_shuffle_on_replay", "A_anchor_erased_before_replay", "replay_disabled", "magnitude_capped_at_one", "capacity_matched_direct_correction"],
+    "one_shot": true,
+    "candidate_changes_allowed": false,
+    "test_updates": false
+  },
+  "acceptance": {
+    "full_minimum_correction_accuracy": 0.95,
+    "full_minimum_gain_over_prior_credit": 0.10,
+    "full_minimum_gain_over_simple_replay": 0.05,
+    "full_maximum_direct_outcome_accuracy": 0.75,
+    "full_minimum_oracle_accuracy": 0.95,
+    "full_minimum_B_map_reset_drop": 0.20,
+    "full_minimum_route_shuffle_drop": 0.20,
+    "full_minimum_sign_shuffle_drop": 0.20,
+    "full_minimum_anchor_erasure_drop": 0.10,
+    "full_correction_at_least_imperfect": true,
+    "all_five_seed_correction_gains_over_simple_positive": true,
+    "exact_replay": true
+  },
+  "resource_budgets": {
+    "maximum_A_anchors": 16,
+    "maximum_B_anchors": 16,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_A_features": 16,
+    "maximum_B_features": 8,
+    "maximum_packet_bytes": 64,
+    "maximum_replay_lookups": 16,
+    "maximum_replay_packets": 16,
+    "maximum_total_state_bytes": 1048576
+  },
+  "pre_execution_audit": {
+    "all_rows_match_independent_oracle": true,
+    "balanced_private_maps_and_outcomes": true,
+    "complete_training_action_factorial": true,
+    "opaque_ids_unique_and_split_disjoint": true,
+    "direct_outcome_shortcut_A_target_majority_accuracy_maximum": 0.55,
+    "sixteen_early_anchor_sources_per_seed": true,
+    "four_initially_wrong_B_cues_per_seed": true,
+    "full_revision_B_map_exact": true,
+    "partial_and_corrupt_revision_rules_exact": true,
+    "independent_full_two_step_repair_oracle_accuracy": 1.0,
+    "training_and_test_rows_frozen_before_execution": true
+  },
+  "stop_rules": {
+    "do_not_score_if_pre_execution_audit_fails": true,
+    "refuse_if_result_already_exists": true,
+    "do_not_modify_candidate_or_thresholds_after_test": true,
+    "retain_negative_result_on_failure": true,
+    "do_not_repeat_one_shot_scoring": true
+  },
+  "boundaries": {
+    "synthetic_binary_factorization_only": true,
+    "B_local_labels_supplied": true,
+    "corruption_deterministic_not_real_sensor_noise": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema": "sara-local-credit-packet-mixed-error-replay-parity-diagnostic-v1",
+  "experiment_id": "mixed-error-replay-parity-development-diagnostic-v1-2026-09-16",
+  "development_protocol_sha256": "da2505032b701762d4ecf20772bdcfe2a56ff3a83f56aa429c011af5148745a6",
+  "development_result_sha256": "55ab1e24d5fb540bb4f99b335a42752a56a92cac0a2ec7e94cfbef45b87e74f8",
+  "selector_source_sha256": "a9608e86c938e8e8170c1f3115c61101f8ddc7f2f8091225852896e6c21a5da0",
+  "question": "Under exactly two early A updates per cue, when does a single revised-sign replay already yield the correct A prediction, and when is the second local step necessary?",
+  "inputs": {
+    "development_only": true,
+    "heldout_protocol_rows_audit_and_result_excluded": true,
+    "condition": "full B revision only",
+    "seeds_and_cues": "Inherit the frozen mixed-error development protocol without replacement or retuning."
+  },
+  "diagnostic": {
+    "anchor_rule": "First two shuffled training events per A cue, in training order.",
+    "old_sign": "Infer from forced A/B actions, global success, and the initially mixed B local code.",
+    "revised_sign": "Infer independently from the exact B local code after full revision.",
+    "branch_weights": "Use signed integer counts on the two A branches: old update once per anchor; one revised update if the sign changed for simple replay; two revised updates if changed for correction.",
+    "prediction_tie_rule": "Predict A action 0 on an equal branch score, matching the fixed circuit rule.",
+    "per_cue_fields": ["changed_sign_count", "old_margin", "simple_margin", "correction_margin", "prior_correct", "simple_correct", "correction_correct", "simple_tie", "second_step_necessary"],
+    "summaries": ["per_seed_accuracy", "changed_sign_histogram", "simple_correct_by_changed_count", "second_step_necessary_by_changed_count", "simple_tie_correct_count", "simple_tie_wrong_count"]
+  },
+  "interpretation": {
+    "exploratory_mechanism_diagnostic": true,
+    "no_new_heldout_gate": true,
+    "do_not_change_candidate_or_prior_heldout_thresholds": true,
+    "no_real_event_or_energy_claim": true
+  }
+}
