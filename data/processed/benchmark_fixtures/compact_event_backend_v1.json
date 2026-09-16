@@ -1,0 +1,23 @@
+{
+  "schema": "sara-compact-event-backend-preregistration-v1",
+  "experiment_id": "compact-event-backend-v1-2026-09-16",
+  "registered_before_backend_implementation": true,
+  "parent_runtime_sha256": "2d5094d835bcb092e3bf0eaca5a2dead9a63a6d4685b78b1109bd7a065f26f11",
+  "profile_result_sha256": "a19f820fae2799894117c86c8c234a6fcb9e18d3befe530be2d712ea7c4f4aa6",
+  "backend": "compact_event_units",
+  "semantics": "one validated stateless event pulse per active route; no membrane, branch or refractory state because the parent path resets them before every fixed suprathreshold pulse",
+  "datasets": ["bpi2012", "sepsis"],
+  "checks": {
+    "accepted_trace_replay": true,
+    "exact_compact_explicit_scalar_equivalence": true,
+    "receipt_and_serialization_contracts": true,
+    "route_and_active_bounds": true
+  },
+  "cost_gate": {
+    "independent_process_repetitions": 3,
+    "randomized_order_seed": 916908,
+    "maximum_compact_to_explicit_median_cpu_ratio": 0.90,
+    "maximum_compact_runtime_state_to_explicit_ratio": 0.60
+  },
+  "claim_boundaries": {"stateless_event_path_only": true, "not_a_stateful_neuron_replacement": true, "physical_energy_unmeasured": true, "production_default_unchanged_until_pass": true}
+}

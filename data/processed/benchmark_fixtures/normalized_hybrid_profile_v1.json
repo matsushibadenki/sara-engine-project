@@ -1,0 +1,21 @@
+{
+  "schema": "sara-normalized-hybrid-component-profile-v1",
+  "experiment_id": "normalized-hybrid-component-profile-v1-2026-09-16",
+  "registered_before_profile_runner_implementation": true,
+  "runtime_sha256": "2d5094d835bcb092e3bf0eaca5a2dead9a63a6d4685b78b1109bd7a065f26f11",
+  "datasets": ["bpi2012", "sepsis"],
+  "modes": ["explicit_neurons", "scalar"],
+  "profiler": "Python cProfile deterministic call profiler",
+  "runs_per_dataset_mode": 1,
+  "scopes": ["source loading", "route encoding", "hybrid predict", "route activation", "neuron step", "hybrid observe", "normalized or absolute routing"],
+  "checks": {
+    "accepted_prediction_trace_required": true,
+    "mode_equivalence_required": true,
+    "profile_artifacts_under_workspace": true
+  },
+  "decision_rule": {
+    "compact_event_unit_candidate_if": "explicit _activate cumulative time minus scalar _activate cumulative time is positive on both datasets",
+    "backend_requirements": ["exact accepted prediction replay", "bounded route state", "no matrix calculation", "no GPU", "no global backpropagation"]
+  },
+  "claim_boundaries": {"profile_overhead_prevents_latency_claim": true, "single_run_attribution_only": true, "physical_energy_unmeasured": true}
+}

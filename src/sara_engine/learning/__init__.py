@@ -11,6 +11,8 @@ from typing import Dict, Tuple
 
 
 _LAZY_EXPORTS: Dict[str, Tuple[str, str]] = {
+    "BoundedNormalizedHybrid": ("sara_engine.learning.normalized_hybrid", "BoundedNormalizedHybrid"),
+    "NormalizedHybridConfig": ("sara_engine.learning.normalized_hybrid", "NormalizedHybridConfig"),
     "ConfidenceRouteConfig": ("sara_engine.learning.confidence_router", "ConfidenceRouteConfig"),
     "ConfidenceRouteDecision": ("sara_engine.learning.confidence_router", "ConfidenceRouteDecision"),
     "route_prediction": ("sara_engine.learning.confidence_router", "route_prediction"),

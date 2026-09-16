@@ -1,0 +1,32 @@
+{
+  "schema": "sara-normalized-hybrid-cpu-cost-preregistration-v1",
+  "experiment_id": "normalized-hybrid-cpu-cost-v1-2026-09-16",
+  "registered_before_benchmark_runner_implementation": true,
+  "runtime_sha256": "2d5094d835bcb092e3bf0eaca5a2dead9a63a6d4685b78b1109bd7a065f26f11",
+  "datasets": ["bpi2012", "sepsis"],
+  "modes": ["explicit_neurons", "scalar"],
+  "repetitions_per_dataset_mode": 5,
+  "independent_process_per_repetition": true,
+  "order_randomization_seed": 916907,
+  "workload": "complete chronological stream including fitting and frozen predictions",
+  "warmup": "one unmeasured complete run per dataset and mode in an independent process",
+  "measurements": ["process_cpu_ms", "wall_ms", "peak_rss_bytes", "events", "frozen_predictions", "prediction_trace_sha256"],
+  "summary": ["median", "minimum", "maximum", "median_absolute_deviation"],
+  "acceptance": {
+    "all_prediction_traces_match_accepted_artifacts": true,
+    "all_explicit_and_scalar_traces_match": true,
+    "all_processes_exit_zero": true,
+    "reported_speed_claim_requires_same_direction_in_both_datasets": true
+  },
+  "energy_policy": {
+    "physical_energy_required_for_energy_claim": true,
+    "powermetrics_is_estimated_not_physical": true,
+    "no_energy_value_may_be_inferred_from_cpu_time": true,
+    "energy_status_for_this_protocol": "unmeasured"
+  },
+  "claim_boundaries": {
+    "single_host_python_cost_only": true,
+    "no_cross_device_claim": true,
+    "no_production_promotion": true
+  }
+}
