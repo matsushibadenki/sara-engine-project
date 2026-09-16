@@ -1,6 +1,6 @@
 # SARA Engine
 
-![SARA Engine logo](doc/images/logo_SARA.png)
+<img src="docs/images/logo_SARA.png" alt="SARA logo" width="240" style="text-align: center;">
 
 SARA (Spiking Architecture for Reasoning and Adaptation) Engine is a CPU-first research engine for sparse, event-driven intelligence. It explores how useful reasoning, continual memory, and adaptive behavior can be built from spikes, local state, structural relations, replay, and bounded verification without requiring global gradient backpropagation or a dense matrix-first architecture.
 
