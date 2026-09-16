@@ -13,6 +13,7 @@ from typing import Dict, Tuple
 _LAZY_EXPORTS: Dict[str, Tuple[str, str]] = {
     "BoundedEventRouteEncoder": ("sara_engine.learning.event_stream_engine", "BoundedEventRouteEncoder"),
     "BoundedEventStreamEngine": ("sara_engine.learning.event_stream_engine", "BoundedEventStreamEngine"),
+    "CheckpointReceipt": ("sara_engine.learning.event_stream_engine", "CheckpointReceipt"),
     "EventRouteConfig": ("sara_engine.learning.event_stream_engine", "EventRouteConfig"),
     "BoundedNormalizedHybrid": ("sara_engine.learning.normalized_hybrid", "BoundedNormalizedHybrid"),
     "NormalizedHybridConfig": ("sara_engine.learning.normalized_hybrid", "NormalizedHybridConfig"),

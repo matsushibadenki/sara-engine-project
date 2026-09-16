@@ -12,7 +12,9 @@ The engine rejects serialization while an outcome receipt is pending. State load
 
 [Done] Added artifact envelope `sara-bounded-event-stream-artifact-v1`. It binds the canonical engine payload to SHA-256, rejects corruption and unknown schemas, and retains an explicit legacy loader for the raw v1 engine state. Pending predictions remain non-serializable.
 
-[Next] Add generation-checked concurrent publication and bounded artifact-size/owner-permission checks before sharing a mutable checkpoint path across processes. Single-writer atomic replacement is already supported.
+[Done] Added generation-checked publication under an owner-only advisory lock. Four equal-generation processes admit exactly one writer and advance generation once. Artifacts and locks are owner-only, files are capped at 32 MB, and file plus parent directory are synced around atomic replacement. The durable gate also verifies checksum, permission and oversize rejection.
+
+[Next] Produce hash-pinned research checkpoints at the pre-test boundary for BPI and Sepsis, then verify that loading those durable artifacts reproduces the accepted frozen predictions without refitting. Keep them research-only until an explicit production gate exists.
 
 日本語: event符号化表と局所学習状態を一つのartifactへ統合し、BPIとSepsisで学習後checkpointを復元して受理済み予測列を完全再現しました。今後の実イベント研究はこのengineを共通基盤にします。
 

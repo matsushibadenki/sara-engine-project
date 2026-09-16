@@ -98,11 +98,30 @@ These are research candidates, not descriptions of the production runtime.
 
 ## Current Status
 
-The September 5, 2026 design review prioritizes a minimal causal local-learning experiment before anonymous concepts or further architectural expansion. See the [active research queue](doc/ROADMAP_NEXT_LEVEL.md#research-focus-reset--2026-09-05). Existing release gates establish engineering readiness within their scope; SNN-specific generalization and physical energy superiority remain unproven.
+### Project Progress as of September 16, 2026
 
-日本語: 次の重点は、局所学習とスパイク時刻が未知例の予測を改善する最小閉ループの実証です。
+The project has passed a major research-prototype milestone. SARA now has a reusable, CPU-first local-learning path, evidence from two independent real event-stream datasets, a compact event backend, and durable replayable checkpoints. The evidence supports continued research into bounded, sparse, local, event-driven learning. It does not yet establish a general-purpose SNN intelligence system, a spike-specific prediction advantage, or lower physical energy consumption.
 
-简体中文: 下一步重点是验证最小闭环，证明局部学习和脉冲时序能够改善对未见样本的预测。
+| Status | Milestone | Current result |
+| --- | --- | --- |
+| [Done] | Minimal causal SNN core | Signed excitation/inhibition, monotonic eligibility expiry, and bounded state and event work are implemented without global gradient backpropagation. |
+| [Done] | Local temporal-learning study | Local outcome learning succeeded, while timing causality and superiority over the strongest bounded non-spiking control did not pass. The negative results remain part of the evidence record. |
+| [Done] | BPI 2012 independent event-stream evaluation | On 32,694 sealed predictions, the bounded hybrid improved top-1 accuracy from `80.62%` to `82.13%`, macro-F1 from `53.60%` to `56.67%`, and Brier score from `0.2728` to `0.2659`. Registered timing, shuffle, resource, and scalar-equivalence checks passed. |
+| [Done] | Sepsis independent transfer evaluation | On 2,035 sealed predictions, the normalized hybrid improved top-1 accuracy from `55.97%` to `56.81%`, macro-F1 from `35.43%` to `40.31%`, and Brier score from `0.5643` to `0.5625`. The prospectively amended relative-shuffle gate and all final registered checks passed. |
+| [Done] | Reusable bounded hybrid | `BoundedNormalizedHybrid` provides receipt-bound, bounded, local updates with deterministic serialization and no global backward graph, GPU dependency, or dense matrix training path. |
+| [Done] | Compact event backend | Exact prediction traces are preserved while reducing explicit-neuron CPU time to a ratio of `0.896` on BPI and `0.815` on Sepsis, and reducing retained state to `0.539` and `0.500`, respectively. This backend is recommended for the stateless pulse path. |
+| [Done] | Durable event-stream runtime | `BoundedEventStreamEngine` persists route identity and learning state, exactly replays both sealed evaluations after restoration, rejects corrupt or unsupported checkpoints, and uses generation-aware compare-and-swap, owner-only locking, bounded files, and durable `fsync` publication. |
+| [Done] | Verified evidence and HTTP path | Bounded evidence storage, pagination, local HTTP/TLS tests, V2 authority binding, durable sequence replay, conditional refresh, and a bounded pilot runner are implemented. Automatic evidence routing remains disabled by default. |
+| [Next] | Releasable research checkpoints | Materialize the frozen pre-test BPI and Sepsis artifacts under `models/`, pin their hashes, and require load-only replay before treating the results as distributable research evidence. Production promotion remains closed. |
+| [Next] | Independent V2 publisher pilot | Run the existing pilot against an independently operated publisher with reviewed identity, scope, trust configuration, real revisions, availability, latency, and complete-path cost measurements. |
+| [Later] | Logic, ternary, and associative extensions | Study local Boolean/LUT computation, ternary excitatory/absent/inhibitory connection graphs, and context-conditioned sparse associative logic only behind new preregistered controls. |
+| [Later] | Physical energy validation | CPU time and state size are software proxies. Claims about joules or hardware energy superiority require paired physical measurements and an explicit reopening decision. |
+
+The central conclusion is deliberately limited: a bounded local hybrid produced useful, reproducible improvements on two real event streams, and the compact event runtime made that path cheaper than the explicit-neuron implementation. Explicit-neuron and scalar predictions were exactly equivalent, so the current evidence identifies value in the local temporal hybrid rather than a uniquely spiking prediction capability. General language intelligence, anonymous concept formation, broad-domain transfer, and physical energy superiority remain open research questions.
+
+The latest checkpoint-hardening change set passes all 13 focused tests. See [the active research queue](doc/ROADMAP_NEXT_LEVEL.md), [the event-stream engine report](doc/EVENT_STREAM_ENGINE.md), and [the compact event-backend report](doc/COMPACT_EVENT_BACKEND.md) for the authoritative gates and limitations.
+
+The September 5, 2026 design review initiated the minimal causal local-learning program that produced the R0, R1, BPI, Sepsis, compact-backend, and checkpoint results summarized above. See the [research-focus reset](doc/ROADMAP_NEXT_LEVEL.md#research-focus-reset--2026-09-05) for the original decision boundary. Existing release gates establish engineering readiness only within their stated scope; SNN-specific generalization and physical energy superiority remain unproven.
 
 Roadmap labels have strict meanings:
 

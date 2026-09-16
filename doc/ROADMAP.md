@@ -33,7 +33,8 @@ The authoritative next-work queue is the [Research Focus Reset](ROADMAP_NEXT_LEV
 - [Done] The compact stateless event backend exactly preserves accepted BPI/Sepsis traces. CPU/state ratios versus explicit neurons are 0.896/0.539 on BPI and 0.815/0.500 on Sepsis. It is the recommended CPU event backend for this path. See [COMPACT_EVENT_BACKEND.md](COMPACT_EVENT_BACKEND.md).
 - [Done] Added `BoundedEventStreamEngine`, which persists route identity and hybrid learning state together. Restored checkpoints exactly reproduce 32,694 BPI and 2,035 Sepsis frozen predictions. See [EVENT_STREAM_ENGINE.md](EVENT_STREAM_ENGINE.md).
 - [Done] Event-stream artifacts now use a versioned SHA-256 envelope. Corruption and unknown schemas fail closed, pending predictions cannot save, and raw v1 state remains explicitly loadable.
-- [Next] Add generation-checked concurrent checkpoint publication plus artifact-size and owner-permission bounds before multi-process checkpoint sharing.
+- [Done] Generation-checked checkpoint publication admits one of four equal-generation writers. Owner-only permissions, 32 MB limits, checksum rejection and file/directory sync pass the durable checkpoint gate.
+- [Next] Materialize hash-pinned BPI and Sepsis pre-test research checkpoints and verify load-only frozen replay without refitting; production remains closed.
 - [Done] Sparse-core consolidation tranche 1: bounded Event Memory lifecycle traces, ToolRegistry definition/execution state, and SaraAgent trigger execution. Experimental SNN learning remains outside production.
 - [Done] Added `SaraAgent.commit_verified_tool_state` over accepted plans, indexed result pairing, expected-outcome verification, bounded atomic commit, and verification receipts.
 - [Done] Added bounded `SaraAgent.get_last_response_trace` ownership metadata for tools, legacy hippocampal retrieval, fallback, safety rejection, and generated continuation without changing response strings.
