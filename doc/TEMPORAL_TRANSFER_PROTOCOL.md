@@ -6,8 +6,8 @@ This task directly addresses the [capture-pair overlap finding](DISCOVERY_CAPTUR
 
 The B compact-event and C temporal-state arms, plus C time-shuffle and C state-reset controls, use the same local learner. Training uses the existing bounded update. Development predictions are evaluated without passing true development labels to the learner or modifying learned weights. The preregistered diagnostic thresholds are C−B at least +0.15, a positive C−B difference on all five development seeds, C−time-shuffle at least +0.10, and C−state-reset at least +0.10, with exact prediction-trace replay and bounded state/event work. A failed gate is retained as a negative result without retuning.
 
-Pattern disjointness is a necessary but narrow check: the core pair-gap motif remains shared across splits, by design. Passing would demonstrate limited nuisance/time-origin transfer on this synthetic rule, not new task-family generalization, spike-specific benefit, real-event transfer, energy efficiency, or an exploration-policy gain. No arm has been scored under this protocol. The next step is a separate intent-before-outcome capture runner and a pre-execution identity audit; approval/export remains off.
+Pattern disjointness is a necessary but narrow check: the core pair-gap motif remains shared across splits, by design. Passing would demonstrate limited nuisance/time-origin transfer on this synthetic rule, not new task-family generalization, spike-specific benefit, real-event transfer, energy efficiency, or an exploration-policy gain. At preregistration time no arm had been scored; the subsequent frozen run and its limitations are recorded separately in the [result](TEMPORAL_TRANSFER_RESULT.md). Approval/export remains off.
 
-日本語: 前回の全例パターン重複を避けるため、開発側の妨害routeと絶対時刻を学習側から分離しました。判定閾値は評価前に固定済みです。ただし時間差の核となる規則は共通であり、実データや未知の概念への汎化を示す試験ではありません。現時点で評価結果はありません。
+日本語: 前回の全例パターン重複を避けるため、開発側の妨害routeと絶対時刻を学習側から分離しました。判定閾値は評価前に固定済みです。ただし時間差の核となる規則は共通であり、実データや未知の概念への汎化を示す試験ではありません。結果は別文書に記録しています。
 
-简体中文：为避免上次全部开发样本与训练模式重复，本协议将开发集的干扰路由和绝对时间与训练集分开，并在评估前固定阈值。核心时间间隔规则仍然共享，因此这不是现实数据或新概念的泛化测试。目前尚未运行任何评估臂。
+简体中文：为避免上次全部开发样本与训练模式重复，本协议将开发集的干扰路由和绝对时间与训练集分开，并在评估前固定阈值。核心时间间隔规则仍然共享，因此这不是现实数据或新概念的泛化测试。结果另见独立文档。
