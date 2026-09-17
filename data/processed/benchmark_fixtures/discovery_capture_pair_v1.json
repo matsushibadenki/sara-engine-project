@@ -1,0 +1,69 @@
+{
+  "schema": "sara-discovery-capture-pair-preregistration-v1",
+  "experiment_id": "discovery-capture-pair-v1-2026-09-17",
+  "purpose": "Prospective intent-before-outcome capture of a known synthetic temporal-state contrast; not exploration-policy optimization or production promotion",
+  "prior_evidence": {
+    "event_unit_v2_protocol_sha256": "07afe1d0bd4389c1d71acecc30e360335ade36daa380579c68e8137d865a5494",
+    "known_development_accuracy_B": 0.708,
+    "known_development_accuracy_C": 0.9,
+    "interpretation": "Replication with new seeds and the same generator/evaluator, not independent task transfer"
+  },
+  "candidate_source": {
+    "path": "src/sara_engine/evaluation/event_unit_causal_isolation.py",
+    "sha256": "8fbfcc8efb8f19773c789d374b670d0553ecea6acb56aa492d2f8742dd8d76e0"
+  },
+  "generator": {
+    "function": "generate_episodes",
+    "namespace": "capture-pair-v1",
+    "training_seeds": [930001, 930113, 930227, 930341, 930457],
+    "development_seeds": [940001, 940113, 940227, 940341, 940457],
+    "training_count_per_family_per_seed": 20,
+    "development_count_per_family_per_seed": 10,
+    "heldout_generated": false
+  },
+  "evaluator": {
+    "function": "run_v2_development_arm",
+    "evaluator_id": "event-unit-v2-development-pair-v1",
+    "score": "aggregate development accuracy",
+    "per_seed_score": "development accuracy on each fixed seed",
+    "outcome_signal": "existing local update; no global gradients"
+  },
+  "fixed_action_order": [
+    {"node_id": "B_compact_event", "arm": "B_compact_event", "intervention": "none"},
+    {"node_id": "C_temporal_state", "arm": "C_temporal_state", "intervention": "none"},
+    {"node_id": "C_time_shuffle", "arm": "C_temporal_state", "intervention": "time_shuffle"},
+    {"node_id": "C_state_reset", "arm": "C_temporal_state", "intervention": "state_reset"}
+  ],
+  "capture": {
+    "root_node_id": "capture-pair-root",
+    "policy_id": "manual-fixed-order-v1",
+    "require_intent_fsync_before_evaluator": true,
+    "require_head_published_outside_capture_log_before_evaluator": true,
+    "require_complete_log_for_projection": true,
+    "automatic_export_or_approval": false
+  },
+  "diagnostic_gate": {
+    "C_minus_B_minimum": 0.1,
+    "all_five_C_minus_B_positive": true,
+    "C_minus_time_shuffle_minimum": 0.05,
+    "C_minus_state_reset_minimum": 0.1,
+    "exact_prediction_trace_replay": true,
+    "maximum_retained_state_bytes": 4194304,
+    "maximum_event_work_per_prediction": 512,
+    "gate_failure_action": "retain negative development result; no retuning or held-out opening"
+  },
+  "cost_accounting": {
+    "cpu_ms": "ceil of measured process CPU nanoseconds per arm",
+    "event_count": "exact generated input-event count across training and development; not internal event work",
+    "state_bytes": "retained learner state reported by evaluator",
+    "physical_energy_measured": false
+  },
+  "boundaries": {
+    "development_only": true,
+    "BPI_Sepsis_frozen_test_opened": false,
+    "event_unit_v1_v2_heldout_opened": false,
+    "production_authorized": false,
+    "meta_policy_gain_claim_allowed": false,
+    "spike_specific_gain_claim_allowed": false
+  }
+}

@@ -80,3 +80,19 @@ def test_trace_requires_fresh_world_and_bounded_rounds():
         run_traced_replay_policy(world, lambda view: ())
     with pytest.raises(ValueError, match="round budget"):
         run_traced_replay_policy(DiscoveryReplayWorld(tree()), lambda view: (), max_rounds=0)
+
+
+def test_policy_can_follow_available_support_without_hidden_node_names():
+    rows = tree()
+    seen = []
+
+    def policy(view):
+        seen.append(view.available_actions)
+        return view.available_actions[:1]
+
+    world = DiscoveryReplayWorld(rows, max_reveals=3)
+    transcript = run_traced_replay_policy(world, policy, max_rounds=4)
+    assert seen == [("root",), ("root", "branch-a"),
+                    ("branch-a",), ()]
+    assert world.view.reveals == 3
+    assert verify_replay_transcript(rows, transcript) == world.view

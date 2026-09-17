@@ -44,6 +44,7 @@ class ReplayRecord:
 @dataclass(frozen=True)
 class ReplayView:
     revealed: tuple[ReplayRecord, ...]
+    available_actions: tuple[str, ...]
     rounds: int
     reveals: int
     stopped: bool
@@ -125,8 +126,16 @@ class DiscoveryReplayWorld:
 
     @property
     def view(self) -> ReplayView:
+        revealed = tuple(record for record in self._records
+                         if record.node_id in self._revealed)
+        available = () if self._stopped or self._reveals >= self._max_reveals else tuple(
+            record.node_id for record in revealed
+            if any(child not in self._revealed
+                   for child in self._children.get(record.node_id, ()))
+        )
         return ReplayView(
-            revealed=tuple(record for record in self._records if record.node_id in self._revealed),
+            revealed=revealed,
+            available_actions=available,
             rounds=self._rounds,
             reveals=self._reveals,
             stopped=self._stopped,

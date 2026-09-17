@@ -32,6 +32,7 @@ class ReplayTranscript:
 def _view_sha256(view: ReplayView) -> str:
     payload = {
         "revealed": [record.__dict__ for record in view.revealed],
+        "available_actions": view.available_actions,
         "rounds": view.rounds,
         "reveals": view.reveals,
         "stopped": view.stopped,

@@ -1,6 +1,7 @@
 """Managed discovery journals remain append-only and fail closed on corruption."""
 from dataclasses import replace
 from concurrent.futures import ThreadPoolExecutor
+from hashlib import sha256
 import json
 import tempfile
 from pathlib import Path
@@ -8,8 +9,9 @@ from pathlib import Path
 import pytest
 
 from sara_engine.research import (
-    DiscoveryJournal, DiscoveryReplayWorld, ExportReviewReceipt,
-    ReplayRecord, ReplayView, export_reviewed_tree, run_replay_policy,
+    SOURCE_SCHEMA, DiscoveryJournal, DiscoveryReplayWorld, ExportReviewReceipt,
+    ReplayRecord, ReplayView, audit_source_material, export_reviewed_tree,
+    run_replay_policy,
     validate_reviewed_export,
 )
 from sara_engine.utils.project_paths import ensure_output_directory, workspace_path
@@ -43,6 +45,20 @@ def journal_path():
     directory = ensure_output_directory(workspace_path("research_replay_tests"))
     with tempfile.TemporaryDirectory(dir=directory) as temporary:
         yield str(Path(temporary) / "tree.jsonl")
+
+
+def development_source(journal_path, rows):
+    path = Path(journal_path).with_name("source.json")
+    payload = {
+        "schema": SOURCE_SCHEMA,
+        "split": "development",
+        "records": [{key: value for key, value in row.__dict__.items()
+                     if key != "source_sha256"} for row in rows],
+    }
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    path.write_bytes(raw)
+    digest = sha256(raw).hexdigest()
+    return str(path), digest, tuple(replace(row, source_sha256=digest) for row in rows)
 
 
 def test_journal_append_reload_and_chain(journal_path):
@@ -144,29 +160,33 @@ def test_same_sequence_concurrent_appends_admit_one(journal_path):
 def test_reviewed_export_binds_exact_sanitized_tree(journal_path):
     rows = (record(0, "root", None, status="root", score=None),
             record(1, "branch-a", "root", status="negative", score=0.25))
+    source_path, source_sha256, rows = development_source(journal_path, rows)
     receipt = ExportReviewReceipt(
         schema="sara-discovery-export-review-v1",
         reviewer_id="reviewer-1",
-        source_sha256=HASH,
+        source_sha256=source_sha256,
         sanitized_tree_sha256=DiscoveryReplayWorld(rows).tree_sha256,
         approved=True,
         raw_text_removed=True,
         heldout_excluded=True,
     )
     assert validate_reviewed_export(rows, receipt).record_count == 2
+    assert audit_source_material(source_path).source_sha256 == source_sha256
+    assert audit_source_material(source_path).tree_sha256 == receipt.sanitized_tree_sha256
     journal = DiscoveryJournal(journal_path)
-    head = export_reviewed_tree(journal, rows, receipt)
+    head = export_reviewed_tree(journal, rows, receipt, source_path=source_path)
     assert journal.load(expected_head_sha256=head) == rows
     with pytest.raises(ValueError, match="head changed"):
-        export_reviewed_tree(journal, rows, receipt)
+        export_reviewed_tree(journal, rows, receipt, source_path=source_path)
 
 
 def test_unapproved_or_mismatched_export_never_writes(journal_path):
     rows = (record(0, "root", None, status="root", score=None),
             record(1, "branch-a", "root"))
+    source_path, source_sha256, rows = development_source(journal_path, rows)
     receipt = ExportReviewReceipt(
         schema="sara-discovery-export-review-v1", reviewer_id="reviewer-1",
-        source_sha256=HASH,
+        source_sha256=source_sha256,
         sanitized_tree_sha256=DiscoveryReplayWorld(rows).tree_sha256,
         approved=True, raw_text_removed=True, heldout_excluded=True,
     )
@@ -179,10 +199,68 @@ def test_unapproved_or_mismatched_export_never_writes(journal_path):
         replace(receipt, source_sha256="b" * 64),
     ):
         with pytest.raises(ValueError):
-            export_reviewed_tree(journal, rows, invalid)
+            export_reviewed_tree(journal, rows, invalid, source_path=source_path)
     with pytest.raises(ValueError, match="development"):
-        export_reviewed_tree(journal, (rows[0], replace(rows[1], split="heldout")), receipt)
+        export_reviewed_tree(journal, (rows[0], replace(rows[1], split="heldout")),
+                             receipt, source_path=source_path)
     assert not Path(journal_path).exists()
+
+
+def test_export_requires_matching_live_source_and_rejects_sealed_results(journal_path):
+    source_path, source_sha256, rows = development_source(journal_path, (
+        record(0, "root", None, status="root", score=None),
+        record(1, "branch-a", "root"),
+    ))
+    receipt = ExportReviewReceipt(
+        schema="sara-discovery-export-review-v1", reviewer_id="reviewer-1",
+        source_sha256=source_sha256,
+        sanitized_tree_sha256=DiscoveryReplayWorld(rows).tree_sha256,
+        approved=True, raw_text_removed=True, heldout_excluded=True,
+    )
+    journal = DiscoveryJournal(journal_path)
+    Path(source_path).write_bytes(Path(source_path).read_bytes().replace(b"branch-a", b"branch-b"))
+    with pytest.raises(ValueError, match="Source file digest"):
+        export_reviewed_tree(journal, rows, receipt, source_path=source_path)
+    Path(source_path).write_text('{"split":"development","frozen_test":{"score":1}}')
+    with pytest.raises(ValueError, match="held-out"):
+        export_reviewed_tree(journal, rows, receipt, source_path=source_path)
+    assert not Path(journal_path).exists()
+
+
+def test_export_rejects_tree_not_supported_by_source_snapshot(journal_path):
+    original = (record(0, "root", None, status="root", score=None),
+                record(1, "branch-a", "root"))
+    alternate = (original[0], replace(original[1], score=0.25))
+    source_path, source_sha256, _ = development_source(journal_path, alternate)
+    rows = tuple(replace(row, source_sha256=source_sha256) for row in original)
+    receipt = ExportReviewReceipt(
+        schema="sara-discovery-export-review-v1", reviewer_id="reviewer-1",
+        source_sha256=source_sha256,
+        sanitized_tree_sha256=DiscoveryReplayWorld(rows).tree_sha256,
+        approved=True, raw_text_removed=True, heldout_excluded=True,
+    )
+    with pytest.raises(ValueError, match="Source file records"):
+        export_reviewed_tree(DiscoveryJournal(journal_path), rows, receipt,
+                             source_path=source_path)
+    assert not Path(journal_path).exists()
+
+
+@pytest.mark.parametrize("name", [
+    "r2_bpi2012_hybrid_final_v1_result.json",
+    "r2_sepsis_normalized_final_v1_result.json",
+])
+def test_final_test_reports_are_not_development_source_material(name):
+    with pytest.raises(ValueError, match="development split"):
+        audit_source_material(workspace_path("evaluation", name))
+
+
+def test_source_material_rejects_duplicate_keys_and_unmanaged_paths(journal_path):
+    source = Path(journal_path).with_name("source.json")
+    source.write_text('{"split":"development","split":"development"}')
+    with pytest.raises(ValueError, match="Duplicate"):
+        audit_source_material(str(source))
+    with pytest.raises(ValueError, match="managed development"):
+        audit_source_material("/private/tmp/source.json")
 
 
 def test_invalid_batch_is_rejected_before_any_record_is_written(journal_path):

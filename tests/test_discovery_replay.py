@@ -42,10 +42,12 @@ def tree():
 def test_replay_reveals_only_recorded_children_in_order():
     world = DiscoveryReplayWorld(tree(), max_reveals=3)
     assert [row.node_id for row in world.view.revealed] == ["root"]
+    assert world.view.available_actions == ("root",)
     with pytest.raises(ValueError, match="not visible"):
         world.reveal(["branch-a"])
     assert [row.node_id for row in world.view.revealed] == ["root"]
     assert [row.node_id for row in world.reveal(["root"]).revealed] == ["root", "branch-a"]
+    assert world.view.available_actions == ("root", "branch-a")
     assert [row.node_id for row in world.reveal(["branch-a", "root"]).revealed] == [
         "root", "branch-a", "child-a", "branch-b",
     ]
@@ -53,6 +55,7 @@ def test_replay_reveals_only_recorded_children_in_order():
         world.reveal(["child-a"])
     assert world.view.reveals == 3
     assert world.view.rounds == 2
+    assert world.view.available_actions == ()
     assert world.reveal([]).stopped is True
     with pytest.raises(ValueError, match="stopped"):
         world.reveal(["root"])
