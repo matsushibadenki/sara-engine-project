@@ -1,0 +1,77 @@
+{
+  "schema": "sara-temporal-transfer-preregistration-v1",
+  "experiment_id": "temporal-transfer-v1-2026-09-17",
+  "purpose": "Test whether a local temporal-pair rule transfers to disjoint nuisance routes and shifted absolute times without development learning",
+  "prior_negative_control": {
+    "result": "discovery-capture-pair-v1",
+    "development_examples_with_training_labeled_pattern": 250,
+    "development_count": 250,
+    "interpretation": "Prior same-generator score was not pattern-isolated and is not a transfer baseline"
+  },
+  "candidate_sources": {
+    "generator_and_evaluator_path": "src/sara_engine/evaluation/temporal_transfer.py",
+    "generator_and_evaluator_sha256": "0020c04d27767efac83cd6a5513d5d8fd551ff5afef080085c46b68638c62152",
+    "event_unit_path": "src/sara_engine/evaluation/event_unit_causal_isolation.py",
+    "event_unit_sha256": "8fbfcc8efb8f19773c789d374b670d0553ecea6acb56aa492d2f8742dd8d76e0"
+  },
+  "generator": {
+    "function": "generate_temporal_transfer",
+    "namespace": "temporal-transfer-v1",
+    "training_seeds": [950001, 950113, 950227, 950341, 950457],
+    "development_seeds": [960001, 960113, 960227, 960341, 960457],
+    "training_count_per_seed": 40,
+    "development_count_per_seed": 20,
+    "heldout_generated": false,
+    "core_rule": "label is one iff route 0 to route 1 gap is one time unit; label is zero iff gap is four",
+    "training_nuisance_routes": [20, 21, 22, 23],
+    "development_nuisance_routes": [24, 25, 26, 27],
+    "training_origin_range_inclusive": [1, 4],
+    "development_origin_range_inclusive": [20, 23],
+    "label_balance_per_seed": true
+  },
+  "pre_execution_identity_gate": {
+    "exact_labeled_pattern_overlap_required": 0,
+    "episode_identity_overlap_required": 0,
+    "nuisance_route_overlap_required": 0,
+    "development_true_labels_must_not_update_learner": true,
+    "candidate_hashes_must_match": true,
+    "failure_action": "do not run any arm"
+  },
+  "evaluator": {
+    "function": "run_frozen_development_arm",
+    "training_update": "existing bounded local update",
+    "development_update": "none; resolve prediction receipt with its own prediction only",
+    "score": "frozen development accuracy across 100 predictions",
+    "per_seed_score": "frozen accuracy on 20 predictions per fixed development seed"
+  },
+  "fixed_action_order": [
+    {"node_id": "B_compact_event", "arm": "B_compact_event", "intervention": "none"},
+    {"node_id": "C_temporal_state", "arm": "C_temporal_state", "intervention": "none"},
+    {"node_id": "C_time_shuffle", "arm": "C_temporal_state", "intervention": "time_shuffle"},
+    {"node_id": "C_state_reset", "arm": "C_temporal_state", "intervention": "state_reset"}
+  ],
+  "diagnostic_gate": {
+    "C_minus_B_minimum": 0.15,
+    "all_five_C_minus_B_positive": true,
+    "C_minus_time_shuffle_minimum": 0.10,
+    "C_minus_state_reset_minimum": 0.10,
+    "exact_prediction_trace_replay": true,
+    "maximum_retained_state_bytes": 4194304,
+    "maximum_event_work_per_prediction": 512,
+    "gate_failure_action": "retain negative development result; no retuning or held-out opening"
+  },
+  "capture": {
+    "intent_before_outcome": true,
+    "head_published_before_each_evaluation": true,
+    "automatic_export_or_approval": false
+  },
+  "boundaries": {
+    "development_only": true,
+    "BPI_Sepsis_frozen_test_opened": false,
+    "prior_event_unit_heldout_opened": false,
+    "production_authorized": false,
+    "spike_specific_gain_claim_allowed": false,
+    "real_event_transfer_claim_allowed": false,
+    "meta_policy_gain_claim_allowed": false
+  }
+}
