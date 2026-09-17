@@ -133,30 +133,41 @@ class DiscoveryJournal:
         return self._with_lock(read)  # type: ignore[return-value]
 
     def append(self, record: ReplayRecord, *, expected_head_sha256: str | None = None) -> str:
-        if not isinstance(record, ReplayRecord):
-            raise ValueError("Invalid discovery record")
+        return self.append_batch((record,), expected_head_sha256=expected_head_sha256)
+
+    def append_batch(self, new_records: Iterable[ReplayRecord], *,
+                     expected_head_sha256: str | None = None) -> str:
+        materialized = tuple(new_records)
+        if not materialized or any(not isinstance(record, ReplayRecord)
+                                   for record in materialized):
+            raise ValueError("Invalid discovery record batch")
         _expected_head(expected_head_sha256)
 
         def write() -> str:
             records, previous = self._read_locked()
             if expected_head_sha256 is not None and previous != expected_head_sha256:
                 raise ValueError("Journal head changed")
-            if len(records) >= MAX_RECORDS:
+            if len(records) + len(materialized) > MAX_RECORDS:
                 raise ValueError("Journal record budget exceeded")
-            DiscoveryReplayWorld((*records, record), max_nodes=MAX_RECORDS)
-            entry = _entry(record, previous)
-            line = _canonical(entry) + b"\n"
-            if len(line) - 1 > MAX_LINE_BYTES:
-                raise ValueError("Journal entry exceeds line budget")
+            DiscoveryReplayWorld((*records, *materialized), max_nodes=MAX_RECORDS)
+            lines = []
+            for record in materialized:
+                entry = _entry(record, previous)
+                line = _canonical(entry) + b"\n"
+                if len(line) - 1 > MAX_LINE_BYTES:
+                    raise ValueError("Journal entry exceeds line budget")
+                lines.append(line)
+                previous = entry["entry_sha256"]
+            body = b"".join(lines)
             current_size = self.path.stat().st_size if self.path.exists() else 0
-            if current_size + len(line) > MAX_JOURNAL_BYTES:
+            if current_size + len(body) > MAX_JOURNAL_BYTES:
                 raise ValueError("Journal byte budget exceeded")
             flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT
             if hasattr(os, "O_NOFOLLOW"):
                 flags |= os.O_NOFOLLOW
             descriptor = os.open(self.path, flags, 0o600)
             try:
-                if os.write(descriptor, line) != len(line):
+                if os.write(descriptor, body) != len(body):
                     raise OSError("Short journal append")
                 os.fsync(descriptor)
             finally:
@@ -166,7 +177,7 @@ class DiscoveryJournal:
                 os.fsync(parent)
             finally:
                 os.close(parent)
-            return entry["entry_sha256"]
+            return previous
 
         return self._with_lock(write)  # type: ignore[return-value]
 

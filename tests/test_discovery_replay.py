@@ -4,6 +4,7 @@ from dataclasses import replace
 import pytest
 
 from sara_engine.research.discovery_replay import DiscoveryReplayWorld, ReplayRecord
+from sara_engine.research.discovery_audit import audit_replay
 
 
 HASH = "a" * 64
@@ -93,3 +94,28 @@ def test_record_schema_and_tree_digest_are_deterministic():
     assert DiscoveryReplayWorld(rows).tree_sha256 == DiscoveryReplayWorld(rows).tree_sha256
     with pytest.raises(ValueError, match="node budget"):
         DiscoveryReplayWorld(rows, max_nodes=3)
+
+
+def test_postrun_audit_separates_missing_and_budget_coverage():
+    rows = (
+        record(0, "root", None, status="root", score=None),
+        record(1, "branch-a", "root"),
+        record(2, "child-a", "branch-a", status="missing", score=None),
+        record(3, "branch-b", "root", status="failed", score=None),
+        record(4, "branch-c", "root"),
+    )
+    world = DiscoveryReplayWorld(rows, max_reveals=2)
+    before = audit_replay(world)
+    assert before.recorded_nonroot == 4
+    assert before.revealed_nonroot == 0
+    assert before.budget_unreachable == 1
+    assert before.missing_recorded == 1
+    assert before.missing_revealed == 0
+    assert before.failed_recorded == 1
+    world.reveal(["root"])
+    world.reveal(["branch-a"])
+    after = audit_replay(world)
+    assert after.coverage == 0.5
+    assert after.unrevealed_recorded == 2
+    assert after.missing_revealed == 1
+    assert after.budget_unreachable == 1

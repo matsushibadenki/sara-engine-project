@@ -12,7 +12,7 @@ from typing import Iterable, Mapping
 SCHEMA = "sara-discovery-tree-v1"
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
-_STATUS = frozenset({"valid", "negative", "failed"})
+_STATUS = frozenset({"valid", "negative", "failed", "missing"})
 
 
 @dataclass(frozen=True)

@@ -8,8 +8,9 @@ from pathlib import Path
 import pytest
 
 from sara_engine.research import (
-    DiscoveryJournal, DiscoveryReplayWorld, ReplayRecord, ReplayView,
-    run_replay_policy,
+    DiscoveryJournal, DiscoveryReplayWorld, ExportReviewReceipt,
+    ReplayRecord, ReplayView, export_reviewed_tree, run_replay_policy,
+    validate_reviewed_export,
 )
 from sara_engine.utils.project_paths import ensure_output_directory, workspace_path
 
@@ -138,3 +139,55 @@ def test_same_sequence_concurrent_appends_admit_one(journal_path):
         results = list(executor.map(attempt, range(4)))
     assert results.count(True) == 1
     assert len(DiscoveryJournal(journal_path).load()) == 2
+
+
+def test_reviewed_export_binds_exact_sanitized_tree(journal_path):
+    rows = (record(0, "root", None, status="root", score=None),
+            record(1, "branch-a", "root", status="negative", score=0.25))
+    receipt = ExportReviewReceipt(
+        schema="sara-discovery-export-review-v1",
+        reviewer_id="reviewer-1",
+        source_sha256=HASH,
+        sanitized_tree_sha256=DiscoveryReplayWorld(rows).tree_sha256,
+        approved=True,
+        raw_text_removed=True,
+        heldout_excluded=True,
+    )
+    assert validate_reviewed_export(rows, receipt).record_count == 2
+    journal = DiscoveryJournal(journal_path)
+    head = export_reviewed_tree(journal, rows, receipt)
+    assert journal.load(expected_head_sha256=head) == rows
+    with pytest.raises(ValueError, match="head changed"):
+        export_reviewed_tree(journal, rows, receipt)
+
+
+def test_unapproved_or_mismatched_export_never_writes(journal_path):
+    rows = (record(0, "root", None, status="root", score=None),
+            record(1, "branch-a", "root"))
+    receipt = ExportReviewReceipt(
+        schema="sara-discovery-export-review-v1", reviewer_id="reviewer-1",
+        source_sha256=HASH,
+        sanitized_tree_sha256=DiscoveryReplayWorld(rows).tree_sha256,
+        approved=True, raw_text_removed=True, heldout_excluded=True,
+    )
+    journal = DiscoveryJournal(journal_path)
+    for invalid in (
+        replace(receipt, approved=False),
+        replace(receipt, raw_text_removed=False),
+        replace(receipt, heldout_excluded=False),
+        replace(receipt, sanitized_tree_sha256="b" * 64),
+        replace(receipt, source_sha256="b" * 64),
+    ):
+        with pytest.raises(ValueError):
+            export_reviewed_tree(journal, rows, invalid)
+    with pytest.raises(ValueError, match="development"):
+        export_reviewed_tree(journal, (rows[0], replace(rows[1], split="heldout")), receipt)
+    assert not Path(journal_path).exists()
+
+
+def test_invalid_batch_is_rejected_before_any_record_is_written(journal_path):
+    journal = DiscoveryJournal(journal_path)
+    with pytest.raises(ValueError, match="Parent"):
+        journal.append_batch((record(0, "root", None, status="root", score=None),
+                              record(1, "bad", "missing")))
+    assert not Path(journal_path).exists()
