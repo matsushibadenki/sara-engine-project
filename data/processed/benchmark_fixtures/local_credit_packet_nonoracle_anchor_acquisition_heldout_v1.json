@@ -1,0 +1,80 @@
+{
+  "schema": "sara-local-credit-packet-nonoracle-anchor-acquisition-heldout-preregistration-v1",
+  "experiment_id": "local-credit-packet-nonoracle-anchor-acquisition-heldout-v1-2026-09-18",
+  "parent_development_protocol_sha256": "a5253aa30dc406ec2f7505dd43cb8233afa47043cf15b630717850ea6faf5f3b",
+  "parent_development_result_sha256": "d61cac2fa0d0436a0758a6b56d18e128ebba832dc86788ea55bca18528a0af87",
+  "candidate_source_sha256": "5bb7f2c05f79a20c0049e57bbd06f05a5985576aec85d7b5791790065cda13b2",
+  "research_question": "On independently generated unseen private maps and cue identities, does label-blind first-two anchor acquisition preserve target-stratified two-step local correction with fewer replay packets than unconditional correction?",
+  "identity": {
+    "namespace": "local-credit-packet-nonoracle-anchor-acquisition-heldout-v1",
+    "seeds": [1211019, 1211129, 1211237, 1211341, 1211453],
+    "A_cues": [3010, 3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019, 3020, 3021, 3022, 3023, 3024, 3025],
+    "B_cues": [3110, 3111, 3112, 3113, 3114, 3115, 3116, 3117],
+    "parent_seed_or_cue_overlap_allowed": false
+  },
+  "independent_materialization": {
+    "runtime": "CPython 3.10",
+    "generator": "Implement separately from the development fixture and candidate; do not import either to produce or audit rows.",
+    "private_maps": "For A and B separately, rank cues by SHA-256(seed|cue|A-map or B-map); first half label 0, remaining half label 1.",
+    "initial_B_error": "Rank B cues by SHA-256(namespace|initial_wrong|seed|cue) and invert the first four true labels. The anchor selector cannot observe this set.",
+    "training_stream": "Complete 16x8x2x2 A/B cue-action factorial, exactly 512 events per seed. Original index is product order A, B, A action, B action. Sort by SHA-256(namespace|order|seed|original_index) without labels or outcomes in the key.",
+    "anchor_rule": "Retain exactly the first two stream events for each A cue; no target, outcome, B correctness, or future stream information is available to this selector.",
+    "late_B_revision": "Replace all eight B-local labels with their exact true labels; no ordinary A update follows.",
+    "test": "Complete 16x8 A/B cue factorial, 128 predictions per seed, with no test-time updates.",
+    "oracle": "Independently reconstruct private targets, selected source identities, old and revised signs, changed-sign counts, integer branch weights, ties, and packet counts for each arm. Do not call candidate fixture, run_arm, CircuitA, or CircuitB.",
+    "numerical_gradient_allowed": false,
+    "global_history_scan_allowed": false
+  },
+  "evaluation": {
+    "arms": ["prior_only", "simple_tie_zero", "simple_tie_one", "selective_two_step", "unconditional_two_step", "sign_shuffle_two_step", "route_shuffle_two_step"],
+    "candidate_changes_allowed": false,
+    "one_scored_run": true,
+    "test_updates": false
+  },
+  "acceptance": {
+    "selective_mean_accuracy_minimum": 0.95,
+    "unconditional_mean_accuracy_minimum": 0.95,
+    "minimum_each_seed_selective_accuracy": 0.875,
+    "minimum_two_change_cues_per_target_pooled": 3,
+    "two_change_selective_accuracy_each_target_minimum": 0.95,
+    "two_change_simple_tie_zero_target_one_accuracy_maximum": 0.10,
+    "two_change_simple_tie_one_target_zero_accuracy_maximum": 0.10,
+    "minimum_replay_packet_reduction_fraction": 0.25,
+    "selective_unconditional_prediction_identity": true,
+    "minimum_wrong_sign_or_route_accuracy_drop": 0.10,
+    "exact_independent_oracle_replay": true
+  },
+  "pre_execution_audit": {
+    "all_512_training_events_per_seed_present_once": true,
+    "all_128_test_pairs_per_seed_present_once": true,
+    "balanced_private_maps": true,
+    "exact_four_initial_B_errors": true,
+    "first_two_anchor_identities_match_independent_stream_order": true,
+    "anchor_selection_uses_only_A_cue_and_position": true,
+    "direct_global_success_shortcut_accuracy_maximum": 0.55,
+    "row_identities_unique_and_parent_disjoint": true,
+    "two_change_target_strata_nonempty": true,
+    "source_and_materializer_hashes_frozen_before_scoring": true
+  },
+  "resource_budgets": {
+    "maximum_A_anchors": 32,
+    "maximum_B_anchors": 32,
+    "maximum_A_eligibility_entries": 1,
+    "maximum_A_features": 32,
+    "maximum_B_features": 8,
+    "maximum_packet_bytes": 64,
+    "maximum_replay_lookups": 32,
+    "maximum_replay_packets": 32,
+    "maximum_local_steps_per_packet": 2,
+    "maximum_total_state_bytes": 1048576
+  },
+  "stop_rules": {
+    "do_not_score_if_pre_execution_audit_fails": true,
+    "retain_negative_result_on_any_gate_failure": true,
+    "do_not_repeat_or_retune_after_scoring": true,
+    "do_not_modify_prior_mixed_error_heldout": true,
+    "do_not_use_BPI_or_Sepsis_checkpoints_for_tuning": true,
+    "production_authorized": false,
+    "real_event_credit_claim_authorized": false
+  }
+}
