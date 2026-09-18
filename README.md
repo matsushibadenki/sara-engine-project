@@ -86,6 +86,8 @@ SARA therefore distinguishes backward information from backward gradients. The r
 
 This problem is not solved. A first synthetic two-stage development task now shows that a 21-byte branch-addressed Local Credit Packet can match a bounded gradient-like oracle while no-credit and broadcast controls remain at chance. Route, sign, eligibility, TTL and causal-depth interventions remove the gain. Replay is unnecessary on that short task, and the supplied context structure makes this mechanism evidence—not a general backpropagation replacement. SARA treats the broader hypothesis as falsifiable: some SNN learning difficulty may come not only from spikes, but from reducing neurons to point operators and omitting dendritic hierarchy, local feedback, structural plasticity, recurrence, and multi-timescale credit memory. The project will not claim a solution until independent held-out tasks approach strong surrogate-gradient SNN and ANN/Transformer references under explicit resource accounting.
 
+An additional research hypothesis is [Sparse Predictive Factorization](doc/SPARSE_PREDICTIVE_FACTORIZATION.md), inspired by [JEPA-Anything](https://arxiv.org/abs/2609.20800). It asks whether a bounded predictive state can self-organize into anonymous local factors whose overlap is suppressed by sparse inhibition and whose predictions are recombined with explicit abstention. This is a future, default-off study: it does not import JEPA's gradient projector, EMA target encoder, or matrix orthogonality loss into runtime, and it is not evidence that SARA has a world model.
+
 Several biologically inspired ideas are intentionally isolated until evidence is stronger:
 
 - time-dependent effective interactions generated from recent spike state;

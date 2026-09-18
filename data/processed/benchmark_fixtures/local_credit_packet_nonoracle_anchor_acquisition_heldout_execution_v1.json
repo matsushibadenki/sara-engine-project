@@ -2,6 +2,8 @@
   "schema": "sara-local-credit-packet-nonoracle-anchor-acquisition-heldout-execution-v1",
   "protocol_sha256": "6afee9eb95988e03a38af7af1870abc0bb7bf3888c86d75fa9a560a636d0afa1",
   "candidate_source_sha256": "5bb7f2c05f79a20c0049e57bbd06f05a5985576aec85d7b5791790065cda13b2",
+  "candidate_core_sha256": "68e87e58ceb1be949680f760d66cc46118520c2d489933e7720a146d7143cc61",
+  "scorer_source_sha256": "c770465c653d8c398618c424f3e90a1181cd9297845d5a088d30611e1d4c4afb",
   "independent_materializer_sha256": "4f9e59166cad1d780e7510f8dc3b7dcd36a38d50758ba42265665c2a848beb23",
   "heldout_rows_sha256": "5a4c67184dcf55f09ce574fc34662a1774c0e4ed163c65697c8770b022c74baa",
   "pre_execution_audit_sha256": "3c7d0be482970f597d153a33d43cc6f51614117a1385ebd20b3d452788840793",

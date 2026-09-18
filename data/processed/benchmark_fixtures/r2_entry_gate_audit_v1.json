@@ -1,0 +1,15 @@
+{
+  "schema": "sara-r2-entry-gate-audit-v1",
+  "audit_id": "r2-entry-gate-audit-v1-2026-09-19",
+  "requirements": ["independent_source", "timestamped_observation", "delayed_observable_outcome", "redistributable_or_locally_authorized", "fresh_identity"],
+  "candidates": [
+    {"id":"bpi2012","path":"data/raw/r2_bpi2012/BPI_Challenge_2012.xes.gz","status":"ineligible_consumed","reason":"Existing frozen R2 evaluation source; cannot tune a new credit study on it."},
+    {"id":"sepsis","path":"data/raw/r2_sepsis/Sepsis Cases - Event Log.xes.gz","status":"ineligible_consumed","reason":"Existing independent replication source with sealed checkpoints; not a fresh identity."},
+    {"id":"beijing_air_quality","path":"data/raw/r2_beijing_air_quality/beijing_multi_site_air_quality.zip","status":"ineligible_consumed","reason":"Existing R2 delayed-outcome source; prior development gate consumed the task identity."},
+    {"id":"fashion_mnist","path":"data/raw/fashion_mnist_train-images.gz","status":"ineligible_no_delay","reason":"Static image classification has no independently timestamped delayed outcome stream."},
+    {"id":"ud_role_labelled","path":"data/raw/ud_role_labelled/en_ewt-ud-train.conllu","status":"ineligible_no_delay","reason":"Static annotated text split; no delayed observable outcome contract."}
+  ],
+  "decision": "blocked_until_new_source",
+  "candidate_scoring_authorized": false,
+  "download_or_external_source_selection_authorized": false
+}
