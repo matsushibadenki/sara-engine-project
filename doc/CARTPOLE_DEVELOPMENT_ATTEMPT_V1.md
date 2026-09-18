@@ -1,0 +1,13 @@
+# CartPole Terminal-Feedback Development Attempt V1
+
+[Done] One registered development execution was invoked under preregistration SHA-256 `86a50d698174c220afa66bac25160caf293762fbfe7875d56a80a9efea51f392` and runner SHA-256 `d80aefeb7be734dde6054b5033a3eeb942bf90aca3f675afb9a051d007efa551`. Source hashes, runtime identity, and absence of a prior output/reservation were verified before invocation. The runner completed its candidate loops but failed while serializing the final result. No candidate scores or development gate decision were printed or persisted.
+
+The exact failure was `TypeError: Object of type int64 is not JSON serializable` in `_canonical_bytes(result)`. A read-only API audit identifies `environment_audit.action_count` as `numpy.int64`; the other audit values are standard JSON scalar types. The problem is result-envelope serialization, not evidence of an algorithmic success or failure. The result file `workspace/evaluation/cartpole_terminal_development_v1.json` is 0 bytes (SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`). Its exclusive reservation `workspace/evaluation/cartpole_terminal_development_v1.json.lock` is 65 bytes (SHA-256 `6b3ed31da51a555968eddc0f675d8ccb4fc28555b8ec35839dcad9abc885e3d6`). Preserve both. Do not delete the lock or rerun V1.
+
+This is an inconclusive instrumentation failure, not a negative development result. V1 development seeds have been used by a candidate execution, even though its outcomes were not recoverable; they must not be reused for model selection. The held-out split remains unopened. Any next attempt needs a new task/protocol identity and fresh training/development seeds, with JSON-serializability preflight before scoring. The V1 policy and gate must not be retuned based on this failure.
+
+[Done] A separate, unscored [V2 serialization preflight](../src/sara_engine/evaluation/cartpole_result_preflight.py) was added at SHA-256 `9cad8296fead9e6e607ee9fbdf0baec80dec476b2a32157b83ee7b5e469479fd`. It reproduces the V1 `numpy.int64` failure, accepts only the expected CartPole API audit, converts that integral field to a Python `int`, and checks a representative complete result envelope before any candidate scoring. It is not part of the frozen V1 runner and has not been used to rerun V1.
+
+日本語: 事前登録済みの開発実行は結果保存時の `numpy.int64` のJSON変換失敗で終了しました。スコアは表示・保存されておらず、成功・陰性のどちらとも判定できません。空の結果ファイルと排他的予約は保存し、V1を再実行しません。次回は新しいシードと実験IDを使い、実行前に保存形式を検査します。held-out は未開封です。
+
+简体中文：已预注册的开发运行在保存结果时因 `numpy.int64` 无法转换为 JSON 而失败。没有显示或保存分数，因此不能判定成功或阴性。保留空结果文件和独占预约，不重跑 V1。下一次必须使用新的随机种子和实验标识，并在评分前检查序列化；留出集仍未打开。

@@ -44,12 +44,18 @@ class CartPoleLocalPolicy:
         self.spikes = 0
         self.terminal_updates = 0
 
-    def begin_episode(self) -> None:
+    def begin_episode(self, *, random_seed: int | None = None) -> None:
         if self.episode_open:
             raise ValueError("Previous episode is still open")
+        if random_seed is not None:
+            if type(random_seed) is not int:
+                raise ValueError("Episode random seed must be an integer")
+            self.rng.seed(random_seed)
         self.trace = [0.0] * (ROUTES * ACTIONS)
         self.neurons = ([Neuron(route, num_branches=1) for route in range(ROUTES)]
-                        if self.arm == "C_stateful_spiking" else [])
+                        if self.arm == "C_stateful_spiking" and not self.spike_bypass
+                        and not self.state_reset_each_step else [])
+        self.event_work += len(self.neurons)
         self.next_time = 0
         self.episode_open = True
 
@@ -68,6 +74,7 @@ class CartPoleLocalPolicy:
             return routes
         if self.state_reset_each_step:
             self.neurons = [Neuron(route, num_branches=1) for route in range(ROUTES)]
+            self.event_work += ROUTES
         for route in routes:
             self.neurons[route].add_input_to_branch(0, 1.6)
         active = tuple(route for route, neuron in enumerate(self.neurons) if neuron.step())

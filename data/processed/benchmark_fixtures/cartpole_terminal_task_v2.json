@@ -1,0 +1,25 @@
+{
+  "schema": "sara-cartpole-terminal-task-contract-v2",
+  "task_id": "cartpole-v1-terminal-feedback-fresh-seeds-v2-2026-09-18",
+  "parent_task_sha256": "9033600e3a29e7cfdf7ae7d01927500bfa6b4e737200aaef7f0c0cfd9f702f1a",
+  "reason": "V1 development execution was inconclusive due to result-envelope serialization; no candidate scores were retained",
+  "environment_id": "CartPole-v1",
+  "unchanged_interface_source_sha256": "68f34d7650508f484da776a0c1480bc557825da87a376866a7e6119e425f3f5c",
+  "split_seed_formula": "split_base + 1000 * run_id + episode_index",
+  "split_bases": {
+    "training": 510000,
+    "development": 610000,
+    "heldout": 710000
+  },
+  "run_ids": [0, 1, 2, 3, 4],
+  "episodes_per_run": {
+    "training": 128,
+    "development": 32,
+    "heldout": 32
+  },
+  "heldout_sealed": true,
+  "development_policy_updates": false,
+  "heldout_policy_updates": false,
+  "default_step_reward_used_for_learning": false,
+  "terminal_feedback": "episode_steps / 500 once after termination or truncation"
+}

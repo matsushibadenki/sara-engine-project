@@ -47,7 +47,11 @@ def test_spike_arm_and_controls_have_bounded_work_and_distinct_activity():
             assert policy.choose(events(time)) in (0, 1)
         policy.finish_episode(1.0, learn=True)
         assert len(policy.weight_snapshot()) == 40
-        assert policy.event_work <= 6 * 24 + 40
+        ceiling = 6 * (44 if policy.state_reset_each_step else
+                       24 if not policy.spike_bypass else 4) + 40
+        if not policy.state_reset_each_step and not policy.spike_bypass:
+            ceiling += 20
+        assert policy.event_work <= ceiling
     assert bypass.spikes == 0
     assert spiking.spikes < reset.spikes
     assert spiking.weight_snapshot() != bypass.weight_snapshot()
