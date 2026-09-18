@@ -1,0 +1,53 @@
+{
+  "schema": "sara-cartpole-terminal-task-contract-v1",
+  "task_id": "cartpole-v1-terminal-feedback-2026-09-18",
+  "status": "task-and-interface-only; learning arms and acceptance gate not yet frozen; no policy scored",
+  "official_environment_documentation": "https://gymnasium.farama.org/environments/classic_control/cart_pole/",
+  "environment": {
+    "id": "CartPole-v1",
+    "gymnasium_version": "1.0.0",
+    "python_version": "3.10.18",
+    "numpy_version": "1.25.2",
+    "max_episode_steps": 500,
+    "observation_channels": 4,
+    "actions": [0, 1],
+    "rendering": false,
+    "reset_per_episode_with_explicit_seed": true,
+    "standard_physics_unchanged": true,
+    "default_step_reward_used_for_learning": false
+  },
+  "interface": {
+    "source_path": "src/sara_engine/evaluation/cartpole_sparse_reward.py",
+    "source_sha256": "68f34d7650508f484da776a0c1480bc557825da87a376866a7e6119e425f3f5c",
+    "encoding": "four fixed scalar channels, five bounded bins per channel, one route event per channel per logical step",
+    "routes": 20,
+    "events_per_observation": 4,
+    "time": "integer environment step index, reset to zero each episode",
+    "feedback": "one terminal scalar after termination or truncation: episode_steps / 500; no intermediate learning reward",
+    "physical_energy_measured": false
+  },
+  "split_plan": {
+    "run_ids": [0, 1, 2, 3, 4],
+    "seed_formula": "split_base + 1000 * run_id + episode_index",
+    "training": {"split_base": 110000, "episodes_per_run": 128},
+    "development": {"split_base": 210000, "episodes_per_run": 32},
+    "heldout": {"split_base": 310000, "episodes_per_run": 32, "sealed": true},
+    "development_policy_updates": false,
+    "heldout_policy_updates": false
+  },
+  "reporting": {
+    "primary": "mean episode length on development, then one frozen held-out evaluation if future preregistered gate passes",
+    "secondary": ["fraction of 500-step episodes", "per-run mean", "terminal return", "CPU time", "input event count", "internal event work", "retained state bytes"],
+    "resource_costs_include": ["observation encoding", "policy action", "local learning", "terminal credit and state maintenance"],
+    "no_energy_claim_from_cpu_or_event_proxy": true
+  },
+  "boundaries": {
+    "candidate_scoring_authorized": false,
+    "frozen_heldout_opened": false,
+    "global_gradient_backpropagation_required": false,
+    "GPU_required": false,
+    "dense_matrix_training_required": false,
+    "production_authorized": false,
+    "standard_default_reward_comparison_allowed": false
+  }
+}
