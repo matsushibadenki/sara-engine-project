@@ -1,0 +1,12 @@
+{
+  "schema":"sara-backblaze-2013-source-audit-v1",
+  "audit_id":"backblaze-2013-source-audit-v1-2026-09-20",
+  "source_sha256":"7f5a53e79b16e695b4b034955806bb3bb194534b169f6eca460dfd3dc48096fe",
+  "source_url":"https://f001.backblazeb2.com/file/Backblaze-Hard-Drive-Data/data_2013.zip",
+  "usage_terms":"Cite Backblaze; user responsible for use; derivative works may be sold; source data itself may not be sold.",
+  "required_columns":["date","serial_number","model","capacity_bytes","failure"],
+  "split_boundaries":{"training_end":"2013-09-30","development_end":"2013-11-30","heldout_start":"2013-12-01"},
+  "minimums":{"daily_files":250,"failed_drives_total":100,"failed_drives_with_30_prior_rows":80,"failures_per_split":10,"distinct_models":5},
+  "boundaries":{"smart_values_read":false,"candidate_scoring_authorized":false,"heldout_feature_rows_materialized":false},
+  "stop_rules":{"stop_before_feature_design_if_any_minimum_fails":true,"retain_negative_result":true}
+}

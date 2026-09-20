@@ -1,0 +1,13 @@
+{
+  "schema":"sara-backblaze-2014-source-audit-v1",
+  "audit_id":"backblaze-2014-independent-source-audit-v1-2026-09-20",
+  "source_sha256":"a16ae31ab9b5ac73fcd64554e4d4d49cdbcd2a22bcae73bcebcf0426ce859ef5",
+  "source_url":"https://f001.backblazeb2.com/file/Backblaze-Hard-Drive-Data/data_2014.zip",
+  "prior_source_sha256":"7f5a53e79b16e695b4b034955806bb3bb194534b169f6eca460dfd3dc48096fe",
+  "required_columns":["date","serial_number","model","capacity_bytes","failure"],
+  "split_boundaries":{"training_end":"2014-08-31","development_start":"2014-09-01","development_end":"2014-10-31","heldout_start":"2014-11-01"},
+  "identity_policy":{"exclude_every_serial_present_in_2013":true,"first_failure_is_terminal":true,"post_failure_rows":"record and exclude"},
+  "minimums":{"daily_files":365,"independent_failed_drives_total":100,"independent_failed_drives_with_30_prior_rows":80,"independent_failures_training":50,"independent_failures_development":20,"independent_failures_heldout":20,"distinct_models":5},
+  "boundaries":{"smart_values_read":false,"candidate_scoring_authorized":false,"development_feature_rows_materialized":false,"heldout_feature_rows_materialized":false},
+  "stop_rules":{"stop_before_case_manifest_if_any_minimum_fails":true,"retain_negative_result":true}
+}

@@ -1,0 +1,14 @@
+{
+  "schema":"sara-backblaze-2013-case-manifest-protocol-v1",
+  "protocol_id":"backblaze-2013-case-manifest-v1-2026-09-20",
+  "source_sha256":"7f5a53e79b16e695b4b034955806bb3bb194534b169f6eca460dfd3dc48096fe",
+  "source_audit_v2_sha256":"0c02ce968bc4b768b54f9609832cbd9aa42107f0b141ae6241caaf810d73e2eb",
+  "split_boundaries":{"training_end":"2013-09-30","development_end":"2013-11-30","heldout_start":"2013-12-01"},
+  "case_definition":{"minimum_observed_days":30,"positive_endpoint":"first failure=1 day","negative_endpoint":"last observed day for a drive with no failure=1 row","post_failure_rows":"exclude","one_case_per_drive":true},
+  "control_matching":{"ratio":"1:1","exact_fields":["model"],"selection":"ascending sha256(protocol_id|split|model|serial_number)","reuse":false},
+  "minimum_matched_cases_per_class":{"training":50,"development":30,"heldout":30},
+  "leakage_bans":{"serial_number_as_feature":true,"case_id_as_feature":true,"model_as_feature":true,"capacity_as_feature":true,"calendar_identity_as_feature":true,"future_rows":true,"heldout_smart_values":true},
+  "manifest_fields":["case_id","split","label","endpoint_date","observed_days","model_group","source_member_start","source_member_end"],
+  "boundaries":{"smart_values_read":false,"candidate_scoring_authorized":false,"heldout_feature_rows_materialized":false},
+  "stop_rules":{"stop_if_any_split_minimum_fails":true,"stop_if_any_drive_or_case_overlaps_splits":true,"retain_negative_result":true}
+}

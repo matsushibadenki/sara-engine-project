@@ -1,0 +1,15 @@
+{
+  "schema":"sara-backblaze-2013-sparse-selectivity-protocol-v1",
+  "protocol_id":"backblaze-2013-training-only-sparse-selectivity-v1-2026-09-20",
+  "source_sha256":"7f5a53e79b16e695b4b034955806bb3bb194534b169f6eca460dfd3dc48096fe",
+  "case_manifest_sha256":"71bbb3625533981822865170a50a33c9e1bf4d43d23ea0878c9bb8b543f61057",
+  "allowed_split":"training",
+  "forbidden_splits":["development","heldout"],
+  "history_rows":30,
+  "smart_raw_fields":["smart_5_raw","smart_9_raw","smart_187_raw","smart_188_raw","smart_197_raw","smart_198_raw"],
+  "encodings":{"v1_presence_onset_increase":"nonzero persistence, zero-to-nonzero onset, and positive delta","transition_only":"zero/nonzero state changes only","final_log_snapshot":"six final-value log2 buckets","sparse_signed_log_delta":"nonzero signed delta log2 buckets"},
+  "evaluation":{"folds":5,"fold_assignment":"sha256(protocol_id|case_id) modulo 5","training_order":"ascending sha256(protocol_id|fold|case_id)","learner":"B_compact_event","maximum_events_per_case":96},
+  "diagnostic_thresholds":{"minimum_cases_per_class_per_fold":20,"minimum_balanced_accuracy":0.55,"minimum_gain_over_v1":0.02,"maximum_dominant_route_fraction":0.95,"maximum_event_cap_fraction":0.25},
+  "boundaries":{"development_smart_values_read":false,"heldout_smart_values_read":false,"candidate_promotion_authorized":false,"global_backpropagation":false,"matrix_learning":false,"gpu":false},
+  "stop_rules":{"single_registered_run":true,"retain_negative_result":true,"new_development_identity_required_for_any_followup":true}
+}

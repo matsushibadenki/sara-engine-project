@@ -1,0 +1,14 @@
+{
+  "schema":"sara-backblaze-2014-case-manifest-protocol-v1",
+  "protocol_id":"backblaze-2014-independent-case-manifest-v1-2026-09-20",
+  "source_sha256":"a16ae31ab9b5ac73fcd64554e4d4d49cdbcd2a22bcae73bcebcf0426ce859ef5",
+  "prior_source_sha256":"7f5a53e79b16e695b4b034955806bb3bb194534b169f6eca460dfd3dc48096fe",
+  "source_audit_sha256":"c05c8e8210c058927da96634f45dcebc2ebbb200e657293d4e6a95f477e97a1e",
+  "split_boundaries":{"training_end":"2014-08-31","development_start":"2014-09-01","development_end":"2014-10-31","heldout_start":"2014-11-01"},
+  "case_definition":{"exclude_2013_serials":true,"minimum_observed_days":30,"positive_endpoint":"first failure day","negative_endpoint":"last observed day","post_failure_rows":"exclude"},
+  "control_matching":{"ratio":"1:1","exact_fields":["model"],"selection":"ascending sha256(protocol_id|split|model|serial_number)","reuse":false},
+  "minimum_matched_cases_per_class":{"training":50,"development":20,"heldout":20},
+  "leakage_bans":{"serial_number_as_feature":true,"case_id_as_feature":true,"model_as_feature":true,"capacity_as_feature":true,"calendar_identity_as_feature":true,"future_rows":true,"heldout_smart_values":true},
+  "boundaries":{"smart_values_read":false,"candidate_scoring_authorized":false,"heldout_feature_rows_materialized":false},
+  "stop_rules":{"stop_if_any_split_minimum_fails":true,"stop_if_any_2013_serial_survives":true,"retain_negative_result":true}
+}

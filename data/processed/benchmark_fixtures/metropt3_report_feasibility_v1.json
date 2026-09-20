@@ -1,0 +1,43 @@
+{
+  "schema":"sara-metropt3-report-feasibility-v1",
+  "experiment_id":"metropt3-report-feasibility-v1-2026-09-20",
+  "source_sha256":"aab991a970e58210de853bb8078ce0e63abb4d9412fdc5c79792dae3d8e1721a",
+  "source_member":"MetroPT3(AirCompressor).csv",
+  "failure_reports":[
+    {"id":"failure_1","start":"2020-04-18 00:00:00","end":"2020-04-18 23:59:59","split":"training"},
+    {"id":"failure_2","start":"2020-05-29 23:30:00","end":"2020-05-30 06:00:00","split":"training"},
+    {"id":"failure_3","start":"2020-06-05 10:00:00","end":"2020-06-07 14:30:00","split":"development"},
+    {"id":"failure_4","start":"2020-07-15 14:30:00","end":"2020-07-15 19:00:00","split":"heldout"}
+  ],
+  "window_contract":{
+    "positive_window_hours_before_report_start":6,
+    "negative_window_offset_days_before_report_start":14,
+    "negative_window_duration_hours":6,
+    "failure_exclusion_buffer_hours":24,
+    "minimum_rows_per_window":1500,
+    "maximum_within_window_gap_seconds":600,
+    "maximum_median_within_window_gap_seconds":20
+  },
+  "acceptance":{
+    "training_positive_reports":2,
+    "development_positive_reports":1,
+    "heldout_positive_reports_reserved":1,
+    "one_matched_negative_per_positive":true,
+    "all_windows_meet_coverage":true,
+    "all_negative_windows_outside_failure_buffers":true,
+    "split_window_overlap":false
+  },
+  "boundaries":{
+    "timestamp_only_audit":true,
+    "sensor_values_read":false,
+    "candidate_scoring_authorized":false,
+    "heldout_sensor_rows_materialized":false,
+    "absolute_date_allowed_as_model_feature":false,
+    "report_identity_allowed_as_model_feature":false
+  },
+  "stop_rules":{
+    "stop_before_candidate_if_any_check_fails":true,
+    "do_not_relax_windows_after_audit":true,
+    "retain_negative_result":true
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema":"sara-backblaze-2013-event-unit-protocol-v1",
+  "protocol_id":"backblaze-2013-event-unit-development-v1-2026-09-20",
+  "manifest_sha256":"71bbb3625533981822865170a50a33c9e1bf4d43d23ea0878c9bb8b543f61057",
+  "source_sha256":"7f5a53e79b16e695b4b034955806bb3bb194534b169f6eca460dfd3dc48096fe",
+  "allowed_splits":["training","development"],
+  "heldout_split":"sealed",
+  "history_rows":30,
+  "smart_raw_fields":["smart_5_raw","smart_9_raw","smart_187_raw","smart_188_raw","smart_197_raw","smart_198_raw"],
+  "event_encoding":{"zero_to_nonzero":"field onset route","positive_delta":"field increase route","nonzero_persistence":"field active route","time":"relative observed-row index 0..29","branch":"field index modulo 2","maximum_events_per_case":96},
+  "arms":["A_scalar_local","B_compact_event","C_temporal_state","D_temporal_dendritic"],
+  "shared_learning":{"update":"mistake-triggered bounded local feature update","learning_rate":0.3,"weight_range":[-2.0,2.0],"training_order":"ascending sha256(protocol_id|case_id)"},
+  "controls":["outcome_shuffle","time_collapse","state_reset","branch_assignment_shuffle"],
+  "acceptance":{"minimum_development_balanced_accuracy":0.55,"minimum_gain_over_compact":0.02,"minimum_control_drop":0.02},
+  "resource_budgets":{"maximum_routes":512,"maximum_features":8192,"maximum_events_per_case":96,"maximum_state_bytes":4194304},
+  "boundaries":{"global_backpropagation":false,"matrix_learning":false,"gpu":false,"heldout_smart_values_read":false,"heldout_feature_rows_materialized":false},
+  "stop_rules":{"one_development_run":true,"heldout_requires_passed_development_gate":true,"retain_negative_result":true}
+}

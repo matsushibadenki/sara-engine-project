@@ -1,0 +1,15 @@
+{
+  "schema":"sara-backblaze-cross-year-compact-protocol-v1",
+  "protocol_id":"backblaze-2013-train-2014-independent-development-v1-2026-09-20",
+  "training_manifest_sha256":"71bbb3625533981822865170a50a33c9e1bf4d43d23ea0878c9bb8b543f61057",
+  "development_manifest_sha256":"51a61247d072e4a8129602f204a50f05276c1d84b5640511d9f62e1a5631ee27",
+  "development_manifest_result_sha256":"47c29f082b98369d0bf037e458692c50b18508f43bd0bddf721176bcf1dbe0a4",
+  "identity":{"training":"2013 training cases only","development":"2014 development cases whose serials never appeared in 2013","heldout":"2014 heldout remains sealed"},
+  "history_rows":30,
+  "smart_raw_fields":["smart_5_raw","smart_9_raw","smart_187_raw","smart_188_raw","smart_197_raw","smart_198_raw"],
+  "candidate":{"encoding":"sparse signed log2 delta","route_suppression":"remove routes present in more than 0.95 of training cases","learner":"B_compact_event","maximum_events_per_case":96},
+  "controls":["v1_presence_onset_increase","final_log_snapshot","candidate_without_route_suppression","training_outcome_shuffle"],
+  "acceptance":{"development_cases_per_class":35,"minimum_balanced_accuracy":0.60,"minimum_gain_over_final_snapshot":0.05,"minimum_outcome_shuffle_drop":0.05,"maximum_dominant_route_fraction":0.95,"maximum_event_cap_fraction":0.25},
+  "boundaries":{"development_used_once":true,"heldout_smart_values_read":false,"heldout_feature_rows_materialized":false,"temporal_state":false,"spiking":false,"refractory":false,"dendritic":false,"global_backpropagation":false,"matrix_learning":false,"gpu":false},
+  "stop_rules":{"single_registered_run":true,"heldout_requires_all_gates":true,"retain_negative_result":true}
+}
