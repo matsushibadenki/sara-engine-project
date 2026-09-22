@@ -71,10 +71,14 @@ A separate protocol was frozen before reopening the 498 training cases. Developm
 
 The sparse signed-log-delta encoding exceeded 0.696 balanced accuracy in every fold and improved substantially over V1. Nevertheless, the registered diagnostic is negative (`794ef9f4…9464`): its dominant-route fraction is 0.9558, above the frozen 0.95 ceiling. The ceiling is not relaxed after inspection. This result supports **event selectivity before neuron complexity** as the next hypothesis, but does not authorize candidate promotion or reuse of the consumed development set.
 
+## Prediction-time correction (2026-09-22)
+
+A read-only [prediction-time audit](BACKBLAZE_PREDICTION_TIME_AUDIT.md) found that the feature window includes the `failure=1` day for positive cases. Negative controls are selected at each drive's last observed day after knowing that no failure row exists in the archive. Thus the numbers above describe retrospective endpoint classification under outcome-dependent sampling, **not prospective delayed-failure prediction**. They must not be cited as early-warning quality or as causal evidence for local temporal credit. The frozen artifacts and negative gate remain unchanged; both held-out sets remain sealed.
+
 ## 日本語要約
 
-Backblaze 2013 は、独立した多数のドライブと遅延故障結果を持つため候補に採用しました。824件の均衡manifestとtrain/devイベント化は通過しましたが、4系統の開発比較は陰性でした。training-only診断では符号付きlog差分が0.741まで改善しましたが、支配route比率の凍結上限を超えたため総合判定は陰性です。developmentの再利用とheldout 260件の開封は行っていません。
+Backblaze 2013 は、独立した多数のドライブと故障結果を持つため候補に採用しました。824件の均衡manifestとtrain/devイベント化は通過しましたが、4系統の開発比較は陰性でした。training-only診断の0.741も凍結上限を満たしません。後日の監査で故障当日の特徴を含むことが判明したため、これらは事前故障予測ではなく回顧的な終端分類です。developmentの再利用とheldout 260件の開封は行っていません。
 
 ## 简体中文摘要
 
-Backblaze 2013 含有大量独立硬盘和延迟故障结果，因此被选为候选数据源。824个平衡案例的清单与训练/开发事件化通过，但四类单元的开发比较为负面结果。仅训练诊断中，稀疏有符号对数差分达到0.741，但主导路由比例超过冻结上限，因此总门控仍为负面。未重复使用开发集，也未开放260个保留案例。
+Backblaze 2013 含有大量独立硬盘和故障结果，因此被选为候选数据源。824个平衡案例的清单与训练/开发事件化通过，但四类单元的开发比较为负面结果。仅训练诊断的0.741也未通过冻结门槛。后续审计发现特征包含故障当天的数据，因此这些数值是回顾性的终点分类，而不是提前故障预测。未重复使用开发集，也未开放260个保留案例。

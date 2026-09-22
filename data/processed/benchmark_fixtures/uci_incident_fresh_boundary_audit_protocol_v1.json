@@ -1,0 +1,11 @@
+{
+  "schema":"sara-uci-incident-fresh-boundary-audit-protocol-v1",
+  "source_audit_sha256":"4b0b71c4e9db9de3e3b591d52786aed29e5cc0f82b84d44bbbe8566ee3fee688",
+  "prospective_manifest_sha256":"bc2f4b0f0386a40f16179146094b06bd3448dd3323094530fedde1fe05798c54",
+  "consumed_months":["2016-03","2016-04","2016-05"],
+  "minimum_cases_per_class":700,
+  "criterion":"A fresh whole opening month needs at least 2*minimum_cases_per_class eligible cases even before class balance is checked.",
+  "permitted_inputs":["source_audit.eligible_opening_months","prospective_manifest.case_month_split"],
+  "forbidden_access":["raw_source_rows","descriptive_features","new_candidate_scores"],
+  "decision_if_no_month_qualifies":"stop_incident_confirmatory_extension_and_seek_new_source"
+}

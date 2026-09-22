@@ -1,0 +1,12 @@
+{
+  "schema":"sara-helpdesk-prospective-feasibility-protocol-v1",
+  "source_sha256":"a25beda54ee8c9e1df82b581d09165af6ba4b23cce0f257ad3163aad93fcffdc",
+  "source_audit_sha256":"0152ff7b912caf5fce31da7ee142c1210e7f0663ebbc8318a7a3e416f9f78511",
+  "allowed_columns":["Case ID","Activity","Complete Timestamp"],
+  "decision_rule":"second distinct nonterminal event timestamp strictly after the first event timestamp; exclude Closed and Resolve ticket as nonterminal observations",
+  "outcome_rule":{"horizon_days":30,"positive":"first Closed timestamp strictly after decision and at or before decision+30d","negative":"first Closed timestamp after decision+30d","otherwise":"exclude"},
+  "opening_year_splits":{"training":[2010,2011],"development":[2012],"heldout":[2013]},
+  "minimum_per_class":{"training":500,"development":100,"heldout":100},
+  "gate":"each split must meet both class minimums before balancing; no candidate scoring or descriptive-feature access",
+  "boundaries":{"activity_and_time_only":true,"candidate_scored":false,"descriptive_features_read":false,"heldout_features_materialized":false}
+}

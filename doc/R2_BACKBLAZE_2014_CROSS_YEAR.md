@@ -26,10 +26,14 @@ The registered cross-year development gate is negative (`eec95da9…c413`). Rout
 
 The candidate passes history, case support, selectivity, event sparsity, gain-over-snapshot, and shuffled-outcome checks. It fails only the frozen minimum balanced accuracy of 0.60. This is evidence that generic training-only route suppression transfers some useful signal across years, but it is not an accepted predictor and does not authorize held-out evaluation or additional neuron complexity.
 
+## Prediction-time correction (2026-09-22)
+
+The [read-only audit](BACKBLAZE_PREDICTION_TIME_AUDIT.md) found that the 2014 positive feature window includes the failure day, and negative endpoints depend on knowing the drive's final nonfailure observation. This makes the comparison retrospective endpoint classification, not prospective early warning. It also found that the cross-year script stopped reading 2013 training at August 31 although the frozen manifest includes two September-endpoint training cases. Those two received incomplete or earlier windows despite the script's 30-row history check. The prior score remains frozen but cannot support a complete-training or predictive-transfer claim. The 2014 held-out set remains sealed.
+
 ## 日本語要約
 
-2013年に存在した全ドライブを除外し、2014年の独立driveだけで検証しました。training-only route抑制によりbalanced accuracyは0.5857、outcome shuffleは0.4857となり、選択性と疎性も改善しました。しかし事前下限0.60に届かないため陰性結果です。2014 heldoutは未開封です。
+2013年に存在した全ドライブを除外し、2014年の独立driveだけで検証しました。route抑制で0.5857でしたが事前下限0.60に届かず陰性です。さらに故障当日の特徴を含むため事前予測ではなく、2013 trainingの9月終端2件も読み取り上限の影響を受けています。凍結スコアは変更せず、予測転移の主張は撤回します。2014 heldoutは未開封です。
 
 ## 简体中文摘要
 
-研究排除了所有在2013年出现过的硬盘，只使用独立的2014硬盘进行验证。仅由训练集确定的路由抑制使平衡准确率达到0.5857，而标签打乱对照为0.4857，选择性与稀疏性均改善。但结果未达到预先冻结的0.60门槛，因此仍为负面结果，2014保留集未开放。
+研究排除了所有在2013年出现过的硬盘，只使用独立的2014硬盘进行验证。路由抑制达到0.5857，但未达到预先冻结的0.60门槛。后来发现特征包含故障当天，而且2013训练清单中两个九月终点案例受到读取截止日期影响。因此保留原始分数，但撤回提前预测和完整训练迁移的解释。2014保留集未开放。

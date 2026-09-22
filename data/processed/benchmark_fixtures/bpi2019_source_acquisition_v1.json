@@ -1,0 +1,13 @@
+{
+  "schema":"sara-bpi2019-source-acquisition-v1",
+  "landing_page":"https://data.4tu.nl/articles/dataset/BPI_Challenge_2019/12715853/1",
+  "file_url":"https://data.4tu.nl/file/35ed7122-966a-484e-a0e1-749b64e3366d/864493d1-3a58-47f6-ad6f-27f95f995828",
+  "doi":"10.4121/uuid:d06aff4b-79f0-45e6-8ec8-e19730c248f1",
+  "version":1,
+  "license":"CC BY 4.0",
+  "expected_file_name":"BPI_Challenge_2019.xes",
+  "expected_size_bytes":728558522,
+  "expected_md5":"4eb909242351193a61e1c15b9c3cc814",
+  "purpose":"Acquire and integrity-check a new timestamped real-event source before task or model work.",
+  "boundaries":{"no_descriptive_attributes_read":true,"no_outcomes_read":true,"no_candidate_scored":true}
+}

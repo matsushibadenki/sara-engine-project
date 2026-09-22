@@ -1,0 +1,10 @@
+{
+  "schema":"sara-helpdesk-closure-timestamp-audit-protocol-v1",
+  "source_sha256":"a25beda54ee8c9e1df82b581d09165af6ba4b23cce0f257ad3163aad93fcffdc",
+  "feasibility_result_sha256":"1b65ccf10e730a2aedb603ee7d6b95250e7e1fb2ae5cd2a56489585c9d3dea46",
+  "allowed_columns":["Case ID","Activity","Complete Timestamp"],
+  "comparison":"For cases with exactly one Closed event and at least one earlier Resolve ticket event, compare Closed time to latest preceding Resolve ticket time.",
+  "synthetic_closure_indicator":{"exact_lag_days":15,"tolerance_seconds":1,"minimum_fraction":0.95},
+  "decision":"If indicator passes, do not use Closed timestamp as an independent prospective outcome; retain source but stop this task.",
+  "boundaries":{"descriptive_columns_read":false,"candidate_scored":false,"heldout_features_materialized":false}
+}

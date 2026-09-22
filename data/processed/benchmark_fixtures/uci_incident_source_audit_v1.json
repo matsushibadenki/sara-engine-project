@@ -1,0 +1,15 @@
+{
+  "schema":"sara-uci-incident-source-audit-v1",
+  "audit_id":"uci-incident-prospective-source-audit-2026-09-22",
+  "source_sha256":"6294e29a311647306bfdfc85783f7df66517c197b9cd49aa5ee36ba9c525d1d6",
+  "source_url":"https://archive.ics.uci.edu/static/public/498/incident%2Bmanagement%2Bprocess%2Benriched%2Bevent%2Blog.zip",
+  "citation":"Amaral, Fantinato, and Peres (2018), UCI Machine Learning Repository, DOI 10.24432/C57S4H",
+  "license":"CC BY 4.0",
+  "required_columns":["number","incident_state","opened_at","sys_updated_at","resolved_at","closed_at"],
+  "audit_only_columns":["number","incident_state","opened_at","sys_updated_at","resolved_at","closed_at"],
+  "candidate_task":{"decision_event":"second strictly later update before resolution or closure","horizon_days":7,"positive":"closed_at is strictly after decision time and within seven days","negative":"closed_at is later than seven days after decision time","censored":"missing or invalid close timestamp, closure at or before decision, or insufficient prior events"},
+  "minimums":{"events":100000,"independent_cases":10000,"eligible_positives":100,"eligible_negatives":100},
+  "leakage_bans":{"closed_at_as_feature":true,"resolved_at_as_feature":true,"closed_code_as_feature":true,"final_state_as_feature":true,"future_updates_as_feature":true},
+  "boundaries":{"non_audit_attributes_read":false,"candidate_scoring_authorized":false,"heldout_features_materialized":false},
+  "stop_rules":{"stop_before_case_split_if_any_minimum_fails":true,"retain_negative_result":true}
+}

@@ -1,0 +1,18 @@
+{
+  "schema":"sara-uci-incident-compact-development-protocol-v1",
+  "protocol_id":"uci-incident-compact-7day-development-v1-2026-09-22",
+  "source_sha256":"6294e29a311647306bfdfc85783f7df66517c197b9cd49aa5ee36ba9c525d1d6",
+  "manifest_sha256":"bc2f4b0f0386a40f16179146094b06bd3448dd3323094530fedde1fe05798c54",
+  "allowed_splits":["training","development"],
+  "heldout_split":"sealed",
+  "lookup_only_columns":["number","opened_at","sys_updated_at"],
+  "allowed_feature_columns":["incident_state","reassignment_count","reopen_count","impact","urgency","priority","contact_type"],
+  "forbidden_feature_columns":["resolved_at","closed_at","closed_code","resolved_by","made_sla","active","caller_id","opened_by","sys_created_by","sys_updated_by","assignment_group","assigned_to","problem_id","rfc","vendor","caused_by"],
+  "feature_rule":{"updates":"first two distinct nonterminal updates strictly after opening and at or before manifest feature_cutoff","require_second_update_equals_cutoff":true,"tokens":["first_state","second_state","cutoff_reassignment_bucket","cutoff_reopen_bucket","cutoff_impact","cutoff_urgency","cutoff_priority","cutoff_contact_type","elapsed_hours_bucket"],"count_buckets":["0","1","2","3+"],"elapsed_hours_buckets":["<1","1-23","24-167","168+"],"maximum_tokens_per_case":9},
+  "route_mapping":{"source":"training tokens only","order":"lexicographic","maximum_routes":256,"unknown_route":255},
+  "training":{"order":"ascending sha256(protocol_id|case_id)","learner":"B_compact_event","learning_rule":"mistake-triggered bounded local feature update","outcome_shuffle_seed":20160922},
+  "controls":["majority_constant","last_state_table","cutoff_snapshot_table","training_outcome_shuffle"],
+  "acceptance":{"minimum_balanced_accuracy":0.60,"minimum_gain_over_strongest_simple_control":0.01,"minimum_shuffle_drop":0.05,"maximum_unknown_token_fraction":0.05,"maximum_state_bytes":4194304,"maximum_features":8192,"maximum_events_per_case":9},
+  "boundaries":{"development_used_once":true,"heldout_descriptive_fields_read":false,"heldout_features_materialized":false,"global_backpropagation":false,"matrix_learning":false,"gpu":false},
+  "stop_rules":{"stop_before_scoring_if_cutoff_or_feature_seal_fails":true,"one_development_run":true,"heldout_requires_all_gates":true,"retain_negative_result":true}
+}

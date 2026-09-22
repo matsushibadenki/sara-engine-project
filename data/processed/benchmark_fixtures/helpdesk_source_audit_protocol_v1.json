@@ -1,0 +1,13 @@
+{
+  "schema":"sara-helpdesk-source-audit-protocol-v1",
+  "source_url":"https://data.mendeley.com/datasets/nm9xkzhpm4/1",
+  "file_url":"https://data.mendeley.com/datasets/nm9xkzhpm4/1/files/b52d5f88-6148-4796-b3b5-2a620ab48f97/download",
+  "doi":"10.17632/nm9xkzhpm4.1",
+  "license":"CC BY 4.0",
+  "source_sha256":"a25beda54ee8c9e1df82b581d09165af6ba4b23cce0f257ad3163aad93fcffdc",
+  "allowed_audit_columns":["Case ID","Activity","Complete Timestamp"],
+  "required_minimums":{"independent_cases":1000,"timestamped_events":10000,"cases_with_two_distinct_timestamps":1000,"opening_months":3},
+  "audit_outputs":["event_count","case_count","activity_counts","first_month_counts","last_month_counts","cases_with_two_distinct_timestamps","terminal_activity_counts","timestamp_parse_failures","same_timestamp_event_count"],
+  "boundaries":{"other_columns_read":false,"candidate_scored":false,"descriptive_features_materialized":false,"heldout_selected":false},
+  "stop_rule":"Do not define an outcome or train a candidate until activity semantics and chronological support are reviewed."
+}

@@ -1,0 +1,12 @@
+{
+  "schema":"sara-bpi2018-payment-feasibility-protocol-v1",
+  "source_sha256":"7055a5310de67abb888cee26f537cde519e1ed905b0b468a314b6c319c2b30a9",
+  "source_audit_sha256":"bf661b05d7703cdeaca6f6d3539549498dff4e787a549e76cdaf5f233ddc9c87",
+  "allowed_xes_attributes":{"trace":["concept:name"],"event":["concept:name","time:timestamp"]},
+  "decision_rule":"third distinct event timestamp; cases with finish payment at or before decision are excluded",
+  "outcome_rule":{"horizon_days":180,"positive":"first finish payment strictly after decision and at or before decision+180d","negative":"no finish payment through decision+180d and global log observation end at or after horizon","otherwise":"exclude"},
+  "opening_year_splits":{"training":[2015],"development":[2016],"heldout":[2017]},
+  "minimum_per_class":{"training":300,"development":300,"heldout":300},
+  "boundaries":{"descriptive_attribute_values_read":false,"candidate_scored":false,"heldout_features_materialized":false},
+  "caveat":"Global log end is only a source-level follow-up proxy. A passing count gate does not by itself prove individual-case outcome ascertainment or authorize model scoring."
+}

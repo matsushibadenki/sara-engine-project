@@ -1,0 +1,14 @@
+{
+  "schema":"sara-bpi2018-source-acquisition-v1",
+  "landing_page":"https://data.4tu.nl/articles/dataset/BPI_Challenge_2018/12688355/1",
+  "file_url":"https://data.4tu.nl/file/443451fd-d38a-4464-88b4-0fc641552632/cd4fd2b8-6c95-47ae-aad9-dc1a085db364",
+  "doi":"10.4121/uuid:3301445f-95e8-4ff0-98a4-901f1f204972",
+  "version":1,
+  "license":"CC0",
+  "expected_file_name":"BPI Challenge 2018.xes.gz",
+  "expected_size_bytes":158270992,
+  "expected_md5":"66e54ddaa6b50d81a0166766d6f7a5d4",
+  "observed_sha256":"7055a5310de67abb888cee26f537cde519e1ed905b0b468a314b6c319c2b30a9",
+  "purpose":"Acquire and integrity-check an independent timestamped event source before task or model work.",
+  "boundaries":{"no_event_attributes_read":true,"no_outcomes_read":true,"no_candidate_scored":true}
+}

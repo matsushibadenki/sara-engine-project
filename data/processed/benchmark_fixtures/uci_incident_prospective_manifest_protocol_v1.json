@@ -1,0 +1,15 @@
+{
+  "schema":"sara-uci-incident-prospective-manifest-protocol-v1",
+  "protocol_id":"uci-incident-7day-closure-v1-2026-09-22",
+  "source_sha256":"6294e29a311647306bfdfc85783f7df66517c197b9cd49aa5ee36ba9c525d1d6",
+  "source_audit_sha256":"4b0b71c4e9db9de3e3b591d52786aed29e5cc0f82b84d44bbbe8566ee3fee688",
+  "time_format":"%d/%m/%Y %H:%M",
+  "decision_rule":"second distinct sys_updated_at strictly after opening and before resolved_at and closed_at, with nonterminal incident_state",
+  "outcome_rule":{"horizon_days":7,"positive":"closed_at > cutoff and <= cutoff+7d","negative":"closed_at > cutoff+7d","otherwise":"exclude"},
+  "case_month_split":{"training":["2016-03"],"development":["2016-04"],"heldout":["2016-05"]},
+  "sampling":{"one_case_per_incident":true,"class_balance":"equal count within split","order":"ascending sha256(protocol_id|split|case_id)","minimum_per_class":{"training":1000,"development":700,"heldout":700}},
+  "manifest_fields":["case_id","split","label","opened_at","feature_cutoff","outcome_window_end","preterminal_update_count"],
+  "leakage_bans":{"closed_at_as_feature":true,"resolved_at_as_feature":true,"closed_code_as_feature":true,"future_updates_as_feature":true,"incident_id_as_feature":true,"final_state_as_feature":true},
+  "boundaries":{"non_audit_attributes_read":false,"candidate_scored":false,"heldout_features_materialized":false},
+  "stop_rules":{"stop_if_any_class_support_fails":true,"stop_if_case_overlap_or_temporal_order_fails":true,"retain_negative_result":true}
+}

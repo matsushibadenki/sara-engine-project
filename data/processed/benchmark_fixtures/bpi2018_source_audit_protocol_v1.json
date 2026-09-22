@@ -1,0 +1,10 @@
+{
+  "schema":"sara-bpi2018-source-audit-protocol-v1",
+  "source_sha256":"7055a5310de67abb888cee26f537cde519e1ed905b0b468a314b6c319c2b30a9",
+  "source_md5":"66e54ddaa6b50d81a0166766d6f7a5d4",
+  "allowed_xes_attributes":{"trace":["concept:name"],"event":["concept:name","time:timestamp"]},
+  "required_minimums":{"independent_cases":10000,"timestamped_events":1000000,"cases_with_three_distinct_timestamps":10000,"opening_years":3},
+  "audit_outputs":["case_count","event_count","activity_counts","first_month_counts","last_month_counts","last_activity_counts","cases_with_three_distinct_timestamps","missing_case_ids","missing_activity_values","missing_timestamps","same_timestamp_events"],
+  "boundaries":{"other_attribute_values_read":false,"candidate_scored":false,"outcome_task_defined":false,"heldout_selected":false},
+  "stop_rule":"Do not read descriptive attributes or score a model before source support, event semantics and future-outcome definition are reviewed."
+}
