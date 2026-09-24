@@ -22,10 +22,28 @@ Before any descriptive value or model score is read, a new protocol must freeze:
 
 Only a metadata/label/time audit is authorized as the next source step. If its fixed support or follow-up gate fails, stop before feature materialization. A patient-hour score is not a patient-level independent sample count.
 
+## Acquisition and fixed feasibility gate: negative
+
+The resumable acquisition protocol (`ff96e8e…e0ca5`) re-enumerated the frozen source before transfer and accepted only single-part MD5 ETags. All 40,336 official objects and 255,057,484 bytes passed source-size, MD5 and local SHA-256 verification. The retained acquisition result is `workspace/evaluation/physionet2019_acquisition_v1.json` (SHA-256 `3427bd69…788db`), with content-manifest digest `d1d59b98…0eed7f`. It parsed no clinical column or label.
+
+Before the feasibility protocol was frozen, a manual column-position check displayed the final two `HospAdmTime` and `SepsisLabel` values for `training_setA/p000001.psv`. The [inspection record](../workspace/evaluation/physionet2019_preprotocol_inspection_v1.json) preserves the error; that patient was excluded from all subsequent counts and any future task use.
+
+The fixed metadata-only protocol (`36023484…16d52`) then selected ICU hour 12 as decision time and hours 13–24 as the future official-label horizon. A negative required a continuous one-based `ICULOS` sequence observed through hour 24. Set A was deterministically divided 4:1 into training/development; set B was held out as a domain split, explicitly **not** a calendar split. Minimum positive/negative support was fixed at 500/500, 100/100 and 300/300.
+
+The [result](../workspace/evaluation/physionet2019_feasibility_v1.json) (`31a985c1…aee11`) failed every split's positive-support gate:
+
+| Split | Positive | Negative | Required per class |
+| --- | ---: | ---: | ---: |
+| Training | 107 | 7,996 | 500 |
+| Development | 29 | 2,041 | 100 |
+| Held-out domain | 78 | 13,843 | 300 |
+
+In addition, 8,793 patients failed the preregistered one-based `ICULOS` requirement, 6,625 lacked observation through hour 24, and 823 were already positive by the decision hour. These exclusion rules and thresholds were not relaxed after inspection. No clinical feature was interpreted or materialized and no candidate was scored. This exact task is stopped; a different cutoff or horizon would require a separately motivated new identity, not a post hoc repair.
+
 ## 日本語要約
 
-PhysioNet/CinC 2019は公式にCC BY 4.0、患者約4万例のICU時間列として公開されています。公式S3のオブジェクト一覧監査では、A/Bの20,336/20,000ファイルと合計255,057,484バイトを確認しました。ただし患者ファイル本体は未取得・未読です。患者間の暦時刻順も確認できず、陽性ラベルは発症6時間前に前倒しされています。現行の暦時刻分割タスクと同一視せず、取得後まず患者ID、分割、判断時刻、ラベル、陰性のケース単位追跡期間だけを監査します。採点はしていません。
+PhysioNet/CinC 2019は公式にCC BY 4.0、患者約4万例のICU時間列として公開されています。公式S3の40,336ファイルを取得し、255,057,484バイトすべてのMD5とSHA-256を検証しました。事前固定した「ICU 12時間時点から将来12時間の公式陽性ラベル」は、学習/開発/heldoutで陽性107/29/78件となり、必要な500/100/300件を満たしませんでした。時刻列不適格、追跡不足、判断時点以前の陽性も固定条件で除外しました。事前確認で患者1人の管理時刻とラベルを誤って表示したため、その患者は全工程から除外しました。閾値を緩めず、このタスクを停止します。臨床特徴の抽出とモデル採点はしていません。
 
 ## 简体中文摘要
 
-PhysioNet/CinC 2019官方以CC BY 4.0发布约四万名患者的ICU逐小时序列。官方S3对象清单审计确认A/B分别有20,336/20,000个文件、共255,057,484字节；尚未获取或读取患者文件内容。官方说明没有证实患者之间可按日历时间排序，阳性标签还被提前到发病前六小时，因此不能直接替代现有的日历时间分组任务。取得并固定文件后，应先只审计患者身份、分组、决策时刻、标签及负例的逐案例观察期；若样本支持不足，应在读取描述性特征前停止。没有评估模型。
+PhysioNet/CinC 2019官方以CC BY 4.0发布约四万名患者的ICU逐小时序列。已获取官方S3的40,336个文件，并验证全部255,057,484字节的MD5和SHA-256。预先固定的“ICU第12小时后未来12小时官方阳性标签”在训练/开发/保留域仅有107/29/78个阳性案例，低于500/100/300的门槛。时间序列不合格、随访不足和决策前已阳性的患者也按固定规则排除。因协议冻结前误看了一名患者的管理时间与标签，该患者已从全部后续流程中排除。没有放宽门槛；停止此任务，未提取临床特征，也未评估模型。
