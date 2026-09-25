@@ -1804,6 +1804,14 @@ The useful idea is not to replace SARA with a dense ODE network. It is to let se
 - DONE: `python scripts/sara_cli.py eval-phase19-completion` validates liquid improvement against fixed and multi-timescale controls, replay determinism, abstention, event/update/state/tau budgets, and fixed-SNN production preservation.
 - DONE: the benchmark and completion gate are included in `eval-research-benchmark-suite` as `phase19_liquid_time_constant` and `phase19_completion`; physical energy advantage remains unproven and the liquid route remains observed-only.
 
+### RetNet-derived bounded retention hypothesis
+
+- [Done] Reviewed Sun et al., [*Retentive Network: A Successor to Transformer for Large Language Models*](https://arxiv.org/abs/2307.08621), and recorded the limited [SARA relevance boundary](RETNET_RELEVANCE.md). RetNet's dense Q/K/V projections, outer-product state, FFN matrices, Adam/backpropagation, GPU training, and large-language-model efficiency claims are not SARA-compatible evidence and will not be imported.
+- [Later] Test only the policy-compatible abstraction: fixed-capacity route-local state with explicit exponential decay, content-gated sparse reads/writes, and constant bounded work per arriving event. Keep Phase 18 Event Memory authoritative for durable, sourced and revisable experience; transient retention must expire and cannot become hidden long-term memory.
+- [Later] Under identical routing, learning signal, event count and state bytes, preregister no-state, single-fixed-decay, fixed-multi-scale-decay, content-gated-multi-scale, and—only after a demonstrated fixed-scale failure—locally adaptive-time-constant arms. Include decay removal, shared-decay, gate removal, time-order shuffle, reset and equal-capacity controls.
+- [Later] Treat recurrent event-by-event execution as authoritative. Permit a chunkwise replay/evaluation form only after exact or declared-tolerance equivalence tests show identical state transitions, predictions and local updates across arbitrary chunk boundaries. It is an execution optimization, not a separately tunable model arm.
+- [Later] Require independent held-out long-delay evidence and report quality, abstention, operations/state bytes per event, latency, peak RSS, chunk equivalence and measured energy when available. Do not cite RetNet's GPU-scale throughput or memory numbers as evidence for SARA.
+
 ## Phase 20: Semantic Echo Field for Sparse Temporal Language
 
 **Priority: CONDITIONAL / after Phase 6, Phase 8, and Phase 7 evidence work. Phase 19 is optional and not a prerequisite.**
