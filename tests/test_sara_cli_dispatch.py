@@ -2326,6 +2326,37 @@ def test_adaptive_credit_event_memory_dispatches_to_eval_script(monkeypatch):
     assert "workspace/evaluation/test_adaptive_credit_event_memory.json" in args
 
 
+def test_structural_event_memory_long_horizon_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-structural-event-memory-long-horizon",
+            "--report-path",
+            "workspace/evaluation/test_structural_long_horizon.json",
+            "--summary-path",
+            "workspace/evaluation/test_structural_long_horizon.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [
+        sys.executable,
+        "scripts/eval/structural_event_memory_long_horizon.py",
+    ]
+    assert "workspace/evaluation/test_structural_long_horizon.json" in args
+    assert "workspace/evaluation/test_structural_long_horizon.txt" in args
+
+
 def test_resonance_credit_integration_dispatches_to_eval_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock()

@@ -1132,6 +1132,19 @@ def main():
         default=workspace_path("evaluation", "structural_interpolation_event_memory_benchmark_summary.txt"),
     )
 
+    parser_structural_memory_long_horizon = subparsers.add_parser(
+        "eval-structural-event-memory-long-horizon",
+        help="Run the frozen long-horizon Event Memory retention comparison.",
+    )
+    parser_structural_memory_long_horizon.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "structural_event_memory_long_horizon_v1.json"),
+    )
+    parser_structural_memory_long_horizon.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "structural_event_memory_long_horizon_v1_summary.txt"),
+    )
+
     parser_next_level_structural = subparsers.add_parser(
         "eval-next-level-structural",
         help="Run the observed-only Phase 21 bounded structural reasoning benchmark.",
@@ -3691,6 +3704,18 @@ def main():
             "scripts/eval/structural_interpolation_event_memory_benchmark.py",
             "--manifest-path",
             str(args.manifest_path),
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-structural-event-memory-long-horizon":
+        command = [
+            sys.executable,
+            "scripts/eval/structural_event_memory_long_horizon.py",
             "--report-path",
             str(args.report_path),
             "--summary-path",
