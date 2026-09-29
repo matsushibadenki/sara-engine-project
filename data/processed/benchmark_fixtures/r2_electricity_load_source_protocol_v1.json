@@ -1,0 +1,47 @@
+{
+  "schema": "sara-r2-electricity-load-source-protocol-v1",
+  "source": {
+    "dataset_id": 321,
+    "title": "ElectricityLoadDiagrams20112014",
+    "catalog_url": "https://archive.ics.uci.edu/dataset/321/electricity",
+    "doi": "10.24432/C58C86",
+    "license": "CC BY 4.0",
+    "artifact_url": "https://archive.ics.uci.edu/static/public/321/electricityloaddiagrams20112014.zip",
+    "archive_path": "data/raw/uci_electricity_load/electricityloaddiagrams20112014.zip",
+    "maximum_archive_bytes": 367001600,
+    "expected_primary_member": "LD2011_2014.txt"
+  },
+  "catalog_contract": {
+    "client_count": 370,
+    "timestamp_count": 140256,
+    "interval_minutes": 15,
+    "missing_values_reported": false,
+    "timezone_description": "Portuguese local time",
+    "values_are_kw": true
+  },
+  "proposed_identity": {
+    "training_years": [2011, 2012],
+    "development_years": [2013],
+    "held_out_years": [2014],
+    "history_intervals": 96,
+    "outcome_delay_intervals": 4,
+    "target": "per-client load direction from cutoff to one hour later",
+    "minimum_active_clients_per_split": 200,
+    "minimum_clients_with_both_outcome_classes_per_split": 100
+  },
+  "mandatory_exclusions": {
+    "client_pre_activation_zero_prefix": true,
+    "march_dst_zero_hour": true,
+    "october_dst_aggregated_hour": true,
+    "non_contiguous_history_or_outcome": true,
+    "non_finite_value": true
+  },
+  "access_boundary": {
+    "archive_acquisition_may_read_member_metadata_only": true,
+    "source_gate_may_read_timestamp_and_finite_zero_status": true,
+    "descriptive_load_values_before_source_gate_pass": false,
+    "held_out_load_values_before_development_adoption": false,
+    "candidate_scoring_authorized": false
+  },
+  "next_gate": "acquire_official_archive_then_verify_size_sha256_member_crc_and_catalog_shape_without_candidate_scoring"
+}
