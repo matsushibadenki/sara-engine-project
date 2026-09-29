@@ -134,7 +134,9 @@
 
 [Done] A new preregistered non-oracle acquisition task (`a5253aa3…5f3b`) takes each A cue's first two events from a SHA-ranked complete factorial stream without consulting the wrong-B subset, label or outcome. Five-seed development (`d61cac2f…af87`) passes: prior-only 47.5%, one-step tie-to-zero 91.25%, one-step tie-to-one 85%, selective two-step 100%, and unconditional two-step 100%; wrong-sign and wrong-route controls each reach 25%. Of 80 A cues, 20/41/19 have 0/1/2 changed signs. The 19 two-change cues contain 12 target-0 and seven target-1 cases; their one-step success swaps completely with the tie rule. Selective replay emits 79 versus 160 unconditional packets while preserving every prediction; packet size is 21 bytes and peak deep-counted Python state ≤7,128 bytes. This is a synthetic event-count reduction, not measured joules.
 
-[Next] Freeze a separate non-oracle held-out generator/oracle and cue-stratified gate. Keep the older negative held-out closed. B-local labels, realistic noise, unsupervised deep learning, real-event transfer and physical-energy gains remain unproven; residual B errors cannot be attributed to A credit repair.
+[Done] The separate non-oracle held-out generator/oracle and cue-stratified gate were frozen and executed. Selective and unconditional two-step replay both reached 100%, while selective replay used 78 versus 160 packets; one-step tie controls reached 90% and favored opposite target strata. Exact late B labels remain a limitation, so realistic noise, unsupervised deep learning, real-event transfer and physical-energy gains remain unproven.
+
+[Next] Stop extending this synthetic family. Reopen Local Credit Packet research only after a fresh prospective task passes source, outcome, censoring and split-support gates and exposes a measurable multi-stage credit failure.
 
 日本語: 2回路の局所creditは、新しいseedとcueを使った先行の独立held-outで成功しました。一方、混合誤り条件の独立held-outでは、平均精度は改善したものの「全seedで単純replayより改善」という事前ゲートに失敗しました。Bに補助的な教師信号を与えた合成課題に限られ、教師信号なしの深い学習と実イベントへの転移は未検証です。
 

@@ -67,6 +67,8 @@ This document is the canonical list of completed SARA Engine features as of v1.1
 ## Memory And Continual Learning
 
 - The Phase 18 long-horizon Event Memory command verifies frozen protocol, manifest, and source dependency hashes before comparing fixed, linear, and logarithmic retention. Its first 202-row observed-only run passed bounded recall and contradiction recovery, but found no advantage over fixed retention; production policy remains unchanged.
+- The equal-budget capacity-pressure command compares nine candidates against four slots per retention profile. It shows logarithmic retention spanning all three frozen age bands at the same `4/9` aggregate recall and event cost as fixed and linear controls, while remaining observed-only and production-disabled.
+- The retention robustness command repeats equal-budget comparison across 12 hashed candidate orderings and evaluator-hidden balanced, delayed-heavy, and recent-heavy relevance assignments. The preregistered logarithmic promotion gate failed, so fixed retention remains the production baseline.
 - Direct memory serialization and restoration are unified across active paths.
 - Phase 34 includes a default-off sparse multilingual semantic checkpoint adapter and a completed 6,750-condition evaluator with query-blind retention, evaluator-label isolation, deterministic replay, and bounded CPU-only state. Its passing result is limited to six human-aligned source propositions and does not authorize production promotion.
 - Unsafe active-path `eval()` loading has been removed in favor of safe parsers and shared helpers.

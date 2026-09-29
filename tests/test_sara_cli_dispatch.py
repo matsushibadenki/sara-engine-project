@@ -2357,6 +2357,62 @@ def test_structural_event_memory_long_horizon_dispatches_to_eval_script(monkeypa
     assert "workspace/evaluation/test_structural_long_horizon.txt" in args
 
 
+def test_event_memory_capacity_pressure_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-event-memory-capacity-pressure",
+            "--report-path",
+            "workspace/evaluation/test_capacity_pressure.json",
+            "--summary-path",
+            "workspace/evaluation/test_capacity_pressure.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/event_memory_capacity_pressure.py"]
+    assert "workspace/evaluation/test_capacity_pressure.json" in args
+    assert "workspace/evaluation/test_capacity_pressure.txt" in args
+
+
+def test_event_memory_retention_robustness_dispatches_to_eval_script(monkeypatch):
+    sara_cli = _load_sara_cli_module()
+    mock_run = Mock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr(sara_cli.subprocess, "run", mock_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sara_cli.py",
+            "eval-event-memory-retention-robustness",
+            "--report-path",
+            "workspace/evaluation/test_retention_robustness.json",
+            "--summary-path",
+            "workspace/evaluation/test_retention_robustness.txt",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sara_cli.main()
+
+    assert exc_info.value.code == 0
+    args = mock_run.call_args.args[0]
+    assert args[:2] == [sys.executable, "scripts/eval/event_memory_retention_robustness.py"]
+    assert "workspace/evaluation/test_retention_robustness.json" in args
+    assert "workspace/evaluation/test_retention_robustness.txt" in args
+
+
 def test_resonance_credit_integration_dispatches_to_eval_script(monkeypatch):
     sara_cli = _load_sara_cli_module()
     mock_run = Mock()

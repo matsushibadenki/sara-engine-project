@@ -1145,6 +1145,32 @@ def main():
         default=workspace_path("evaluation", "structural_event_memory_long_horizon_v1_summary.txt"),
     )
 
+    parser_event_memory_capacity_pressure = subparsers.add_parser(
+        "eval-event-memory-capacity-pressure",
+        help="Compare retention profiles under equal bounded capacity pressure.",
+    )
+    parser_event_memory_capacity_pressure.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "event_memory_capacity_pressure_v1.json"),
+    )
+    parser_event_memory_capacity_pressure.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "event_memory_capacity_pressure_v1_summary.txt"),
+    )
+
+    parser_event_memory_retention_robustness = subparsers.add_parser(
+        "eval-event-memory-retention-robustness",
+        help="Retest retention under evaluator-isolated order and relevance assignments.",
+    )
+    parser_event_memory_retention_robustness.add_argument(
+        "--report-path",
+        default=workspace_path("evaluation", "event_memory_retention_robustness_v1.json"),
+    )
+    parser_event_memory_retention_robustness.add_argument(
+        "--summary-path",
+        default=workspace_path("evaluation", "event_memory_retention_robustness_v1_summary.txt"),
+    )
+
     parser_next_level_structural = subparsers.add_parser(
         "eval-next-level-structural",
         help="Run the observed-only Phase 21 bounded structural reasoning benchmark.",
@@ -3716,6 +3742,30 @@ def main():
         command = [
             sys.executable,
             "scripts/eval/structural_event_memory_long_horizon.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-event-memory-capacity-pressure":
+        command = [
+            sys.executable,
+            "scripts/eval/event_memory_capacity_pressure.py",
+            "--report-path",
+            str(args.report_path),
+            "--summary-path",
+            str(args.summary_path),
+        ]
+        result = subprocess.run(command)
+        sys.exit(result.returncode)
+
+    elif args.command == "eval-event-memory-retention-robustness":
+        command = [
+            sys.executable,
+            "scripts/eval/event_memory_retention_robustness.py",
             "--report-path",
             str(args.report_path),
             "--summary-path",
