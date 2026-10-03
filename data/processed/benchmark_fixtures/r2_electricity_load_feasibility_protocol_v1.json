@@ -1,0 +1,33 @@
+{
+  "schema": "sara-r2-electricity-load-feasibility-protocol-v1",
+  "source_protocol_sha256": "9828a9e359c5ebfb3e6fc88f1a399b562e31a99c3d27b07c5805773101509434",
+  "archive_sha256": "f6c4d0e0df12ecdb9ea008dd6eef3518adb52c559d04a9bac2e1b81dcfc8d4e1",
+  "numeric_access_years": [2011, 2012, 2013],
+  "training_years": [2011, 2012],
+  "development_years": [2013],
+  "sealed_years": [2014],
+  "out_of_scope_years": [2015],
+  "history_observations_including_cutoff": 96,
+  "outcome_delay_intervals": 4,
+  "interval_minutes": 15,
+  "cutoff_local_time": "12:00:00",
+  "history_and_outcome_must_remain_in_same_split": true,
+  "activation": "First strictly positive finite nonnegative load, determined forward in time; exclude history preceding activation. Later zero loads remain valid.",
+  "invalid_load": "Nonfinite, negative, or malformed decimal invalidates every history or outcome window containing that observation.",
+  "numeric_encoding": "Semicolon-delimited quoted or unquoted decimal-comma tokens, compared using exact Decimal values; no epsilon.",
+  "label": "Outcome load strictly greater than cutoff is rise; strictly less is fall; exact ties are excluded.",
+  "excluded_transition_dates": ["2011-03-27", "2011-10-30", "2012-03-25", "2012-10-28", "2013-03-31", "2013-10-27"],
+  "dst_policy": "Conservatively exclude any history-to-outcome span intersecting the entire last Sunday of March or October, avoiding end-of-interval ambiguity.",
+  "minimum_active_clients_per_split": 200,
+  "minimum_clients_with_both_classes_per_split": 100,
+  "minimum_observations_per_class_per_qualifying_client": 100,
+  "independence": "Support counts are not independent sample sizes. Shared grid and calendar effects require client and calendar block controls in subsequent evaluation.",
+  "access_boundary": {
+    "train_development_numeric_support_only": true,
+    "sealed_numeric_tokenization": false,
+    "held_out_support_claim_authorized": false,
+    "feature_materialization_authorized": false,
+    "candidate_scoring_authorized": false
+  },
+  "failure_policy": "Stop this exact task on failed train/development support; do not retune cutoff, horizon, ties or thresholds after counts. Passing support does not authorize held-out access or candidate scoring."
+}

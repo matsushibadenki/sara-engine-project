@@ -1,0 +1,66 @@
+{
+  "schema": "sara-r2-electricity-learner-protocol-v1",
+  "feasibility_protocol_sha256": "a2220cf5d49ac68fd74a71f923b7c43701f190975291d4dc7fd4f2b6ed4e9157",
+  "support_report_sha256": "9209d4d858666125edfea1cc003fa4ce79a244126697048c42172d0694f42325",
+  "task_definition_changes": false,
+  "numeric_access_years": [2011, 2012, 2013],
+  "held_out_access_authorized": false,
+  "arms": ["scalar", "compact_event", "stateful_lif", "stateful_reset_each_event"],
+  "episode_order": "cutoff timestamp ascending, then original client column ordinal; one training pass and frozen development readouts",
+  "eligibility": "Exactly reuse feasibility v1 eligibility; no support-based client selection. Every eligible client/cutoff episode is included.",
+  "input_contract": {
+    "history_only": true,
+    "history_observations": 96,
+    "events": "95 adjacent exact load comparisons in chronological order; sign code fall=0,tie=1,rise=2",
+    "route_formula": "3 * min(7, floor((comparison_index - 1) / 12)) + sign_code, comparison_index=1..95",
+    "calendar_routes": "weekday route=24+weekday (Monday=0); month route=31+(month-1); bias route=43",
+    "route_count": 44,
+    "same_route_trace_for_all_arms": true,
+    "no_client_identity_route": true,
+    "outcome_not_in_encoder": true
+  },
+  "units": {
+    "scalar": "Unit strength 1 for every observed route",
+    "compact_event": "Stateless pulse strength 1 for every observed route; must exactly match scalar predictions and updates",
+    "stateful_lif": "One pure LIF per comparison route: v=0.95*v+0.6 on each global comparison tick, threshold=1, spike resets v=0 and starts two subsequent refractory ticks. During refractory ticks decrement counter and set v=0. Inactive nonrefractory units leak each tick. No dendritic nonlinearity. Reset all units at episode start. Route strength 1 if its unit spiked at least once, otherwise 0. Calendar/bias strength always 1.",
+    "stateful_reset_each_event": "Same LIF calculation but reset v and refractory before each comparison tick. Calendar/bias unchanged.",
+    "scope": "This comparison isolates the bundled temporal membrane/spike/refractory computation, not each mechanism individually. A later factorial protocol is required for attribution."
+  },
+  "learning": {
+    "implementation": "BoundedLocalOutcomeReadout",
+    "learning_rate": 0.15,
+    "trace_decay": 1.0,
+    "max_age": 4,
+    "max_routes": 44,
+    "max_active": 44,
+    "max_delta": 0.5,
+    "integral_rate": 0.0,
+    "signal": "Receipt-bound binary rise/fall target arrives four logical intervals after prediction. Exactly the same outcome IDs and timing for all arms. One pending receipt, resolved before next episode; no global gradients. Development outcomes never update weights."
+  },
+  "budget": {
+    "max_history_rows": 100,
+    "max_events_per_episode": 98,
+    "max_units": 24,
+    "max_route_updates_per_outcome": 44,
+    "max_unit_ticks_per_episode": 2280,
+    "max_model_state_bytes": 65536,
+    "equal_caps_not_equal_actual_cost": true,
+    "no_replay_or_structural_plasticity": true
+  },
+  "controls": ["training_global_prevalence", "training_weekday_month_prevalence_with_global_fallback", "last_observed_direction_with_training_global_fallback_on_tie"],
+  "evaluation": {
+    "primary": "macro_client_brier; equally weight clients with at least one eligible non-tie development outcome",
+    "secondary": ["micro_brier", "balanced_accuracy", "monthly_macro_client_brier", "prediction_trace_sha256"],
+    "decision_threshold": 0.5,
+    "candidate_fixed_before_scoring": "stateful_lif",
+    "minimum_primary_improvement": 0.01,
+    "reference": "best development macro-client Brier among scalar and all three controls; no tuning",
+    "calendar_block_gate": "Positive improvement versus the same selected reference in at least 9 of 12 calendar months, with no month worse by more than 0.02. Fail closed if any month is empty.",
+    "causal_gate": "stateful_lif macro-client Brier must beat stateful_reset_each_event by at least 0.01",
+    "parity_gate": "scalar and compact_event prediction/update traces exactly equal",
+    "resources": "Report actual state bytes, event/tick/update counts and separate CPU process time for each arm; CPU is not energy. No CPU advantage claim from a single run.",
+    "uncertainty": "Client/calendar scores are correlated; no iid standard errors or significance claims. Calendar gate is a robustness check, not causal independence."
+  },
+  "stop_rule": "Run v1 once after synthetic contract tests. Failure of any adoption gate stops this exact candidate. Preserve every arm and negative result; do not change encoding, thresholds, parameters or task after scores. Even success does not authorize 2014 access.",
+  "next": "Implement history-only episode adapter and matched learners; verify synthetic leakage, delayed receipts, parity, budget and metric tests before train/development scoring."
+}
