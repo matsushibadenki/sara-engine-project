@@ -1,0 +1,22 @@
+{
+  "schema": "sara-independent-temporal-design-v1",
+  "scope": "Synthetic causal-interface feasibility audit, not learner scoring",
+  "candidate_scoring_authorized": false,
+  "real_data_access_authorized": false,
+  "promotion_authorized": false,
+  "input_contract": "95 chronological route events, route IDs 0..23; identical traces supplied to every primitive. Episode-local reset. No calendar signal, target or reference output supplied to independent controls.",
+  "target_contract": "Generator mode 0 or 1 determines first two events: mode 0 => (0,1), mode 1 => (1,0). The binary outcome equals this exogenous mode. Exactly the same 93-event suffix is attached to both members of a pair: 91 distractors from routes 2..23, then fixed terminal events (0,1). Mode is never computed from any unit output.",
+  "pair_contract": "Within each pair, route histogram, last-occurrence ordering, distractor suffix and event count are identical; only the first-cue order changes. Both target classes occur exactly once per pair.",
+  "independent_controls": {
+    "leaky_analog": "24 scalar traces initialized to 0. At each tick, every trace becomes 0.95*trace + (0.05 if active route else 0). Emit every observed route with its positive final trace as strength. No threshold, reset-on-output, cooldown or reference call.",
+    "first_visit": "Record first occurrence index for each observed route, bounded by 95 events. Emit route strength 1/(1+first_index). No threshold, decay, spike, cooldown, reference call or target access.",
+    "histogram": "Emit observed route strength count/95; static order-blind reference."
+  },
+  "reference": "Retained pure LIF admission from electricity v2, comparison routes only; unchanged source identity",
+  "reference_source_sha256": "8359993c3ace929ff6723ded8b055b092b9378bab6e49eb064ed1d740c452b59",
+  "budget": {"maximum_input_events": 95, "maximum_routes": 24, "maximum_state_slots": 48, "maximum_unit_ticks": 2280, "maximum_output_routes": 24},
+  "matching_limit": "Shared input, route vocabulary and resource ceilings, not identical actual storage, arithmetic, strengths or admitted information. Analog/first-visit controls are independently deployable but do not isolate spike biology by themselves.",
+  "synthetic_suffix_plan": "One constant route-2 distractor block, one cycling 2..23 block, and 100 random blocks of length 91 from routes 2..23 using seed 6200410. Append fixed terminal (0,1) to each block to form a 93-event suffix. Both paired modes share each suffix.",
+  "feasibility_gate": "Reject a primitive as an eligible learning comparator for this exact target when opposite-label pair members produce identical readout signatures. Report collisions, not accuracy or fitted quality. First-visit and analog controls must preserve cue order; histogram must collide. If LIF collides, do not preregister a learning superiority claim on this output interface.",
+  "stop_rule": "No tuning on these fixtures or consumed electricity scores. This audit authorizes no learning run. A later learning protocol requires a separate target/interface identity and disclosure of this feasibility result. Keep 2014 sealed."
+}

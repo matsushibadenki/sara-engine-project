@@ -1,0 +1,28 @@
+{
+  "schema": "sara-temporal-control-contract-v1",
+  "scope": "Synthetic input-only contract verification, no learning or quality evaluation",
+  "real_data_access_authorized": false,
+  "candidate_scoring_authorized": false,
+  "promotion_authorized": false,
+  "history_comparison_events": 95,
+  "comparison_routes": 24,
+  "calendar_routes": 3,
+  "reference": "Retained electricity v2 pure LIF: active-route current 0.6, decay 0.95, threshold 1, zero reset, two subsequent refractory ticks, episode-local state",
+  "controls": {
+    "representation_equivalent_gate": "Scalar decay accumulators and integer cooldown counters reproduce the reference admitted route set exactly. This is mathematical re-expression, not removal of integration, threshold or cooldown.",
+    "count_yoked_recency": "Take only K, the number of distinct comparison routes admitted by the reference on the same input history. Select K distinct observed routes by most recent occurrence, tie-break route ordinal. No label, future value, reference route identity or learned rank is provided to the selector."
+  },
+  "matching_unit": "Distinct comparison routes with strength 1 passed to the readout, not total spike count or spike timing. Keep all three calendar/bias routes unchanged.",
+  "zero_count_policy": "K=0 yields calendar/bias only in both reference and yoked control; retain these episodes rather than hide them.",
+  "budget": {
+    "maximum_input_events": 95,
+    "maximum_reference_unit_ticks": 2280,
+    "maximum_equivalent_gate_ticks": 2280,
+    "maximum_recency_event_visits": 95,
+    "maximum_ranked_routes": 24
+  },
+  "resource_accounting": "Count-yoked recency requires the reference computation plus selector work. Report both; never claim independent deployment efficiency from selector-only cost.",
+  "acceptance": "Exact representation parity, exact readout-cardinality parity, no unobserved selected route, deterministic recency ordering, episode reset, zero-count behavior and fail-closed pre-work bounds on fixed synthetic traces.",
+  "interpretation": "Cardinality matching separates admitted-route identity from quantity only. It does not equalize membership, per-route firing, information content or state mechanism. The equivalent gate cannot establish that integration is unnecessary. Neither control supports spike-specific utility without a separate experiment.",
+  "next": "Register a separate synthetic learning hypothesis and controls before scoring. Any future real-data hypothesis requires fresh confirmation and disclosed consumed electricity evidence; 2014 remains sealed."
+}

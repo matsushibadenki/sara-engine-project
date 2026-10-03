@@ -1,0 +1,23 @@
+{
+  "schema": "sara-r2-electricity-learner-protocol-v2",
+  "parent_protocol_sha256": "0093d72c34a72baf49f21220e6cadbef2af0993eb3b0cce366e2e495b7fef89f",
+  "feasibility_protocol_sha256": "a2220cf5d49ac68fd74a71f923b7c43701f190975291d4dc7fd4f2b6ed4e9157",
+  "support_report_sha256": "9209d4d858666125edfea1cc003fa4ce79a244126697048c42172d0694f42325",
+  "purpose": "Disclosed corrective train/development diagnostic, not a fresh confirmatory experiment",
+  "parent_attempt_consumed": true,
+  "development_pristine": false,
+  "development_access_in_parent": "Unknown phase at failure; conservatively treat 2013 as previously accessed",
+  "numeric_access_years": [2011, 2012, 2013],
+  "held_out_access_authorized": false,
+  "promotion_authorized": false,
+  "scoring_contract": "signed_v2",
+  "learning_target": "2 * binary_target - 1; fall=-1, rise=+1",
+  "probability": "(receipt.score + 1) / 2; require finite signed score in [-1,1]. No clipping, fitted calibration or sigmoid.",
+  "initial_probability": 0.5,
+  "decision_threshold": 0.5,
+  "same_mapping_and_targets_for_all_arms": true,
+  "unchanged_from_parent": ["task eligibility", "source archive", "train/development split", "history encoder", "arms and interventions", "episode ordering", "local readout configuration", "four-interval outcome delay", "resource caps", "baseline definitions", "metrics", "diagnostic gate thresholds"],
+  "gates_are_diagnostic_only": true,
+  "execution_policy": "Exclusive new v2 report reservation. Execute once only after synthetic signed-score, route-subset, parity, development freeze and boundary tests. Preserve a durable started receipt before scoring and a durable failure receipt on exception. No silent retry.",
+  "stop_rule": "Retain all outcomes. A gate failure closes this exact v2 candidate; passing gates still cannot promote or open 2014. Any further scientific confirmation requires a new registered access boundary and explicit contamination disclosure."
+}

@@ -109,13 +109,24 @@ class ElectricityLearner:
         if type(training) is not bool:
             raise ValueError('Training flag must be boolean')
         if training:
-            update = self.readout.observe(receipt, target, time=time)
+            update = self.readout.observe(receipt, self.learning_target(target), time=time)
             self.updates += update.route_visits
         else:
             self.readout.discard(receipt, time=time)
             update = None
         self._pending = self._outcome_id = None
         return update
+
+    def learning_target(self, target: int):
+        """Preserve the consumed v1 binary learning target."""
+        return target
+
+    def probability(self, receipt):
+        """V1 deliberately rejects signed scores, without an implicit repair."""
+        if receipt is not self._pending:
+            raise ValueError('Prediction receipt is not pending')
+        brier_score(receipt.score, 0)
+        return receipt.score
 
     def state_bytes(self):
         size = _deep_size(self.__dict__)
@@ -124,6 +135,22 @@ class ElectricityLearner:
         if size > 65536:
             raise ValueError('Model state budget exceeded')
         return size
+
+
+class SignedElectricityLearner(ElectricityLearner):
+    """Corrective v2: signed local targets and an explicit affine probability."""
+
+    def learning_target(self, target: int):
+        return 2 * target - 1
+
+    def probability(self, receipt):
+        if receipt is not self._pending:
+            raise ValueError('Prediction receipt is not pending')
+        if not math.isfinite(receipt.score) or not -1 <= receipt.score <= 1:
+            raise ValueError('Signed score outside registered range')
+        value = (receipt.score + 1.0) / 2.0
+        brier_score(value, 0)
+        return value
 
 
 def brier_score(probability: float, target: int) -> float:

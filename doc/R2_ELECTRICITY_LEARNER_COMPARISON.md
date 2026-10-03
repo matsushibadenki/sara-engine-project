@@ -1,5 +1,39 @@
 # Electricity matched learner comparison v1
 
+## Completed v2 diagnostic — candidate closed
+
+[Done] The one-shot corrected diagnostic completed under Python 3.10.18. Report SHA256: `ab5d5f19a2465d51a826881562763d501e4da1eb7029670c409fe275b3eaccaa`. Training included 164,965 episodes; development included 114,662 episodes across 349 clients, exactly matching the frozen support counts. Final report and started/completed receipts are under `workspace/evaluation/r2_electricity_development_v2*`; a retained result receipt is under `data/processed/benchmark_fixtures/r2_electricity_v2_result_receipt.json`.
+
+| Arm | Development macro-client Brier | Balanced accuracy | Arm CPU seconds |
+| --- | --- | --- | --- |
+| Scalar / compact event | 0.248273 | 0.521347 | 7.099 / 6.871 |
+| Stateful LIF | 0.247993 | 0.520303 | 45.913 |
+| Event-reset LIF | 0.268166 | 0.504726 | 51.222 |
+
+The strongest registered Brier reference was scalar. Improvement was only `0.000280325`, below the fixed `0.01` requirement. Primary gate failed; calendar (nine improved months), reset-control, parity and resource gates passed. Scalar/compact prediction and update traces are exactly equal. Peak reported learner state remained below 7,444 bytes, with at most 2,280 LIF ticks per episode. Held-out numeric parsing is zero. These single-run CPU measurements are not energy measurements or a replicated performance estimate.
+
+**Decision:** close this exact v2 candidate without tuning encoding, parameters or thresholds on these scores. No production adoption or 2014 access. This is a negative exploratory diagnostic, not an untouched confirmatory result. Balanced accuracy also does not improve over scalar.
+
+The reset-control interpretation is limited: with current 0.6 and threshold 1, resetting on every event makes comparison units unable to spike, leaving only calendar/bias routes. Winning against it does not establish a spike-specific benefit or separate membrane/refractory effects. [Next] Consolidate the retained evidence and design output-rate-matched non-spiking temporal controls with synthetic contract tests; any new scored hypothesis needs a separate registration and fresh confirmation boundary. Do not retry this exact task/candidate for promotion.
+
+日本語: [Done] v2診断が完了しました。学習164,965件、開発114,662件・349clientで支持数と一致。LIFのBrierは0.247993、scalarは0.248273で、改善0.000280は固定基準0.01未満でした。主要gateは不合格、scalar／compactの予測・更新は完全一致。候補を終了し、再調整・本番採用・2014年閲覧は行いません。reset対照は比較routeを発火できなくするため、その勝利はspike固有の効果を意味しません。[Next] 出力頻度を揃えた非spiking時間状態対照をsynthetic境界で設計し、将来の確認は別の事前登録と新鮮な境界で行います。
+
+简体中文：[Done] v2诊断完成。训练164,965次、开发114,662次／349客户，与支持量一致。LIF Brier为0.247993，scalar为0.248273；改善0.000280低于固定0.01门槛。主要gate失败，scalar／compact的预测与更新完全一致。关闭该候选，不调参、不采用、不访问2014年。reset对照无法让比较route发放，因此胜过它不证明spike特有优势。[Next] 在synthetic边界设计输出频率匹配的非spiking时间状态对照；后续确认必须另行预注册并使用新的确认边界。
+
+## Disclosed corrective v2 contract
+
+[Done] Corrective protocol v2 is frozen at SHA256 `11779a93583c66e510ddb3c639827aaff0d1985306d761d4ed9e52746d746533`. It explicitly changes the learning target to `2 * binary_target - 1` and converts the bounded signed score to probability using `(score + 1) / 2`. The initial probability is 0.5; no clipping or fitted calibration is used. All four arms receive identical targets and mappings. Task eligibility, source, encoding, local readout configuration, budgets, baselines and diagnostic thresholds remain as registered in v1.
+
+V2 is an exploratory corrective diagnostic, not an untouched confirmation: the failure phase of v1 was not recorded, so 2013 is conservatively treated as previously accessed. The implementation always reports `adopted=false` and `confirmatory=false` for v2, even if all diagnostic gates pass. The held-out 2014 access boundary remains closed. V1's failure receipt and empty reservation remain untouched.
+
+The new runner exclusively reserves a distinct report and syncs a started receipt before scoring. Exceptions produce a separate failed receipt without arbitrary exception-message payloads; the reservation prevents silent retries. On completion it records the report hash. Python version and implementation hashes are retained. CPU process time covers arm prediction/resolution, not source parsing, encoding or the whole evaluation process; state accounting covers learner state plus conservative transient LIF arrays, not archive buffers or metric bookkeeping. These measurements cannot establish energy savings or a replicated CPU advantage.
+
+Synthetic tests cover signed endpoints, changing route subsets, scalar/compact parity, frozen development, unknown-contract rejection and durable consumed-attempt behavior. Related electricity tests: 29 passed. Real v2 execution results, if completed, are recorded separately below.
+
+日本語: [Done] 訂正版v2を凍結しました。学習targetを増加+1・減少−1、確率を`(score+1)/2`と明示し、初期確率は0.5です。2013年は既閲覧として保守的に扱い、v2は診断専用で採用を許可しません。2014年の封印は維持します。実行開始・失敗・完了receiptとソースhashを保存し、黙った再試行を拒否します。関連テスト29件成功。CPU時間はarmの予測・更新範囲であり、消費電力ではありません。
+
+简体中文：[Done] 已冻结纠正版v2。明确学习target为增+1、减−1，概率为`(score+1)/2`，初始概率0.5。保守地将2013年视为已访问，v2仅用于诊断，不允许采用；2014年继续封存。保存开始、失败、完成receipt及源码hash，拒绝静默重试。相关29项测试通过。CPU时间仅覆盖各arm的预测与更新，不代表能耗。
+
 ## V1 execution integrity failure — retained
 
 [Done] The streaming adapter, sufficient-statistic client/month metrics, three training-only baselines and exclusive execution runner were implemented. Synthetic tests confirmed that changing future values changes the label but not history routes. The real one-shot attempt then failed closed with `ValueError: Probability outside unit interval`, before any final report or adoption decision.

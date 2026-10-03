@@ -7,7 +7,7 @@ import json
 from time import process_time
 
 from sara_engine.evaluation.electricity_access_boundary import parse_support_row
-from sara_engine.evaluation.electricity_learner import ARMS, ElectricityLearner, encode_history, brier_score
+from sara_engine.evaluation.electricity_learner import ARMS, ElectricityLearner, SignedElectricityLearner, encode_history, brier_score
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,8 +98,11 @@ class Metrics:
         }
 
 
-def evaluate(episodes):
-    learners = {arm: ElectricityLearner(arm) for arm in ARMS}
+def evaluate(episodes, *, scoring_contract='v1'):
+    if scoring_contract not in ('v1', 'signed_v2'):
+        raise ValueError('Unknown scoring contract')
+    learner_type = SignedElectricityLearner if scoring_contract == 'signed_v2' else ElectricityLearner
+    learners = {arm: learner_type(arm) for arm in ARMS}
     controls = ('training_global_prevalence', 'training_weekday_month_prevalence_with_global_fallback',
                 'last_observed_direction_with_training_global_fallback_on_tie')
     metrics = {name: Metrics() for name in (*ARMS, *controls)}
@@ -128,7 +131,7 @@ def evaluate(episodes):
             receipt = learner.predict(episode.routes, time=number * 5, outcome_id=episode.identity)
             # V1 has no score-to-probability mapping. Reject signed scores
             # rather than silently changing the consumed experiment contract.
-            probability = receipt.score
+            probability = learner.probability(receipt)
             brier_score(probability, episode.target)
             update = learner.resolve(receipt, target=episode.target, time=number * 5 + 4,
                                      outcome_id=episode.identity, training=training)
@@ -167,7 +170,12 @@ def evaluate(episodes):
                          and min(deltas.values(), default=-1) >= -0.02,
              'causal': results['stateful_reset_each_event']['macro_client_brier'] - candidate['macro_client_brier'] >= 0.01,
              'parity': parity, 'resources': all(size <= 65536 for size in peak_state.values())}
-    return {'schema': 'sara-r2-electricity-development-v1', 'adopted': all(gates.values()),
+    return {'schema': ('sara-r2-electricity-development-v2' if scoring_contract == 'signed_v2'
+                       else 'sara-r2-electricity-development-v1'),
+            'scoring_contract': scoring_contract,
+            'adopted': all(gates.values()) if scoring_contract == 'v1' else False,
+            'diagnostic_gates_passed': all(gates.values()),
+            'confirmatory': scoring_contract == 'v1',
             'gates': gates, 'reference': reference, 'primary_improvement': improvement,
             'monthly_improvements': deltas, 'results': results, 'label_counts_fall_rise': counts,
             'resources': {arm: {'cpu_process_seconds': cpu[arm], 'peak_model_state_bytes': peak_state[arm],
