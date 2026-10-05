@@ -1,0 +1,22 @@
+{
+  "schema": "sara-shared-observer-learning-retained-receipt-v1",
+  "protocol_sha256": "7e999640944764a6b86873e61771fda4fdeb50197142ad0a2c240c43803dfbfa",
+  "report_sha256": "8c8b50939c88cb8e1752e8ce9c6552d82b84bef92009acd49263b4c077513646",
+  "checkpoint_sha256": "c3314eb8d2f59a4e262aec6c7cebcc04052994459811e6bf244e86748d50f3a1",
+  "verification_sha256": "3757be4920e92ce75a0efd1899e50fd0f51799768083462dd0c20a3b7ca0ae3f",
+  "execution_integrity_passed": true,
+  "component_learning_passed": true,
+  "backend_increment_passed": false,
+  "seed_count": 5,
+  "training_episodes_per_seed": 4096,
+  "evaluation_episodes_per_seed": 512,
+  "arm_count": 5,
+  "observer_accuracy_every_seed": 1.0,
+  "order_blind_accuracy_every_seed": 0.5,
+  "backend_only_accuracy_every_seed": 0.5,
+  "saved_weight_replay_predictions": 12800,
+  "saved_weight_replay_passed": true,
+  "real_data_read": false,
+  "production_loading_authorized": false,
+  "decision": "Retain the minimal shared-observer local-learning component; close this exact LIF-increment hypothesis without tuning. Synthetic component result only; no general capability, calibration, energy or deep-credit claim."
+}

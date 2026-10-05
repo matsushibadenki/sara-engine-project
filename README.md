@@ -10,6 +10,12 @@ SARA is not currently a general replacement for ANN-based LLMs. Its practical sc
 
 ## Design Thesis
 
+Research milestone: [shared-observer local learning](doc/SHARED_OBSERVER_LEARNING.md) completes five preregistered synthetic runs with frozen evaluation and saved-weight replay. Bounded ordinal memory plus a local readout reaches 100% classification; order-blind and LIF-only controls remain at 50%. LIF addition fails its incremental Brier gate. This is a narrow component result, not real-data confirmation, strong calibration, deep credit or production promotion.
+
+日本語: [共通observerの局所学習](doc/SHARED_OBSERVER_LEARNING.md)を5seedで検証し、最終研究重みを保存しました。限定的な合成taskの成果であり、実データ確認・深いcredit・本番採用ではありません。
+
+简体中文：[共享observer局部学习](doc/SHARED_OBSERVER_LEARNING.md)已完成五seed验证并保存研究权重。这是限定的合成task结果，不代表真实数据确认、深层credit或生产采用。
+
 The project is organized around one principle:
 
 > Intelligence should emerge from reusable sparse interactions among bounded local components, while every important prediction remains traceable to experience, structure, and correction evidence.

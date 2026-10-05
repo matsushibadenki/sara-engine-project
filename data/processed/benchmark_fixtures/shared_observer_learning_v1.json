@@ -1,0 +1,21 @@
+{
+  "schema": "sara-shared-observer-learning-v1",
+  "observer_protocol_sha256": "5dd6daf07b44303d9de2827c43e46f6201394e5f70bbf0e246ed1ba154cf6123",
+  "scope": "One-shot synthetic component-learning milestone; not real confirmation, deep credit or production promotion",
+  "training_seeds": [111701, 111702, 111703, 111704, 111705],
+  "evaluation_seeds": [111901, 111902, 111903, 111904, 111905],
+  "training_pairs_per_seed": 2048,
+  "evaluation_pairs_per_seed": 256,
+  "generator": "Mode determines first (0,1) or (1,0), followed by a shared 91-event suffix drawn uniformly from routes 2..23 and terminal (0,1). Each pair contains both modes in randomized order. Target is exogenous mode. No episode ID or seed is supplied to readout.",
+  "arms": ["observer_only", "observer_compact", "observer_lif", "order_blind", "backend_only_lif"],
+  "feature_contract": "Shared observer channels 0..71 and bias channel 96 strength 1. Compact admits each observed comparison route with strength 1 on channel 72+r. LIF admits only routes that fired, on the same channels. Order-blind drops first-position channels; backend-only drops all observer channels. Every arm still pays shared observer cost.",
+  "learning": {"rule": "BoundedLocalOutcomeReadout", "learning_rate": 0.15, "trace_decay": 1.0, "max_age": 4, "max_routes": 97, "max_active": 97, "max_delta": 0.5, "integral_rate": 0.0, "target": "2*mode-1", "probability": "(score+1)/2", "delay": 4, "evaluation_updates": false},
+  "budget": {"max_input_events": 95, "max_observer_records": 24, "max_observer_wire_bytes": 101, "max_backend_unit_ticks": 2280, "max_active_routes": 97, "max_total_state_bytes": 65536},
+  "component_gate": "For every seed observer-only frozen evaluation accuracy >=0.9 and Brier improves over order-blind by >=0.001; order-blind and backend-only signatures/predictions must match within opposite-target pairs.",
+  "backend_increment_gate": "For every seed observer_lif Brier improves over the strongest observer_only/observer_compact reference by >=0.01. Passing component gate alone does not support a spike benefit.",
+  "integrity": "Disjoint seeded identities; frozen evaluation weights; same outcomes and delay for all arms; deterministically reproduce predictions from final weights without retraining; record source/Python hashes and all observer/backend costs.",
+  "failure_policy": "Preserve every result and stop this exact hypothesis on any gate failure. No parameter, feature, seed or threshold tuning after evaluation. Independently report component and backend gates.",
+  "real_data_access_authorized": false,
+  "promotion_authorized": false,
+  "artifact_policy": "Reserve a single workspace report before scoring. Retain source fingerprints and bounded final research readout weights in a managed models checkpoint only after execution integrity passes. No automatic production loading."
+}

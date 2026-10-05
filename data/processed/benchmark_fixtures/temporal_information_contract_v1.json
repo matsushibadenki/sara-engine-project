@@ -1,0 +1,16 @@
+{
+  "schema": "sara-temporal-information-contract-v1",
+  "scope": "Research-only input observer and paired-history information audit; no learner scoring",
+  "real_data_access_authorized": false,
+  "learning_authorized": false,
+  "promotion_authorized": false,
+  "input": "Chronological raw route arrivals, not backend-emitted spikes; relative ordinal is assigned forward in time",
+  "state": "For each observed route retain first ordinal, last ordinal and count. At most 24 records plus event count; no full history, outcome, target or reference computation.",
+  "budget": {"max_events": 95, "max_records": 24, "max_record_integer_fields": 96, "max_wire_bytes": 101, "max_readout_channels": 72},
+  "readout": "For route r emit channels 3r,3r+1,3r+2 with strengths 1/(1+first), (1+last)/95, count/95. Each positive strength is at most 1. Fixed vocabulary is shared by all future backends.",
+  "cost": "One record visit per arrival, at most 24 records sorted at snapshot, three projection channels per observed route. Wire size is not Python resident size or whole-model state.",
+  "backend_boundary": "Every backend receives the same original arrivals and same observer information; the observer is explicit shared memory, not a spike-only decoder. Charge its state and update/projection work to every arm. It preserves input information independently of whether a neuron fires.",
+  "limitations": "First/last/count are not a lossless event transcript, full ordering, absolute time or elapsed gaps. Distinct histories may collide; do not claim all temporal information survives.",
+  "audit": "Use the retained independent first-cue-order paired fixtures only for interface tests. Require packet and projected-readout distinction in all 102 pairs, bounded serialization, immutable snapshots and rejection before mutation. Also verify a deliberate middle-order collision.",
+  "next": "Separately preregister a learning experiment with this shared observer, matched readout/budgets, observer-only and backend-output ablations. No spike benefit may be attributed to shared observer memory. Keep electricity attempts closed and 2014 sealed."
+}
