@@ -29,7 +29,7 @@ Artifacts:
 - Saved-artifact replay: `workspace/evaluation/shared_observer_checkpoint_verification_v1.json`.
 - Verification command: `PYTHONPATH=src python scripts/eval/verify_shared_observer_checkpoint.py` (the v1 command exclusively reserves its verification report; do not overwrite consumed artifacts).
 
-[Next] Consolidate this component as a research baseline and preregister an independent task that separates first-visit memory from full sequence/gap requirements, with strong non-spiking controls and honest information accounting. Do not add deeper neuron mechanisms or rerun this hypothesis to chase calibration. Deep credit, real confirmation and production promotion remain [Later].
+[Done] Consolidated this component and completed a separately registered input-only [temporal capability boundary audit](TEMPORAL_CAPABILITY_BOUNDARY.md) with bounded non-spiking references. [Next] Preregister matched readout-visible middle-order/gap learning and complete resource accounting before scoring. Do not add deeper neuron mechanisms or rerun this hypothesis to chase calibration. Deep credit, real confirmation and production promotion remain [Later].
 
 ## 日本語
 
@@ -37,7 +37,7 @@ Artifacts:
 
 得られたのは「入力event＋有界の順序memory＋局所readout」がこの合成順序taskを学習できるという限定的な成果です。Brierは約0.24であり、確信度の良さ、自然データへの転移、深いcredit assignment、SNN全般の優劣は証明していません。backend追加によるreadout正規化の変化も比較に含まれます。observer等を含む最大stateは27,354byte。研究重み25個は本番読み込み禁止です。
 
-[Next] この最小構成を研究baselineとして固定し、first-visitだけでは足りない順序／gap要件を分離する独立taskを別途事前登録します。電力実験を再開せず、2014年は封印維持。[Later] 深いcredit・実データ確認・本番採用。
+[Done] 最小研究baselineを固定し、別登録の順序／gap入力監査を完了しました。[Next] 学習比較のreadout情報・遅延更新・予算を事前登録します。電力実験を再開せず、2014年は封印維持。[Later] 深いcredit・実データ確認・本番採用。
 
 ## 简体中文
 
@@ -45,4 +45,4 @@ Artifacts:
 
 限定结论是“输入event＋有界顺序memory＋局部readout”能够学习这一合成顺序task。Brier约0.24，不证明高质量置信度、自然数据迁移、深层credit assignment或SNN普遍优劣。backend增加带来的readout归一化变化也包含在比较中。含observer等的最大state为27,354byte；25个研究readout禁止生产加载。
 
-[Next] 固定最小研究baseline，另行预注册能区分first-visit与完整顺序／gap需求的独立task。不重新打开电力实验，2014年保持封存。[Later] 深层credit、真实数据确认与生产采用。
+[Done] 已固定最小研究baseline并完成单独注册的顺序／gap输入审计。[Next] 预注册学习比较的readout信息、延迟更新和预算。不重新打开电力实验，2014年保持封存。[Later] 深层credit、真实数据确认与生产采用。

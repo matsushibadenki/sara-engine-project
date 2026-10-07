@@ -1,5 +1,11 @@
 # Implemented Features
 
+## Temporal capability boundary reference
+
+- [Done] Hash-pinned minimal research baseline and separate input-only protocol; exhaustive audit of 828 opposite-mode history pairs.
+- [Done] Bounded sequence/gap reference with immutable snapshots, pre-mutation input/capacity validation and maximum 194-byte wire format.
+- [Done] Histogram, first/last/count, full-order and full-order/gap controls isolate ordinal and interval information loss without outcome access or learner scoring. See [audit and limits](TEMPORAL_CAPABILITY_BOUNDARY.md).
+
 ## Phase 30 temporal effective-interaction preregistration
 
 - Immutable four-arm protocol comparing fixed sparse SNN, timing-removed history averaging, temporal state only, and bounded local effective-interaction cache.

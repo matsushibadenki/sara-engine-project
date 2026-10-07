@@ -1,0 +1,140 @@
+{
+  "baseline_sha256": {
+    "data/processed/benchmark_fixtures/shared_observer_learning_result_receipt_v1.json": "bb73a7a8d84f86cffc73260b3c95e4ea8c904a84f237bc52601658686f42fe72",
+    "data/processed/benchmark_fixtures/shared_observer_learning_v1.json": "7e999640944764a6b86873e61771fda4fdeb50197142ad0a2c240c43803dfbfa",
+    "models/research/shared_observer_learning_v1.json": "c3314eb8d2f59a4e262aec6c7cebcc04052994459811e6bf244e86748d50f3a1"
+  },
+  "budgets": {
+    "input_visits_per_event": 1,
+    "max_events": 95,
+    "max_gap": 255,
+    "max_routes": 24,
+    "max_wire_bytes": 194
+  },
+  "controls": [
+    "histogram",
+    "first_last_count",
+    "full_order",
+    "full_order_gap"
+  ],
+  "expected_distinct": {
+    "first_order": [
+      "first_last_count",
+      "full_order",
+      "full_order_gap"
+    ],
+    "gap_order": [
+      "full_order_gap"
+    ],
+    "middle_order": [
+      "full_order",
+      "full_order_gap"
+    ]
+  },
+  "families": [
+    "first_order",
+    "middle_order",
+    "gap_order"
+  ],
+  "gap_templates": {
+    "first_order": [
+      [
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        1
+      ]
+    ],
+    "gap_order": [
+      [
+        0,
+        1,
+        3,
+        1
+      ],
+      [
+        0,
+        3,
+        1,
+        1
+      ]
+    ],
+    "middle_order": [
+      [
+        0,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    ]
+  },
+  "promotion_authorized": false,
+  "route_pairs": "All unordered pairs of distinct routes in range(24)",
+  "schema": "sara-temporal-capability-boundary-protocol-v1",
+  "scope": "Input-only synthetic identifiability audit; not learning or independent real-data confirmation",
+  "stop_rule": "Any unexpected collision, nuisance mismatch, baseline hash mismatch or resource overflow fails closed; no learner scoring authorized",
+  "templates": {
+    "first_order": [
+      [
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        1
+      ]
+    ],
+    "gap_order": [
+      [
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1
+      ]
+    ],
+    "middle_order": [
+      [
+        0,
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        0,
+        1
+      ]
+    ]
+  }
+}
