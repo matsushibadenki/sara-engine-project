@@ -114,11 +114,19 @@ Thumbs.db
 # データセット
 examples/data/
 
-# data area
-data/*.gz
-data/*.csv
-data/*.db
-data/raw/r2_physionet2019/
+# Data area: downloaded archives stay local at every nesting depth.
+# Keep source metadata, licenses and reviewed text fixtures trackable.
+/data/**/*.zip
+/data/**/*.gz
+/data/**/*.bz2
+/data/**/*.xz
+/data/**/*.7z
+/data/**/*.tar
+/data/**/*.tgz
+/data/**/*.zst
+/data/*.csv
+/data/*.db
+/data/raw/r2_physionet2019/
 
 # 学習済みモデル
 *.pkl
