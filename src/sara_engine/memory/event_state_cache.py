@@ -444,11 +444,12 @@ class VerifiedHierarchicalEventStateCache:
         scored: List[Tuple[float, EventStateEntry, Dict[str, float]]] = []
         event_cost = len(query)
         for entry in self.entries.values():
-            overlap = _jaccard(query, entry.signature)
             if signature_match == "contained":
                 # Exact evidence-feature containment tolerates question framing.
                 # It is lexical matching, not semantic equivalence.
                 overlap = float(bool(entry.signature) and set(entry.signature).issubset(query))
+            else:
+                overlap = _jaccard(query, entry.signature)
             latent_agreement = float(
                 bool(own_latent_id) and own_latent_id == entry.own_latent_id
             )

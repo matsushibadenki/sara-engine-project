@@ -14,9 +14,11 @@ import shutil
 import signal
 import sys
 import time
+import threading
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from collections import deque
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -108,6 +110,7 @@ class AutonomousLearningBot:
     def __init__(self, config: BotConfig) -> None:
         self.config = config
         self.running = True
+        self._stop_event = threading.Event()
         self.last_train_ts = 0.0
 
         self.hot_inbox_dir = raw_data_path("hot_inbox")
@@ -346,7 +349,7 @@ class AutonomousLearningBot:
             return []
         try:
             with open(self.records_jsonl, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()[-5000:]
+                lines = deque(f, maxlen=5000)
         except Exception:
             return []
 
@@ -1447,16 +1450,22 @@ class AutonomousLearningBot:
                 self.maybe_train(total_new, skip_training=bool(snapshot.get("should_skip_training", False)))
 
                 elapsed = time.time() - cycle_start
-                sleep_sec = max(1, self.config.crawl_interval_sec - int(elapsed))
-                for _ in range(sleep_sec):
-                    if not self.running:
-                        break
-                    time.sleep(self.config.idle_sleep_sec)
+                self._wait_for_next_cycle(elapsed)
         finally:
             self._write_metrics(self.last_snapshot)
             self._save_state()
             self._write_shutdown_status()
             print("[INFO] Autonomous learning bot stopped.")
+
+    def _wait_for_next_cycle(self, elapsed: float) -> None:
+        if self.running:
+            # Preserve configured delay while avoiding periodic idle wakeups.
+            ticks = max(1, self.config.crawl_interval_sec - int(elapsed))
+            self._stop_event.wait(ticks * max(0, self.config.idle_sleep_sec))
+
+    def request_stop(self) -> None:
+        self.running = False
+        self._stop_event.set()
 
 
 DEFAULT_CONFIG = BotConfig(
@@ -1612,7 +1621,7 @@ def _validate_config(cfg: BotConfig) -> BotConfig:
 def _install_signal_handlers(bot: AutonomousLearningBot) -> None:
     def _handler(signum: int, _frame: object) -> None:
         bot.shutdown_reason = f"signal_{int(signum)}"
-        bot.running = False
+        bot.request_stop()
 
     signal.signal(signal.SIGINT, _handler)
     signal.signal(signal.SIGTERM, _handler)

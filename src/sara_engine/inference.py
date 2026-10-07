@@ -7,6 +7,8 @@ import random
 import math
 import hashlib
 import re
+import heapq
+from collections import Counter
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from .utils.direct_map import restore_direct_map, serialize_direct_map
 from .utils.tokenizer import SaraTokenizer
@@ -894,7 +896,8 @@ class SaraInference:
         overlap = len(query_set.intersection(candidate_set))
         coverage = overlap / max(1, len(query_set))
         precision = overlap / max(1, len(candidate_set))
-        jaccard = overlap / max(1, len(query_set.union(candidate_set)))
+        # Derive cardinalities from overlap instead of allocating two more sets.
+        jaccard = overlap / max(1, len(query_set) + len(candidate_set) - overlap)
         length_ratio = min(len(query_tuple), len(candidate_tuple)) / max(1, max(len(query_tuple), len(candidate_tuple)))
 
         suffix_overlap = 0
@@ -904,7 +907,7 @@ class SaraInference:
             suffix_overlap += 1
         suffix_match = suffix_overlap / max(1, min(len(query_tuple), len(candidate_tuple)))
 
-        drift_tokens = len(candidate_set.difference(query_set))
+        drift_tokens = len(candidate_set) - overlap
         drift_penalty = min(0.4, drift_tokens / max(1, len(candidate_set)))
 
         stability_score = (
@@ -1204,15 +1207,18 @@ class SaraInference:
 
         return self._apply_practical_relevance_gate(prompt, generated_text)
 
-    def _rank_next_token_candidates(self, sdr_k, refractory_penalty, refractory_buffer: Optional[Sequence[int]] = None):
+    def _rank_next_token_candidates(self, sdr_k, refractory_penalty, refractory_buffer: Optional[Sequence[int]] = None, *, limit: Optional[int] = None):
         valid_candidates = []
-        recent_tokens = list(self.refractory_buffer if refractory_buffer is None else refractory_buffer)
+        # Heap selection only pays off for large rows; keep small-row sorting.
+        use_heap = limit is not None and limit > 0 and len(self.direct_map[sdr_k]) >= 2048
+        # Count recent firings once instead of rescanning history for each candidate.
+        recent_counts = Counter(self.refractory_buffer if refractory_buffer is None else refractory_buffer)
         for cid, w in self.direct_map[sdr_k].items():
             weight = float(w)
 
             # Apply biological refractory penalty for recently fired tokens
-            if cid in recent_tokens:
-                count = recent_tokens.count(cid)
+            count = recent_counts.get(cid, 0)
+            if count:
                 weight = weight / (refractory_penalty ** count)
 
             valid_candidates.append((cid, weight))
@@ -1220,11 +1226,17 @@ class SaraInference:
         if not valid_candidates:
             return []
 
+        # Preserve stable sorting for unordered NaN weights and full-list callers.
+        if use_heap and not any(weight != weight for _, weight in valid_candidates):
+            return heapq.nlargest(limit, valid_candidates, key=lambda x: x[1])
         valid_candidates.sort(key=lambda x: x[1], reverse=True)
-        return valid_candidates
+        return valid_candidates if limit is None else valid_candidates[:limit]
 
     def _sample_next_token(self, sdr_k, top_k, temperature, refractory_penalty):
-        valid_candidates = self._rank_next_token_candidates(sdr_k, refractory_penalty)
+        limit = 1 if temperature <= 0.01 or top_k == 1 else (top_k if top_k > 0 else None)
+        if len(self.direct_map[sdr_k]) < 2048:
+            limit = None
+        valid_candidates = self._rank_next_token_candidates(sdr_k, refractory_penalty, limit=limit)
         if not valid_candidates:
             return None
 

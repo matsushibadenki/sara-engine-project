@@ -60,16 +60,23 @@ class TrainingQueue:
         atomic_write_json(self.queue_path, items)
 
     def enqueue(self, item: dict[str, object]) -> None:
+        self.enqueue_many([item])
+
+    def enqueue_many(self, new_items: list[dict[str, object]]) -> None:
+        """Commit a batch with one durable atomic write before returning."""
+        if not new_items:
+            return
         items = self._load()
-        if "priority" not in item:
-            item["priority"] = 0.0
-        if "created_at" not in item:
-            item["created_at"] = datetime.utcnow().isoformat()
-        items.append(item)
+        for item in new_items:
+            if "priority" not in item:
+                item["priority"] = 0.0
+            if "created_at" not in item:
+                item["created_at"] = datetime.utcnow().isoformat()
+            items.append(item)
         self._save(items)
 
     def enqueue_learning_materials(self, manifest_items: list[dict[str, object]]) -> int:
-        enqueued = 0
+        queue_items = []
         for item in manifest_items:
             material_type = str(item.get("material_type", ""))
             stage = str(item.get("curriculum_stage", "medium"))
@@ -85,9 +92,9 @@ class TrainingQueue:
                 queue_item["priority"] = max(1.0, float(queue_item["priority"]))
             if stage == "replay" and float(queue_item["priority"]) < 0.75:
                 continue
-            self.enqueue(queue_item)
-            enqueued += 1
-        return enqueued
+            queue_items.append(queue_item)
+        self.enqueue_many(queue_items)
+        return len(queue_items)
 
     def drain(self, limit: int) -> list[dict[str, object]]:
         items = self._load()
