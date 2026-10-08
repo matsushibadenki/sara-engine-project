@@ -217,8 +217,13 @@ class SaraInference:
         return "|".join([goal, task, location])
 
     def _fast_intent_cache_key(self, prompt: str) -> Tuple[str, str]:
-        normalized_prompt = str(prompt).strip().lower()
-        return normalized_prompt, self._session_memory_signature()
+        text = str(prompt)
+        # Identity replies are fixed and depend only on the latest user turn.
+        if "You:" in text and "SARA:" in text:
+            latest = self._extract_latest_user_text(text).lower()
+            if any(term in latest for term in ("who are you", "あなたは誰", "君は誰")):
+                return latest, self._session_memory_signature()
+        return text.strip().lower(), self._session_memory_signature()
 
     def _get_cached_fast_intent_response(self, prompt: str) -> Optional[str]:
         cache = getattr(self, "fast_intent_cache", None)

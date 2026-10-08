@@ -794,6 +794,7 @@ impl ScalableSDRMemory {
     }
 
     pub fn search(&self, query_sdr: Vec<usize>, top_k: usize) -> Vec<(usize, f32)> {
+        if top_k == 0 { return Vec::new(); }
         let query_set: HashSet<usize> = query_sdr.into_iter().collect();
         let query_len = query_set.len() as f32;
         if query_len == 0.0 { return Vec::new(); }
