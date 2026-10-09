@@ -9,6 +9,7 @@ import os
 import statistics
 import sys
 import time
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -98,6 +99,16 @@ def _eval_case(llm: SpikingLLM, case: dict[str, object], args: argparse.Namespac
     )
 
 
+def _count_recent_render_pairs(path: str) -> int:
+    if not os.path.exists(path):
+        return 0
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+            return sum(1 for line in deque(handle, maxlen=200) if line.strip())
+    except Exception:
+        return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run benchmark suite for autobot production model")
     parser.add_argument("--cases", default=os.path.join("bot", "benchmark_cases.json"))
@@ -128,14 +139,8 @@ def main() -> int:
     avg_latency = statistics.mean([r.latency_ms for r in results]) if results else 0.0
     avg_score = statistics.mean([r.score for r in results]) if results else 0.0
 
-    recent_render_pairs = 0
     render_pairs = workspace_path("autobot", "render_pairs.jsonl")
-    if os.path.exists(render_pairs):
-        try:
-            with open(render_pairs, "r", encoding="utf-8", errors="ignore") as f:
-                recent_render_pairs = len([ln for ln in f.readlines()[-200:] if ln.strip()])
-        except Exception:
-            recent_render_pairs = 0
+    recent_render_pairs = _count_recent_render_pairs(render_pairs)
 
     payload = {
         "ts": datetime.utcnow().isoformat(),

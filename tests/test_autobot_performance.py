@@ -98,3 +98,53 @@ def test_replay_preserves_filters_and_empty_inputs():
     assert bot._select_replay_records(0, .5) == []
     with patch('bot.autonomous_bot.os.path.exists', return_value=False):
         assert bot._select_replay_records(1, .5) == []
+
+
+def test_escalation_preserves_tail_count_event_and_cooldown():
+    class StreamingFile(io.StringIO):
+        def readlines(self, *args):
+            raise AssertionError('Escalation must stream the alert log')
+
+    bot = make_bot()
+    bot.config.critical_alert_window_minutes = 60
+    bot.config.critical_alert_threshold = 2000
+    bot.config.max_event_lines = 10000
+    bot.alerts_path = 'unused-alerts'
+    bot.events_path = 'unused-events'
+    bot.last_escalation_ts = ''
+    bot.event_logger = Mock()
+    bot._trim_file_lines = Mock()
+    text = ('ts=2099-01-01T00:00:00 severity=CRITICAL 日本語 简体中文\n') * 2100
+    written = Mock()
+    written.__enter__ = Mock(return_value=written)
+    written.__exit__ = Mock(return_value=False)
+    with patch('bot.autonomous_bot.os.path.exists', return_value=True), patch(
+            'builtins.open', side_effect=[StreamingFile(text), written, StreamingFile(text)]):
+        bot._maybe_emit_escalation()
+        bot._maybe_emit_escalation()
+    bot.event_logger.emit.assert_called_once_with('alert_escalation', {
+        'critical_count': 2000, 'window_minutes': 60, 'threshold': 2000})
+    assert 'critical_count=2000' in written.write.call_args.args[0]
+    written.write.assert_called_once()
+    assert bot.last_escalation_ts
+    bot._trim_file_lines.assert_called_once_with('unused-events', max_lines=10000)
+
+
+def test_escalation_preserves_malformed_records_and_old_alert_cutoff():
+    bot = make_bot()
+    bot.config.critical_alert_window_minutes = 60
+    bot.config.critical_alert_threshold = 2
+    bot.alerts_path = 'unused-alerts'
+    bot.event_logger = Mock()
+    text = '\n'.join([
+        'ts=2099-01-01T00:00:00 severity=CRITICAL',
+        'ts=2000-01-01T00:00:00 severity=CRITICAL',
+        'ts=invalid severity=CRITICAL',
+        'severity=CRITICAL',
+        'ts=2099-01-01T00:00:00 severity=INFO',
+        'ts=2099-01-01T00:00:00 severity=CRITICAL',
+    ])
+    with patch('bot.autonomous_bot.os.path.exists', return_value=True), patch(
+            'builtins.open', return_value=io.StringIO(text)):
+        bot._maybe_emit_escalation()
+    bot.event_logger.emit.assert_not_called()

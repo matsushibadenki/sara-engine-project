@@ -96,6 +96,16 @@ class TrainingQueue:
         self.enqueue_many(queue_items)
         return len(queue_items)
 
+    def _unchanged_empty_snapshot(self, items: list[dict[str, object]]) -> bool:
+        # An empty parsed JSON list occupying two bytes is already canonical [].
+        # Larger empty snapshots may contain whitespace or filtered invalid rows.
+        if items:
+            return False
+        try:
+            return os.path.getsize(self.queue_path) == 2
+        except OSError:
+            return False
+
     def drain(self, limit: int) -> list[dict[str, object]]:
         items = self._load()
         def _key(obj: dict[str, object]) -> tuple[float, str]:
@@ -106,7 +116,8 @@ class TrainingQueue:
         ordered = sorted(items, key=_key)
         picked = ordered[:limit]
         remaining = ordered[limit:]
-        self._save(remaining)
+        if not self._unchanged_empty_snapshot(items):
+            self._save(remaining)
         return picked
 
     def drain_curriculum(
@@ -152,7 +163,8 @@ class TrainingQueue:
 
         selected_ids = {id(x) for x in picked}
         remaining = [x for x in items if id(x) not in selected_ids]
-        self._save(remaining)
+        if not self._unchanged_empty_snapshot(items):
+            self._save(remaining)
         return picked
 
     def stats(self) -> QueueStats:

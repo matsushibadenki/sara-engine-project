@@ -98,3 +98,47 @@ def test_material_filter_and_drain_priority_remain_compatible(queue_path):
     result = queue.drain(10)
     assert [row['material_hash'] for row in result] == ['repair', 'replay', 'medium']
     assert queue._load() == []
+
+
+@pytest.mark.parametrize('curriculum', [False, True])
+def test_empty_drain_reads_once_without_save_or_sync(queue_path, curriculum):
+    queue = TrainingQueue(queue_path)
+    previous = Path(queue_path).stat()
+    with patch.object(queue, '_load', wraps=queue._load) as load, patch.object(
+            queue, '_save', wraps=queue._save) as save, patch('bot.io_utils.os.fsync') as sync:
+        result = queue.drain_curriculum(10, .3, .4, .3) if curriculum else queue.drain(10)
+    assert result == []
+    load.assert_called_once()
+    save.assert_not_called()
+    sync.assert_not_called()
+    current = Path(queue_path).stat()
+    assert (current.st_ino, current.st_mtime_ns) == (previous.st_ino, previous.st_mtime_ns)
+
+
+@pytest.mark.parametrize('raw', ['[ ]', '["invalid row"]', '{broken'])
+@pytest.mark.parametrize('curriculum', [False, True])
+def test_empty_drain_preserves_normalization_and_recovery(queue_path, raw, curriculum):
+    queue = TrainingQueue(queue_path)
+    Path(queue_path).write_text(raw)
+    result = queue.drain_curriculum(10, .3, .4, .3) if curriculum else queue.drain(10)
+    assert result == []
+    assert Path(queue_path).read_text() == '[]'
+    if raw == '{broken':
+        backups = list(Path(queue_path).parent.glob('queue.json.corrupt.*.json'))
+        assert len(backups) == 1 and backups[0].read_text() == raw
+
+
+def test_empty_curriculum_drain_still_rejects_invalid_ratios(queue_path):
+    queue = TrainingQueue(queue_path)
+    with pytest.raises(ValueError):
+        queue.drain_curriculum(10, 'invalid', .4, .3)
+
+
+def test_nonempty_drain_remains_durable(queue_path):
+    queue = TrainingQueue(queue_path)
+    queue.enqueue({'source': 'English 日本語 简体中文'})
+    with patch('bot.io_utils.os.fsync', wraps=os.fsync) as sync:
+        result = queue.drain_curriculum(1, .3, .4, .3)
+    assert len(result) == 1
+    sync.assert_called_once()
+    assert Path(queue_path).read_text() == '[]'

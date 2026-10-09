@@ -581,13 +581,17 @@ class AutonomousLearningBot:
         if max_lines < 1 or not os.path.exists(path):
             return
         try:
+            # Each physical text line consumes at least one byte on disk.
+            if os.path.getsize(path) <= max_lines:
+                return
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()
+                # One extra line distinguishes overflow from an unchanged file.
+                lines = deque(f, maxlen=max_lines + 1)
             if len(lines) <= max_lines:
                 return
-            keep = lines[-max_lines:]
+            lines.popleft()
             with open(path, "w", encoding="utf-8") as f:
-                f.writelines(keep)
+                f.writelines(lines)
         except Exception:
             return
 
@@ -835,7 +839,7 @@ class AutonomousLearningBot:
         critical_count = 0
         try:
             with open(self.alerts_path, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()[-2000:]
+                lines = deque(f, maxlen=2000)
         except Exception:
             return
 

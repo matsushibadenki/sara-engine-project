@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import subprocess
+from collections import deque
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -29,7 +30,8 @@ def _tail_lines(path: str, n: int) -> list[str]:
         return []
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()[-n:]
+            # Preserve slice semantics for zero and negative limits.
+            lines = list(deque(f, maxlen=n)) if n > 0 else f.readlines()[-n:]
         return [ln.rstrip("\n") for ln in lines]
     except Exception:
         return []
@@ -42,7 +44,7 @@ def _critical_alerts_recent(path: str, window_minutes: int) -> int:
     count = 0
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()[-3000:]
+            lines = deque(f, maxlen=3000)
     except Exception:
         return 0
     for line in reversed(lines):
