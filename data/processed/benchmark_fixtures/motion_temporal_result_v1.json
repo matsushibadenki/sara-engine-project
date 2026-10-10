@@ -1,0 +1,25 @@
+{
+  "audit": {
+    "contrast_groups": 0,
+    "passed": false,
+    "support": {
+      "development": {
+        "count": 0,
+        "days": 0,
+        "labels": {}
+      },
+      "train": {
+        "count": 0,
+        "days": 0,
+        "labels": {}
+      }
+    }
+  },
+  "extraction": {
+    "invalid_rows": 17352,
+    "opened_rows": 17352,
+    "pre_source_excluded_rows": 1409,
+    "sealed_timestamp_only_rows": 9717
+  },
+  "test_opened": false
+}

@@ -15,6 +15,9 @@ This roadmap starts after the v1.1 release-hardening work. Completed implementat
 
 ### Existing research queue
 
+- 🟢 [Done] [Repeated-state source screening and local identification](R2_ROOM_TEMPORAL_PREFLIGHT.md): both fresh source gates fail; training-only causal readout identifies four same-current history groups with six matched 10,400-write arms. No development gain or SNN advantage; older negative results and test seals preserved.
+- 🟠 [Next] Find a longer fully observed discrete source with independent labels and both classes on chronological development days; freeze support and contrast gates before values are inspected.
+
 The authoritative next-work queue is the [Research Focus Reset](ROADMAP_NEXT_LEVEL.md#research-focus-reset--2026-09-05). It supersedes unfinished phase-local priorities below while preserving completed experiments and their negative results.
 
 - 🟢 [Done] Audited representative runtime, local-learning, memory/agent paths, recent stored experiment reports, and roadmap dependencies; identified gaps between SNN implementation, causal learning evidence, and resource-bound claims.

@@ -270,3 +270,13 @@ Promotion requires a preregistered improvement over the single-factor control on
 日本語: JEPA-Anythingから採用するのは勾配学習ではなく、予測状態を複数の局所因子へ分解し、重複を抑えながら予測・再合成するという仮説です。因子の意味は事前に命名せず、予測残差・介入汎化・資源上限・再現性で検証します。まず固定因子数の小規模課題を行い、構造成長は後段に分離します。
 
 简体中文：从 JEPA-Anything 采用的不是梯度训练，而是把预测状态分解为多个局部因子、抑制冗余并重新合成的研究假设。因子不得预先命名，必须通过预测残差、干预泛化、资源上限和精确重放验证。先研究固定因子数的小任务，再单独研究结构增长。
+
+## Repeated-state real-source prerequisite — 2026-10-11
+
+🟢 [Done] [Two fresh source screens](R2_ROOM_TEMPORAL_PREFLIGHT.md) retain failures: incomplete room-motion inputs and absent occupied development examples in a PIR-only occupancy task. Separately registered training-only diagnosis shows that shared current inputs plus sparse recency branches can identify four opposite-posterior groups, with exactly 10,400 changed local writes for each of six readouts and exact scalar equivalence. Outcomes are delivered through a chronological receipt queue, including overlapping prediction horizons. This establishes local branch identification only; it does not justify factor inhibition, structural growth, generalization or SNN superiority.
+
+🟠 [Next] Require complete recurring observed state and both-class chronological development support in a longer independent source before predictive-factor comparisons. Preserve all prior negative thresholds and seals; current input availability must be specified prospectively rather than dropping sensors after scoring.
+
+日本語: 局所的な履歴の識別は訓練データで確認しましたが、比較条件は不成立です。因子分解の優位性は未確認で、次は開発期間の両クラスが成立する独立データ源を優先します。
+
+简体中文：训练数据证实了局部历史可区分，但开发比较条件未成立。因子分解优势尚未验证，下一步优先寻找开发期包含两类结果的独立完整数据源。

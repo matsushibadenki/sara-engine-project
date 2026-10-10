@@ -1,0 +1,7 @@
+{
+  "code": {
+    "scripts/eval/motion_temporal_preflight.py": "d21aab92b1bbbf9106dcbe140f3208528a4812c4ec90603387d3259581be4d1c",
+    "src/sara_engine/evaluation/motion_temporal.py": "f38d17c054e82ed1f10b5560d730f7a30bb75bd2a505a43db192d9b90f85ac83"
+  },
+  "reason": "First execution stopped at first timestamp before any numeric sensor cell access: Python 3.10 rejects nanosecond ISO fractions. Truncate timestamp fractions to microseconds; no task, feature, threshold or split changes. Original registration and failed execution marker retained."
+}

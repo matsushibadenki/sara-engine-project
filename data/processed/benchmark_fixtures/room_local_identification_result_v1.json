@@ -1,0 +1,67 @@
+{
+  "arms": {
+    "age": {
+      "changed_writes": 10400,
+      "checkpoint_sha256": "b51e555e6540c7332e94b73f4dd7879df9ff3fa33c092e8a34f95b18e50cde02",
+      "delivered_outcomes": 5200,
+      "routes": 865
+    },
+    "current": {
+      "changed_writes": 10400,
+      "checkpoint_sha256": "63ce1ce0d8e6128d97e2ebefbda493dbac56df6ef55856c7c5d8a6f5abc1b21b",
+      "delivered_outcomes": 5200,
+      "routes": 376
+    },
+    "current_fine": {
+      "changed_writes": 10400,
+      "checkpoint_sha256": "709a1fdc2083fb5239a5de2f2cd040cdb841ea88c790a8622d68a8443a96b740",
+      "delivered_outcomes": 5200,
+      "routes": 2138
+    },
+    "histogram": {
+      "changed_writes": 10400,
+      "checkpoint_sha256": "f3863b20d7818a3094c4268bd4696c9fd46bf83bad8efb32f9d8a1a3c46aa40f",
+      "delivered_outcomes": 5200,
+      "routes": 1330
+    },
+    "scalar_age": {
+      "changed_writes": 10400,
+      "checkpoint_sha256": "b51e555e6540c7332e94b73f4dd7879df9ff3fa33c092e8a34f95b18e50cde02",
+      "delivered_outcomes": 5200,
+      "routes": 865
+    },
+    "sequence": {
+      "changed_writes": 10400,
+      "checkpoint_sha256": "c13e885fe20d41d65a6f00a00fa10ec96dbac3d7a1208041529d240e605f239a",
+      "delivered_outcomes": 5200,
+      "routes": 1878
+    }
+  },
+  "development_scores_computed": false,
+  "learned_same_current_opposite_posterior_groups": 4,
+  "scalar_equivalent": true,
+  "scope": "Post-support descriptive training-only identification; no generalization, temporal necessity or SNN advantage claim",
+  "test_opened": false,
+  "witnesses": [
+    {
+      "current_address": "('base', ((0, 0), 11, 0))",
+      "high_probability": 0.7322515212981744,
+      "low_probability": 0.13969938107869143
+    },
+    {
+      "current_address": "('base', ((0, 0), 11, 1))",
+      "high_probability": 0.6909090909090909,
+      "low_probability": 0.08038277511961722
+    },
+    {
+      "current_address": "('base', ((0, 0), 11, 3))",
+      "high_probability": 0.7857142857142857,
+      "low_probability": 0.45918367346938777
+    },
+    {
+      "current_address": "('base', ((0, 1), 19, 3))",
+      "high_probability": 0.5555555555555556,
+      "low_probability": 0.4444444444444444
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "age": "Each sensor last active before current: last observation, 2-4, 5-8, or 9-16/absent; temporal detail retains shared current+clock",
+  "arms": [
+    "current",
+    "current_fine",
+    "age",
+    "histogram",
+    "sequence",
+    "age_shuffled",
+    "scalar_age"
+  ],
+  "attribution": "Singh & Chaudhari (2018), DOI 10.24432/C5P605, CC BY 4.0",
+  "destruction": "Within each split and exact current+clock group, rotate whole history to next chronological example, without labels. Offline diagnostic, never deployable predictor. Singleton groups unchanged.",
+  "development": "2017-12-25 through 2017-12-26",
+  "history": "16 observations, every adjacent interval >0 and <=65s; purge cross-split windows",
+  "input": "Only both raw digital PIR sensors and clock; no temperature/light/sound/CO2/derived CO2 slope or occupancy labels",
+  "learning": "Two changed integer counters per due receipt; prior strength8; capacity100000; frozen development",
+  "metadata_only_exposure": "CSV header, date counts and time intervals; 7 dates observed despite official description of 4 collection days; no numeric sensor/label read",
+  "quality": "Brier improvement >=.01 and balanced accuracy >=.02 over best two current controls; Brier destruction loss >=.005",
+  "scope": "PIR-only low-bandwidth interface feasibility, few controlled days, correlated examples. No full-sensor superiority, SNN advantage, energy measurement, production adoption or test opening.",
+  "sealed": "2018-01-01 onward; timestamp fields only",
+  "source": "https://archive.ics.uci.edu/dataset/864/room+occupancy+estimation",
+  "source_sha256": "a0db79ee96ea297c22458ac77a28fba20d41246e75d24b2655ca3ab624cc08fd",
+  "support_gate": "Each split >=100 per class and >=2 calendar days; >=5 exact current PIR + quarter-hour clock groups with distinct age histories and >=4 observations per opposing future label",
+  "task": "Independently manually annotated occupancy >0 at two subsequent observations, 60-130s later",
+  "train": "2017-12-22 through 2017-12-24"
+}

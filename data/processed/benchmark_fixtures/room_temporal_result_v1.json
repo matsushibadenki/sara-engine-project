@@ -1,0 +1,28 @@
+{
+  "audit": {
+    "contrast_groups": 3,
+    "passed": false,
+    "support": {
+      "development": {
+        "count": 2762,
+        "days": 2,
+        "labels": {
+          "0": 2762
+        }
+      },
+      "train": {
+        "count": 5200,
+        "days": 3,
+        "labels": {
+          "0": 3681,
+          "1": 1519
+        }
+      }
+    }
+  },
+  "extraction": {
+    "numeric_opened_rows": 8084,
+    "sealed_timestamp_only_rows": 2045
+  },
+  "test_opened": false
+}

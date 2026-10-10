@@ -1,0 +1,22 @@
+{
+  "archive_sha256": "9f28c90ee7ea129d7748f4bb3dc73ecbd0bce0c3366b43baa9c927155e41a6d3",
+  "arms": [
+    "current",
+    "order",
+    "histogram",
+    "reversed",
+    "scalar_order"
+  ],
+  "contrast_gate": "20 current+clock groups with distinct histories; >=4 observations per opposing outcome; each split >=100 per class and >=10 days",
+  "development": "2019-12-01 <= timestamp < 2020-01-01",
+  "features": "All five raw binary sensors, weekday and quarter-hour clock; no gas or occupancy claims",
+  "learning": "Two integer count changes per training receipt; backoff prior strength 8; 100000 route ceiling; frozen development",
+  "license": "CC BY 4.0",
+  "metadata_exposure": "Header and first five timestamps only, no sensor cells inspected before registration",
+  "quality_gate": "Brier gain .01 and balanced accuracy gain .02 over strong current, Brier gain .005 over histogram and reversed",
+  "scope": "Single-home source screening; no SNN advantage or production adoption; scalar_order is exact implementation reference",
+  "sealed": "2020-01-01 onward: timestamps only",
+  "source": "https://archive.ics.uci.edu/dataset/799/single+elder+home+monitoring+gas+and+position",
+  "task": "Living-room bit at next recorded observation; all four past observations and next outcome separated by positive gaps <=1800 seconds",
+  "train": "2019-11-06 <= timestamp < 2019-12-01"
+}

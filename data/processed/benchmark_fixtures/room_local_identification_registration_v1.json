@@ -1,0 +1,18 @@
+{
+  "code": {
+    "scripts/eval/room_local_identification.py": "c8f4c5269e0b99854892100ded652eeba7e9d2e55ad289277b4bf568b47f75ca",
+    "scripts/eval/room_temporal_preflight.py": "625913d5d8227e53c5e83252a7e1503c2d9f448dabafd3426c580367e6e7e1a4",
+    "src/sara_engine/evaluation/motion_temporal.py": "f38d17c054e82ed1f10b5560d730f7a30bb75bd2a505a43db192d9b90f85ac83",
+    "src/sara_engine/evaluation/room_temporal.py": "efdd928f8280ef0efee387cee20d142cb435c4613dab28fe57fd32848078103c",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06"
+  },
+  "evidence": {
+    "room_temporal_execution_v1.json": "e9f93de1968fab165e73eacff4934dd1acd2c31d7c5f65364fdeede628814b0e",
+    "room_temporal_protocol_v1.json": "23819efa2379c441421538938c6754a7cbbdaa41adc696a71efccc5e5f71d973",
+    "room_temporal_registration_v1.json": "ae7b824cc47b4694d3734ce9d258d655aa2fff8bfe371f51515945de63bc278f",
+    "room_temporal_result_v1.json": "55deac3d2aca40141a7e80d192d1269fe6c84d0a89375bd55c4ebd9bf3f5e3ae"
+  },
+  "reason": "Frozen source gate failed: development has no positive occupancy and only 3/5 train contrast groups. Diagnostic added after this known result; not an unseen preregistered quality experiment. No split/feature/horizon/threshold change.",
+  "scope": "Only 5200 training examples; six matched count readouts; 10400 changed writes each; time-ordered receipt queue; due outcomes flushed before prediction at same timestamp; no development scoring, no production artifact",
+  "source_sha256": "a0db79ee96ea297c22458ac77a28fba20d41246e75d24b2655ca3ab624cc08fd"
+}
