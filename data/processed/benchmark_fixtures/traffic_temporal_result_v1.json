@@ -1,0 +1,71 @@
+{
+  "arms": {},
+  "audit": {
+    "access": {
+      "admitted_numeric_rows_read": 29650,
+      "conflicting_duplicate_rows": 90,
+      "duplicate_hour_rows": 4321,
+      "excluded_cutoffs_missing_or_cross_split": 5295,
+      "invalid_hours": 88,
+      "invalid_rows": 10,
+      "sealed_rows_timestamp_only": 18554,
+      "valid_unique_hours": 25241
+    },
+    "counts": {
+      "development": {
+        "days": 323,
+        "examples": 6106,
+        "negative": 3554,
+        "positive": 2552
+      },
+      "train": {
+        "days": 735,
+        "examples": 13840,
+        "negative": 7994,
+        "positive": 5846
+      }
+    },
+    "sealed_numeric_values_read": 0,
+    "support_passed": true
+  },
+  "causal_examples_sha256": "9e594e1cb23f83767eef1bb263c81fecf2b3f9bb4c669aed65770751452324b6",
+  "code_sha256": {
+    "scripts/eval/traffic_temporal_preflight.py": "318aed3d1cd84d5b63bccf199490b43f509696fc40251d4347a272750fd4994c",
+    "src/sara_engine/evaluation/r1_temporal_learning_benchmark.py": "f09eb02e60ab030aa53ce58cc43e6ea9c79cd923130adaea8cfd44eb6f7d73c4",
+    "src/sara_engine/evaluation/traffic_temporal.py": "4de5213fb474e66fa95592d9203e91973e49f6dc3ce19786d78218b8c53ce498",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06"
+  },
+  "contrasts": {
+    "current_contexts": 13627,
+    "opposite_outcome_temporal_context_groups": 0,
+    "passed": false
+  },
+  "decision": {
+    "passed": false,
+    "reason": "Fixed support/current-contrast gate failed before scoring"
+  },
+  "learner_scored": false,
+  "preserved_negative_sha256": {
+    "data/processed/benchmark_fixtures/appliances_learning_registration_v1.json": "08509de5e67c149632ed3728574a657b8270eca2669b029f398ccf83dfcd65e6",
+    "data/processed/benchmark_fixtures/appliances_learning_result_v1.json": "c8b91c6e4396aa7411f590aff5d59f55efd76bd878ec25d84661410e35272d31",
+    "data/processed/benchmark_fixtures/appliances_learning_v1.json": "fbb5422d235d31764d00f37fae5f1ba0f05d2c41374854ea6ca092dc06058188",
+    "data/processed/benchmark_fixtures/appliances_prospective_receipt_v1.json": "ccebc5958b39d60164c747a773b7a526059301a5fcbfe654872cf2a239359b78",
+    "data/processed/benchmark_fixtures/appliances_prospective_v1.json": "2ccb958df09bc6de92744e6a5fbc7c23454b428b2bee951f7cf4436411418caa",
+    "data/processed/benchmark_fixtures/r2_electricity_learner_protocol_v1.json": "0093d72c34a72baf49f21220e6cadbef2af0993eb3b0cce366e2e495b7fef89f",
+    "data/processed/benchmark_fixtures/r2_electricity_learner_protocol_v2.json": "11779a93583c66e510ddb3c639827aaff0d1985306d761d4ed9e52746d746533",
+    "data/processed/benchmark_fixtures/r2_electricity_v2_result_receipt.json": "1af82dde5efdd6e77f29a463406079bee1d1dbb7548c33ecfca44ceebc833035",
+    "data/processed/benchmark_fixtures/temporal_boundary_learning_result_receipt_v1.json": "d935b625396de5100bdd1da9eaea9dd708ae2e9d6715508fbceb906859fdad80",
+    "data/processed/benchmark_fixtures/temporal_boundary_learning_v1.json": "390ab21e3310e4d9253dc8cc5d1b9925a2f445c3fd50a575bf5d9018dcea7aa9",
+    "models/appliances/analog_v1.json": "db6d4580cd1b783deb720e6c47444c3cf1ba194d6a608faece24bb13e304b320",
+    "models/appliances/histogram_v1.json": "1e0d8f0ee28b61713be0d9e3ee5ce360a7ddb48efeb060b0ab8db3fbfe14f561",
+    "models/appliances/joint_shuffled_v1.json": "7b5e3ea7ff89fd24a04e9ecfb4addf531185b855989da811344a9ef1409dab82",
+    "models/appliances/joint_v1.json": "db6d4580cd1b783deb720e6c47444c3cf1ba194d6a608faece24bb13e304b320",
+    "models/appliances/ordinal_v1.json": "db6d4580cd1b783deb720e6c47444c3cf1ba194d6a608faece24bb13e304b320",
+    "models/appliances/snapshot_v1.json": "8a2c6393de24db37f0495faec862cc8f287f0771be5ede864cde27358cd215d7",
+    "models/appliances/transition_gap_v1.json": "db6d4580cd1b783deb720e6c47444c3cf1ba194d6a608faece24bb13e304b320"
+  },
+  "promotion_authorized": false,
+  "protocol_sha256": "f16018e6c66c700c70ce7e4dbafb0aed724b38bf063f50032e4ff54673781f94",
+  "registration_sha256": "31529271770432301045eb844d1c9d45a3b5ac9b44dce3c18f9979128ed4a78d",
+  "sealed_scoring_authorized": false
+}
