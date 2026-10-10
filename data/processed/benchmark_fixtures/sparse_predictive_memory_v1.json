@@ -1,0 +1,23 @@
+{
+  "schema": "sara-sparse-predictive-memory-protocol-v1",
+  "paper": "https://arxiv.org/abs/2405.06394",
+  "seeds": [240501, 240502, 240503, 240504, 240505],
+  "periods": [5, 7, 11],
+  "training_steps": 44,
+  "evaluation_steps": 385,
+  "memory_scalar_budget": 132,
+  "outcome_scalar_writes_per_step": 3,
+  "arms": ["joint", "provided_factors", "redundant_factors"],
+  "routing": "Provided input channels and output correspondence; no anonymous factor discovery.",
+  "evaluation": "Frozen chronological continuation; report novel joint contexts separately from recurring contexts.",
+  "controls": ["reset_middle_factor", "consistent_factor_permutation", "shuffled_training_outcomes", "copy_current_state"],
+  "gates": {
+    "factor_novel_exact_min": 0.95,
+    "factor_vs_joint_novel_gain_min": 0.50,
+    "reset_exact_drop_min": 0.50,
+    "shuffled_exact_drop_min": 0.50,
+    "predictor_state_bytes_max": 65536
+  },
+  "scope": "Exploratory CPU sparse-event associative-memory component; no runtime promotion, spike advantage, energy claim, or real-data access.",
+  "promotion_authorized": false
+}

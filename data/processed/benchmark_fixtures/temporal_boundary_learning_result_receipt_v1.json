@@ -1,0 +1,27 @@
+{
+  "checkpoint_sha256": "dbdf9328c6de80a0cf4a7db6e6f9280515bde7385a8497c8616aef6b260e209d",
+  "component_learning_passed": false,
+  "decision": "Retain negative joint quality result without retuning; middle-order Brier exceeds 0.20 in every seed; gap quality and all mechanism gates pass. Sufficient non-spiking references have lower Brier in both families.",
+  "evaluation_predictions": 30720,
+  "execution_integrity_passed": true,
+  "input_audit_sha256": "d72968901f830f9fcc116dd420a56dfc39b9e899c7ed9a16ff1f59cad7284572",
+  "promotion_authorized": false,
+  "protocol_sha256": "390ab21e3310e4d9253dc8cc5d1b9925a2f445c3fd50a575bf5d9018dcea7aa9",
+  "python_version": "3.10.18",
+  "result_sha256": "bafc1953dd29fdfac4acce2e3daf3ee6e6ef1ac96aee9e013e59ebccb33bf1b8",
+  "saved_checkpoint_replay_predictions": 30720,
+  "schema": "sara-temporal-boundary-learning-result-receipt-v1",
+  "source_sha256": {
+    "scripts/eval/temporal_boundary_learning.py": "835b80f3ab4588e8171354cb31328079767a52b9aa4e7f9db54c756077694ea0",
+    "src/sara_engine/evaluation/r1_temporal_learning_benchmark.py": "f09eb02e60ab030aa53ce58cc43e6ea9c79cd923130adaea8cfd44eb6f7d73c4",
+    "src/sara_engine/evaluation/temporal_boundary_execution.py": "4e34fe15a67270c74e0ebc9eb02c847b8209b29722a9a46fc7c9fe3d5b028a92",
+    "src/sara_engine/evaluation/temporal_boundary_learning.py": "d24032e468bd60cb90b8b1e3762e0fa9f2fb8a6eb4ce29f1b0b8631108af930b",
+    "src/sara_engine/evaluation/temporal_capability_boundary.py": "6a7aca8c40f91fcaa5622027d2686829528769c022d7edb9975c741e41c36a68",
+    "src/sara_engine/evaluation/temporal_information.py": "a0b33e98d6d33d1db8d915c6a772750aff807a5a7e6fcb233aa92417a5723bd1",
+    "src/sara_engine/learning/local_outcome.py": "c57c65d199a1c038ddf9112378a0d171614bf753834083ccaff399168d80cdf8",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06",
+    "tests/test_temporal_boundary_execution.py": "26fda06242699dac0bbf38069721431fed3c3958ca28e9f756deceae6e6f5121"
+  },
+  "strong_reference_superiority": false,
+  "training_episodes": 122880
+}

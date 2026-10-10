@@ -4,6 +4,19 @@
 
 現行の完了状況は [ROADMAP.md](ROADMAP.md) と [IMPLEMENTED_FEATURES.md](IMPLEMENTED_FEATURES.md) を正とします。この文書は新しい研究・製品レベルの目標だけを扱い、完了済みの実装履歴は再掲しません。
 
+## Sparse Predictive Factorization evidence update — 2026-10-10
+
+- 🟢 [Done] [Memory Mosaics component comparison](SPARSE_PREDICTIVE_FACTORIZATION.md#executed-component-study--2026-10-10): five seeds, frozen chronological evaluation, 341 novel combinations per seed, equal scalar-memory ceilings and outcome-write budgets. Supplied-factor exact accuracy is 100%; joint/redundant whole-context controls score 0% on novel contexts. Nine tests cover causal receipts, rejection atomicity, FIFO bounds, scalar reference, abstention and frozen replay.
+- 🟢 [Done] [Bounded learned-route study](SPARSE_PREDICTIVE_FACTORIZATION.md#bounded-learned-route-study--2026-10-10): two toy tasks × five seeds, hidden input/output correspondence, local prequential errors and nuisance/intervention evaluation. Output-only and full inhibition both achieve 100% exact accuracy, but have identical prediction traces. Input-overlap specialization fails all ten registered cases; retain the negative result. This is supervised finite candidate selection, not anonymous concept emergence.
+- 🟢 [Done] [Actual-update-matched pruning](SPARSE_PREDICTIVE_FACTORIZATION.md#actual-update-matched-pruning-study--2026-10-10): all four arms perform 4,608 actual route updates per case. Across ten fresh seed/task cases, residual pruning retains the needed shared dependencies, narrows 45 candidates to nine and preserves 100% accuracy while lowering mean shifted Brier by 92.02% versus round-robin. Component gates pass; the earlier negative overlap result is preserved. Finite stationary supervised selection remains separate from anonymous concepts and production integration.
+- 🟠 [Next] Register dependency changes and bounded candidate reactivation under matched actual update budgets, including false-reactivation and recovery controls. Freeze an independent protocol before evaluation; no retuning of the completed stationary experiment.
+- 🔴 [Later] Integrate with spiking circuits, structural growth and durable evidence only after independent component evidence. No phase dependency or primary research priority is bypassed.
+- ⭕️ [Pending] Physical-energy validation awaits a suitable measurement setup. No energy or SNN advantage is claimed.
+
+日本語: 実更新回数を揃えた候補削減まで完了し、共有入力を残す誤差ベースの選択が限定的な部品基準を通過しました。入力重複抑制の否定的結果は保持し、本番採用は行いません。
+
+简体中文：已完成实际更新次数相同的候选裁剪比较，保留共享输入的误差选择通过了受限组件门槛。保留输入重叠抑制的负面结果，不升级到生产。
+
 ## Status Convention
 
 - [Done] Current code and evidence already satisfy the item.
@@ -112,7 +125,9 @@ This section is the authoritative execution queue. It supersedes unfinished prio
 | [Done] | Readout-visible temporal information | Bounded first/last/count input observer preserves all 102 first-cue pairs with 24 records and 72 readout channels; middle-order collisions remain explicit. Shared observer costs are charged to every backend. See [contract](TEMPORAL_INFORMATION_CONTRACT.md). |
 | [Done] | Shared-observer local-learning milestone | Five registered seeds: observer-only classifies the controlled order task at 100%, order-blind and LIF-only at 50%. Component learning passes; LIF incremental Brier fails. Bounded final weights and deterministic replay are retained, no production promotion. See [milestone](SHARED_OBSERVER_LEARNING.md). |
 | [Done] | Temporal capability boundary contract | Baseline identities and separate protocol `7574d2d1…c789` are pinned. All 828 input-only pairs pass registered first-order/middle-order/gap separation with bounded non-spiking references; see [boundary audit](TEMPORAL_CAPABILITY_BOUNDARY.md). No learned or real-data scores. |
-| [Next] | Matched temporal boundary learning | Freeze readout-visible encoding, delayed feedback, fresh split identities, strong non-spiking controls and full state/work budgets before scoring middle-order/gap learners. Preserve completed hypotheses and sealed real-data splits. |
+| 🟢 [Done] | Matched temporal boundary learning preregistration | Protocol `390ab21e…a7aa9` freezes six arms, explicit readout channels, four-interval feedback, five fresh seed pairs, disjoint route pools/suffix lengths, thresholds and full accounting. Input-only audit passes all 12,800 pairs; see [contract](TEMPORAL_BOUNDARY_LEARNING.md). |
+| 🟢 [Done] | Matched temporal boundary learner execution | One-shot result `bafc1953…bf1b8`: 122,880 training episodes and 30,720 evaluation/replayed predictions across 60 readouts. Integrity/mechanism/resources pass, joint middle-order Brier 0.208092 fails the 0.20 ceiling; gap 0.199259 passes. Sufficient non-spiking references are better in both families. Preserve the negative result and 92 passing tests; see [results](TEMPORAL_BOUNDARY_LEARNING.md). |
+| 🟠 [Next] | Independent prospective event task | Select and preregister fresh independently observable outcomes with sufficient ordinal/gap controls and source/time/outcome leakage checks. No retuning of the consumed joint experiment or reopening sealed real data. |
 | [Later] | R2 — Establish independent usefulness | Reopen only under a new preregistration with fresh identities and an identifiable timing signal that matched non-spiking controls cannot recover. |
 | [Later] | R3 — Optimize the useful path | After R2, measure CPU latency, memory and full event/maintenance work at increasing stream lengths and activity densities. Port only measured hotspots to Rust and verify replay equivalence. |
 | [Later] | C0–C3 — Verified concept condensation | Paused by the R1 stop rule. Preserve the design, but do not implement it until a future causal local-learning prerequisite passes. |

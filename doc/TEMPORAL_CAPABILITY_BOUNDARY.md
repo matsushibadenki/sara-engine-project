@@ -21,7 +21,7 @@ The non-spiking sequence reference admits at most 95 events over 24 routes. Gaps
 
 Run once with `PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 python3 scripts/eval/temporal_capability_boundary.py`. The runner checks protocol/baseline hashes before executing and exclusively creates `workspace/evaluation/temporal_capability_boundary_v1.json`; an existing report is never overwritten. Tests may repeat the pure input audit. Related regression suite: 36 tests passed on Python 3.10.18.
 
-[Next] Freeze a separate matched learning protocol before scoring: readout-visible middle-order/gap encoding, delayed local feedback, fresh training/evaluation identities, negative controls and complete resource accounting. The retained full sequence is a strong non-spiking information reference, not yet a predictive readout.
+🟢 [Done] Froze the separate [matched learning protocol and input preflight](TEMPORAL_BOUNDARY_LEARNING.md) before scoring: readout-visible middle-order/gap encoding, delayed local feedback, fresh training/evaluation identities, negative controls and complete resource accounting. The retained full sequence is a strong non-spiking information reference, not yet a predictive readout.
 
 [Later] Independent real-event confirmation, deep credit and production review. Completed shared-observer and electricity hypotheses remain closed.
 
@@ -29,7 +29,7 @@ Run once with `PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 python3 scripts/eval/tem
 
 [Done] 最小研究構成の保存物をハッシュ固定し、別の事前登録・有界参照実装・828組の入力監査まで完了しました。最初／最後／回数では途中の順序を失い、全順序だけでは時間間隔を失う境界を確認しました。最大95イベント、通信形式194byte。Pythonオブジェクトの実メモリはこのbyte数に含みません。関連36テストが通過しました。
 
-[Next] 学習前に、readoutが実際に参照できる情報、遅延局所更新、新しい学習／評価分割、非スパイク対照、全状態／処理予算を固定します。今回の成功は情報識別の監査であり、学習精度や実データでの効果ではありません。
+🟢 [Done] [別の学習比較プロトコル](TEMPORAL_BOUNDARY_LEARNING.md)でreadout情報・遅延局所更新・新しい分割・対照・予算を固定し、入力監査まで完了しました。今回の成功は情報識別の監査であり、学習精度や実データでの効果ではありません。
 
 [Later] 実イベントでの独立確認・深いcredit・本番審査。完了した電力実験は再開しません。
 
@@ -37,6 +37,6 @@ Run once with `PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 python3 scripts/eval/tem
 
 [Done] 已固定最小研究组件的保存文件哈希，完成单独预注册、有界参考实现和828组输入审计。首次／末次／计数会丢失中间顺序，完整顺序仍会丢失时间间隔。最多95个事件，最大线格式194byte，不包含Python对象内存。相关36项测试通过。
 
-[Next] 在评分前固定readout可见信息、延迟局部反馈、新训练／评估身份、非脉冲对照和完整状态／计算预算。本次通过仅表示信息可区分，不代表学习准确率或真实数据收益。
+🟢 [Done] 已在[单独学习协议](TEMPORAL_BOUNDARY_LEARNING.md)中固定readout信息、延迟更新、数据划分、对照和预算，并完成输入审计。本次通过仅表示信息可区分，不代表学习准确率或真实数据收益。
 
 [Later] 独立真实事件确认、深层credit和生产审核。保持已完成的电力实验关闭。

@@ -1,0 +1,474 @@
+{
+  "anonymous_factor_discovery": false,
+  "component_gate_passed": true,
+  "physical_energy_measured": false,
+  "promotion_authorized": false,
+  "protocol_sha256": "767a13e47a906844b03b70b5ab5bf221ab46c54af8d844d6cc2a274e8607532f",
+  "replay_nontiming_fields_equal": true,
+  "report_path": "workspace/evaluation/sparse_predictive_memory_v1.json",
+  "report_sha256": "9b78bba76b3a6476387a902de5d90c5a527bd8f03305abac11933ad4235e161b",
+  "runs": [
+    {
+      "arms": {
+        "joint": {
+          "component_accuracy": 0.05714285714285714,
+          "component_coverage": 0.05714285714285714,
+          "evaluation_table_lookups": 385,
+          "evictions": 22,
+          "exact_accuracy": 0.05714285714285714,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 4303,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "3a4d2671db92d9b5bb38f514d44912b66936981f499e780f3d5477137cd4cb6b",
+          "training_table_lookups": 44
+        },
+        "provided_factors": {
+          "component_accuracy": 1.0,
+          "component_coverage": 1.0,
+          "evaluation_table_lookups": 1155,
+          "evictions": 0,
+          "exact_accuracy": 1.0,
+          "first_correct_prequential_observation": 12,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 1.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5170,
+          "replay_exact": true,
+          "retained_scalars": 46,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "9cd85668551dabf79ab0779e7d7f0b4b18e330a99ad56b1f4bda4d31969f1405",
+          "training_table_lookups": 132
+        },
+        "redundant_factors": {
+          "component_accuracy": 0.02857142857142857,
+          "component_coverage": 0.02857142857142857,
+          "evaluation_table_lookups": 1155,
+          "evictions": 99,
+          "exact_accuracy": 0.02857142857142857,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5967,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "c9a1a7142173ac2f396efb92b6c34b745198cf161c9e154938e40dbcfac74098",
+          "training_table_lookups": 132
+        }
+      },
+      "controls": {
+        "consistent_factor_permutation": true,
+        "copy_current_state_exact_accuracy": 0.0,
+        "reset_middle_factor": {
+          "component_accuracy": 0.6666666666666666,
+          "component_coverage": 0.6666666666666666,
+          "exact_accuracy": 0.0,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "steps": 385,
+          "trace_sha256": "d7c1a86dc51f89413cfe37b2c3a2d8091d92fe46736331c2c51ed3cba1fc94e1"
+        },
+        "shuffled_training_outcomes": {
+          "component_accuracy": 0.24155844155844156,
+          "component_coverage": 1.0,
+          "exact_accuracy": 0.01038961038961039,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.008797653958944282,
+          "steps": 385,
+          "trace_sha256": "16deb21749baa40c2d0dc9d4ac8cc0da7d7fe92164d324e4b31413556e21cb53"
+        }
+      },
+      "gates": {
+        "bounded_state": true,
+        "equal_write_budget": true,
+        "novel_composition": true,
+        "novel_gain": true,
+        "outcome_alignment": true,
+        "permutation_equivalence": true,
+        "replay": true,
+        "reset_effect": true
+      },
+      "seed": 240501
+    },
+    {
+      "arms": {
+        "joint": {
+          "component_accuracy": 0.05714285714285714,
+          "component_coverage": 0.05714285714285714,
+          "evaluation_table_lookups": 385,
+          "evictions": 22,
+          "exact_accuracy": 0.05714285714285714,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 4303,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "36f3b9d8ae00474704db94d83748e19f2ebc3a2d96b5a5669a69d188c9e53dfd",
+          "training_table_lookups": 44
+        },
+        "provided_factors": {
+          "component_accuracy": 1.0,
+          "component_coverage": 1.0,
+          "evaluation_table_lookups": 1155,
+          "evictions": 0,
+          "exact_accuracy": 1.0,
+          "first_correct_prequential_observation": 12,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 1.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5170,
+          "replay_exact": true,
+          "retained_scalars": 46,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "43f3ab32f55e375e1eed2920a5afc6639ee298e0eb5d35629432029cc8688e80",
+          "training_table_lookups": 132
+        },
+        "redundant_factors": {
+          "component_accuracy": 0.02857142857142857,
+          "component_coverage": 0.02857142857142857,
+          "evaluation_table_lookups": 1155,
+          "evictions": 99,
+          "exact_accuracy": 0.02857142857142857,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5967,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "782f5b76ba52542a4add660c2bf9f5545a9df8306ae3384201d1a12777ecc0c0",
+          "training_table_lookups": 132
+        }
+      },
+      "controls": {
+        "consistent_factor_permutation": true,
+        "copy_current_state_exact_accuracy": 0.0,
+        "reset_middle_factor": {
+          "component_accuracy": 0.6666666666666666,
+          "component_coverage": 0.6666666666666666,
+          "exact_accuracy": 0.0,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "steps": 385,
+          "trace_sha256": "4bcaa0c86c764d3e92b75e83ba353ba643c15f95b083ce51aeefa0e5123a99fc"
+        },
+        "shuffled_training_outcomes": {
+          "component_accuracy": 0.25887445887445887,
+          "component_coverage": 1.0,
+          "exact_accuracy": 0.01038961038961039,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.008797653958944282,
+          "steps": 385,
+          "trace_sha256": "692fc00decfd7abc8496a96191bb3882d4cc1a8aad64c02b6f140be4384821ae"
+        }
+      },
+      "gates": {
+        "bounded_state": true,
+        "equal_write_budget": true,
+        "novel_composition": true,
+        "novel_gain": true,
+        "outcome_alignment": true,
+        "permutation_equivalence": true,
+        "replay": true,
+        "reset_effect": true
+      },
+      "seed": 240502
+    },
+    {
+      "arms": {
+        "joint": {
+          "component_accuracy": 0.05714285714285714,
+          "component_coverage": 0.05714285714285714,
+          "evaluation_table_lookups": 385,
+          "evictions": 22,
+          "exact_accuracy": 0.05714285714285714,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 4303,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "c2ae13dc7b545c2fe69c7580914bf0f5c2432f48d96ca5eecf13dcc7fe6653a9",
+          "training_table_lookups": 44
+        },
+        "provided_factors": {
+          "component_accuracy": 1.0,
+          "component_coverage": 1.0,
+          "evaluation_table_lookups": 1155,
+          "evictions": 0,
+          "exact_accuracy": 1.0,
+          "first_correct_prequential_observation": 12,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 1.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5170,
+          "replay_exact": true,
+          "retained_scalars": 46,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "69505701877beebdbbd8bc2b2799d4a85f29d177fb3e1b92e3589025344c8349",
+          "training_table_lookups": 132
+        },
+        "redundant_factors": {
+          "component_accuracy": 0.02857142857142857,
+          "component_coverage": 0.02857142857142857,
+          "evaluation_table_lookups": 1155,
+          "evictions": 99,
+          "exact_accuracy": 0.02857142857142857,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5967,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "9dc7fd1a58e57593e8f8d5c6869a2f09be64abac9582e127a557f17ad0ca0a7d",
+          "training_table_lookups": 132
+        }
+      },
+      "controls": {
+        "consistent_factor_permutation": true,
+        "copy_current_state_exact_accuracy": 0.0,
+        "reset_middle_factor": {
+          "component_accuracy": 0.6666666666666666,
+          "component_coverage": 0.6666666666666666,
+          "exact_accuracy": 0.0,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "steps": 385,
+          "trace_sha256": "143ee64240ee87ba80cbdce00b92c1bec6ebfc8668f4316b57e13d87bd0e2903"
+        },
+        "shuffled_training_outcomes": {
+          "component_accuracy": 0.1445887445887446,
+          "component_coverage": 1.0,
+          "exact_accuracy": 0.0025974025974025974,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "steps": 385,
+          "trace_sha256": "7ddbd54794714779dcdf6a3e858df983526660268d6991510df5cdd33a1f6924"
+        }
+      },
+      "gates": {
+        "bounded_state": true,
+        "equal_write_budget": true,
+        "novel_composition": true,
+        "novel_gain": true,
+        "outcome_alignment": true,
+        "permutation_equivalence": true,
+        "replay": true,
+        "reset_effect": true
+      },
+      "seed": 240503
+    },
+    {
+      "arms": {
+        "joint": {
+          "component_accuracy": 0.05714285714285714,
+          "component_coverage": 0.05714285714285714,
+          "evaluation_table_lookups": 385,
+          "evictions": 22,
+          "exact_accuracy": 0.05714285714285714,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 4303,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "4cab2a7ee1bc3183ede77f7fc70c05acf851e52b512a892fd1b50af44a3f1572",
+          "training_table_lookups": 44
+        },
+        "provided_factors": {
+          "component_accuracy": 1.0,
+          "component_coverage": 1.0,
+          "evaluation_table_lookups": 1155,
+          "evictions": 0,
+          "exact_accuracy": 1.0,
+          "first_correct_prequential_observation": 12,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 1.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5170,
+          "replay_exact": true,
+          "retained_scalars": 46,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "12f6f553df12d6fe9036ed967a34f8257371fa6e926f77185bac0d49fb69d701",
+          "training_table_lookups": 132
+        },
+        "redundant_factors": {
+          "component_accuracy": 0.02857142857142857,
+          "component_coverage": 0.02857142857142857,
+          "evaluation_table_lookups": 1155,
+          "evictions": 99,
+          "exact_accuracy": 0.02857142857142857,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5967,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "55569d6e99575cb0169d13923c15b929344c0c93bf5d613b77daab22b6e724bf",
+          "training_table_lookups": 132
+        }
+      },
+      "controls": {
+        "consistent_factor_permutation": true,
+        "copy_current_state_exact_accuracy": 0.0,
+        "reset_middle_factor": {
+          "component_accuracy": 0.6666666666666666,
+          "component_coverage": 0.6666666666666666,
+          "exact_accuracy": 0.0,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "steps": 385,
+          "trace_sha256": "361b41481871ff18c06fb72ecc2b0e6448b6b401d64e537f020356fc7f656e66"
+        },
+        "shuffled_training_outcomes": {
+          "component_accuracy": 0.1445887445887446,
+          "component_coverage": 1.0,
+          "exact_accuracy": 0.0025974025974025974,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.002932551319648094,
+          "steps": 385,
+          "trace_sha256": "4150fca91646e781a95b728c20574efc0d7d00530511148282ba55afa3351da6"
+        }
+      },
+      "gates": {
+        "bounded_state": true,
+        "equal_write_budget": true,
+        "novel_composition": true,
+        "novel_gain": true,
+        "outcome_alignment": true,
+        "permutation_equivalence": true,
+        "replay": true,
+        "reset_effect": true
+      },
+      "seed": 240504
+    },
+    {
+      "arms": {
+        "joint": {
+          "component_accuracy": 0.05714285714285714,
+          "component_coverage": 0.05714285714285714,
+          "evaluation_table_lookups": 385,
+          "evictions": 22,
+          "exact_accuracy": 0.05714285714285714,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 4303,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "2fc207a21eabfc4b625f958c3eb71d39cfc1b94fa9e53dd3c31b19065e49804f",
+          "training_table_lookups": 44
+        },
+        "provided_factors": {
+          "component_accuracy": 1.0,
+          "component_coverage": 1.0,
+          "evaluation_table_lookups": 1155,
+          "evictions": 0,
+          "exact_accuracy": 1.0,
+          "first_correct_prequential_observation": 12,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 1.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5170,
+          "replay_exact": true,
+          "retained_scalars": 46,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "5d840a7a6fc8f7e77e6c67480dc8755b0c5e777b898fa1a5d0d12f712a91a2a7",
+          "training_table_lookups": 132
+        },
+        "redundant_factors": {
+          "component_accuracy": 0.02857142857142857,
+          "component_coverage": 0.02857142857142857,
+          "evaluation_table_lookups": 1155,
+          "evictions": 99,
+          "exact_accuracy": 0.02857142857142857,
+          "first_correct_prequential_observation": null,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "outcome_scalar_writes": 132,
+          "peak_predictor_state_bytes": 5967,
+          "replay_exact": true,
+          "retained_scalars": 132,
+          "scalar_budget": 132,
+          "steps": 385,
+          "trace_sha256": "3eb91ecab89547c2ac5179a14654113593be0ff604749be4a93815d118c2b586",
+          "training_table_lookups": 132
+        }
+      },
+      "controls": {
+        "consistent_factor_permutation": true,
+        "copy_current_state_exact_accuracy": 0.0,
+        "reset_middle_factor": {
+          "component_accuracy": 0.6666666666666666,
+          "component_coverage": 0.6666666666666666,
+          "exact_accuracy": 0.0,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "steps": 385,
+          "trace_sha256": "3908f8dad3b4233af03642f5e284e4a161bf548f9e7ba3995e736781eeb30576"
+        },
+        "shuffled_training_outcomes": {
+          "component_accuracy": 0.19393939393939394,
+          "component_coverage": 1.0,
+          "exact_accuracy": 0.0,
+          "novel_contexts": 341,
+          "novel_exact_accuracy": 0.0,
+          "steps": 385,
+          "trace_sha256": "36031edae7ada9d68b99fa018cf9423b09036088f8aaf170b06e32528aec6d39"
+        }
+      },
+      "gates": {
+        "bounded_state": true,
+        "equal_write_budget": true,
+        "novel_composition": true,
+        "novel_gain": true,
+        "outcome_alignment": true,
+        "permutation_equivalence": true,
+        "replay": true,
+        "reset_effect": true
+      },
+      "seed": 240505
+    }
+  ],
+  "schema": "sara-sparse-predictive-memory-result-receipt-v1",
+  "source_sha256": {
+    "scripts/eval/sparse_predictive_memory.py": "2f48341659098beab9b32a30de2c5112c9ae6fe118f2d6ebbd9c029dd884aa90",
+    "src/sara_engine/evaluation/sparse_predictive_memory.py": "b08e57e7e5f80471b55465657576f4df4fcfd8dcc964477b5cfddc14132186e8"
+  },
+  "spike_advantage_tested": false,
+  "tests_passed": 41
+}

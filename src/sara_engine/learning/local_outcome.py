@@ -55,7 +55,8 @@ class LocalOutcomeConfig:
         _real("integral_cap", self.integral_cap, 1e-12, 2.0)
         _integer("max_age", self.max_age, 1, 2**31 - 1)
         _integer("integral_max_age", self.integral_max_age, 1, 2**31 - 1)
-        _integer("max_routes", self.max_routes, 1, 4096)
+        # Larger explicitly configured research vocabularies remain sparse.
+        _integer("max_routes", self.max_routes, 1, 65536)
         _integer("max_active", self.max_active, 1, self.max_routes)
 
 

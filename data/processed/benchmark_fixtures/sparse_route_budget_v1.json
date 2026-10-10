@@ -1,0 +1,41 @@
+{
+  "schema": "sara-sparse-route-budget-protocol-v1",
+  "registered_date": "2026-10-10",
+  "seeds": [240701, 240702, 240703, 240704, 240705],
+  "tasks": ["independent", "interacting"],
+  "arms": ["round_robin", "random_prune", "residual_prune", "overlap_prune"],
+  "training_steps": 512,
+  "warmup_steps": 180,
+  "updates_per_tick": 9,
+  "updates_per_output": 3,
+  "retained_candidates_per_output": 3,
+  "evaluation_steps_per_split": 256,
+  "splits": ["in_distribution", "nuisance_shift", "novel_combination", "intervention_pairs"],
+  "max_predictor_state_bytes": 131072,
+  "max_logical_scalar_slots": 4096,
+  "candidate_count": 45,
+  "key_width_penalty": 0.005,
+  "blind_input_overlap_penalty": 0.25,
+  "local_error_rate": 0.03125,
+  "minimum_route_observations": 16,
+  "schedule": "Identical seed-shuffled per-output round-robin warmup; nine distinct route updates on every tick in every arm. Round-robin continues over 45. Other arms freeze nine candidates at warmup end and update all nine thereafter. Readout chooses one minimum-error-plus-width route per output from the active pool.",
+  "pruning": "Residual pruning ranks each output's routes by local prequential squared error plus key width; it never penalizes shared input. Random pruning is seeded without outcomes. Overlap pruning greedily selects one route per output in three rounds with a 0.25 penalty per previously selected route sharing input. Retired count tables remain frozen for audit; no storage saving is claimed.",
+  "data": "Reuse the fixed independent/interacting Boolean generator with fresh seeds: hidden channel permutations, train excludes 111, nuisance copying 0.9, frozen ID/nuisance-reversal/novel/intervention splits. No oracle dependencies enter any learner.",
+  "controls": ["random_pruning", "blind_overlap_pruning", "shuffled_training_outcomes", "oracle_shared_input_mask_evaluation_only", "frozen_replay", "scalar_reference", "equal_update_ledger"],
+  "per_case_gates": {
+    "residual_shift_exact_min": 0.95,
+    "residual_novel_exact_min": 0.95,
+    "residual_intervention_exact_min": 0.95,
+    "shift_brier_regression_max": 0.005,
+    "shared_input_mask_accuracy_drop_min": 0.2,
+    "shuffle_accuracy_drop_min": 0.3
+  },
+  "aggregate_gates": {
+    "mean_shift_brier_reduction_fraction_min": 0.2,
+    "mean_shift_gain_over_random_min": 0.1
+  },
+  "additional_gates": "All interacting cases must retain the true shared dependency routes in the residual active pool. Every matched arm must execute exactly 4608 outcome route updates (13824 count/error/observation value mutations); residual pool must shrink from 45 to 9 after warmup. Replay and resource integrity must pass.",
+  "stop_rule": "Retain every result and failed gate. No coefficient, seed, threshold, candidate or dataset tuning after registered execution. A positive gate is a bounded component result, not production promotion.",
+  "promotion_authorized": false,
+  "scope": "Finite supervised route selection on stationary Boolean tasks; no spiking advantage, physical energy, anonymous concepts, real-data access or production integration. Equal outcome updates do not imply equal scheduling work or CPU time."
+}
