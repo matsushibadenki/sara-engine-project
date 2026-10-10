@@ -127,6 +127,7 @@ examples/data/
 /data/*.csv
 /data/*.db
 /data/raw/r2_physionet2019/
+/data/raw/r2_appliances/*.csv
 
 # 学習済みモデル
 *.pkl

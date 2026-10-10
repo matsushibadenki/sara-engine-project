@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "source_url": "https://archive.ics.uci.edu/static/public/374/appliances%2Benergy%2Bprediction.zip",
+  "source_sha256": "2820bf712ad0275cb18b85a05250926100d8e65ebb9f4d2d016ca91ea152a25d",
+  "attribution": "Candanedo, L. (2017). Appliances Energy Prediction. UCI. DOI:10.24432/C5VC8G. CC BY 4.0.",
+  "train_start": "2016-01-11 00:00:00",
+  "development_start": "2016-03-01 00:00:00",
+  "sealed_start": "2016-04-01 00:00:00",
+  "history_samples": 36,
+  "sample_minutes": 10,
+  "horizon_samples": 3,
+  "increase_wh": 20,
+  "minimum_train_per_class": 500,
+  "minimum_development_per_class": 100,
+  "minimum_train_days": 30,
+  "minimum_development_days": 14,
+  "feature_columns": ["Appliances"],
+  "controls": ["current_value", "histogram", "full_ordinal", "transition_gaps"],
+  "scope": "Source and support audit only. No learner scores. Sliding examples overlap; future comparisons must aggregate uncertainty by day. Wall-clock timestamps have no verified timezone. Weather interpolation and random columns are excluded."
+}

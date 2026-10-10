@@ -1,0 +1,21 @@
+{
+  "counts": {
+    "development": {
+      "days": 31,
+      "negative": 3405,
+      "positive": 1021
+    },
+    "train": {
+      "days": 50,
+      "negative": 5395,
+      "positive": 1665
+    }
+  },
+  "examples_sha256": "1d835fe292b21160bde396553f36b376f3c74c3bf2235c960649aea41752dbea",
+  "learner_scored": false,
+  "numeric_rows_read": 11562,
+  "protocol_sha256": "2ccb958df09bc6de92744e6a5fbc7c23454b428b2bee951f7cf4436411418caa",
+  "sealed_rows_timestamp_only": 8173,
+  "source_sha256": "2820bf712ad0275cb18b85a05250926100d8e65ebb9f4d2d016ca91ea152a25d",
+  "support_passed": true
+}
