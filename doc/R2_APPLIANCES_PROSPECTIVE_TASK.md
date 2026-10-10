@@ -2,7 +2,7 @@
 
 🟢 [Done] Fresh source acquisition, frozen outcome/split contract, causal extraction,
 sufficient non-spiking input controls and train/development support audit.
-🟠 [Next] Preregister the learner comparison before scoring this task.
+🟢 [Done] Registered and executed the [delayed learner comparison](R2_APPLIANCES_DELAYED_COMPARISON.md); actual updates and replay pass, SNN increment fails. The task is consumed; do not retune it.
 ⭕️ [Pending] Independently useful SNN effect and physical energy measurements.
 
 ## Source and frozen task
@@ -48,6 +48,10 @@ spy access, changed-future/invariant-input checks, split purging, incomplete
 follow-up, invalid values and exact reconstruction from change positions.
 
 ## Next comparison contract
+
+Execution update: the following requirements were frozen and implemented in
+the [comparison protocol and negative result](R2_APPLIANCES_DELAYED_COMPARISON.md).
+This section records the original forward contract, not authorization to rerun.
 
 Before learner scoring, freeze candidate routes, fresh seeds, probability
 mapping, delayed-feedback handling, actual local-update budgets, quality and

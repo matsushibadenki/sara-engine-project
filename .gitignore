@@ -12,7 +12,7 @@ __pycache__/
 # ============================================
 # Distribution / Packaging
 # ============================================
-# Generated and private models stay excluded. Only the two reviewed,
+# Generated and private models stay excluded. Only reviewed,
 # deterministic research packages below are publication artifacts.
 **/models/
 !/models/
@@ -27,6 +27,15 @@ __pycache__/
 !/models/sepsis/sara-sepsis-pretest-v1.sara
 !/models/sepsis/SHA256SUMS
 !/models/sepsis/manifest.json
+!/models/appliances/
+/models/appliances/*
+!/models/appliances/snapshot_v1.json
+!/models/appliances/histogram_v1.json
+!/models/appliances/ordinal_v1.json
+!/models/appliances/transition_gap_v1.json
+!/models/appliances/analog_v1.json
+!/models/appliances/joint_v1.json
+!/models/appliances/joint_shuffled_v1.json
 build/
 develop-eggs/
 dist/

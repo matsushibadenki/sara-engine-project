@@ -1,0 +1,14 @@
+{
+  "code_sha256": {
+    "scripts/eval/appliances_delayed_comparison.py": "e7b3b956ee2eb9a1e08e0173be9097a10ecbf63e6e764dd570486e73e02ad721",
+    "src/sara_engine/evaluation/appliances_learning.py": "72a27ac2791ce109508f51cd11853977beed9e8d381329aba38ee94ae6a64a96",
+    "src/sara_engine/evaluation/appliances_prospective.py": "2514cc8922dcc0045c7a87a300aba26461218ced92f9863e2253145beaab9b39",
+    "src/sara_engine/evaluation/r1_temporal_learning_benchmark.py": "f09eb02e60ab030aa53ce58cc43e6ea9c79cd923130adaea8cfd44eb6f7d73c4",
+    "src/sara_engine/neuro/neuron.py": "0ca80ed781d37b64817bf2c5a9bc4fe313a0bcccf63037a8aeef43bc7d995c9f",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06"
+  },
+  "learner_executed": false,
+  "protocol_sha256": "fbb5422d235d31764d00f37fae5f1ba0f05d2c41374854ea6ca092dc06058188",
+  "registered_utc": "2026-10-10T21:44:34.987104+00:00",
+  "sealed_values_read": false
+}
