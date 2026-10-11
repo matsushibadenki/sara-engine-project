@@ -1,0 +1,7 @@
+{
+  "scope": "Post-support input-only recurrence audit; no condition retuning",
+  "train_raw_current_states": 18,
+  "train_raw_current_states_repeated": 18,
+  "train_rich_current_contexts": 1896,
+  "train_rich_current_contexts_repeated": 1118
+}

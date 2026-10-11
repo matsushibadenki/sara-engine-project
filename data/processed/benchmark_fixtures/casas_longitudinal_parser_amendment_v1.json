@@ -1,0 +1,10 @@
+{
+  "code": {
+    "scripts/eval/casas_longitudinal_comparison.py": "eb3587c3aba407698aa99929a94437e893ffbe91b7aa4591441ad7d4069e5b5f",
+    "src/sara_engine/evaluation/casas_longitudinal.py": "bb9826ed990ce24e779f72ffe5ae8343bab74e0f5558287b6bdef2e022a066d3",
+    "src/sara_engine/evaluation/delayed_sparse_counts.py": "ea88220b70b8646a088a797552c363a5a4d227cbd57107a5582915342e22e2cc",
+    "src/sara_engine/evaluation/motion_temporal.py": "f38d17c054e82ed1f10b5560d730f7a30bb75bd2a505a43db192d9b90f85ac83",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06"
+  },
+  "reason": "Original execution stopped in excluded first day before training/development message or annotation access: Python 3.10 fromisoformat rejects four-digit fractional seconds. Use strptime for 1-6 fractional digits and skip excluded/sealed dates before time parsing. No task, feature, support, quality or split change. Original registration and failed execution marker retained."
+}

@@ -1,0 +1,11 @@
+{
+  "code": {
+    "scripts/eval/casas_notification_comparison.py": "75a9a43d210e4e3f578b44fcb36909a7ed6441cbb5c94a36a3993086f5a42c14",
+    "src/sara_engine/evaluation/casas_longitudinal.py": "ceedff6d8926030d7c173769b9265d04eacb91bc78dbfda90a4869b7e020977a",
+    "src/sara_engine/evaluation/casas_notification.py": "4ae9a40e47d5de25512472d8c8f99c99e75f40658e6ae23c73bbb186052a90b5",
+    "src/sara_engine/evaluation/delayed_sparse_counts.py": "ea88220b70b8646a088a797552c363a5a4d227cbd57107a5582915342e22e2cc",
+    "src/sara_engine/evaluation/motion_temporal.py": "f38d17c054e82ed1f10b5560d730f7a30bb75bd2a505a43db192d9b90f85ac83",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06"
+  },
+  "reason": "Execution stopped on a timestamped row without both sensor/message fields, before support counts or learner scores. Such records are not binary notifications; skip them without reading remaining fields, and count non_notification_rows. No missing row is assigned negative outcome, and no prediction features, target, horizons, split or gate thresholds change. Original marker and registration retained."
+}

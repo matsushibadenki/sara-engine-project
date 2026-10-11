@@ -1,0 +1,42 @@
+{
+  "extraction": {
+    "excluded_first_day_rows": 7228,
+    "interrupted_histories": 2409,
+    "late_outcomes": 1404,
+    "opened_rows": 150611,
+    "sealed_timestamp_only_rows": 65019,
+    "unannotated_outcomes": 956,
+    "unresolved_outcomes": 2
+  },
+  "support": {
+    "contrast_groups": 0,
+    "passed": false,
+    "splits": {
+      "development": {
+        "class_days": {
+          "0": 15,
+          "1": 14
+        },
+        "count": 3109,
+        "days": 15,
+        "labels": {
+          "0": 3018,
+          "1": 91
+        }
+      },
+      "train": {
+        "class_days": {
+          "0": 29,
+          "1": 23
+        },
+        "count": 5217,
+        "days": 29,
+        "labels": {
+          "0": 5135,
+          "1": 82
+        }
+      }
+    }
+  },
+  "test_opened": false
+}

@@ -1,0 +1,31 @@
+{
+  "archive_sha256": "7d9e976308e1cb5bc91cb39937848bfe073fc7b44c8a33cf166de203014b0091",
+  "arms": [
+    "current",
+    "current_fine",
+    "histogram",
+    "transition",
+    "joint",
+    "constant_gap",
+    "shuffled_outcome",
+    "scalar_joint"
+  ],
+  "attribution": "Cook et al. (2013), CASAS: A smart home in a box, DOI 10.1109/MC.2012.328; public research source, raw data not redistributed.",
+  "causality": "Chronological due queue flushes due labels before next cutoff; supplier only read at exact due; same real writes every arm; frozen development, no test opening.",
+  "detail": "Current quarter-hour and5-minute controls; unordered full history histogram; lag1/lag4 sensor-message transitions; joint adds lag1/lag4 gaps binned <1,<10,<60,>=60 seconds; constant-gap sets both bins2; outcome half-rotation training only; identical scalar joint.",
+  "development": "2011-07-15 through 2011-07-29",
+  "eligibility": "At most one cutoff per60s; purge cross-split history/outcomes and interrupted histories. First event >=300s later must arrive within600s. Conditional on follow-up observation, not absence prediction.",
+  "independence": "Fresh distinct household; no HH102 input/outcome inspection before registration. Same acquisition archive, different source identity from HH101. No cross-household generalization claim.",
+  "input": "Raw current sensor ID and binary message, weekday and quarter-hour clock, eight binary events with adjacent gaps 0..300s; current notification state, not complete household physical state. Annotations and continuous sensors never inputs.",
+  "member": "labeled/hh102.csv",
+  "metadata_only_exposure": "62 dates, 2011-06-15 through 2011-08-15, no timestamp inversions; no sensor/message/annotation values inspected.",
+  "motivation": "HH101 Sleep task failed frozen support: sparse observable nighttime events. Retain that failure. New future physically recorded notification target uses no activity annotation or imputed occupancy.",
+  "quality": "Joint daily Brier improves >=.01 and balanced accuracy >=.02 versus best current/current_fine/histogram/transition; constant gap loss >=.005 and outcome-shuffle loss >=.01 daily Brier; exact scalar equivalence.",
+  "routes": "Three changed integer counters per outcome: global, shared current+clock, detail; prior8; <=100000 local addresses; <=32 pending prediction receipts; <=16 extraction receipts.",
+  "scope": "CPU scalar sparse local readout feasibility; no matrices/GPU/global gradient; no SNN/energy/health/production claim. No test opening whether gates pass or fail.",
+  "sealed": "2011-07-30 onward: date fields only; no sensor/message/annotation parsing",
+  "source": "https://zenodo.org/records/15708568",
+  "support": "Training >=500/class on >=20 days/class; development >=200/class on >=10 days/class; >=10 exact current+clock groups with distinct joint histories and >=4 observations per opposite future label.",
+  "task": "Kitchen-prefix sensor ON at the first binary notification 300-600 seconds after cutoff; negative is any other observed binary notification, never missing data or no-event absence.",
+  "train": "2011-06-15 through 2011-07-14"
+}

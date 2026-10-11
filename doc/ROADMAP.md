@@ -15,8 +15,10 @@ This roadmap starts after the v1.1 release-hardening work. Completed implementat
 
 ### Existing research queue
 
+- 🟢 [Done] [Longitudinal CASAS diagnostic](R2_CASAS_LONGITUDINAL_COMPARISON.md): HH102 has both classes on all 15 development days and repeated current notifications, but rich-current temporal contrasts fail 0/10. Eight arms execute exactly 18,192 changed writes each with delayed outcomes and exact replay; all four quality/mechanism gates fail. No SNN advantage or test opening.
+- 🟠 [Next] Select an unconsumed household with >=180 observed days before values; establish sufficient same-current temporal contrasts as well as both-class support without relaxing past conditions.
+
 - 🟢 [Done] [Repeated-state source screening and local identification](R2_ROOM_TEMPORAL_PREFLIGHT.md): both fresh source gates fail; training-only causal readout identifies four same-current history groups with six matched 10,400-write arms. No development gain or SNN advantage; older negative results and test seals preserved.
-- 🟠 [Next] Find a longer fully observed discrete source with independent labels and both classes on chronological development days; freeze support and contrast gates before values are inspected.
 
 The authoritative next-work queue is the [Research Focus Reset](ROADMAP_NEXT_LEVEL.md#research-focus-reset--2026-09-05). It supersedes unfinished phase-local priorities below while preserving completed experiments and their negative results.
 

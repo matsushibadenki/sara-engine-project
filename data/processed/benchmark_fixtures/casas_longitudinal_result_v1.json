@@ -1,0 +1,12 @@
+{
+  "development_scored": false,
+  "failures": [
+    "Variable fractional timestamps (parser amendment1)",
+    "Unannotated rows omit fifth field (parser amendment2)",
+    "One chronological inversion at 2012-07-21 23:41:00, magnitude .22547s"
+  ],
+  "next_identity": "v2 excludes already opened 2012-07-21 as well as first-row-exposed July20; same development/test boundaries, support and quality thresholds",
+  "status": "source_validation_failed_before_support_counts_or_learners",
+  "test_opened": false,
+  "training_scored": false
+}

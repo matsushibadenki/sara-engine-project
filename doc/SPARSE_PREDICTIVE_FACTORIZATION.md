@@ -280,3 +280,13 @@ Promotion requires a preregistered improvement over the single-factor control on
 日本語: 局所的な履歴の識別は訓練データで確認しましたが、比較条件は不成立です。因子分解の優位性は未確認で、次は開発期間の両クラスが成立する独立データ源を優先します。
 
 简体中文：训练数据证实了局部历史可区分，但开发比较条件未成立。因子分解优势尚未验证，下一步优先寻找开发期包含两类结果的独立完整数据源。
+
+## Longitudinal notification prerequisite — 2026-10-12
+
+🟢 [Done] [Fresh CASAS HH102](R2_CASAS_LONGITUDINAL_COMPARISON.md) resolves both-class development support and raw current-state recurrence, but not identifiable rich-current temporal contrasts (0/10). A separately preregistered post-support diagnostic matches eight arms at 18,192 changed local writes each, consumes only due outcomes, freezes development and replays checkpoints exactly. Joint improves daily Brier by only 0.000726; all four quality/mechanism thresholds fail and scalar equivalence remains exact. This supports the bounded delayed-readout implementation, not temporal necessity, learned factor separation or spike-specific usefulness.
+
+🟠 [Next] Require a genuinely longer unconsumed observed stream (metadata screen: >=180 days) and sufficient current/clock/history branch support before new factor comparisons. Keep failed source and performance gates, frozen periods, shared current inputs and adequate non-spiking controls. Do not resume inhibition, growth or production integration from these scores.
+
+日本語: 開発期間の両クラス不足は解消しましたが、強い現在状態対照下の履歴対照群不足と性能閾値未達は残ります。条件を緩めず、未消費のさらに長期な独立ストリームを優先します。
+
+简体中文：开发期两类支持已成立，但强当前状态条件下的历史对照不足，性能门槛仍未通过。保持现有条件，优先寻找未使用的更长独立数据流。

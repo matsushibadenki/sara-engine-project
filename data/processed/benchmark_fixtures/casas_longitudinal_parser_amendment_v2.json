@@ -1,0 +1,10 @@
+{
+  "code": {
+    "scripts/eval/casas_longitudinal_comparison.py": "df47afc54fc28c2dfbef09f4f0ba6eef5586bca4cfcbee75b29cf0edee3b32e9",
+    "src/sara_engine/evaluation/casas_longitudinal.py": "80229fb7fa3f0e4deb50f4ba89f281d9f3a1b6c9cb63f80c46f638ecbcd708a6",
+    "src/sara_engine/evaluation/delayed_sparse_counts.py": "ea88220b70b8646a088a797552c363a5a4d227cbd57107a5582915342e22e2cc",
+    "src/sara_engine/evaluation/motion_temporal.py": "f38d17c054e82ed1f10b5560d730f7a30bb75bd2a505a43db192d9b90f85ac83",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06"
+  },
+  "reason": "Second execution stopped on first opened four-column notification: rows without begin/end edges omit the trailing annotation column. Treat absent fifth field as no annotation edge; do not treat missing annotation as negative. No task, split, feature, threshold or label selection change; both prior markers and amendment retained; no learner was trained/scored."
+}
