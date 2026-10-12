@@ -160,3 +160,6 @@ scripts/old/
 data/old/
 examples/old/
 tests/old/
+
+# Official range acquisition bytes and headers for the long CASAS source.
+/data/raw/r2_casas_180/

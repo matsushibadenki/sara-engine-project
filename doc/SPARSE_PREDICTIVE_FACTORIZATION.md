@@ -290,3 +290,13 @@ Promotion requires a preregistered improvement over the single-factor control on
 日本語: 開発期間の両クラス不足は解消しましたが、強い現在状態対照下の履歴対照群不足と性能閾値未達は残ります。条件を緩めず、未消費のさらに長期な独立ストリームを優先します。
 
 简体中文：开发期两类支持已成立，但强当前状态条件下的历史对照不足，性能门槛仍未通过。保持现有条件，优先寻找未使用的更长独立数据流。
+
+## Qualified long-household prerequisite — 2026-10-12
+
+🟢 [Done] [HH103 long-source comparison](R2_CASAS_180_DAY_COMPARISON.md) passes source qualification: 2,071 recorded days, 73 same-current history contrasts and both classes across 60 development days. Eight arms consume exactly 56,028 real local writes each with due-ordered feedback and exact checkpoint replay. Joint loses to strong current/history controls and improves when gap information is fixed; retain this learner negative. Correct outcome pairing matters, but scalar traces remain identical and predictive factor usefulness is not established.
+
+🟠 [Next] Preregister training-only gap-branch support and bounded confidence/backoff work before fresh independent validation. A post-score training-state audit finds 5,660 of 8,346 joint detail routes are singletons; this motivates an auditable support hypothesis, not tuning on development scores. Preserve current features, non-spiking references, actual update matching, all frozen quality conditions and sealed tails. Anonymous growth, inhibition and runtime integration remain deferred.
+
+日本語: 長期独立データで比較の成立条件は満たしましたが、時間分岐の有用性は未確認です。次は訓練限定で局所枝の支持数と信頼度付き読み出しを事前登録し、新しい独立評価で確認します。
+
+简体中文：长时间独立数据满足比较成立条件，但时间分支的实用性未通过。下一步预注册仅训练期的分支支持与置信度读取研究，再用新的独立评估验证。

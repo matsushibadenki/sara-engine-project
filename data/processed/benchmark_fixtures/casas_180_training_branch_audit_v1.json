@@ -1,0 +1,26 @@
+{
+  "arms": {
+    "current": {
+      "detail_routes": 3344,
+      "mean_support": 5.5849282296650715,
+      "routes_under_four": 2021,
+      "singleton_routes": 1109,
+      "training_outcomes": 18676
+    },
+    "joint": {
+      "detail_routes": 8346,
+      "mean_support": 2.23771866762521,
+      "routes_under_four": 7215,
+      "singleton_routes": 5660,
+      "training_outcomes": 18676
+    },
+    "transition": {
+      "detail_routes": 5787,
+      "mean_support": 3.2272334542941077,
+      "routes_under_four": 4723,
+      "singleton_routes": 3595,
+      "training_outcomes": 18676
+    }
+  },
+  "scope": "Post-score training-checkpoint support audit only; no tuning, no new performance gate, no development/test inputs inspected"
+}

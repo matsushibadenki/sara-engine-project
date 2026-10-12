@@ -1,0 +1,11 @@
+{
+  "code": {
+    "scripts/eval/casas_180_sparse_replay.py": "25f0fe0633ec9e366c3cb61d7032dc6136583c964a4aed410eda0ff4e955ed09",
+    "src/sara_engine/evaluation/sparse_count_replay.py": "a67398cd1c460846bd693aad1b580b3f956f89da8ac89f61b69b66b1e14331c1"
+  },
+  "original_registration_sha256": "89c9531cf5eee8e438678e0904f821a570fdce86ff88c92bd43d8911eb9fe7ee",
+  "original_result_sha256": "b34bff3967a4b2d55e3b443df161d6571f84631fc232699e47a900798befa1c9",
+  "reason": "Read-only full replay sampled in model-wide dict-key difference capacity scan; stopped without modifying source evidence. Replace only capacity admission with three direct membership probes; frozen delivery requires no capacity work.",
+  "requirements": "Same receipt identity, due order, supplier validation, route ceiling, changed writes, local counts, every source/quality gate, trace and checkpoint; complete fresh-process refit must equal original result.",
+  "scope": "Post-result verification backend, not a new scientific arm or retuned experiment. Original implementation/protocol/results/models remain unchanged."
+}

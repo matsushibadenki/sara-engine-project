@@ -1,0 +1,15 @@
+{
+  "central_directory_tail_sha256": "05734989a94484a22c45d049dcf11fe98517df519971ad2221ecd0e6de931dfc",
+  "compressed_sha256": "b77a0714beed6ac3288207822547a86a99ad536dfb8ddb7cc32c3937075885e1",
+  "compressed_size": 41980989,
+  "crc32": 532271806,
+  "end": 41981123,
+  "method": 8,
+  "name": "data/hh103.csv",
+  "offset": 63,
+  "size": 214673501,
+  "source_url": "https://zenodo.org/records/15708568/files/data.zip?download=1",
+  "start": 135,
+  "total_size": 2723059864,
+  "uncompressed_sha256": "d74b6eeded82ab6931718f5a1ca731e54c03221f7d6371d87ace7b0e272bf65b"
+}

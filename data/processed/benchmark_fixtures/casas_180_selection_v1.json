@@ -1,0 +1,9 @@
+{
+  "code": {
+    "src/sara_engine/evaluation/casas_180_source.py": "a96a3139c7b244b0c6e05a19d3da39731115397f91bfe83304bdb38ab46840aa"
+  },
+  "member": "data/hh103.csv",
+  "rules": "At least180 distinct recorded dates after excluding every date involved in a clock regression; first min(180,floor(2N/3)) valid dates training, next min(60,floor(N/6)) development, remaining dates sealed.",
+  "selection": "Smallest unused HH number; only timestamp/schema metadata inspected",
+  "unused_identity": "HH103, excludes consumed HH101/HH102"
+}

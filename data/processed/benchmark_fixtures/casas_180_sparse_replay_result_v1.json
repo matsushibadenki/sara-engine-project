@@ -1,0 +1,10 @@
+{
+  "all_eight_checkpoints_equal": true,
+  "all_gates_metrics_traces_equal": true,
+  "capacity_probes_per_training_receipt": 3,
+  "changed_writes_per_arm": 56028,
+  "frozen_capacity_probes": 0,
+  "original_result_sha256": "b34bff3967a4b2d55e3b443df161d6571f84631fc232699e47a900798befa1c9",
+  "source_conditions_equal": true,
+  "test_opened": false
+}

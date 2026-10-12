@@ -16,7 +16,8 @@ This roadmap starts after the v1.1 release-hardening work. Completed implementat
 ### Existing research queue
 
 - 🟢 [Done] [Longitudinal CASAS diagnostic](R2_CASAS_LONGITUDINAL_COMPARISON.md): HH102 has both classes on all 15 development days and repeated current notifications, but rich-current temporal contrasts fail 0/10. Eight arms execute exactly 18,192 changed writes each with delayed outcomes and exact replay; all four quality/mechanism gates fail. No SNN advantage or test opening.
-- 🟠 [Next] Select an unconsumed household with >=180 observed days before values; establish sufficient same-current temporal contrasts as well as both-class support without relaxing past conditions.
+- 🟢 [Done] [Qualified long-household comparison](R2_CASAS_180_DAY_COMPARISON.md): HH103 passes recurrence, 73 history-contrast groups and both classes on all 60 development days. Eight arms execute 56,028 changed writes each with delayed outcomes and exact replay. Joint loses to sufficient controls; retain the negative and 4,832,364 sealed rows.
+- 🟠 [Next] Preregister a training-only temporal-branch support and bounded confidence/backoff comparison; validate with fresh independent identities and unchanged quality gates, without tuning on consumed HH103 development or opening its test tail.
 
 - 🟢 [Done] [Repeated-state source screening and local identification](R2_ROOM_TEMPORAL_PREFLIGHT.md): both fresh source gates fail; training-only causal readout identifies four same-current history groups with six matched 10,400-write arms. No development gain or SNN advantage; older negative results and test seals preserved.
 
