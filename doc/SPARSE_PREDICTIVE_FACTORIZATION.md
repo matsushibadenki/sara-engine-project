@@ -300,3 +300,13 @@ Promotion requires a preregistered improvement over the single-factor control on
 日本語: 長期独立データで比較の成立条件は満たしましたが、時間分岐の有用性は未確認です。次は訓練限定で局所枝の支持数と信頼度付き読み出しを事前登録し、新しい独立評価で確認します。
 
 简体中文：长时间独立数据满足比较成立条件，但时间分支的实用性未通过。下一步预注册仅训练期的分支支持与置信度读取研究，再用新的独立评估验证。
+
+## Fixed support confidence prerequisite — 2026-10-13
+
+🟢 [Done] [Training-only support-8 diagnostic](R2_CASAS_CONFIDENCE_DIAGNOSTIC.md) preserves current inputs, due feedback and three changed writes per outcome. Original eight arms plus two sufficient-reference supplements each perform 27,972 writes; exact replay/scalar equivalence pass. Support gating improves ungated joint slightly but fails all performance/gap gates versus the complete references. Preserve this negative and the original development/test seals; the internally reused confirmation is not unseen generalization.
+
+🟠 [Next] Preregister current-relative branch evidence from existing local counts on fresh training identities. Support alone is not predictive increment; keep the full reference set and update/quality gates, stop threshold-only sweeps and wait for a component pass before independent validation or factor integration.
+
+日本語: 支持数だけの信頼度ゲートは強い対照を超えませんでした。次は現在状態に対する予測寄与を局所カウントから評価する仮説を、新しい訓練対象で事前登録します。
+
+简体中文：仅基于支持数的置信门控未超过强对照。下一步在新的训练身份上预注册通过局部计数评估相对于当前状态的预测贡献，保留全部条件与封存。
