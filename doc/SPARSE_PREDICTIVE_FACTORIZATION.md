@@ -305,8 +305,14 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Training-only support-8 diagnostic](R2_CASAS_CONFIDENCE_DIAGNOSTIC.md) preserves current inputs, due feedback and three changed writes per outcome. Original eight arms plus two sufficient-reference supplements each perform 27,972 writes; exact replay/scalar equivalence pass. Support gating improves ungated joint slightly but fails all performance/gap gates versus the complete references. Preserve this negative and the original development/test seals; the internally reused confirmation is not unseen generalization.
 
-🟠 [Next] Preregister current-relative branch evidence from existing local counts on fresh training identities. Support alone is not predictive increment; keep the full reference set and update/quality gates, stop threshold-only sweeps and wait for a component pass before independent validation or factor integration.
+🟢 [Done] This prerequisite was executed on fresh HH104; see the [current-relative evidence result](R2_CASAS_EVIDENCE_DIAGNOSTIC.md). Eleven preregistered arms each consume 82,062 changed writes with frozen confirmation and exact replay. All source gates pass, but evidence activates 0/15,552 times and exactly matches current. Quality/gap gates fail; preserve the negative and 3,845,589 sealed records.
 
-日本語: 支持数だけの信頼度ゲートは強い対照を超えませんでした。次は現在状態に対する予測寄与を局所カウントから評価する仮説を、新しい訓練対象で事前登録します。
+🟠 [Next] Preregister training-only feasibility of bounded temporal-history pooling before acquiring another household. Keep current context and opposing-history identifiability; establish usable disjoint evidence coverage under fixed state/write budgets. No threshold sweeps on HH104 confirmation, independent-period opening or factor/runtime promotion.
 
-简体中文：仅基于支持数的置信门控未超过强对照。下一步在新的训练身份上预注册通过局部计数评估相对于当前状态的预测贡献，保留全部条件与封存。
+日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
+
+简体中文：继仅基于支持数的门控之后，已在未使用的HH104上预注册并检验相对于当前状态的局部预测证据。保留两项负结果与全部独立期间封存。
+
+日本語: HH104の固定局所根拠ゲートは0件の有効化にとどまり、現在状態対照を上回りませんでした。次は訓練期間だけで、対照可能な時間履歴を限定的に集約する実現性を事前登録します。
+
+简体中文：HH104的固定局部证据门控启用0次，未超过当前状态对照。下一步预注册仅训练期的有界时间历史聚合可行性，保留可比较性与全部封存。

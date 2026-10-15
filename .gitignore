@@ -163,3 +163,6 @@ tests/old/
 
 # Official range acquisition bytes and headers for the long CASAS source.
 /data/raw/r2_casas_180/
+
+# Preregistered HH104 range bytes and private response headers.
+/data/raw/r2_casas_evidence/

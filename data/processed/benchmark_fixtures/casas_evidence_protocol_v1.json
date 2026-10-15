@@ -1,0 +1,34 @@
+{
+  "arms": [
+    "current",
+    "current_fine",
+    "histogram",
+    "transition",
+    "joint",
+    "confidence",
+    "evidence",
+    "constant_gap",
+    "evidence_constant",
+    "shuffled_evidence",
+    "scalar_evidence"
+  ],
+  "controls": "Support8; ungated constant-gap; same evidence policy with constant gap bins2; half-rotation training outcomes; scalar duplicate exact trace. All five sufficient references from start.",
+  "identity": "HH104, smallest unused household; ZIP name/size/CRC/offset only inspected before registration",
+  "policy": "disjoint_hoeffding95_v1",
+  "qualification": "Unchanged qualification(): >=500 per class/20 days fit, >=200 per class/10 days confirmation, >=10 rich current/history contrasts with >=4 per opposing label, >=.9 recurrence and >=10 current groups support8. Stop before learner scores on any failure.",
+  "quality": "All required: .01 daily Brier gain and .02 balanced accuracy gain over best of five sufficient references; constant-gap evidence loss >=.005; shuffled loss >=.01; exact scalar trace. Actual writes and checkpoint replay exact.",
+  "rule": "Detail counts D and disjoint complement C=current-D; n=sum(D), m=sum(C). Activate joint iff n,m>0 and abs(Dpos/n-Cpos/m)>sqrt(log(80)/(2*n))+sqrt(log(80)/(2*m)). Otherwise exact global/current/current posterior. Prior8. One fixed rule; no threshold search. Hoeffding separation proxy only, not calibrated time-series significance.",
+  "selection": "HH104 only. Require >=180 chronological recorded dates using timestamp/schema metadata only; no identity substitution after failure.",
+  "source": "Official CASAS data.zip at https://zenodo.org/records/15708568/files/data.zip?download=1",
+  "split": "Use unchanged outer metadata split. Within its training dates, first floor(2*N/3) dates fit; remaining training dates internal confirmation. Original development/test date-only sealed.",
+  "stop": "Training-only component. Failure terminal, no retuning, no independent development/test opening, no runtime or factor promotion. A pass requires separate preregistration for independent validation.",
+  "sufficient_references": [
+    "current",
+    "current_fine",
+    "histogram",
+    "transition",
+    "joint"
+  ],
+  "task": "Unchanged casas_180 extraction: binary events, eight-event histories, <=300s gaps, >=60s cutoffs; first observed binary event 300..600s later Kitchen ON positive; no absent outcome negatives; split purging.",
+  "updates": "Three changed local counter writes per due feedback, including inactive detail, for every arm. Capacity100000, pending32, extraction16. Frozen confirmation. Diagnostic branch counters are not learned."
+}

@@ -1,0 +1,10 @@
+{
+  "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 scripts/eval/casas_evidence_diagnostic.py replay",
+  "fresh_process_refit_exact": true,
+  "original_development_opened": false,
+  "registration_sha256": "b1600850d7f1dadfe61118d5f355ba8c43c6862ec66c2a672a0560f22c5df41a",
+  "related_tests_passed": 104,
+  "result_sha256": "232b9c0eab609ba37c4352d7fd15bcbc4fc31dafe77cb2dfa46bbe3150ee2ac2",
+  "saved_checkpoint_predictions_exact": true,
+  "test_opened": false
+}
