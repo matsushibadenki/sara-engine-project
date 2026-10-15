@@ -1,0 +1,74 @@
+{
+  "arms": {
+    "joint_evidence": {
+      "arm": "joint_evidence",
+      "audit_learning_writes": 0,
+      "categories": {
+        "evidence_pass": 0,
+        "margin_impossible": 139,
+        "no_complement": 1359,
+        "observed_below_bound": 69,
+        "support_impossible": 10087
+      },
+      "checkpoint_sha256": "147d287584f057e40c617862f22e48cc10ecad4e0fe3a39ae2b0c230241a7893",
+      "contexts_by_category": {
+        "evidence_pass": 0,
+        "margin_impossible": 97,
+        "no_complement": 1359,
+        "observed_below_bound": 54,
+        "support_impossible": 2308
+      },
+      "current_contexts": 3667,
+      "current_counts_sha256": "4e7a84d1aaa8b757ccf1dde3d7dc2e2366580b33d5f5badd2701e28e8346319d",
+      "detail_branches": 11654,
+      "existing_changed_writes": 52659,
+      "fit_observations": 17553,
+      "fit_observations_by_category": {
+        "evidence_pass": 0,
+        "margin_impossible": 1013,
+        "no_complement": 1432,
+        "observed_below_bound": 860,
+        "support_impossible": 14248
+      },
+      "opposing_evidence_contexts": 0
+    },
+    "pool_evidence": {
+      "arm": "pool_evidence",
+      "audit_learning_writes": 0,
+      "categories": {
+        "evidence_pass": 0,
+        "margin_impossible": 99,
+        "no_complement": 2140,
+        "observed_below_bound": 112,
+        "support_impossible": 3200
+      },
+      "checkpoint_sha256": "b13af7bc5109545ba05710ec9a4e2b4abadc0e7cc5793db4505ab9f2f5ec51b7",
+      "contexts_by_category": {
+        "evidence_pass": 0,
+        "margin_impossible": 53,
+        "no_complement": 2140,
+        "observed_below_bound": 59,
+        "support_impossible": 1453
+      },
+      "current_contexts": 3667,
+      "current_counts_sha256": "4e7a84d1aaa8b757ccf1dde3d7dc2e2366580b33d5f5badd2701e28e8346319d",
+      "detail_branches": 5551,
+      "existing_changed_writes": 52659,
+      "fit_observations": 17553,
+      "fit_observations_by_category": {
+        "evidence_pass": 0,
+        "margin_impossible": 1245,
+        "no_complement": 4370,
+        "observed_below_bound": 1991,
+        "support_impossible": 9947
+      },
+      "opposing_evidence_contexts": 0
+    }
+  },
+  "branch_trace_sha256": "278782580364c78c09f05be8b3acb3150b424f045eeccb9d7ae1b9ee9b192d3a",
+  "confirmation_opened": false,
+  "original_development_opened": false,
+  "raw_source_opened": false,
+  "scope": "Existing fitted counts only; zero new learning",
+  "test_opened": false
+}

@@ -1,0 +1,21 @@
+{
+  "current": "Preserve exact stored raw event/weekday/hour/15-minute current address. Validate that detail counts partition each current, currents partition global and existing changed writes equal three times fit observations.",
+  "evidence": "Unchanged strict delta > sqrt(log(80)/(2*n))+sqrt(log(80)/(2*m)), disjoint complement=current-detail. No threshold or current-context change. Cross-check every positive-complement classification against original evidence().",
+  "inputs": {
+    "joint_evidence": "models/casas_pooling/joint_evidence_v1.json.gz",
+    "pool_evidence": "models/casas_pooling/pool_evidence_v1.json.gz"
+  },
+  "interpretation": "observed_below_bound is insufficient observed separation under this fixed rule, not proof of small population effect, absence of time information or adequate statistical power. Cumulative endpoints do not diagnose time drift or online activation coverage.",
+  "margin_maximum": "Maximize abs(x/n-(P-x)/m) at integer endpoints x=max(0,P-m) and x=min(n,P). Preserve sample sizes and class margins. Do not misclassify rare-outcome constraints as weak observed association.",
+  "partition": [
+    "no_complement: m=0, no disjoint observed alternative",
+    "support_impossible: n,m>0 and radius>=1, strict evidence impossible even at unit rate separation",
+    "margin_impossible: radius<1 but maximum feasible separation given n,m,total current positives<=radius",
+    "observed_below_bound: radius<1, feasible maximum>radius but observed separation<=radius",
+    "evidence_pass: observed separation>radius"
+  ],
+  "report": "Deterministic gzip branch trace plus JSON summaries. All branch classifications and fixed summaries: branches, unique current contexts and fit observation mass per category, opposing evidence contexts with >=4 directional outcomes. Context categories overlap; branch/observation categories partition. Complements overlap; no independent-sample or p-value claim.",
+  "scope": "Read-only audit of consumed HH104 80-day fitted count states only. Prior negative results known. No raw source, confirmation predictions, new fitting or source acquisition.",
+  "stop": "Descriptive audit only; no winner selection, threshold search, new model, runtime/factor promotion or confirmation/development/test opening. Preserve all negative artifacts and seals.",
+  "validation": "Hand calculations, exhaustive small fixed-margin allocations, equality with existing evidence, partition/global/write conservation, identical current-count hashes across inputs, invalid checkpoint rejection, exact fresh-process replay and unchanged checkpoint bytes. Audit learning writes must be zero for both inputs."
+}

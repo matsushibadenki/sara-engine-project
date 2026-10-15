@@ -1,0 +1,14 @@
+{
+  "audit_learning_writes": 0,
+  "branch_trace_sha256": "278782580364c78c09f05be8b3acb3150b424f045eeccb9d7ae1b9ee9b192d3a",
+  "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 scripts/eval/casas_count_support_audit.py replay",
+  "compressed_branch_trace_exact": true,
+  "confirmation_opened": false,
+  "fresh_process_summary_exact": true,
+  "original_development_opened": false,
+  "raw_source_opened": false,
+  "registration_sha256": "b415726212b967ac4fa5f92a51cd6e4f29372743471883c075cf41e4f15560bb",
+  "related_tests_passed": 121,
+  "result_sha256": "bb630c31e536e8bb11027da62c9bef6f94b0c06eed2159dade91f897da6af41e",
+  "test_opened": false
+}

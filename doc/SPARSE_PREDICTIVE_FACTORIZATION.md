@@ -309,7 +309,9 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Training-only bounded pooling](R2_CASAS_POOLING_FEASIBILITY.md) executes 52,659 actual changed writes per 13 arms with exact replay and 113 passing related tests. The fixed map preserves current context and distinguishes supplied opposite-future witnesses, reducing routes 15,322→9,219. Real opposing-evidence contexts and confirmation activations are both zero; feasibility/quality/gap gates fail. Preserve the negative and 4,249,759 sealed records.
 
-🟠 [Next] Preregister a training-only support-versus-effect audit from existing fitted count states. Keep the evidence bound and exact current context fixed; distinguish mathematically inadequate support from weak observed rate separation before proposing another representation. No confirmation-selected candidate, threshold sweep, independent-period opening or factor/runtime promotion.
+🟢 [Done] [Count-only support/effect audit](R2_CASAS_COUNT_SUPPORT_AUDIT.md) separates absent complements, sample-size impossibility, fixed-margin impossibility and insufficient observed contrast. Pooled branches split 2,140 / 3,200 / 99 / 112, with zero passes; both input models retain identical current counts and 52,659 historical writes, zero new writes and exact replay. All 121 related tests pass. Weak observed separation is not proof of a small population effect; prior negatives and seals remain unchanged.
+
+🟠 [Next] Preregister count-only observation-budget feasibility at fixed current addresses and the unchanged evidence rule. Make fixed-margin/rate assumptions and hard acquisition/state limits explicit before another learner or household comparison. Do not turn the forecast into a usefulness claim or select features/thresholds from confirmation scores.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
@@ -319,6 +321,10 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：HH104的固定局部证据门控启用0次，未超过当前状态对照。随后已预注册并检验仅训练期的有界时间历史聚合，保留负结果与全部封存。
 
-日本語: 訓練期間だけの4枝集約は状態数を減らしましたが、実データの識別と予測改善は不合格でした。次は既存の訓練カウントを用い、固定した根拠条件に対する支持不足と観測された効果の弱さを監査します。
+日本語: 訓練期間だけの4枝集約は状態数を減らしましたが、実データの識別と予測改善は不合格でした。続く保存済み訓練カウントの監査で、固定した根拠条件に対する支持不足・クラス比率の制約・観測差の不足を区別しました。
 
-简体中文：仅训练期的4分支聚合减少了状态量，但真实数据的识别与预测改进未通过。下一步仅审计现有训练计数，区分固定证据条件下的支持不足与观测效应较弱。
+简体中文：仅训练期的4分支聚合减少了状态量，但真实数据的识别与预测改进未通过。随后仅用保存的训练计数完成审计，区分固定证据条件下的支持不足、类别边际约束和观测差不足。
+
+日本語: 監査は学習も封印期間の読み取りも行わず完了しました。次は同じ条件で追加観測量の実現性を仮定付きで事前登録し、新しい学習器や世帯の比較に進む根拠を確認します。
+
+简体中文：审计不进行学习或读取封存期间。下一步在相同条件下，明确假设并预注册额外观测预算的可行性，之后才考虑新的学习器或家庭比较。
