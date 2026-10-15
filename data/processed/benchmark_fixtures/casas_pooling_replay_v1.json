@@ -1,0 +1,11 @@
+{
+  "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 scripts/eval/casas_pooling_diagnostic.py replay",
+  "fresh_process_refit_exact": true,
+  "original_development_opened": false,
+  "previous_confirmation_opened": false,
+  "registration_sha256": "ed512c31ddfde9b34b0b3bbcd7b605abe7d40fbb853117d96869d7fbb89c844b",
+  "related_tests_passed": 113,
+  "result_sha256": "2bfe279cd17f5f5f066944fe2dd27b49b6666219661d48c3e39df8e7ead95cfd",
+  "saved_checkpoint_predictions_exact": true,
+  "test_opened": false
+}

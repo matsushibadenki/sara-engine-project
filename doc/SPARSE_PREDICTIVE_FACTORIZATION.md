@@ -307,12 +307,18 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] This prerequisite was executed on fresh HH104; see the [current-relative evidence result](R2_CASAS_EVIDENCE_DIAGNOSTIC.md). Eleven preregistered arms each consume 82,062 changed writes with frozen confirmation and exact replay. All source gates pass, but evidence activates 0/15,552 times and exactly matches current. Quality/gap gates fail; preserve the negative and 3,845,589 sealed records.
 
-🟠 [Next] Preregister training-only feasibility of bounded temporal-history pooling before acquiring another household. Keep current context and opposing-history identifiability; establish usable disjoint evidence coverage under fixed state/write budgets. No threshold sweeps on HH104 confirmation, independent-period opening or factor/runtime promotion.
+🟢 [Done] [Training-only bounded pooling](R2_CASAS_POOLING_FEASIBILITY.md) executes 52,659 actual changed writes per 13 arms with exact replay and 113 passing related tests. The fixed map preserves current context and distinguishes supplied opposite-future witnesses, reducing routes 15,322→9,219. Real opposing-evidence contexts and confirmation activations are both zero; feasibility/quality/gap gates fail. Preserve the negative and 4,249,759 sealed records.
+
+🟠 [Next] Preregister a training-only support-versus-effect audit from existing fitted count states. Keep the evidence bound and exact current context fixed; distinguish mathematically inadequate support from weak observed rate separation before proposing another representation. No confirmation-selected candidate, threshold sweep, independent-period opening or factor/runtime promotion.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
 简体中文：继仅基于支持数的门控之后，已在未使用的HH104上预注册并检验相对于当前状态的局部预测证据。保留两项负结果与全部独立期间封存。
 
-日本語: HH104の固定局所根拠ゲートは0件の有効化にとどまり、現在状態対照を上回りませんでした。次は訓練期間だけで、対照可能な時間履歴を限定的に集約する実現性を事前登録します。
+日本語: HH104の固定局所根拠ゲートは0件の有効化にとどまり、現在状態対照を上回りませんでした。続く訓練期間だけの限定集約も事前登録して検証し、負の結果を保持しています。
 
-简体中文：HH104的固定局部证据门控启用0次，未超过当前状态对照。下一步预注册仅训练期的有界时间历史聚合可行性，保留可比较性与全部封存。
+简体中文：HH104的固定局部证据门控启用0次，未超过当前状态对照。随后已预注册并检验仅训练期的有界时间历史聚合，保留负结果与全部封存。
+
+日本語: 訓練期間だけの4枝集約は状態数を減らしましたが、実データの識別と予測改善は不合格でした。次は既存の訓練カウントを用い、固定した根拠条件に対する支持不足と観測された効果の弱さを監査します。
+
+简体中文：仅训练期的4分支聚合减少了状态量，但真实数据的识别与预测改进未通过。下一步仅审计现有训练计数，区分固定证据条件下的支持不足与观测效应较弱。
