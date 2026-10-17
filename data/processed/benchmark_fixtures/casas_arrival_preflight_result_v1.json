@@ -1,0 +1,63 @@
+{
+  "actual_learning_writes_per_arm": {
+    "joint_evidence": 0,
+    "pool_evidence": 0
+  },
+  "arrival_dates": 171,
+  "arrival_per_calendar_day": 151.54871794871795,
+  "arrival_per_recorded_training_day": 164.17777777777778,
+  "audit": {
+    "binary_events": 695102,
+    "interrupted_histories": 5528,
+    "late_outcomes": 6650,
+    "new_reference_event_occurrences": 43260,
+    "nonbinary_rows": 3816,
+    "opened_rows": 698918,
+    "sealed_date_only_rows": 5731389,
+    "unresolved_outcomes": 4
+  },
+  "delay_seconds": {
+    "maximum": 599.955637,
+    "mean": 338.7065358920891,
+    "minimum": 300.000526
+  },
+  "gates": {
+    "arrival_target": false,
+    "long_source": true,
+    "matched_hypothetical_budget": true,
+    "observed_route_budget": true,
+    "raw_recurrence": true,
+    "rich_recurrence": true,
+    "whole_training_window": true
+  },
+  "growth_sha256": "8d2930952f744b65166cece87826fe464cb3a957bb584f4db6e5831364a56a8b",
+  "hypothetical_readout_writes_per_arm": 88656,
+  "independent_validation_passed": false,
+  "inventory_sha256": "eb34708662a8309c2902813dfb9a8c6d4f08eff01a9bbed9816681fc230c196a",
+  "new_reference_event_types": 2,
+  "original_development_opened": false,
+  "outcome_labels_computed": false,
+  "peak_pending": 5,
+  "preflight_passed": false,
+  "qualified_outcomes": 29552,
+  "qualified_per_binary_event": 0.0425146237530607,
+  "recurrence": {
+    "raw_current_types": 17,
+    "raw_repeat_row_fraction": 1.0,
+    "rich_contexts_support8": 1257,
+    "rich_current_contexts": 4089
+  },
+  "retained_event_types": 18,
+  "retained_vocabulary_envelopes": {
+    "joint_evidence": 62717761,
+    "pool_evidence": 60481
+  },
+  "routes": {
+    "joint_evidence": 20839,
+    "pool_evidence": 11327
+  },
+  "stream_event_types": 18,
+  "task_class_quality_gates_assessed": false,
+  "terminal_stop": null,
+  "test_opened": false
+}

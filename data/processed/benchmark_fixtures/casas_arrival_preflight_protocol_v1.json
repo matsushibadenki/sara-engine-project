@@ -1,0 +1,24 @@
+{
+  "addresses": "Use original pool_evidence and joint_evidence routes, exact raw current event/weekday/hour/15-minute bin. Maintain bounded audit address sets at due arrivals; precheck both then atomically commit. Three would-be readout count changes per qualified arrival for each arm, actual learner writes0. Address-set insertions and audit statistics are not learned count writes.",
+  "arrival_target": 70212,
+  "budget_stop": "Whole-measurement stop on qualified/write, opened-row, vocabulary, route or pending limit; never skip an unknown event and resume. Remaining training rows and all independent periods are date-only while byte integrity is drained to EOF. Route limit stops before either arm commits the rejected arrival; report truncation and unresolved work.",
+  "limits": {
+    "hypothetical_writes": 789885,
+    "opened_rows": 5000000,
+    "pending": 16,
+    "qualified_outcomes": 263295,
+    "routes": 100000,
+    "vocabulary": 100000
+  },
+  "measurement": "Causal per-due-date growth of opened/binary rows, qualified arrivals, all stream event types, reference-novel event types, retained current/two-lag vocabulary, exact current recurrence and per-arm route counts. Report measured yield and recorded/calendar-day arrival rates, delays, late/unresolved outcomes, final event inventory and conditional retained-vocabulary envelopes.",
+  "preflight_gates": "Require long source, complete training window within budgets, >=70212 qualified outcomes, original raw repeat fraction>=.9 and >=10 rich current contexts support8, both route ceilings and matched hypothetical write ceiling. Keep all class/day/opposing-outcome and quality gates unchanged and explicitly unassessed; never infer independent usefulness from this preflight.",
+  "qualifying_arrival": "Same eight-binary-event history, adjacent gaps<=300s, >=60s cutoff spacing, first observed binary event at least300s later and at most600s. Missing/late/unresolved outcomes are never negative labels. Histories use original gap bins; pending bound16. Qualification uses timing and original binary schema only; no Kitchen label test.",
+  "scope": "Unused HH105 fixed by prior selection. Training inputs only: arrival, recurrence, event vocabulary and address growth. No outcome class computation, learner or quality scores. New training identity is consumed by measurement, not independent generalization evidence.",
+  "selection_sha256": "a0af74fbf5d26b295a07a8e435289e845ab2c42f91051583f3e31dd431c5acec",
+  "source": "Official CASAS raw data.zip member data/hh105.csv; bounded range acquisition, SHA/size/CRC verification, timestamp-only >=180 chronological recorded-date screen. No identity substitution or split rescue.",
+  "stop": "No learner, label scoring, unknown-event rejection, threshold/current change, test opening or runtime/factor promotion. Failed arrival/recurrence cannot extend the window or switch households post hoc. Future comparative learning needs separate preregistration and original source/quality gates.",
+  "target_basis": "70,212 qualified observed outcomes equals previous common k5 additional-cohort planning target. Frozen before HH105 values; not a new task-quality or predictive gate.",
+  "unknown_events": "Reference is HH104 retained20 inventory. All binary sensor/message pairs, including previously unseen pairs, are measured without remapping or exclusion. This is a string-label comparison across households, not physical-sensor identity. Original nonbinary rows remain outside the fixed task and are counted separately.",
+  "verification": "Synthetic extraction/address parity with original parser, delayed timing, novelty retention, atomic capacity stop, date-only seals after stop and at independent split, causal prefix growth, actual learner writes0, full source checksums and exact fresh-process summary/growth/inventory replay. Pin all older JSON/gzip evidence and code.",
+  "window": "Unchanged casas_180_source metadata outer splitter: first min(180,2*N//3) chronological recorded dates only; outer independent development/test discarded by date before time/sensor/message fields. No internal confirmation is opened separately."
+}

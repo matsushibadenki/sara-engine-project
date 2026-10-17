@@ -315,7 +315,9 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Count-only vocabulary state ceilings](R2_CASAS_VOCABULARY_STATE_BUDGET.md) recover 20 retained event types, including a history-only type. Their full known-event envelope is 67,201 pooled routes, versus an uncertified 86,029,441 joint envelope. Pool certifies <=29 total types without rejecting unknown events; unrestricted growth remains unresolved. Zero acquisition/learning, exact replay and 135 related tests pass. Prior negative results, exact current/evidence conditions and all seals remain unchanged.
 
-🟠 [Next] Preregister a bounded fresh training-only vocabulary/arrival preflight before another comparative learner. Measure qualified-outcome yield, repeated contexts and event/address growth under existing budgets; do not drop unknown events to force an assumption. Preserve independent seals and require original source/quality and positive-component gates before validation or factor/runtime integration.
+🟢 [Done] [Fresh HH105 input preflight](R2_CASAS_ARRIVAL_PREFLIGHT.md) measures the complete registered training prefix of 180 recorded dates without unknown-event filtering. Novelty/recurrence and observed state budgets pass; arrival 29,552 fails fixed 70,212 target. Both arms have 0 actual learner writes and 88,656 hypothetical updates, exact process/growth/inventory replay and 145 passing related tests. Preserve all negatives and 5,731,389 sealed independent rows; original class/quality conditions remain unassessed and unchanged.
+
+🟠 [Next] Preregister a timestamp-only safe arrival upper bound before consuming another identity's inputs. Validate that it never undercounts possible qualified arrivals under unchanged history/gap/cutoff/delay conditions; screen only, without target/window rescue, scoring, input-policy change or runtime promotion.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
@@ -337,6 +339,10 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：已预注册并检验区分已知组合与未知事件的状态上界。已知20类的聚合上界为67,201单元，无限未知事件仍未确定，不据此宣称预测改进。
 
-日本語: 次は新しい訓練対象で到着量・反復・語彙増加の事前確認を登録し、固定条件のまま観測予算が成立するかを測定します。独立期間の封印と有用性の条件は維持します。
+日本語: 新しい訓練対象HH105の事前確認も完了しました。未知イベントを保持して反復と状態数は成立しましたが、到着29,552件が固定目標に届かず不合格です。独立期間の封印と有用性の条件は維持します。
 
-简体中文：下一步在新的训练身份上预注册到达量、重复上下文和词表增长预检，保持固定条件、独立期间封存与效用要求。
+简体中文：已完成新训练身份HH105的预检，保留未知事件且重复与状态预算满足条件，但29,552次到达未达到固定目标。独立期间封存和效用要求保持不变。
+
+日本語: 次は日時だけで到着数の安全な上限を事前登録し、次の世帯の入力を読む前に不可能な候補を除外できるか検証します。条件を緩めず、既存の負の結果を保持します。
+
+简体中文：下一步仅根据时间戳预注册安全到达上界，在读取下一家庭输入前检验是否可排除不可能候选，不放宽条件且保留既有负结果。

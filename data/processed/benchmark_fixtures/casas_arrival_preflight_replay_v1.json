@@ -1,0 +1,15 @@
+{
+  "actual_learning_writes_per_arm": 0,
+  "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 scripts/eval/casas_arrival_preflight.py replay",
+  "daily_growth_exact": true,
+  "event_inventory_exact": true,
+  "fresh_process_summary_exact": true,
+  "growth_sha256": "8d2930952f744b65166cece87826fe464cb3a957bb584f4db6e5831364a56a8b",
+  "inventory_sha256": "eb34708662a8309c2902813dfb9a8c6d4f08eff01a9bbed9816681fc230c196a",
+  "original_development_opened": false,
+  "outcome_labels_computed": false,
+  "registration_sha256": "cb3fdd857aafda8eaa1106fb0526241ef161200a4b1345dad4f228f8f3f948cf",
+  "related_tests_passed": 145,
+  "result_sha256": "a448c22c8c9bff13cf9891005d0eac3c99acc1ee96845b4f8e12e468f771eac7",
+  "test_opened": false
+}

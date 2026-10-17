@@ -1,0 +1,222 @@
+{
+  "retained_events": [
+    [
+      "Bathroom",
+      "CLOSE"
+    ],
+    [
+      "Bathroom",
+      "OFF"
+    ],
+    [
+      "Bathroom",
+      "ON"
+    ],
+    [
+      "Bathroom",
+      "OPEN"
+    ],
+    [
+      "Bedroom",
+      "OFF"
+    ],
+    [
+      "Bedroom",
+      "ON"
+    ],
+    [
+      "DiningRoom",
+      "OFF"
+    ],
+    [
+      "DiningRoom",
+      "ON"
+    ],
+    [
+      "Kitchen",
+      "CLOSE"
+    ],
+    [
+      "Kitchen",
+      "OFF"
+    ],
+    [
+      "Kitchen",
+      "ON"
+    ],
+    [
+      "Kitchen",
+      "OPEN"
+    ],
+    [
+      "LivingRoom",
+      "OFF"
+    ],
+    [
+      "LivingRoom",
+      "ON"
+    ],
+    [
+      "OutsideDoor",
+      "CLOSE"
+    ],
+    [
+      "OutsideDoor",
+      "OFF"
+    ],
+    [
+      "OutsideDoor",
+      "ON"
+    ],
+    [
+      "OutsideDoor",
+      "OPEN"
+    ]
+  ],
+  "stream_events": [
+    {
+      "event": [
+        "Bathroom",
+        "CLOSE"
+      ],
+      "new_to_reference": false,
+      "occurrences": 60
+    },
+    {
+      "event": [
+        "Bathroom",
+        "OFF"
+      ],
+      "new_to_reference": false,
+      "occurrences": 48569
+    },
+    {
+      "event": [
+        "Bathroom",
+        "ON"
+      ],
+      "new_to_reference": false,
+      "occurrences": 48567
+    },
+    {
+      "event": [
+        "Bathroom",
+        "OPEN"
+      ],
+      "new_to_reference": false,
+      "occurrences": 62
+    },
+    {
+      "event": [
+        "Bedroom",
+        "OFF"
+      ],
+      "new_to_reference": false,
+      "occurrences": 54150
+    },
+    {
+      "event": [
+        "Bedroom",
+        "ON"
+      ],
+      "new_to_reference": false,
+      "occurrences": 54138
+    },
+    {
+      "event": [
+        "DiningRoom",
+        "OFF"
+      ],
+      "new_to_reference": true,
+      "occurrences": 21631
+    },
+    {
+      "event": [
+        "DiningRoom",
+        "ON"
+      ],
+      "new_to_reference": true,
+      "occurrences": 21629
+    },
+    {
+      "event": [
+        "Kitchen",
+        "CLOSE"
+      ],
+      "new_to_reference": false,
+      "occurrences": 3222
+    },
+    {
+      "event": [
+        "Kitchen",
+        "OFF"
+      ],
+      "new_to_reference": false,
+      "occurrences": 138827
+    },
+    {
+      "event": [
+        "Kitchen",
+        "ON"
+      ],
+      "new_to_reference": false,
+      "occurrences": 138821
+    },
+    {
+      "event": [
+        "Kitchen",
+        "OPEN"
+      ],
+      "new_to_reference": false,
+      "occurrences": 3218
+    },
+    {
+      "event": [
+        "LivingRoom",
+        "OFF"
+      ],
+      "new_to_reference": false,
+      "occurrences": 74329
+    },
+    {
+      "event": [
+        "LivingRoom",
+        "ON"
+      ],
+      "new_to_reference": false,
+      "occurrences": 74317
+    },
+    {
+      "event": [
+        "OutsideDoor",
+        "CLOSE"
+      ],
+      "new_to_reference": false,
+      "occurrences": 2084
+    },
+    {
+      "event": [
+        "OutsideDoor",
+        "OFF"
+      ],
+      "new_to_reference": false,
+      "occurrences": 4699
+    },
+    {
+      "event": [
+        "OutsideDoor",
+        "ON"
+      ],
+      "new_to_reference": false,
+      "occurrences": 4697
+    },
+    {
+      "event": [
+        "OutsideDoor",
+        "OPEN"
+      ],
+      "new_to_reference": false,
+      "occurrences": 2082
+    }
+  ]
+}

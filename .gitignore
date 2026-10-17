@@ -166,3 +166,6 @@ tests/old/
 
 # Preregistered HH104 range bytes and private response headers.
 /data/raw/r2_casas_evidence/
+
+# Preregistered HH105 range bytes and private response headers.
+/data/raw/r2_casas_arrival/

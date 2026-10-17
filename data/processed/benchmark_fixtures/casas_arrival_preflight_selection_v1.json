@@ -1,0 +1,30 @@
+{
+  "archive_size": 2723059864,
+  "arrival_target": 70212,
+  "budgets": {
+    "compressed_member_bytes": 67108864,
+    "expanded_member_bytes": 536870912,
+    "hypothetical_readout_writes_per_arm": 789885,
+    "opened_training_rows": 5000000,
+    "pending_extraction": 16,
+    "qualified_outcomes": 263295,
+    "routes_per_arm": 100000,
+    "vocabulary_types": 100000
+  },
+  "directory_sha256": "041cb3d665faa07dbd7db96e46ff7faa2e5bdb3f910136379ae3b5d9eb58cad4",
+  "identity": "HH105, smallest unused HH identity; directory name/size/offset/CRC only seen",
+  "member": {
+    "compressed_size": 49022804,
+    "crc32": 2668343006,
+    "method": 8,
+    "name": "data/hh105.csv",
+    "offset": 1035472772,
+    "size": 254553158
+  },
+  "recurrence": "Original raw repeat fraction>=.9 and >=10 rich contexts support>=8. Original class/day/history and all quality gates remain required, not assessed or relaxed by this input-only preflight.",
+  "scope": "Arrival, recurrence and vocabulary/route growth only. No label classification, scoring or learning. Full code/protocol registration must precede timestamp metadata and sensor/message inspection.",
+  "selection": "One identity only; no substitution on failure. Require >=180 chronological recorded dates from timestamp-only metadata. Use unchanged outer splitter and only its training prefix, capped at180 recorded dates. Original independent development/test date-only sealed.",
+  "source_url": "https://zenodo.org/records/15708568/files/data.zip?download=1",
+  "stop": "No independent-period opening, model/runtime/factor promotion or failed-condition retuning.",
+  "unknown": "Relative to HH104 retained20 event inventory; include every previously unseen binary event. No closed-vocabulary policy; whole-run stop on any budget limit, never selective unknown-event dropping."
+}

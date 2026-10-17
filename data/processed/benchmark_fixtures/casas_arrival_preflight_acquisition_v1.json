@@ -1,0 +1,18 @@
+{
+  "acquired_utc": "2026-10-17T11:50:49.833128+00:00",
+  "compressed_sha256": "aed878270e6945d7df6bd08cd296be5ca0c4837c4671fb638e4b41b956f9aff3",
+  "compressed_size": 49022804,
+  "crc32": 2668343006,
+  "directory_sha256": "041cb3d665faa07dbd7db96e46ff7faa2e5bdb3f910136379ae3b5d9eb58cad4",
+  "end": 1084495647,
+  "header_sha256": "a22b78336db19c6d7849d97af794a7f4e2bdbd4752270dc3b64708be5c2a5726",
+  "method": 8,
+  "name": "data/hh105.csv",
+  "offset": 1035472772,
+  "registration_sha256": "cb3fdd857aafda8eaa1106fb0526241ef161200a4b1345dad4f228f8f3f948cf",
+  "selection_sha256": "a0af74fbf5d26b295a07a8e435289e845ab2c42f91051583f3e31dd431c5acec",
+  "size": 254553158,
+  "start": 1035472844,
+  "total_size": 2723059864,
+  "url": "https://zenodo.org/records/15708568/files/data.zip?download=1"
+}

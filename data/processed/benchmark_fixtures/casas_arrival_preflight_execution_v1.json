@@ -1,0 +1,10 @@
+{
+  "inputs": {
+    "acquisition": "974c492925850811cd87690884bfb9c809cee20d6925fb736e4eba52b16cec44",
+    "integrity": "34f29769f09755a42039efb33e373ee66bd7d95a5b6ec197aad7c037d336688c",
+    "metadata": "38034b9a47cc9ed5c99e8bc4365a9ec1fdd6b1c601e715f3adb30b16cbd38fae",
+    "reference": "62ee073bbb2c5e75def4882d18caa665bfe7d84bff478a31fea51838224c1564"
+  },
+  "protocol_sha256": "ff614f7562606f2eea0be4b6feb76efa47254054b792442c82e7b06c19df9a74",
+  "started": true
+}
