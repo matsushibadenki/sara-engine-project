@@ -1,0 +1,15 @@
+{
+  "actual_acquired_observations": 0,
+  "actual_learning_writes": 0,
+  "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 scripts/eval/casas_vocabulary_budget.py replay",
+  "confirmation_opened": false,
+  "event_inventory_exact": true,
+  "fresh_process_result_exact": true,
+  "inventory_sha256": "62ee073bbb2c5e75def4882d18caa665bfe7d84bff478a31fea51838224c1564",
+  "original_development_opened": false,
+  "raw_source_opened": false,
+  "registration_sha256": "906920a3a69308a0da5354926e753df1df9ebf7d848f254d0d02f846c751afec",
+  "related_tests_passed": 135,
+  "result_sha256": "4fa0074d5fded9ae826f415ef4590f49e99940e79090cbba757c69254db91b23",
+  "test_opened": false
+}

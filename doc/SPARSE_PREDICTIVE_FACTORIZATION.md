@@ -313,7 +313,9 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Count-only observation-budget forecast](R2_CASAS_OBSERVATION_BUDGET.md) fixes rates, current conditions and evidence thresholds. Closed-world targets require +52,659 pooled / +70,212 joint observations within acquisition/write ceilings; conservative state growth exceeds the 100,000-route cap. Oracle bounds are branchwise, not a global plan. No actual acquisition or learning; exact replay, 128 related tests and preserved negatives/seals.
 
-🟠 [Next] Preregister a count-only finite-vocabulary state ceiling before acquisition. Distinguish exact-address recurrence, new combinations within the observed event vocabulary and genuinely unseen events; preserve current/context conditions and state assumptions explicitly. No unknown-event rejection, independent-period opening or predictive/runtime promotion from a state bound.
+🟢 [Done] [Count-only vocabulary state ceilings](R2_CASAS_VOCABULARY_STATE_BUDGET.md) recover 20 retained event types, including a history-only type. Their full known-event envelope is 67,201 pooled routes, versus an uncertified 86,029,441 joint envelope. Pool certifies <=29 total types without rejecting unknown events; unrestricted growth remains unresolved. Zero acquisition/learning, exact replay and 135 related tests pass. Prior negative results, exact current/evidence conditions and all seals remain unchanged.
+
+🟠 [Next] Preregister a bounded fresh training-only vocabulary/arrival preflight before another comparative learner. Measure qualified-outcome yield, repeated contexts and event/address growth under existing budgets; do not drop unknown events to force an assumption. Preserve independent seals and require original source/quality and positive-component gates before validation or factor/runtime integration.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
@@ -331,6 +333,10 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：审计不进行学习或读取封存期间。随后已预注册额外观测预算：已知状态重复时采集预算可行，但未知状态增长的保守上界无法保证状态预算。
 
-日本語: 次はカウントだけで、既知イベントの新しい組合せと未知イベントを分けた状態数上限を事前登録します。収集・学習・予測改善の主張には進みません。
+日本語: 既知組合せと未知イベントを分けた上限も事前登録して検証しました。既知20種類での集約上限は67,201セルですが、無制限の未知イベントは未確定で、予測改善とは扱いません。
 
-简体中文：下一步仅用计数，预注册区分已知事件新组合与未知事件的状态数上界，不据此开展采集、学习或宣称预测改进。
+简体中文：已预注册并检验区分已知组合与未知事件的状态上界。已知20类的聚合上界为67,201单元，无限未知事件仍未确定，不据此宣称预测改进。
+
+日本語: 次は新しい訓練対象で到着量・反復・語彙増加の事前確認を登録し、固定条件のまま観測予算が成立するかを測定します。独立期間の封印と有用性の条件は維持します。
+
+简体中文：下一步在新的训练身份上预注册到达量、重复上下文和词表增长预检，保持固定条件、独立期间封存与效用要求。

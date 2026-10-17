@@ -1,0 +1,16 @@
+{
+  "envelopes": "For V shared known event types, current C=672*V. Pool has <=4*C detail routes, total <=1+5*C. Joint has <=16*C*V**2 details for two lag events and two four-bin gaps, total <=1+C+16*C*V**2. Include global and current routes. These are conservative syntactic upper bounds, not necessarily jointly reachable histories.",
+  "fixed_current": "Same raw sensor/message, weekday7, hour24, 15-minute bins4: 672 contexts per current event. No clock coarsening, pooling across current addresses or evidence threshold changes. Three changed writes per observed outcome remains original accounting.",
+  "frontier": "Report largest total event cardinality whose full envelope<=100000, remaining hypothetical unknown-type allowance only if known envelope already certified, and one-new-type endpoint. Integer inversion is a cardinality certificate, not an event rejection/admission policy or threshold search.",
+  "inputs": {
+    "joint_evidence": "models/casas_pooling/joint_evidence_v1.json.gz",
+    "pool_evidence": "models/casas_pooling/pool_evidence_v1.json.gz"
+  },
+  "known_vocabulary": "Union of raw (sensor ID,message) events in both current tables and the two stored joint history positions. Pool booleans cannot reveal history identities; do not mistake a current-only set for the full retained event set. This is the vocabulary retained in these keys, not a claim to know all source events.",
+  "limits": "No unknown events are discarded or remapped. Fixed vocabulary is an assumption, not an observed future guarantee. No raw-row yield, acquisition duration, byte volume, physical memory/energy, predictive quality or statistical coverage inferred. Previous fixed-rate forecasts must not be combined with new-combination envelopes into a proven learner result.",
+  "report": "Known vocabulary cardinalities, history-only events, deterministic event inventory and hash; existing and finite-vocabulary route bounds, generic finite-acquisition bounds and min of applicable upper bounds. Certify capacity only if an upper bound<=100000; exceeding a bound is not proof of actual overflow.",
+  "scope": "Count-address-only state ceiling from consumed HH104 fitted pool/joint checkpoints. Earlier negatives and forecasts known. No raw source, score evaluation, learner, acquisition or new rejection policy.",
+  "stop": "Descriptive capacity analysis only. Unlimited unseen-event feasibility remains unresolved. No acquisition, outcome reading, independent period opening, new input policy or factor/runtime promotion even if a finite-vocabulary bound fits.",
+  "validation": "Unchanged count/current/global/write conservation, cross-input current hashes, known history union, toy route enumeration against the original address functions, monotone capacity frontiers, no learning/mutation, exact process/inventory replay and old artifact hashes.",
+  "worlds": "Exact address recurrence uses existing S. All new clock/history combinations over the fixed known vocabulary use the finite envelope. U genuinely new event types use the same envelope at V+U, regardless of identity. Unrestricted unknown events have no finite all-horizon bound; at the fixed +263295-outcome acquisition ceiling generic S+2*B still bounds count routes."
+}
