@@ -1,0 +1,22 @@
+{
+  "acquisition_budget": {
+    "additional_changed_writes_per_arm": 789885,
+    "additional_qualified_observed_outcomes": 263295,
+    "count_route_capacity": 100000
+  },
+  "budget_basis": "Fixed 16-fold cohort ceiling for the known 17,553-example fit: at most 15 additional cohorts, three real writes per new outcome per arm if ever executed. This is an explicit planning ceiling, not a measured data availability or energy budget.",
+  "fixed": "Exact current raw sensor/message, weekday, hour and 15-minute bins. Same detail routes and strict log(80) disjoint evidence rule; no threshold, current aggregation or model selection.",
+  "inputs": {
+    "joint_evidence": "models/casas_pooling/joint_evidence_v1.json.gz",
+    "pool_evidence": "models/casas_pooling/pool_evidence_v1.json.gz"
+  },
+  "inversion": "Binary integer inversion of original radius at k*n,k*m, never a threshold sweep. Numerical ceiling 2**128; exceeding it is an explicit error. Required additional outcomes=(k-1)*N; writes=3*(k-1)*N. Both audited models must retain equal current-count hashes and historical writes.",
+  "limitations": "No guarantee of recurrence, stationarity, independent evidence, raw-row yield, duration, byte volume, latency, RAM bytes, physical energy or future usefulness. Fixed observed-zero contrast is not proof of population zero. Do not extrapolate calendar days from counts.",
+  "observed_rates": "Uniform integer replication k of the entire contingency table; both class rates and all history/current frequencies remain exactly fixed. Find minimal k by strict-bound integer inversion and verify k and k-1 with unchanged evidence(). No selective branch acquisition. Zero contrast or absent complement remains impossible under this assumption.",
+  "oracle": "Separate optimistic per-branch fixed-margin reassignment: preserve k*n,k*m,k*P; maximize separation at allocation endpoints. These counterfactual branch assignments need not coexist; their eligible branch mass is only a branchwise upper bound, not simultaneous coverage, global feasibility or a new predictive result.",
+  "report": "Fixed budget endpoints and minimum full-cohort scale, per-branch deterministic gzip trace, route bounds, no finite scale reasons, and exact fresh-process replay. Actual acquisition and learning writes remain zero.",
+  "scope": "Conditional planning from already consumed HH104 80-day training count tables. Prior negatives known. No fitting, raw source, confirmation scores or data acquisition.",
+  "state_assumptions": "Closed world: exact same addresses recur, no added routes. Open world: at most one new current and one new detail per additional outcome, so conservative routes=S+2*B; report full-budget and required-budget bounds plus state-safe whole-cohort ceiling. This is an upper bound, not measured growth; open-world events violate the closed-world frequency assumption.",
+  "stop": "No acquisition or runtime/factor promotion even if a conditional forecast passes. Preserve all negative results and sealed periods. Any future learner or data acquisition needs separate preregistration and original quality gates.",
+  "targets": "Observed-rate forecast only: >=10 current contexts with distinct evidence branches in opposite directions and >=4 directional outcomes each; >=1% fitted observation mass in passing branches. These are count-planning targets, not replacements for original independent quality, confirmation coverage or active-day gates."
+}

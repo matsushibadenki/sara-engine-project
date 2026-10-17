@@ -1,0 +1,15 @@
+{
+  "actual_acquired_observations": 0,
+  "actual_learning_writes": 0,
+  "branch_trace_sha256": "a766b3c9e02d2bcab3d8a337c88d127aca73e1143e97b99a7fb2b885c2753367",
+  "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 scripts/eval/casas_observation_budget.py replay",
+  "compressed_branch_trace_exact": true,
+  "confirmation_opened": false,
+  "fresh_process_summary_exact": true,
+  "original_development_opened": false,
+  "raw_source_opened": false,
+  "registration_sha256": "56753e8472b09da3e5d33dce554b4e694c44bc5e4069af5e5747c9b59829f713",
+  "related_tests_passed": 128,
+  "result_sha256": "ce3d1c144c9b99ebc79670654ccf7b4bcf9d86b4b1234adce5586888a811c8f4",
+  "test_opened": false
+}

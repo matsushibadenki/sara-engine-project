@@ -311,7 +311,9 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Count-only support/effect audit](R2_CASAS_COUNT_SUPPORT_AUDIT.md) separates absent complements, sample-size impossibility, fixed-margin impossibility and insufficient observed contrast. Pooled branches split 2,140 / 3,200 / 99 / 112, with zero passes; both input models retain identical current counts and 52,659 historical writes, zero new writes and exact replay. All 121 related tests pass. Weak observed separation is not proof of a small population effect; prior negatives and seals remain unchanged.
 
-🟠 [Next] Preregister count-only observation-budget feasibility at fixed current addresses and the unchanged evidence rule. Make fixed-margin/rate assumptions and hard acquisition/state limits explicit before another learner or household comparison. Do not turn the forecast into a usefulness claim or select features/thresholds from confirmation scores.
+🟢 [Done] [Count-only observation-budget forecast](R2_CASAS_OBSERVATION_BUDGET.md) fixes rates, current conditions and evidence thresholds. Closed-world targets require +52,659 pooled / +70,212 joint observations within acquisition/write ceilings; conservative state growth exceeds the 100,000-route cap. Oracle bounds are branchwise, not a global plan. No actual acquisition or learning; exact replay, 128 related tests and preserved negatives/seals.
+
+🟠 [Next] Preregister a count-only finite-vocabulary state ceiling before acquisition. Distinguish exact-address recurrence, new combinations within the observed event vocabulary and genuinely unseen events; preserve current/context conditions and state assumptions explicitly. No unknown-event rejection, independent-period opening or predictive/runtime promotion from a state bound.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
@@ -325,6 +327,10 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：仅训练期的4分支聚合减少了状态量，但真实数据的识别与预测改进未通过。随后仅用保存的训练计数完成审计，区分固定证据条件下的支持不足、类别边际约束和观测差不足。
 
-日本語: 監査は学習も封印期間の読み取りも行わず完了しました。次は同じ条件で追加観測量の実現性を仮定付きで事前登録し、新しい学習器や世帯の比較に進む根拠を確認します。
+日本語: 監査は学習も封印期間の読み取りも行わず完了しました。続く追加観測量の事前登録計算では、既知状態の再来なら取得予算内ですが、未知状態の保守的上限では状態予算を保証できませんでした。
 
-简体中文：审计不进行学习或读取封存期间。下一步在相同条件下，明确假设并预注册额外观测预算的可行性，之后才考虑新的学习器或家庭比较。
+简体中文：审计不进行学习或读取封存期间。随后已预注册额外观测预算：已知状态重复时采集预算可行，但未知状态增长的保守上界无法保证状态预算。
+
+日本語: 次はカウントだけで、既知イベントの新しい組合せと未知イベントを分けた状態数上限を事前登録します。収集・学習・予測改善の主張には進みません。
+
+简体中文：下一步仅用计数，预注册区分已知事件新组合与未知事件的状态数上界，不据此开展采集、学习或宣称预测改进。
