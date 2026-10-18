@@ -1,0 +1,41 @@
+{
+  "entry": {
+    "compressed_size": 52546849,
+    "crc32": 2388448141,
+    "identity": "HH108",
+    "method": 8,
+    "name": "data/hh108.csv",
+    "offset": 1536595581,
+    "size": 275091167
+  },
+  "identity": "HH108",
+  "receipt": {
+    "compressed_sha256": "e6474f8560732937da4487db17c48c396c5a43422e75a884eea1628020ea373c",
+    "compressed_size": 52546849,
+    "crc32": 2388448141,
+    "identity": "HH108",
+    "method": 8,
+    "name": "data/hh108.csv",
+    "offset": 1536595581,
+    "size": 275091167
+  },
+  "requests": [
+    {
+      "curl_exit_code": 0,
+      "end": 1536596604,
+      "range_verified": true,
+      "received_bytes": 1024,
+      "reserved_bytes": 1024,
+      "start": 1536595581
+    },
+    {
+      "curl_exit_code": 0,
+      "end": 1589142501,
+      "range_verified": true,
+      "received_bytes": 52546849,
+      "reserved_bytes": 52546849,
+      "start": 1536595653
+    }
+  ],
+  "status": "acquired"
+}

@@ -319,7 +319,9 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Timestamp-only safe upper bound](R2_CASAS_TIMESTAMP_UPPER_BOUND.md) retains all original timing/current/evidence conditions. Minute-bucket certification covers every actual binary-subsequence arrival; 8,192 mask checks and all three existing fit windows pass. Their 25,334/22,411/37,748 upper bounds exclude the current 70,212 planning target. Zero event-value inspection/learning, peak 6 buckets, exact replay and 157 related tests; old negatives and seals preserved.
 
-🟠 [Next] Preregister a finite unused-household roster and aggregate source/timestamp budgets before applying this screen to fresh identities. Keep event values and independent periods sealed, stop if the fixed roster yields no survivor, and require separate input/source/quality prerequisites for any later learner.
+🟢 [Done] [Finite unused-household timestamp screen](R2_CASAS_FINITE_ROSTER_SCREEN.md) preregisters HH106→HH107→HH108, code and aggregate source/timestamp budgets before acquisition. Complete 180-date training bounds 37,857/59,892/24,569 all miss the fixed 70,212 target. Stop this roster with no extension, window change or event-value inspection. Acquisition 101,722,176 body bytes and 2,253,772 training timestamps remain within budgets; exact replay and 177 related tests pass. All 326 earlier artifacts/negatives, sensor/message fields and independent prediction information remain preserved; zero learning writes. This is a source-arrival exclusion, not a temporal-readout quality result.
+
+🟠 [Next] Review a different acquisition strategy from public density/duration metadata with an external rationale for sufficient arrivals, retaining the same current/evidence/arrival conditions. Any acquisition needs a new finite preregistration; no automatic CASAS roster expansion or use of its independent periods. Input, opposing-history, class/support, state/write-budget and usefulness prerequisites remain required before matched-update comparisons.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
@@ -349,6 +351,6 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：已预注册并验证仅时间戳的安全上界，三个既有训练窗口均不可能达到固定目标；不重读事件值或标签，保留既有负结果与封存。
 
-日本語: 次は未使用世帯の有限な候補リストと総予算を先に登録し、日時だけの除外判定を適用します。残った候補にも元の入力・クラス支持・有用性条件を要求します。
+日本語: 未使用3世帯の有限リスト・順序・総予算を先に登録し、上限37,857／59,892／24,569件で全候補を除外しました。固定目標70,212件、入力値と独立期間の封印、既存の負の結果を維持し、候補は増やしません。次は公開メタデータから別の取得方針の実現性を検討し、新しい事前登録より先には取得しません。
 
-简体中文：下一步先注册有限的未使用家庭名单及总预算，再进行仅时间戳筛选。保留候选仍须满足原输入、类别支持与效用条件。
+简体中文：预先注册了三个未使用家庭的有限名单、顺序和总预算；上界37,857／59,892／24,569均低于固定目标70,212，全部排除并终止名单。保留事件值、独立期间封存和既有负结果，不扩充候选。下一步仅根据公开元数据研究另一采集策略，在新预注册前不采集。

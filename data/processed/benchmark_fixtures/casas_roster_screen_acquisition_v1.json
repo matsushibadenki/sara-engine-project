@@ -1,0 +1,129 @@
+{
+  "network_reserved_bytes": 101722176,
+  "received_bytes": 101722176,
+  "sources": [
+    {
+      "entry": {
+        "compressed_size": 31297023,
+        "crc32": 1005273928,
+        "identity": "HH106",
+        "method": 8,
+        "name": "data/hh106.csv",
+        "offset": 2129752273,
+        "size": 164689619
+      },
+      "identity": "HH106",
+      "receipt": {
+        "compressed_sha256": "bb560179435c23fd3be77c2758b186013dcc6b04b6ac5903ebc1a6f7c13e2e61",
+        "compressed_size": 31297023,
+        "crc32": 1005273928,
+        "identity": "HH106",
+        "method": 8,
+        "name": "data/hh106.csv",
+        "offset": 2129752273,
+        "size": 164689619
+      },
+      "requests": [
+        {
+          "curl_exit_code": 0,
+          "end": 2129753296,
+          "range_verified": true,
+          "received_bytes": 1024,
+          "reserved_bytes": 1024,
+          "start": 2129752273
+        },
+        {
+          "curl_exit_code": 0,
+          "end": 2161049367,
+          "range_verified": true,
+          "received_bytes": 31297023,
+          "reserved_bytes": 31297023,
+          "start": 2129752345
+        }
+      ],
+      "status": "acquired"
+    },
+    {
+      "entry": {
+        "compressed_size": 17875232,
+        "crc32": 560678705,
+        "identity": "HH107",
+        "method": 8,
+        "name": "data/hh107.csv",
+        "offset": 1017597468,
+        "size": 94893795
+      },
+      "identity": "HH107",
+      "receipt": {
+        "compressed_sha256": "25845a6b1d873ef51ec76760ed41cac69e8830ac245f21b8f7d086c237cade1c",
+        "compressed_size": 17875232,
+        "crc32": 560678705,
+        "identity": "HH107",
+        "method": 8,
+        "name": "data/hh107.csv",
+        "offset": 1017597468,
+        "size": 94893795
+      },
+      "requests": [
+        {
+          "curl_exit_code": 0,
+          "end": 1017598491,
+          "range_verified": true,
+          "received_bytes": 1024,
+          "reserved_bytes": 1024,
+          "start": 1017597468
+        },
+        {
+          "curl_exit_code": 0,
+          "end": 1035472771,
+          "range_verified": true,
+          "received_bytes": 17875232,
+          "reserved_bytes": 17875232,
+          "start": 1017597540
+        }
+      ],
+      "status": "acquired"
+    },
+    {
+      "entry": {
+        "compressed_size": 52546849,
+        "crc32": 2388448141,
+        "identity": "HH108",
+        "method": 8,
+        "name": "data/hh108.csv",
+        "offset": 1536595581,
+        "size": 275091167
+      },
+      "identity": "HH108",
+      "receipt": {
+        "compressed_sha256": "e6474f8560732937da4487db17c48c396c5a43422e75a884eea1628020ea373c",
+        "compressed_size": 52546849,
+        "crc32": 2388448141,
+        "identity": "HH108",
+        "method": 8,
+        "name": "data/hh108.csv",
+        "offset": 1536595581,
+        "size": 275091167
+      },
+      "requests": [
+        {
+          "curl_exit_code": 0,
+          "end": 1536596604,
+          "range_verified": true,
+          "received_bytes": 1024,
+          "reserved_bytes": 1024,
+          "start": 1536595581
+        },
+        {
+          "curl_exit_code": 0,
+          "end": 1589142501,
+          "range_verified": true,
+          "received_bytes": 52546849,
+          "reserved_bytes": 52546849,
+          "start": 1536595653
+        }
+      ],
+      "status": "acquired"
+    }
+  ]
+}

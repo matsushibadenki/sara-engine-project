@@ -169,3 +169,6 @@ tests/old/
 
 # Preregistered HH105 range bytes and private response headers.
 /data/raw/r2_casas_arrival/
+
+# Finite-roster range bytes, request journals and private response headers.
+/data/raw/r2_casas_roster/

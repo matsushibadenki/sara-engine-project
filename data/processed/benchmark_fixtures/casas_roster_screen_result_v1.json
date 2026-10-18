@@ -1,0 +1,126 @@
+{
+  "acquisition_sha256": "9a14ba7409246b261ecc0e67ba1e033d2095cf64fdb194fe87c2a6a93b267760",
+  "actual_learning_writes": 0,
+  "decision": "stop_roster_no_survivor",
+  "details_sha256": "9204f6cd0b14b600743ead8b867c880e0450c0623ebb456e4e3335a85c80d7ee",
+  "inconclusive": [],
+  "independent_predictive_information_opened": false,
+  "metadata_scope": "All-source dates/times only for original split/clock census; arrival scans skip independent times",
+  "network_reserved_bytes": 101722176,
+  "sensor_message_fields_inspected": false,
+  "sources": [
+    {
+      "actual_learning_writes": 0,
+      "audit": {
+        "sealed_date_only_rows": 3540266,
+        "streamed_rows": 4144444,
+        "training_timestamp_rows": 604178
+      },
+      "budget_capped_upper_bound": 37857,
+      "identity": "HH106",
+      "input_preflight_authorized": false,
+      "original_development_opened": false,
+      "outcome_labels_computed": false,
+      "scope": "Any binary subsequence of complete valid training timestamps; count upper bound only",
+      "screen_decision": "exclude_below_target",
+      "sensor_message_fields_inspected": false,
+      "source_quality_pass": false,
+      "target": 70212,
+      "terminal_stop": null,
+      "test_opened": false,
+      "timestamp_upper_bound": 37857,
+      "train_end_exclusive": "2011-12-12",
+      "train_start": "2011-06-15",
+      "unresolved_buckets": 0,
+      "valid_recorded_days": 1123,
+      "work": {
+        "candidate_buckets": 45605,
+        "eligible_buckets": 37857,
+        "expired_buckets": 7748,
+        "peak_pending_buckets": 6,
+        "potential_cutoff_rows": 574525,
+        "queue_pops": 45605,
+        "queue_pushes": 45605,
+        "timestamps": 604178
+      }
+    },
+    {
+      "actual_learning_writes": 0,
+      "audit": {
+        "sealed_date_only_rows": 1305650,
+        "streamed_rows": 2379845,
+        "training_timestamp_rows": 1074195
+      },
+      "budget_capped_upper_bound": 59892,
+      "identity": "HH107",
+      "input_preflight_authorized": false,
+      "original_development_opened": false,
+      "outcome_labels_computed": false,
+      "scope": "Any binary subsequence of complete valid training timestamps; count upper bound only",
+      "screen_decision": "exclude_below_target",
+      "sensor_message_fields_inspected": false,
+      "source_quality_pass": false,
+      "target": 70212,
+      "terminal_stop": null,
+      "test_opened": false,
+      "timestamp_upper_bound": 59892,
+      "train_end_exclusive": "2013-01-16",
+      "train_start": "2012-07-20",
+      "unresolved_buckets": 5,
+      "valid_recorded_days": 371,
+      "work": {
+        "candidate_buckets": 69774,
+        "eligible_buckets": 59892,
+        "expired_buckets": 9877,
+        "peak_pending_buckets": 6,
+        "potential_cutoff_rows": 1036353,
+        "queue_pops": 69769,
+        "queue_pushes": 69774,
+        "timestamps": 1074195
+      }
+    },
+    {
+      "actual_learning_writes": 0,
+      "audit": {
+        "sealed_date_only_rows": 6355356,
+        "streamed_rows": 6930755,
+        "training_timestamp_rows": 575399
+      },
+      "budget_capped_upper_bound": 24569,
+      "identity": "HH108",
+      "input_preflight_authorized": false,
+      "original_development_opened": false,
+      "outcome_labels_computed": false,
+      "scope": "Any binary subsequence of complete valid training timestamps; count upper bound only",
+      "screen_decision": "exclude_below_target",
+      "sensor_message_fields_inspected": false,
+      "source_quality_pass": false,
+      "target": 70212,
+      "terminal_stop": null,
+      "test_opened": false,
+      "timestamp_upper_bound": 24569,
+      "train_end_exclusive": "2011-12-12",
+      "train_start": "2011-06-15",
+      "unresolved_buckets": 1,
+      "valid_recorded_days": 1840,
+      "work": {
+        "candidate_buckets": 29990,
+        "eligible_buckets": 24569,
+        "expired_buckets": 5420,
+        "peak_pending_buckets": 6,
+        "potential_cutoff_rows": 553671,
+        "queue_pops": 29989,
+        "queue_pushes": 29990,
+        "timestamps": 575399
+      }
+    }
+  ],
+  "survivors": [],
+  "target": 70212,
+  "validation_sha256": "a62ab23f0aaa15cb546d38bde174009dbc58aae41c71e25dfd4e0f8df8efae24",
+  "work": {
+    "expanded_bytes_all_passes": 1069349162,
+    "metadata_timestamps_total": 13455044,
+    "training_timestamps_total": 2253772
+  }
+}

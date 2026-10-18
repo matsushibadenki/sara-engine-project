@@ -1,0 +1,28 @@
+{
+  "all_raw_greedy_arrivals": 0,
+  "filtered_arrivals": 1,
+  "mask_cases_checked": 8192,
+  "passed": true,
+  "safe_upper_bound": 1,
+  "traces": [
+    {
+      "binary_masks": 2048,
+      "maximum_actual_arrivals": 1,
+      "rows": 11,
+      "timestamp_upper_bound": 1
+    },
+    {
+      "binary_masks": 4096,
+      "maximum_actual_arrivals": 2,
+      "rows": 12,
+      "timestamp_upper_bound": 4
+    },
+    {
+      "binary_masks": 2048,
+      "maximum_actual_arrivals": 2,
+      "rows": 11,
+      "timestamp_upper_bound": 3
+    }
+  ],
+  "undercounts": 0
+}

@@ -66,7 +66,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m pytest -q -o cache_dir=works
 
 Daily records are retrospective by candidate cutoff date; a result shortly after midnight can certify the preceding day's bucket. They are not early predictions. Exclusive artifact creation prevents silently replacing consumed execution evidence.
 
-🟠 [Next] Preregister a finite roster of unused households, a fixed order and aggregate acquisition/timestamp budgets before applying this screen to new identities. Inspect only timestamps under the same split rules, preserve sensor/message fields and independent periods, and stop without expanding the roster if no window survives. A surviving upper bound only permits a separately registered input preflight; all original source, positive-component and quality prerequisites remain required. No target relaxation or post-score identity substitution.
+🟢 [Done] The subsequent [finite unused-household screen](R2_CASAS_FINITE_ROSTER_SCREEN.md) registered HH106→HH107→HH108, order and aggregate budgets before acquisition. All three complete training bounds fall below 70,212, so the roster stops without event-value inspection, window changes or expansion. This method-validation study and all original negatives/seals remain unchanged; source-arrival exclusion does not establish temporal predictive quality.
 
 🔴 [Later] Input preflight, comparative learning, independent validation and runtime/factor integration require their own justified preregistrations and unmet usefulness prerequisites. No such work is performed by this method-validation study.
 

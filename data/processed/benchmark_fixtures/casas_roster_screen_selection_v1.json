@@ -1,0 +1,54 @@
+{
+  "acquisition": "Fixed numeric order. One 1024-byte ZIP header request and one exact compressed-member request per identity; no retry or replacement. HTTP range and archive length required. Reserve requested bytes before each request; failed reservations remain spent. Max time 1800 seconds per request. Source CRC/size and compressed/expanded SHA checked; no full ZIP MD5 claim.",
+  "archive_size": 2723059864,
+  "budgets": {
+    "expanded_bytes_all_passes": 2147483648,
+    "expanded_bytes_per_pass_per_household": 536870912,
+    "households": 3,
+    "metadata_timestamps_per_household": 12000000,
+    "metadata_timestamps_total": 36000000,
+    "network_bytes": 201326592,
+    "network_bytes_per_household": 67109888,
+    "pending_buckets": 16,
+    "training_timestamps_per_household": 5000000,
+    "training_timestamps_total": 15000000
+  },
+  "continuation": "Any survivor requires a separate preregistered training-input preflight with all original evidence/current conditions. No survivor means stop this roster, not automatically acquire more identities.",
+  "decision": "Complete valid training upper<70212 excludes further input inspection; equality or larger is cannot_exclude, never source/quality pass. Short source, corruption, budget stop or acquisition failure is inconclusive. Run the entire fixed roster in order; no extensions, alternate windows or changed conditions after any result.",
+  "directory_sha256": "041cb3d665faa07dbd7db96e46ff7faa2e5bdb3f910136379ae3b5d9eb58cad4",
+  "registered_at_utc": "2026-10-18T02:45:06.054659+00:00",
+  "roster": [
+    {
+      "compressed_size": 31297023,
+      "crc32": 1005273928,
+      "identity": "HH106",
+      "method": 8,
+      "name": "data/hh106.csv",
+      "offset": 2129752273,
+      "size": 164689619
+    },
+    {
+      "compressed_size": 17875232,
+      "crc32": 560678705,
+      "identity": "HH107",
+      "method": 8,
+      "name": "data/hh107.csv",
+      "offset": 1017597468,
+      "size": 94893795
+    },
+    {
+      "compressed_size": 52546849,
+      "crc32": 2388448141,
+      "identity": "HH108",
+      "method": 8,
+      "name": "data/hh108.csv",
+      "offset": 1536595581,
+      "size": 275091167
+    }
+  ],
+  "scope": "Selection registered before acquisition or timestamp inspection. Only ZIP directory and public catalog known. HH101-HH105 already consumed. Smallest next three HH file identities, not selected on duration, arrivals, residents or outcomes.",
+  "seals": "No sensor/message interpretation, binary filtering, event vocabulary, classes, current state, delayed labels, model scoring or learning. Preserve all previous negatives and evidence thresholds. No claim of independent efficacy from distinct file identities.",
+  "splits": "Unchanged chronological metadata policy: all-source timestamp-only census excludes both dates involved in any clock regression; >=180 valid recorded dates; training=min(180,2*N//3), development=min(60,N//6), rest test. Metadata may parse dates/times across source solely for split/clock census, as in earlier source audits. Arrival pass reads only dates outside training; all sensor/message content and independent predictive information stay sealed.",
+  "target": 70212,
+  "url": "https://zenodo.org/records/15708568/files/data.zip?download=1"
+}
