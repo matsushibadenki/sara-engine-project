@@ -1,0 +1,396 @@
+{
+  "scope": "Known metadata only; exact native contract, original thresholds/splits and no transformation rescue. Source semantic exclusions do not assert universal absence of every possible future release.",
+  "snn_reflection": "Preserve local sparse CPU learning goals but require measurable evidence beyond representational equivalence. Periodic overlapping packets or dense electrical sampling can erase an event-work advantage; metadata and architectural labels cannot establish a benefit unavailable to ANN/non-spiking emulation.",
+  "sources": [
+    {
+      "density": {
+        "refs": [
+          3
+        ],
+        "status": "partial",
+        "value": {
+          "overlapping_samples": 10,
+          "packet_period_seconds": 20,
+          "per_house_qualified_density": null,
+          "samples_per_packet": 30
+        }
+      },
+      "households": [],
+      "id": "SPHERE",
+      "native_kitchen_on": {
+        "basis": "Published PIR message is a binary history array, not a raw scalar ON notification. Room renaming, bit conversion, packet expansion and backdating are outside the fixed contract.",
+        "native_ON_message": false,
+        "native_kitchen_sensor": null,
+        "raw_kind": "history_packet",
+        "refs": [
+          3
+        ],
+        "status": "incompatible"
+      },
+      "package": {
+        "basis": "No scoped100 Homes per-house bytes found. Publication manuscript size and scripted Challenge sizes are not dataset sizes for this candidate.",
+        "refs": [],
+        "status": "unresolved",
+        "value": null
+      },
+      "publisher_household_manifest_found": false,
+      "terms": {
+        "refs": [
+          3
+        ],
+        "status": "partial",
+        "value": {
+          "reported_access": "Subject to ethical considerations and policy",
+          "verified_dataset_reuse_license": null
+        }
+      }
+    },
+    {
+      "density": {
+        "refs": [
+          12,
+          15
+        ],
+        "status": "partial",
+        "value": {
+          "native_pir_cadence_seconds": null,
+          "nominal_electric_hz": 1,
+          "occupancy_label_scope": "Selected/cleaned manual-label periods only",
+          "per_house_pir_timestamp_counts": null
+        }
+      },
+      "households": [
+        {
+          "checks": {
+            "causal_availability": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "compressed_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "expanded_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "kitchen_on": {
+              "refs": [
+                12
+              ],
+              "status": "incompatible",
+              "value": "The documented entrance-PIR/electrical/occupancy streams do not provide the fixed raw Kitchen ON notification contract. No relabeling allowed."
+            },
+            "pir_timestamp_rows": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "recorded_dates": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "reuse_terms": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            }
+          },
+          "id": "01",
+          "publication_household": "1",
+          "reported_occupancy_metadata": {
+            "refs": [
+              15
+            ],
+            "scope": "Published cleaned manual occupancy-label support, not valid PIR training/source dates and not a new label inspection. Summer July-Sep2012; winter Nov2012-Jan2013. Publication r1-r5 uses same numbered households.",
+            "summer_label_days": 39,
+            "winter_label_days": 46
+          }
+        },
+        {
+          "checks": {
+            "causal_availability": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "compressed_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "expanded_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "kitchen_on": {
+              "refs": [
+                12
+              ],
+              "status": "incompatible",
+              "value": "The documented entrance-PIR/electrical/occupancy streams do not provide the fixed raw Kitchen ON notification contract. No relabeling allowed."
+            },
+            "pir_timestamp_rows": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "recorded_dates": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "reuse_terms": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            }
+          },
+          "id": "02",
+          "publication_household": "2",
+          "reported_occupancy_metadata": {
+            "refs": [
+              15
+            ],
+            "scope": "Published cleaned manual occupancy-label support, not valid PIR training/source dates and not a new label inspection. Summer July-Sep2012; winter Nov2012-Jan2013. Publication r1-r5 uses same numbered households.",
+            "summer_label_days": 83,
+            "winter_label_days": 45
+          }
+        },
+        {
+          "checks": {
+            "causal_availability": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "compressed_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "expanded_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "kitchen_on": {
+              "refs": [
+                12
+              ],
+              "status": "incompatible",
+              "value": "The documented entrance-PIR/electrical/occupancy streams do not provide the fixed raw Kitchen ON notification contract. No relabeling allowed."
+            },
+            "pir_timestamp_rows": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "recorded_dates": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "reuse_terms": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            }
+          },
+          "id": "03",
+          "publication_household": "3",
+          "reported_occupancy_metadata": {
+            "refs": [
+              15
+            ],
+            "scope": "Published cleaned manual occupancy-label support, not valid PIR training/source dates and not a new label inspection. Summer July-Sep2012; winter Nov2012-Jan2013. Publication r1-r5 uses same numbered households.",
+            "summer_label_days": 57,
+            "winter_label_days": 21
+          }
+        },
+        {
+          "checks": {
+            "causal_availability": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "compressed_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "expanded_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "kitchen_on": {
+              "refs": [
+                12
+              ],
+              "status": "incompatible",
+              "value": "The documented entrance-PIR/electrical/occupancy streams do not provide the fixed raw Kitchen ON notification contract. No relabeling allowed."
+            },
+            "pir_timestamp_rows": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "recorded_dates": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "reuse_terms": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            }
+          },
+          "id": "04",
+          "publication_household": "4",
+          "reported_occupancy_metadata": {
+            "refs": [
+              15
+            ],
+            "scope": "Published cleaned manual occupancy-label support, not valid PIR training/source dates and not a new label inspection. Summer July-Sep2012; winter Nov2012-Jan2013. Publication r1-r5 uses same numbered households.",
+            "summer_label_days": 38,
+            "winter_label_days": 48
+          }
+        },
+        {
+          "checks": {
+            "causal_availability": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "compressed_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "expanded_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "kitchen_on": {
+              "refs": [
+                12
+              ],
+              "status": "incompatible",
+              "value": "The documented entrance-PIR/electrical/occupancy streams do not provide the fixed raw Kitchen ON notification contract. No relabeling allowed."
+            },
+            "pir_timestamp_rows": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "recorded_dates": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "reuse_terms": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            }
+          },
+          "id": "05",
+          "publication_household": "5",
+          "reported_occupancy_metadata": {
+            "refs": [
+              15
+            ],
+            "scope": "Published cleaned manual occupancy-label support, not valid PIR training/source dates and not a new label inspection. Summer July-Sep2012; winter Nov2012-Jan2013. Publication r1-r5 uses same numbered households.",
+            "summer_label_days": 43,
+            "winter_label_days": 31
+          }
+        },
+        {
+          "checks": {
+            "causal_availability": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "compressed_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "expanded_bytes": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "kitchen_on": {
+              "refs": [
+                12
+              ],
+              "status": "incompatible",
+              "value": "The documented entrance-PIR/electrical/occupancy streams do not provide the fixed raw Kitchen ON notification contract. No relabeling allowed."
+            },
+            "pir_timestamp_rows": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "recorded_dates": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            },
+            "reuse_terms": {
+              "refs": [],
+              "status": "unresolved",
+              "value": null
+            }
+          },
+          "id": "06",
+          "publication_household": "6",
+          "reported_occupancy_metadata": {
+            "occupancy_information_provided": false,
+            "refs": [
+              12
+            ],
+            "scope": "2014 paper says household6 did not provide occupancy information. No replacement household selected."
+          }
+        }
+      ],
+      "id": "ECO",
+      "native_kitchen_on": {
+        "basis": "Documented sensing is entrance motion/electricity and manually supplied household occupancy, not native kitchen ON notifications. Kitchen appliance wattage or occupancy is not relabeled.",
+        "native_ON_message": null,
+        "native_kitchen_sensor": false,
+        "raw_kind": "entrance_pir_and_numeric_occupancy",
+        "refs": [
+          12,
+          15
+        ],
+        "status": "incompatible"
+      },
+      "package": {
+        "basis": "Primary metadata-only catalog/index and failed publisher pages do not establish compressed/expanded household package bytes.",
+        "refs": [],
+        "status": "unresolved",
+        "value": null
+      },
+      "publisher_household_manifest_found": false,
+      "terms": {
+        "basis": "Primary project indexed description offers research-community access and a credentialed dashboard, but no verified dataset-specific reuse license was retrieved. Third-party CC-BY descriptions are insufficient.",
+        "refs": [],
+        "status": "unresolved",
+        "value": null
+      }
+    }
+  ]
+}

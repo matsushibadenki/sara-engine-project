@@ -1,0 +1,120 @@
+{
+  "actual_learning_writes": 0,
+  "approved_payload_acquisitions": [],
+  "archive_range_requests": 0,
+  "casas_candidates_added": 0,
+  "conditions_relaxed": false,
+  "dataset_payload_bytes": 0,
+  "dataset_preview_rows": 0,
+  "decision": "stop_finite_metadata_audit_no_payload_authorized",
+  "independent_periods_opened": false,
+  "snn_assessment": {
+    "ann_exclusive_advantage_established": false,
+    "opportunity": "Native asynchronous sparse input and bounded causal timing could reduce active work and support local delayed updates; this is an implementation hypothesis.",
+    "question": "Can native sparse asynchronous observations and causally available timing support bounded temporal state and local delayed updates without a dense clock, packet duplication or expensive observer? Record opportunities, shared preprocessing/maintenance costs and missing empirical evidence. Event-driven ANN/non-spiking emulators may share these properties; no ANN-absent or SNN-exclusive advantage is claimed from metadata. Existing sufficient current/history/scalar controls and actual-update parity remain mandatory.",
+    "required_evidence": "Same native input/current, actual changed local writes, strongest causal non-spiking history controls and identical scalar replay; independently registered quality and complete CPU/work accounting.",
+    "shared_costs": "Input decoding, packet history/duplicate handling, time availability, state expiry and observer/maintenance work must be charged to every backend.",
+    "snn_usefulness_established": false
+  },
+  "sources": [
+    {
+      "decision": "exclude_documented_stream_for_fixed_target",
+      "density": {
+        "refs": [
+          3
+        ],
+        "status": "partial",
+        "value": {
+          "overlapping_samples": 10,
+          "packet_period_seconds": 20,
+          "per_house_qualified_density": null,
+          "samples_per_packet": 30
+        }
+      },
+      "household_metadata_entries": 0,
+      "household_unresolved_checks": 0,
+      "id": "SPHERE",
+      "native_kitchen_on": {
+        "basis": "Published PIR message is a binary history array, not a raw scalar ON notification. Room renaming, bit conversion, packet expansion and backdating are outside the fixed contract.",
+        "native_ON_message": false,
+        "native_kitchen_sensor": null,
+        "raw_kind": "history_packet",
+        "refs": [
+          3
+        ],
+        "status": "incompatible"
+      },
+      "package": {
+        "basis": "No scoped100 Homes per-house bytes found. Publication manuscript size and scripted Challenge sizes are not dataset sizes for this candidate.",
+        "refs": [],
+        "status": "unresolved",
+        "value": null
+      },
+      "payload_acquisition_authorized": false,
+      "publisher_household_manifest_found": false,
+      "source_quality_pass": false,
+      "terms": {
+        "refs": [
+          3
+        ],
+        "status": "partial",
+        "value": {
+          "reported_access": "Subject to ethical considerations and policy",
+          "verified_dataset_reuse_license": null
+        }
+      }
+    },
+    {
+      "decision": "exclude_documented_stream_for_fixed_target",
+      "density": {
+        "refs": [
+          12,
+          15
+        ],
+        "status": "partial",
+        "value": {
+          "native_pir_cadence_seconds": null,
+          "nominal_electric_hz": 1,
+          "occupancy_label_scope": "Selected/cleaned manual-label periods only",
+          "per_house_pir_timestamp_counts": null
+        }
+      },
+      "household_metadata_entries": 6,
+      "household_unresolved_checks": 36,
+      "id": "ECO",
+      "native_kitchen_on": {
+        "basis": "Documented sensing is entrance motion/electricity and manually supplied household occupancy, not native kitchen ON notifications. Kitchen appliance wattage or occupancy is not relabeled.",
+        "native_ON_message": null,
+        "native_kitchen_sensor": false,
+        "raw_kind": "entrance_pir_and_numeric_occupancy",
+        "refs": [
+          12,
+          15
+        ],
+        "status": "incompatible"
+      },
+      "package": {
+        "basis": "Primary metadata-only catalog/index and failed publisher pages do not establish compressed/expanded household package bytes.",
+        "refs": [],
+        "status": "unresolved",
+        "value": null
+      },
+      "payload_acquisition_authorized": false,
+      "publisher_household_manifest_found": false,
+      "source_quality_pass": false,
+      "terms": {
+        "basis": "Primary project indexed description offers research-community access and a credentialed dashboard, but no verified dataset-specific reuse license was retrieved. Third-party CC-BY descriptions are insufficient.",
+        "refs": [],
+        "status": "unresolved",
+        "value": null
+      }
+    }
+  ],
+  "target_arrivals": 70212,
+  "work": {
+    "household_metadata_entries": 6,
+    "page": 13,
+    "retained_evidence_utf8_bytes": 9923,
+    "search": 8
+  }
+}

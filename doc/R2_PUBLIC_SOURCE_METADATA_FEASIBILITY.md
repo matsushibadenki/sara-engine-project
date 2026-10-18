@@ -76,9 +76,9 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 -m pytest -q -o cache_dir=wor
 
 The finite review closes at its budget with `no_acquisition_ready_source_within_registered_metadata_review`. No CASAS candidates are added. Original thresholds, exact current inputs, support/class/day/evidence conditions, earlier negatives and all independent-period seals remain unchanged. This audit supplies neither a learner negative nor evidence of SNN advantage.
 
-🟠 [Next] Define a new bounded publisher metadata manifest gate for the unresolved SPHERE/ECO families before further acquisition work. It must identify exact unused households, valid recorded dates and original split, native message semantics/availability/duplicates, original Kitchen-ON target availability, per-stream timestamp counts, byte sizes and access terms. A renewed review requires its own finite registration; this exhausted budget is not silently extended.
+🟢 [Done] The separately preregistered [SPHERE/ECO contract audit](R2_SPHERE_ECO_METADATA_AUDIT.md) finds both documented streams incompatible with the unchanged raw Kitchen ON target. It preserves unknown household PIR coverage/density/package/terms, every earlier result and all seals, and closes without payload acquisition or release substitution. This earlier feasibility result is not overwritten.
 
-⭕️ [Pending] Dataset acquisition and empirical timestamp screening await an accessible, scoped manifest that justifies a fixed identity list and fits all original budgets. This environment has not established those external access/coverage facts. Surviving metadata capacity would still require timestamp-only verification and separately registered input/class/state/quality gates before matched-update learning.
+⭕️ [Pending] New dataset acquisition requires a compatible justified source/task contract, scoped identity/access/coverage/size metadata and all original causal/quality/resource gates. No automatic source or CASAS expansion or metadata retry follows these closed exclusions; metadata capacity is not positive SNN evidence.
 
 日本語: 取得前に4候補と調査総予算を登録しました。TIHMは公表期間不足、IDEALの確認済み高速データは形式・全体サイズが条件に合わず、SPHEREとECOは世帯別の有効期間・PIR密度・取得サイズが未確定です。本体取得へ進める候補は確定していません。元の分割では訓練180日に270有効記録日が必要で、ECOは公表範囲から訓練最大163日です。条件付きの密度計算を元の抽出器と照合し、215テストと別プロセス再現が成功しました。本体取得・学習・CASAS追加・封印解除は0で、既存の負の結果を維持します。
 

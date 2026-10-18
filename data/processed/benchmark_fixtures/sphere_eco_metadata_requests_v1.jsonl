@@ -1,0 +1,21 @@
+{"id": 1, "kind": "search", "reserved_at_utc": "2026-10-18T09:09:31.928808+00:00", "source": "SPHERE", "target": "SPHERE 100 Homes dataset household duration PIR data access licence metadata Bristol"}
+{"id": 2, "kind": "search", "reserved_at_utc": "2026-10-18T09:09:32.010637+00:00", "source": "SPHERE", "target": "site:data.bris.ac.uk \"SPHERE\" \"100\" \"dataset\""}
+{"id": 3, "kind": "page", "reserved_at_utc": "2026-10-18T09:09:32.088085+00:00", "source": "SPHERE", "target": "https://arxiv.org/html/1805.11907v2"}
+{"id": 4, "kind": "page", "reserved_at_utc": "2026-10-18T09:09:32.165701+00:00", "source": "SPHERE", "target": "https://www.bristol.ac.uk/research/groups/digital-health/research/sphere/the-100-homes-study/"}
+{"id": 5, "kind": "search", "reserved_at_utc": "2026-10-18T09:09:51.272937+00:00", "source": "SPHERE", "target": "site:bristol.ac.uk SPHERE \"100 homes\" data access sharing licence"}
+{"id": 6, "kind": "search", "reserved_at_utc": "2026-10-18T09:09:51.347875+00:00", "source": "SPHERE", "target": "SPHERE 100 Homes per household duration PIR metadata release manifest"}
+{"id": 7, "kind": "page", "reserved_at_utc": "2026-10-18T09:09:51.421209+00:00", "source": "SPHERE", "target": "https://research-information.bris.ac.uk/en/projects/sphere-epsrc-irc/datasets/"}
+{"id": 8, "kind": "page", "reserved_at_utc": "2026-10-18T09:09:51.494111+00:00", "source": "SPHERE", "target": "https://research-information.bris.ac.uk/en/publications/a-guide-to-the-sphere-100-homes-study-dataset/"}
+{"id": 9, "kind": "search", "reserved_at_utc": "2026-10-18T09:10:31.495563+00:00", "source": "ECO", "target": "ECO dataset occupancy PIR household recording periods README license download size"}
+{"id": 10, "kind": "search", "reserved_at_utc": "2026-10-18T09:10:31.567893+00:00", "source": "ECO", "target": "site:vs.inf.ethz.ch \"Household Occupancy Monitoring\" \"PIR\""}
+{"id": 11, "kind": "page", "reserved_at_utc": "2026-10-18T09:10:31.640727+00:00", "source": "ECO", "target": "https://vs.inf.ethz.ch/res/show.html?what=eco-data"}
+{"id": 12, "kind": "page", "reserved_at_utc": "2026-10-18T09:10:31.713400+00:00", "source": "ECO", "target": "https://vs.inf.ethz.ch/publ/papers/beckel-2014-nilm.pdf"}
+{"id": 13, "kind": "page", "reserved_at_utc": "2026-10-18T09:10:31.786448+00:00", "source": "ECO", "target": "https://vs.inf.ethz.ch/publ/bibtex.html?file=papers/kleiminger_ubicomp2015"}
+{"id": 14, "kind": "page", "reserved_at_utc": "2026-10-18T09:10:31.858800+00:00", "source": "ECO", "target": "https://www.research-collection.ethz.ch/entities/researchdata/e00ee826-4b2d-450c-8539-dc5ce14abc67"}
+{"id": 15, "kind": "page", "reserved_at_utc": "2026-10-18T09:10:56.352919+00:00", "source": "ECO", "target": "https://vs.inf.ethz.ch/publ/papers/kleiminger_ubicomp2015.pdf"}
+{"id": 16, "kind": "search", "reserved_at_utc": "2026-10-18T09:10:56.426652+00:00", "source": "ECO", "target": "site:research-collection.ethz.ch \"ECO Data Set\" license files size"}
+{"id": 17, "kind": "search", "reserved_at_utc": "2026-10-18T09:10:56.499888+00:00", "source": "ECO", "target": "site:vs.inf.ethz.ch ECO occupancy dataset README household days license"}
+{"id": 18, "kind": "page", "reserved_at_utc": "2026-10-18T09:10:56.572704+00:00", "source": "ECO", "target": "https://www.research-collection.ethz.ch/server/api/core/items/e00ee826-4b2d-450c-8539-dc5ce14abc67"}
+{"id": 19, "kind": "page", "reserved_at_utc": "2026-10-18T09:12:02.347019+00:00", "source": "ECO", "target": "https://research-collection.ethz.ch/entities/researchdata/e00ee826-4b2d-450c-8539-dc5ce14abc67"}
+{"id": 20, "kind": "page", "reserved_at_utc": "2026-10-18T09:12:02.419386+00:00", "source": "ECO", "target": "https://www.vs.inf.ethz.ch/res/show.html?what=eco-data"}
+{"id": 21, "kind": "page", "reserved_at_utc": "2026-10-18T09:12:02.491656+00:00", "source": "ECO", "target": "https://vs.inf.ethz.ch/publ/papers/wilhelmk-2015-dissertation.pdf"}

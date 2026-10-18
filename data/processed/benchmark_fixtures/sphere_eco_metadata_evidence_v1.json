@@ -1,0 +1,181 @@
+{
+  "archive_range_requests": 0,
+  "captured_at_utc": "2026-10-18T09:13:23.912636+00:00",
+  "casas_candidates_added": 0,
+  "conditions_relaxed": false,
+  "dataset_payload_bytes": 0,
+  "dataset_preview_rows": 0,
+  "independent_periods_opened": false,
+  "learning_writes": 0,
+  "records": [
+    {
+      "notes": "Primary search hits identify the technical guide and study page. Scripted Challenge catalog hits are another release and are not substituted.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 1,
+      "source": "SPHERE",
+      "status": "search_results",
+      "url": null
+    },
+    {
+      "notes": "Catalog search mostly returns scripted Challenge records; their licenses and sizes do not describe 100 Homes.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 2,
+      "source": "SPHERE",
+      "status": "search_results",
+      "url": null
+    },
+    {
+      "notes": "Guide sections4.3.2 and5.3: PIR_TRIGS is a30-element binary history packet per20s with10 overlapping samples, not scalar ON. Data availability is subject to ethics/policies. Per-house usable dates, counts, bytes and release license not supplied.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 3,
+      "source": "SPHERE",
+      "status": "read",
+      "url": "https://arxiv.org/html/1805.11907v2"
+    },
+    {
+      "notes": "Study page reports some year-long installations; no household identifiers, valid recorded-date counts, PIR counts or package manifest.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 4,
+      "source": "SPHERE",
+      "status": "read",
+      "url": "https://www.bristol.ac.uk/research/groups/digital-health/research/sphere/the-100-homes-study/"
+    },
+    {
+      "notes": "Primary search finds study and recruitment information; no scoped public household manifest established.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 5,
+      "source": "SPHERE",
+      "status": "search_results",
+      "url": null
+    },
+    {
+      "notes": "Guide and unrelated similarly named resources appear; no alternative cohort or dataset is selected.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 6,
+      "source": "SPHERE",
+      "status": "search_results",
+      "url": null
+    },
+    {
+      "notes": "Project lists8 dataset records, including network performance and medium-term annotations. No 100 Homes per-house PIR/byte manifest established from this page.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 7,
+      "source": "SPHERE",
+      "status": "read",
+      "url": "https://research-information.bris.ac.uk/en/projects/sphere-epsrc-irc/datasets/"
+    },
+    {
+      "notes": "University publication record provides a submitted manuscript of3.86MB with author-use terms, not the underlying dataset size/license.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 8,
+      "source": "SPHERE",
+      "status": "read",
+      "url": "https://research-information.bris.ac.uk/en/publications/a-guide-to-the-sphere-100-homes-study-dataset/"
+    },
+    {
+      "notes": "Primary ECO source appears alongside third-party reuse-license claims. Secondary CC-BY claims are not treated as verified publisher terms.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 9,
+      "source": "ECO",
+      "status": "search_results",
+      "url": null
+    },
+    {
+      "notes": "Search locates author-hosted2015 occupancy paper; no data body or preview opened.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 10,
+      "source": "ECO",
+      "status": "search_results",
+      "url": null
+    },
+    {
+      "notes": "Direct project-page retrieval failed. Current indexed primary description remains distinct from a successfully fetched page.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 11,
+      "source": "ECO",
+      "status": "unavailable",
+      "url": "https://vs.inf.ethz.ch/res/show.html?what=eco-data"
+    },
+    {
+      "notes": "BuildSys2014 section5: households1-6; electricity sampling1Hz, entrance PIR and selected manual occupancy periods. Household6 has no occupancy information. No raw Kitchen ON stream documented.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 12,
+      "source": "ECO",
+      "status": "read",
+      "url": "https://vs.inf.ethz.ch/publ/papers/beckel-2014-nilm.pdf"
+    },
+    {
+      "notes": "Author bibliographic page links2015 paper. Bibliographic access is not dataset reuse permission or package sizing.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 13,
+      "source": "ECO",
+      "status": "read",
+      "url": "https://vs.inf.ethz.ch/publ/bibtex.html?file=papers/kleiminger_ubicomp2015"
+    },
+    {
+      "notes": "Publisher item-page retrieval failed; no license, file sizes or per-house coverage inferred.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 14,
+      "source": "ECO",
+      "status": "unavailable",
+      "url": "https://www.research-collection.ethz.ch/entities/researchdata/e00ee826-4b2d-450c-8539-dc5ce14abc67"
+    },
+    {
+      "notes": "UbiComp2015 ECO section: cleaned manual occupancy-label days for r1-r5 are summer39/83/57/38/43 and winter46/45/21/48/31. These are not PIR recorded dates or Kitchen ON outcomes.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 15,
+      "source": "ECO",
+      "status": "read",
+      "url": "https://vs.inf.ethz.ch/publ/papers/kleiminger_ubicomp2015.pdf"
+    },
+    {
+      "notes": "Publisher-indexed ECO catalog describes METADATA ONLY and links DOI10.5905/ethz-1007-35. This does not provide package bytes or scoped terms.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 16,
+      "source": "ECO",
+      "status": "search_results",
+      "url": null
+    },
+    {
+      "notes": "Primary search finds author papers and project descriptions. Electrical counts and nominal1Hz are not PIR density.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 17,
+      "source": "ECO",
+      "status": "search_results",
+      "url": null
+    },
+    {
+      "notes": "Publisher item metadata API retrieval failed. No payload requested.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 18,
+      "source": "ECO",
+      "status": "unavailable",
+      "url": "https://www.research-collection.ethz.ch/server/api/core/items/e00ee826-4b2d-450c-8539-dc5ce14abc67"
+    },
+    {
+      "notes": "Canonical publisher item-page alias unavailable via browser tool.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 19,
+      "source": "ECO",
+      "status": "unavailable",
+      "url": "https://research-collection.ethz.ch/entities/researchdata/e00ee826-4b2d-450c-8539-dc5ce14abc67"
+    },
+    {
+      "notes": "Author project-page alias timed out; no credentials requested or author contacted.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 20,
+      "source": "ECO",
+      "status": "unavailable",
+      "url": "https://www.vs.inf.ethz.ch/res/show.html?what=eco-data"
+    },
+    {
+      "notes": "Author dissertation metadata PDF could not be read: browser reports content length13,607,966 exceeds its limit. This is a document-fetch failure, not a dataset package size.",
+      "provenance": "Assistant metadata transcription with primary URL/section; not a full-page snapshot, dataset checksum, payload or row preview.",
+      "request_id": 21,
+      "source": "ECO",
+      "status": "unavailable",
+      "url": "https://vs.inf.ethz.ch/publ/papers/wilhelmk-2015-dissertation.pdf"
+    }
+  ],
+  "scope": "Public catalog, documentation, bibliographic and published aggregate metadata only. No underlying archive, sensor/message sample, label row or independent period opened."
+}

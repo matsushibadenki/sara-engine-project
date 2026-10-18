@@ -323,9 +323,11 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Public metadata acquisition feasibility](R2_PUBLIC_SOURCE_METADATA_FEASIBILITY.md) preregisters four non-CASAS source families and aggregate review budgets before searches. TIHM duration fails; IDEAL's documented high-rate stream/full bundle is incompatible/over budget; SPHERE/ECO usable PIR coverage, density and access remain unresolved. No payload acquisition is justified. The original 180-fit split requires 270 source dates; conditional density arithmetic is verified against the unchanged extractor, with 215 passing related tests and exact replay. All 338 previous artifacts/negatives, thresholds/current conditions and seals remain preserved; no payload, preview or learning.
 
-🟠 [Next] Define a separately registered bounded metadata manifest gate for SPHERE/ECO: exact unused identities, usable dates, native message semantics/availability/duplicates and original Kitchen-ON target availability, counts, byte sizes and terms. No roster or CASAS expansion, condition relaxation or independent-period opening.
+🟢 [Done] [Finite SPHERE/ECO metadata contract audit](R2_SPHERE_ECO_METADATA_AUDIT.md) preregisters candidates, code, strict Kitchen ON semantics and total limits before new external inspection. Eight searches/13 pages retain six ECO metadata entries but no payload/preview/archive range/learning. Documented PIR packets and entrance/occupancy/electrical streams are incompatible with the fixed target. Label-day support is not PIR coverage/density; package/terms gaps remain unknown. Exact replay and 241 related tests preserve 345 earlier artifacts and code pins, old negatives and all seals. No SNN-specific advantage is inferred from metadata.
 
-⭕️ [Pending] Payload acquisition, timestamp verification and any matched-update comparison await accessible scoped metadata and all original input, opposing-history, class/support, state/write-budget and usefulness prerequisites. Conditional capacity is not positive temporal evidence.
+🟠 [Next] Preregister a bounded read-only R2 decision audit from existing result/work receipts: a causal temporal/local mechanism beyond sufficient observers/scalar controls, complete active-event/observer/maintenance costs, and the evidence needed for an SNN implementation benefit. No new search/acquisition, re-scoring, tuning, current-task change or R3 optimization.
+
+⭕️ [Pending] New acquisition and independent usefulness/resource evidence require a compatible justified source/task contract and all original input, opposing-history, class/support, state/write-budget and quality gates. The SPHERE/ECO documented-stream exclusions are closed; no automatic retries or CASAS additions. Sparse event scheduling/local updates can be shared with non-spiking implementations, so actual matched-control evidence remains essential.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
@@ -355,6 +357,6 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：已预注册并验证仅时间戳的安全上界，三个既有训练窗口均不可能达到固定目标；不重读事件值或标签，保留既有负结果与封存。
 
-日本語: 未使用3世帯を到着上限で除外し、候補を増やさず終了しました。続く4データ源の公開メタデータ調査も事前登録し、本体取得に進める候補は未確定と記録しました。固定目標70,212件、現在状態・根拠条件、封印と負の結果を保持します。次はSPHERE/ECOの世帯別期間・PIR密度・形式・サイズを要求する、別登録の有限メタデータゲートです。
+日本語: 続くSPHERE/ECOの有限メタデータ監査も事前登録し、公表ストリームが元のKitchen ON定義に不適合と判断して終了しました。未確定のPIR期間・密度・サイズ・利用条件を残し、本体取得・候補追加・条件緩和・封印解除はしません。241テストと別プロセス再現が成功しました。次は既存証跡だけで、SNNの時間状態・局所更新を十分な非スパイク対照から識別できる仮説と総処理量の条件を整理します。
 
-简体中文：三个家庭按到达上界全部排除后终止名单，未扩充候选。随后预注册四个数据源的公开元数据调查，尚无可直接采集的候选。固定目标70,212、当前状态与证据条件、封存和负结果保持。下一步另行注册有限元数据门槛，要求SPHERE/ECO逐户期间、PIR密度、格式及体积证据。
+简体中文：另行预注册并完成SPHERE/ECO有限元数据审计，判定其已描述数据流不符合原Kitchen ON定义并终止。保留PIR期间、密度、体积和使用条件的未知项，不采集本体、不扩充候选、不放宽条件或解除封存。241项测试与新进程重放通过。下一步仅据既有证据明确SNN时间状态、局部更新相对充分非脉冲对照的可识别假设及完整处理成本。
