@@ -73,7 +73,7 @@ Registration, acquisition, execution and the replay receipt use exclusive artifa
 
 The registered decision is `stop_roster_no_survivor`. No identity is added or replaced; no input-value preflight or class/quality test is authorized by these results. The high arrival demand remains an unmet prerequisite, not evidence that the local temporal readout works or cannot work.
 
-🟠 [Next] Review acquisition feasibility for a different source strategy using public sampling-density/duration metadata and the unchanged target/current/evidence conditions before proposing another finite acquisition. Require an external rationale for sufficient arrivals; do not continue a sequence of CASAS households automatically or reuse these independent periods to rescue the roster.
+🟢 [Done] The subsequent [public metadata feasibility review](R2_PUBLIC_SOURCE_METADATA_FEASIBILITY.md) preregistered four other source families and aggregate review budgets. No acquisition-ready source was established; the CASAS roster stays closed. Source coverage, native event semantics and bounded access remain prerequisites under unchanged target/current/evidence conditions.
 
 🔴 [Later] Only an independently justified new preregistration can authorize acquisition or a surviving source's training-input preflight. All original recurrence, history-contrast, class/support, state/write-budget and quality prerequisites still precede any matched-update learner and independent validation.
 

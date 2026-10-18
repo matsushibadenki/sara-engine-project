@@ -1,0 +1,445 @@
+{
+  "actual_learning_writes": 0,
+  "approved_payload_acquisitions": [],
+  "casas_candidates_added": 0,
+  "decision": "no_acquisition_ready_source_within_registered_metadata_review",
+  "independent_periods_opened": false,
+  "metadata_arithmetic_is_source_or_quality_pass": false,
+  "minimum_valid_source_dates_for_180_fit_dates": 270,
+  "regular_grid_scenarios": [
+    {
+      "cadence_seconds": 1,
+      "count_target_possible_in_scenario": true,
+      "days": 120,
+      "hypothetical_writes_per_arm": 518382,
+      "qualified_arrivals_if_assumptions_hold": 172794,
+      "raw_rows": 10368000,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": false,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 4,
+      "count_target_possible_in_scenario": true,
+      "days": 120,
+      "hypothetical_writes_per_arm": 518382,
+      "qualified_arrivals_if_assumptions_hold": 172794,
+      "raw_rows": 2592000,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 12,
+      "count_target_possible_in_scenario": true,
+      "days": 120,
+      "hypothetical_writes_per_arm": 518379,
+      "qualified_arrivals_if_assumptions_hold": 172793,
+      "raw_rows": 864000,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 20,
+      "count_target_possible_in_scenario": true,
+      "days": 120,
+      "hypothetical_writes_per_arm": 518376,
+      "qualified_arrivals_if_assumptions_hold": 172792,
+      "raw_rows": 518400,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 60,
+      "count_target_possible_in_scenario": true,
+      "days": 120,
+      "hypothetical_writes_per_arm": 518364,
+      "qualified_arrivals_if_assumptions_hold": 172788,
+      "raw_rows": 172800,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 120,
+      "count_target_possible_in_scenario": true,
+      "days": 120,
+      "hypothetical_writes_per_arm": 259170,
+      "qualified_arrivals_if_assumptions_hold": 86390,
+      "raw_rows": 86400,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 180,
+      "count_target_possible_in_scenario": false,
+      "days": 120,
+      "hypothetical_writes_per_arm": 172773,
+      "qualified_arrivals_if_assumptions_hold": 57591,
+      "raw_rows": 57600,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 240,
+      "count_target_possible_in_scenario": false,
+      "days": 120,
+      "hypothetical_writes_per_arm": 129573,
+      "qualified_arrivals_if_assumptions_hold": 43191,
+      "raw_rows": 43200,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 300,
+      "count_target_possible_in_scenario": false,
+      "days": 120,
+      "hypothetical_writes_per_arm": 103656,
+      "qualified_arrivals_if_assumptions_hold": 34552,
+      "raw_rows": 34560,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 301,
+      "count_target_possible_in_scenario": false,
+      "days": 120,
+      "hypothetical_writes_per_arm": 0,
+      "qualified_arrivals_if_assumptions_hold": 0,
+      "raw_rows": 34446,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 1,
+      "count_target_possible_in_scenario": true,
+      "days": 163,
+      "hypothetical_writes_per_arm": 704142,
+      "qualified_arrivals_if_assumptions_hold": 234714,
+      "raw_rows": 14083200,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": false,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 4,
+      "count_target_possible_in_scenario": true,
+      "days": 163,
+      "hypothetical_writes_per_arm": 704142,
+      "qualified_arrivals_if_assumptions_hold": 234714,
+      "raw_rows": 3520800,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 12,
+      "count_target_possible_in_scenario": true,
+      "days": 163,
+      "hypothetical_writes_per_arm": 704139,
+      "qualified_arrivals_if_assumptions_hold": 234713,
+      "raw_rows": 1173600,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 20,
+      "count_target_possible_in_scenario": true,
+      "days": 163,
+      "hypothetical_writes_per_arm": 704136,
+      "qualified_arrivals_if_assumptions_hold": 234712,
+      "raw_rows": 704160,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 60,
+      "count_target_possible_in_scenario": true,
+      "days": 163,
+      "hypothetical_writes_per_arm": 704124,
+      "qualified_arrivals_if_assumptions_hold": 234708,
+      "raw_rows": 234720,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 120,
+      "count_target_possible_in_scenario": true,
+      "days": 163,
+      "hypothetical_writes_per_arm": 352050,
+      "qualified_arrivals_if_assumptions_hold": 117350,
+      "raw_rows": 117360,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 180,
+      "count_target_possible_in_scenario": true,
+      "days": 163,
+      "hypothetical_writes_per_arm": 234693,
+      "qualified_arrivals_if_assumptions_hold": 78231,
+      "raw_rows": 78240,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 240,
+      "count_target_possible_in_scenario": false,
+      "days": 163,
+      "hypothetical_writes_per_arm": 176013,
+      "qualified_arrivals_if_assumptions_hold": 58671,
+      "raw_rows": 58680,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 300,
+      "count_target_possible_in_scenario": false,
+      "days": 163,
+      "hypothetical_writes_per_arm": 140808,
+      "qualified_arrivals_if_assumptions_hold": 46936,
+      "raw_rows": 46944,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 301,
+      "count_target_possible_in_scenario": false,
+      "days": 163,
+      "hypothetical_writes_per_arm": 0,
+      "qualified_arrivals_if_assumptions_hold": 0,
+      "raw_rows": 46789,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 1,
+      "count_target_possible_in_scenario": true,
+      "days": 180,
+      "hypothetical_writes_per_arm": 777582,
+      "qualified_arrivals_if_assumptions_hold": 259194,
+      "raw_rows": 15552000,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": false,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 4,
+      "count_target_possible_in_scenario": true,
+      "days": 180,
+      "hypothetical_writes_per_arm": 777582,
+      "qualified_arrivals_if_assumptions_hold": 259194,
+      "raw_rows": 3888000,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 12,
+      "count_target_possible_in_scenario": true,
+      "days": 180,
+      "hypothetical_writes_per_arm": 777579,
+      "qualified_arrivals_if_assumptions_hold": 259193,
+      "raw_rows": 1296000,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 20,
+      "count_target_possible_in_scenario": true,
+      "days": 180,
+      "hypothetical_writes_per_arm": 777576,
+      "qualified_arrivals_if_assumptions_hold": 259192,
+      "raw_rows": 777600,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 60,
+      "count_target_possible_in_scenario": true,
+      "days": 180,
+      "hypothetical_writes_per_arm": 777564,
+      "qualified_arrivals_if_assumptions_hold": 259188,
+      "raw_rows": 259200,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 120,
+      "count_target_possible_in_scenario": true,
+      "days": 180,
+      "hypothetical_writes_per_arm": 388770,
+      "qualified_arrivals_if_assumptions_hold": 129590,
+      "raw_rows": 129600,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 180,
+      "count_target_possible_in_scenario": true,
+      "days": 180,
+      "hypothetical_writes_per_arm": 259173,
+      "qualified_arrivals_if_assumptions_hold": 86391,
+      "raw_rows": 86400,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 240,
+      "count_target_possible_in_scenario": false,
+      "days": 180,
+      "hypothetical_writes_per_arm": 194373,
+      "qualified_arrivals_if_assumptions_hold": 64791,
+      "raw_rows": 64800,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 300,
+      "count_target_possible_in_scenario": false,
+      "days": 180,
+      "hypothetical_writes_per_arm": 155496,
+      "qualified_arrivals_if_assumptions_hold": 51832,
+      "raw_rows": 51840,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    },
+    {
+      "cadence_seconds": 301,
+      "count_target_possible_in_scenario": false,
+      "days": 180,
+      "hypothetical_writes_per_arm": 0,
+      "qualified_arrivals_if_assumptions_hold": 0,
+      "raw_rows": 51668,
+      "scope": "Conditional all-binary regular-grid witness only; not a measured source count or arbitrary-subsequence bound",
+      "within_unchanged_input_row_cap": true,
+      "within_unchanged_outcome_write_caps": true
+    }
+  ],
+  "required_arrivals": 70212,
+  "required_per_day_at_180_train_dates": "5851/15",
+  "sensor_message_fields_inspected": false,
+  "sources": [
+    {
+      "capacity_scope": "Conditional on published metadata envelope; not a timestamp-validated certificate",
+      "ceiling_is_observed_yield": false,
+      "dataset_acquisition_authorized": false,
+      "evidence_pages": [
+        "P01",
+        "P02",
+        "P11"
+      ],
+      "id": "TIHM",
+      "independent_validation_passed": false,
+      "minute_cutoff_capacity_ceiling": 86400,
+      "reasons": [
+        "documented_duration_cannot_reach_180_recorded_dates",
+        "native_binary_event_contract_unresolved",
+        "per_identity_recorded_dates_unverified",
+        "per_identity_training_arrivals_unverified",
+        "identity_size_access_manifest_unverified"
+      ],
+      "source_calendar_date_ceiling": 91,
+      "source_quality_pass": false,
+      "status": "exclude_documented_duration",
+      "training_recorded_date_ceiling": 60
+    },
+    {
+      "capacity_scope": "Conditional on published metadata envelope; not a timestamp-validated certificate",
+      "ceiling_is_observed_yield": false,
+      "dataset_acquisition_authorized": false,
+      "evidence_pages": [
+        "P03",
+        "P09"
+      ],
+      "id": "SPHERE",
+      "independent_validation_passed": false,
+      "minute_cutoff_capacity_ceiling": null,
+      "reasons": [
+        "native_binary_event_contract_unresolved",
+        "per_identity_recorded_dates_unverified",
+        "per_identity_training_arrivals_unverified",
+        "identity_size_access_manifest_unverified"
+      ],
+      "source_calendar_date_ceiling": null,
+      "source_quality_pass": false,
+      "status": "unresolved_metadata",
+      "training_recorded_date_ceiling": null
+    },
+    {
+      "capacity_scope": "Conditional on published metadata envelope; not a timestamp-validated certificate",
+      "ceiling_is_observed_yield": false,
+      "dataset_acquisition_authorized": false,
+      "evidence_pages": [
+        "P06",
+        "P07"
+      ],
+      "id": "IDEAL",
+      "independent_validation_passed": false,
+      "minute_cutoff_capacity_ceiling": null,
+      "reasons": [
+        "documented_high_rate_stream_is_not_native_binary_events",
+        "documented_full_bundle_over_budget_subset_unverified",
+        "per_identity_recorded_dates_unverified",
+        "per_identity_training_arrivals_unverified",
+        "identity_size_access_manifest_unverified"
+      ],
+      "source_calendar_date_ceiling": null,
+      "source_quality_pass": false,
+      "status": "incompatible_documented_stream",
+      "training_recorded_date_ceiling": null
+    },
+    {
+      "capacity_scope": "Conditional on published metadata envelope; not a timestamp-validated certificate",
+      "ceiling_is_observed_yield": false,
+      "dataset_acquisition_authorized": false,
+      "evidence_pages": [
+        "P05",
+        "P15",
+        "P16"
+      ],
+      "id": "ECO",
+      "independent_validation_passed": false,
+      "minute_cutoff_capacity_ceiling": 234720,
+      "reasons": [
+        "native_binary_event_contract_unresolved",
+        "per_identity_recorded_dates_unverified",
+        "per_identity_training_arrivals_unverified",
+        "identity_size_access_manifest_unverified"
+      ],
+      "source_calendar_date_ceiling": 245,
+      "source_quality_pass": false,
+      "status": "unresolved_metadata",
+      "training_recorded_date_ceiling": 163
+    }
+  ],
+  "work": {
+    "dataset_payload_bytes": 0,
+    "dataset_preview_rows": 0,
+    "metadata_pages": 16,
+    "retained_evidence_utf8_bytes": 8792,
+    "search_queries": 8
+  }
+}

@@ -321,7 +321,11 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Finite unused-household timestamp screen](R2_CASAS_FINITE_ROSTER_SCREEN.md) preregisters HH106→HH107→HH108, code and aggregate source/timestamp budgets before acquisition. Complete 180-date training bounds 37,857/59,892/24,569 all miss the fixed 70,212 target. Stop this roster with no extension, window change or event-value inspection. Acquisition 101,722,176 body bytes and 2,253,772 training timestamps remain within budgets; exact replay and 177 related tests pass. All 326 earlier artifacts/negatives, sensor/message fields and independent prediction information remain preserved; zero learning writes. This is a source-arrival exclusion, not a temporal-readout quality result.
 
-🟠 [Next] Review a different acquisition strategy from public density/duration metadata with an external rationale for sufficient arrivals, retaining the same current/evidence/arrival conditions. Any acquisition needs a new finite preregistration; no automatic CASAS roster expansion or use of its independent periods. Input, opposing-history, class/support, state/write-budget and usefulness prerequisites remain required before matched-update comparisons.
+🟢 [Done] [Public metadata acquisition feasibility](R2_PUBLIC_SOURCE_METADATA_FEASIBILITY.md) preregisters four non-CASAS source families and aggregate review budgets before searches. TIHM duration fails; IDEAL's documented high-rate stream/full bundle is incompatible/over budget; SPHERE/ECO usable PIR coverage, density and access remain unresolved. No payload acquisition is justified. The original 180-fit split requires 270 source dates; conditional density arithmetic is verified against the unchanged extractor, with 215 passing related tests and exact replay. All 338 previous artifacts/negatives, thresholds/current conditions and seals remain preserved; no payload, preview or learning.
+
+🟠 [Next] Define a separately registered bounded metadata manifest gate for SPHERE/ECO: exact unused identities, usable dates, native message semantics/availability/duplicates and original Kitchen-ON target availability, counts, byte sizes and terms. No roster or CASAS expansion, condition relaxation or independent-period opening.
+
+⭕️ [Pending] Payload acquisition, timestamp verification and any matched-update comparison await accessible scoped metadata and all original input, opposing-history, class/support, state/write-budget and usefulness prerequisites. Conditional capacity is not positive temporal evidence.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
@@ -351,6 +355,6 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：已预注册并验证仅时间戳的安全上界，三个既有训练窗口均不可能达到固定目标；不重读事件值或标签，保留既有负结果与封存。
 
-日本語: 未使用3世帯の有限リスト・順序・総予算を先に登録し、上限37,857／59,892／24,569件で全候補を除外しました。固定目標70,212件、入力値と独立期間の封印、既存の負の結果を維持し、候補は増やしません。次は公開メタデータから別の取得方針の実現性を検討し、新しい事前登録より先には取得しません。
+日本語: 未使用3世帯を到着上限で除外し、候補を増やさず終了しました。続く4データ源の公開メタデータ調査も事前登録し、本体取得に進める候補は未確定と記録しました。固定目標70,212件、現在状態・根拠条件、封印と負の結果を保持します。次はSPHERE/ECOの世帯別期間・PIR密度・形式・サイズを要求する、別登録の有限メタデータゲートです。
 
-简体中文：预先注册了三个未使用家庭的有限名单、顺序和总预算；上界37,857／59,892／24,569均低于固定目标70,212，全部排除并终止名单。保留事件值、独立期间封存和既有负结果，不扩充候选。下一步仅根据公开元数据研究另一采集策略，在新预注册前不采集。
+简体中文：三个家庭按到达上界全部排除后终止名单，未扩充候选。随后预注册四个数据源的公开元数据调查，尚无可直接采集的候选。固定目标70,212、当前状态与证据条件、封存和负结果保持。下一步另行注册有限元数据门槛，要求SPHERE/ECO逐户期间、PIR密度、格式及体积证据。

@@ -1,0 +1,168 @@
+{
+  "captured_at_utc": "2026-10-18T03:32:38.066899+00:00",
+  "dataset_payload_bytes": 0,
+  "dataset_preview_rows": 0,
+  "pages": [
+    {
+      "candidate": "TIHM",
+      "facts": [
+        "Published 2023-09-09. Secondary TIHM release; participant mean involvement about 50 days. Temporal resolution is not a rate guarantee."
+      ],
+      "id": "P01",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "fetch_error_search_metadata_available",
+      "url": "https://www.nature.com/articles/s41597-023-02519-y"
+    },
+    {
+      "candidate": "TIHM",
+      "facts": [
+        "Version 1.0; TIHM_Dataset.zip about 7.0 MB, published MD5 ccf913f38a7808bc366bf0e799b409e4 (not verified). 56 participants, 2803 person-days, mean about 50. Research/patient benefit, non-commercial use note."
+      ],
+      "id": "P02",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "catalog_read",
+      "url": "https://zenodo.org/records/7622128"
+    },
+    {
+      "candidate": "SPHERE",
+      "facts": [
+        "Sections 1 and 4.3.2: deployments up to a year; PIR_TRIGS has 30 binary samples per packet, packets every 20 seconds with 10 overlapping samples. Not independent notifications. Research availability subject to policies; not a release manifest."
+      ],
+      "id": "P03",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "technical_metadata_read",
+      "url": "https://arxiv.org/html/1805.11907v2"
+    },
+    {
+      "candidate": "TIHM",
+      "facts": [],
+      "id": "P04",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "captcha_no_evidence",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10492790/"
+    },
+    {
+      "candidate": "ECO",
+      "facts": [
+        "Six Swiss homes, eight-month campaign. Electricity and selected appliance consumption at 1 Hz. PIR only in some households; PIR cadence/coverage not specified. Dashboard needs credentials; archive link exists."
+      ],
+      "id": "P05",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "catalog_read",
+      "url": "https://vs.inf.ethz.ch/res/show.html?what=eco-data"
+    },
+    {
+      "candidate": "IDEAL",
+      "facts": [
+        "255 homes over 23 months ending June 2018. Electricity 1 Hz, contextual sensors 12 seconds. Standard installations 55-659 days, mean 279; enhanced installations 23-175 days. These are installation spans, not complete recorded dates."
+      ],
+      "id": "P06",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "fetch_error_search_metadata_available",
+      "url": "https://www.nature.com/articles/s41597-021-00921-y"
+    },
+    {
+      "candidate": "IDEAL",
+      "facts": [
+        "Coverage 2016-08-10 to 2018-06-30. Documentation 4.39 MB; metadata_and_surveys.zip 360.82 KB; household_sensors.zip 14.77 GB, MD5 11e484d8eca21697c163721cf625c53e (not verified). No subset range verification performed."
+      ],
+      "id": "P07",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "catalog_read",
+      "url": "https://datashare.ed.ac.uk/items/15e82917-56ed-4282-99ef-7f211bf87f9d/full"
+    },
+    {
+      "candidate": "ECO",
+      "facts": [],
+      "id": "P08",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "fetch_error_no_evidence",
+      "url": "https://www.research-collection.ethz.ch/entities/researchdata/e00ee826-4b2d-450c-8539-dc5ce14abc67"
+    },
+    {
+      "candidate": "SPHERE",
+      "facts": [
+        "Many participants lived with the installed platform for a whole year. No per-home usable-date/count/size manifest on this page."
+      ],
+      "id": "P09",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "catalog_read",
+      "url": "https://www.bristol.ac.uk/research/groups/digital-health/research/sphere/the-100-homes-study/"
+    },
+    {
+      "candidate": "IDEAL",
+      "facts": [],
+      "id": "P10",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "captcha_no_evidence",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8163809/"
+    },
+    {
+      "candidate": "TIHM",
+      "facts": [
+        "Activity schema: patient_id, location_name, date; documented dates 2019-04-01 through 2019-06-30. No ON/OFF message field documented."
+      ],
+      "id": "P11",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "schema_metadata_read",
+      "url": "https://github.com/PBarnaghi/TIHM-Dataset/blob/main/README.md?plain=1"
+    },
+    {
+      "candidate": "ECO",
+      "facts": [],
+      "id": "P12",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "redirect_fetch_error_no_evidence",
+      "url": "https://www.vs.inf.ethz.ch/publ/bibtex.html?file=papers%2Fbeckel-2014-nilm"
+    },
+    {
+      "candidate": "ECO",
+      "facts": [],
+      "id": "P13",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "redirect_fetch_error_no_evidence",
+      "url": "https://www.vs.inf.ethz.ch/publ/bibtex.html?file=papers%2Fkleiminger_ubicomp2015"
+    },
+    {
+      "candidate": "ECO",
+      "facts": [],
+      "id": "P14",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "redirect_fetch_error_no_payload",
+      "url": "https://doi.org/10.5905/ethz-1007-35"
+    },
+    {
+      "candidate": "ECO",
+      "facts": [
+        "BuildSys 2014, pp.80-89; authoritative author-hosted paper linked."
+      ],
+      "id": "P15",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "bibliographic_metadata_read",
+      "url": "https://vs.inf.ethz.ch/publ/bibtex.html?file=papers/beckel-2014-nilm"
+    },
+    {
+      "candidate": "ECO",
+      "facts": [
+        "Section 5: June 2012-January 2013; >100 million aggregate electrical measurements across six homes, not per-home PIR. Household 6 lacks occupancy information. Presence/absence manually entered in selected periods; entrance PIR also recorded. No usable per-home PIR count, cadence or bounded subset size given."
+      ],
+      "id": "P16",
+      "provenance": "Primary publisher/author metadata read via web tool; facts transcribed by assistant, not independently scraped or a raw-page checksum.",
+      "status": "paper_metadata_read",
+      "url": "https://vs.inf.ethz.ch/publ/papers/beckel-2014-nilm.pdf"
+    }
+  ],
+  "scope": "Bibliographic, catalog, schema and sampling metadata only. No underlying dataset previews or files fetched; published illustrative schema examples are not opened dataset rows.",
+  "sealed_periods_opened": false,
+  "search_queries": [
+    "TIHM dataset dementia research recording duration frequency 2023 data",
+    "SPHERE 100 homes dataset duration 2024 PIR sensor data access",
+    "IDEAL household energy dataset motion sensor data 255 homes 23 months frequency download",
+    "ECO dataset occupancy PIR 6 households 8 months sampling rate download",
+    "SPHERE 100 homes dataset data.bris access environmental 2019 2020 PIR download",
+    "ECO dataset readme occupancy csv passive infrared 2012 2013 data download ethz",
+    "\"SPHERE\" \"100 homes\" dataset access restricted download data",
+    "\"ECO\" dataset occupancy \"README\" \"csv\" PIR"
+  ],
+  "sensor_message_fields_inspected": false
+}

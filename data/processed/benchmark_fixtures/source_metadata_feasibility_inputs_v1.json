@@ -1,0 +1,89 @@
+{
+  "scenario_assumptions": "Exactly one native binary row per cadence, no missing records, no duplicate packets, half-open complete days, eight-event history, original greedy cutoff clock, 300..600s first future result. These are artificial scalar timing witnesses only, not generated training data or a source contract change.",
+  "scenario_cadences_seconds": [
+    1,
+    4,
+    12,
+    20,
+    60,
+    120,
+    180,
+    240,
+    300,
+    301
+  ],
+  "scenario_days": [
+    120,
+    163,
+    180
+  ],
+  "scenario_selection": "Freeze arithmetic cases before calculation; 120/163/180 cover unchanged minimum-source split, ECO maximum-fit envelope, and full-fit cap.",
+  "scope": "Public metadata manually transcribed with primary evidence pointers. Known before implementation registration; all density scenarios conditional, not source measurements.",
+  "sources": [
+    {
+      "bounded_access_manifest_verified": false,
+      "duration_basis": "Author README Activity schema gives 2019-04-01 through 2019-06-30 inclusive, a global envelope bounding every participant. Mean 50 days is not used as a maximum.",
+      "evidence_pages": [
+        "P01",
+        "P02",
+        "P11"
+      ],
+      "id": "TIHM",
+      "native_contract": "unresolved",
+      "nominal_cadence_seconds": null,
+      "source_calendar_date_ceiling": 91,
+      "verified_identity_recorded_dates": null,
+      "verified_training_upper": null
+    },
+    {
+      "bounded_access_manifest_verified": false,
+      "duration_basis": "Many participants installed for one year; actual recorded-date coverage per identity not certified.",
+      "evidence_pages": [
+        "P03",
+        "P09"
+      ],
+      "history_samples_per_packet": 30,
+      "id": "SPHERE",
+      "missing": "Exact public identity/count/byte manifest, usable dates, availability-safe handling of packet history preserving exact current message; no backdated sample expansion authorized.",
+      "native_contract": "unresolved_packet_history",
+      "overlap_samples": 10,
+      "packet_cadence_seconds": 20,
+      "source_calendar_date_ceiling": null,
+      "verified_identity_recorded_dates": null,
+      "verified_training_upper": null
+    },
+    {
+      "bounded_access_manifest_verified": false,
+      "duration_basis": "255 homes over 23-month campaign; standard installation 55-659 days, not per-identity valid recorded dates. Enhanced installation maximum175 days is not a longer independent binary stream.",
+      "evidence_pages": [
+        "P06",
+        "P07"
+      ],
+      "id": "IDEAL",
+      "minimum_full_bundle_bytes": 14000000000,
+      "native_contract": "incompatible_documented_stream",
+      "nominal_electric_cadence_seconds": 1,
+      "size_basis": "Conservative lower bound14GB from catalog14.77GB household_sensors.zip, not exact bytes and not a subset-size claim.",
+      "source_calendar_date_ceiling": null,
+      "verified_identity_recorded_dates": null,
+      "verified_training_upper": null
+    },
+    {
+      "aggregate_electric_rows_lower_bound": 100000000,
+      "bounded_access_manifest_verified": false,
+      "duration_basis": "June2012 through January2013 campaign lies inside June1-Jan31 inclusive245dates; this is a conservative global upper, not complete per-home coverage. Original split therefore allows at most163 training dates.",
+      "evidence_pages": [
+        "P05",
+        "P15",
+        "P16"
+      ],
+      "id": "ECO",
+      "missing": "Native PIR stream schema, per-household valid dates/cadence/counts, sized public subset and terms. Household6 lacks occupancy data; no identity selected or automatically replaced.",
+      "native_contract": "unresolved",
+      "nominal_electric_cadence_seconds": 1,
+      "source_calendar_date_ceiling": 245,
+      "verified_identity_recorded_dates": null,
+      "verified_training_upper": null
+    }
+  ]
+}
