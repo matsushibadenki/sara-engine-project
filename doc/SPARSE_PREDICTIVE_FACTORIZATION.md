@@ -317,7 +317,9 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Fresh HH105 input preflight](R2_CASAS_ARRIVAL_PREFLIGHT.md) measures the complete registered training prefix of 180 recorded dates without unknown-event filtering. Novelty/recurrence and observed state budgets pass; arrival 29,552 fails fixed 70,212 target. Both arms have 0 actual learner writes and 88,656 hypothetical updates, exact process/growth/inventory replay and 145 passing related tests. Preserve all negatives and 5,731,389 sealed independent rows; original class/quality conditions remain unassessed and unchanged.
 
-🟠 [Next] Preregister a timestamp-only safe arrival upper bound before consuming another identity's inputs. Validate that it never undercounts possible qualified arrivals under unchanged history/gap/cutoff/delay conditions; screen only, without target/window rescue, scoring, input-policy change or runtime promotion.
+🟢 [Done] [Timestamp-only safe upper bound](R2_CASAS_TIMESTAMP_UPPER_BOUND.md) retains all original timing/current/evidence conditions. Minute-bucket certification covers every actual binary-subsequence arrival; 8,192 mask checks and all three existing fit windows pass. Their 25,334/22,411/37,748 upper bounds exclude the current 70,212 planning target. Zero event-value inspection/learning, peak 6 buckets, exact replay and 157 related tests; old negatives and seals preserved.
+
+🟠 [Next] Preregister a finite unused-household roster and aggregate source/timestamp budgets before applying this screen to fresh identities. Keep event values and independent periods sealed, stop if the fixed roster yields no survivor, and require separate input/source/quality prerequisites for any later learner.
 
 日本語: 支持数だけのゲートに続き、未使用HH104で現在状態に対する局所予測根拠も事前登録して検証しました。両方の負の結果を保持し、独立期間は開きません。
 
@@ -343,6 +345,10 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：已完成新训练身份HH105的预检，保留未知事件且重复与状态预算满足条件，但29,552次到达未达到固定目标。独立期间封存和效用要求保持不变。
 
-日本語: 次は日時だけで到着数の安全な上限を事前登録し、次の世帯の入力を読む前に不可能な候補を除外できるか検証します。条件を緩めず、既存の負の結果を保持します。
+日本語: 日時だけの安全な上限も事前登録して検証しました。既存訓練3期間はいずれも固定目標に届き得ないと判断でき、入力値・ラベルを再検査せず、既存の負の結果と封印を保持しました。
 
-简体中文：下一步仅根据时间戳预注册安全到达上界，在读取下一家庭输入前检验是否可排除不可能候选，不放宽条件且保留既有负结果。
+简体中文：已预注册并验证仅时间戳的安全上界，三个既有训练窗口均不可能达到固定目标；不重读事件值或标签，保留既有负结果与封存。
+
+日本語: 次は未使用世帯の有限な候補リストと総予算を先に登録し、日時だけの除外判定を適用します。残った候補にも元の入力・クラス支持・有用性条件を要求します。
+
+简体中文：下一步先注册有限的未使用家庭名单及总预算，再进行仅时间戳筛选。保留候选仍须满足原输入、类别支持与效用条件。

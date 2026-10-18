@@ -1,0 +1,73 @@
+{
+  "decision": "Exclude input inspection only if a complete timestamp upper bound<70212. Otherwise cannot_exclude, not eligible/pass for source/class/quality or independent validation. Also report min(upper,263295,789885//3) as budget-capped upper, not altered arrival criteria.",
+  "design_reference": "The user circuit-optimization memo motivates avoiding needless later work while accounting for screening/maintenance overhead. No quantization, structural plasticity, Transformer or runtime feature is introduced.",
+  "fields": "Read ISO date and training time only. Choose CSV/whitespace delimiter at the date boundary, never from event payload. Before time parsing, discard all dates from the existing training end onward and metadata clock exclusions. Sensor/message fields are never interpreted; any binary subsequence of raw timestamps must be covered.",
+  "history_necessity": "Any valid eight-binary-event history with adjacent gaps<=300s implies the raw timestamp streak ending at its cutoff contains >=8 rows without a raw gap>300s. Mark all such raw times as potential cutoffs; no original cutoff-clock phase is simulated.",
+  "interval_union": "Inside one minute all potential-cutoff result intervals [t+300,t+600] overlap, so their union is [first+300,last+600]. Store only first/last. At the first later raw time>=first+300, certify bucket iff time<=last+600, otherwise expire. The minute is closed before maturity. Pending first times stay within300s of present: at most6 minute buckets, guarded by16.",
+  "limits": {
+    "opened_timestamps": 5000000,
+    "pending_buckets": 16
+  },
+  "minute_injection": "Original >=60s cutoff spacing implies at most one actual qualified cutoff per half-open clock-minute interval. Count intervals containing a potential cutoff with some future raw time300..600s later. This counting partition is not a change to the original 15-minute current context or actual extraction.",
+  "naive_counterexample": "Eight rows at0s, then60s,119s,700s. Original all-binary greedy count0; making60s nonbinary yields count1. Do not use all-raw greedy extraction as an upper bound.",
+  "real_checks": "For each source use only its frozen training end and stored actual training count. Require complete-stream upper>=existing actual count; otherwise stop with error. Compare exact summary/daily replay in a fresh process; preserve all prior JSON/gzip evidence and code hashes.",
+  "scope": "Timestamp-only upper-bound method validation on existing consumed training windows only. No new household, acquisition, input-value inspection, scoring or learner. Earlier measured counts and negative results known.",
+  "soundness": "Every actual qualified cutoff maps injectively to a certified bucket: its history is raw-feasible and its binary result is a raw result in the union. Extra buckets are permitted. Complete training EOF excludes unresolved buckets; truncated scans return no usable upper bound. Raw rows treated as possible binary events define a superset, not a task filter change.",
+  "source_limits": "Each existing member expanded size<=536870912 bytes, exact original compressed/expanded SHA/CRC checks. Sequential bounded decompression and date-only drain of excluded/sealed rows. Timestamp-row or queue-cap stop is inconclusive, never an exclusion.",
+  "sources": {
+    "HH103": {
+      "acquisition": "casas_180_acquisition_v1.json",
+      "baseline": "casas_180_result_v1.json",
+      "baseline_fields": [
+        "qualification",
+        "splits",
+        "train",
+        "count"
+      ],
+      "integrity": null,
+      "metadata": "casas_180_metadata_v1.json",
+      "metadata_fields": [],
+      "raw": [
+        "r2_casas_180",
+        "hh103.deflate"
+      ]
+    },
+    "HH104": {
+      "acquisition": "casas_evidence_acquisition_v1.json",
+      "baseline": "casas_pooling_result_v1.json",
+      "baseline_fields": [
+        "qualification",
+        "splits",
+        "train",
+        "count"
+      ],
+      "integrity": "casas_evidence_integrity_v1.json",
+      "metadata": "casas_pooling_protocol_v1.json",
+      "metadata_fields": [
+        "splits"
+      ],
+      "raw": [
+        "r2_casas_evidence",
+        "hh104.deflate"
+      ]
+    },
+    "HH105": {
+      "acquisition": "casas_arrival_preflight_acquisition_v1.json",
+      "baseline": "casas_arrival_preflight_result_v1.json",
+      "baseline_fields": [
+        "qualified_outcomes"
+      ],
+      "integrity": "casas_arrival_preflight_integrity_v1.json",
+      "metadata": "casas_arrival_preflight_metadata_v1.json",
+      "metadata_fields": [],
+      "raw": [
+        "r2_casas_arrival",
+        "hh105.deflate"
+      ]
+    }
+  },
+  "stop": "No condition relaxation, threshold/current modification, unknown-event rejection, test opening, old-negative reclassification or comparative learner. No new identity acquisition during this method validation.",
+  "target": 70212,
+  "validation": "Before real timestamp parsing, exhaust all8192 binary masks on three frozen synthetic traces in validate_counterexamples(), comparing with unchanged original preflight extractor. Validate duplicate bursts, inclusive300/600s, history300/301s, clock regression, midnight, event-payload poisoning, date-only seals and inconclusive budget stops in unit tests.",
+  "work": "Report total streamed rows including date-only sealed rows, training timestamps parsed, raw potential cutoff rows, candidate/eligible/expired/unresolved minute buckets, queue pushes/pops/peak and retrospective cutoff-date totals. Full checksum/decompression work remains; no energy or zero-I/O claim. No labels or readout writes."
+}

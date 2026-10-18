@@ -1,0 +1,113 @@
+{
+  "actual_learning_writes": 0,
+  "daily_sha256": "83c43508064660003643998fba72d6d2def2f6ec06ebe0e20d306917766dd2a0",
+  "new_identity_inputs_opened": false,
+  "original_development_opened": false,
+  "sensor_message_fields_inspected": false,
+  "sources": {
+    "HH103": {
+      "actual_learning_writes": 0,
+      "audit": {
+        "sealed_date_only_rows": 5008622,
+        "streamed_rows": 5425649,
+        "training_timestamp_rows": 417027
+      },
+      "bound_minus_existing": 6658,
+      "budget_capped_upper_bound": 25334,
+      "dominates_existing_arrivals": true,
+      "existing_training_arrivals": 18676,
+      "original_development_opened": false,
+      "outcome_labels_computed": false,
+      "scope": "Any binary subsequence of complete valid training timestamps; count upper bound only",
+      "screen_decision": "exclude_below_target",
+      "sensor_message_fields_inspected": false,
+      "target": 70212,
+      "terminal_stop": null,
+      "test_opened": false,
+      "timestamp_upper_bound": 25334,
+      "training_end_exclusive": "2011-12-13",
+      "training_start": "2011-06-15",
+      "unresolved_buckets": 2,
+      "work": {
+        "candidate_buckets": 36394,
+        "eligible_buckets": 25334,
+        "expired_buckets": 11058,
+        "peak_pending_buckets": 6,
+        "potential_cutoff_rows": 388604,
+        "queue_pops": 36392,
+        "queue_pushes": 36394,
+        "timestamps": 417027
+      }
+    },
+    "HH104": {
+      "actual_learning_writes": 0,
+      "audit": {
+        "sealed_date_only_rows": 4497877,
+        "streamed_rows": 4941414,
+        "training_timestamp_rows": 443537
+      },
+      "bound_minus_existing": 4858,
+      "budget_capped_upper_bound": 22411,
+      "dominates_existing_arrivals": true,
+      "existing_training_arrivals": 17553,
+      "original_development_opened": false,
+      "outcome_labels_computed": false,
+      "scope": "Any binary subsequence of complete valid training timestamps; count upper bound only",
+      "screen_decision": "exclude_below_target",
+      "sensor_message_fields_inspected": false,
+      "target": 70212,
+      "terminal_stop": null,
+      "test_opened": false,
+      "timestamp_upper_bound": 22411,
+      "training_end_exclusive": "2011-09-03",
+      "training_start": "2011-06-15",
+      "unresolved_buckets": 0,
+      "work": {
+        "candidate_buckets": 27301,
+        "eligible_buckets": 22411,
+        "expired_buckets": 4890,
+        "peak_pending_buckets": 6,
+        "potential_cutoff_rows": 422628,
+        "queue_pops": 27301,
+        "queue_pushes": 27301,
+        "timestamps": 443537
+      }
+    },
+    "HH105": {
+      "actual_learning_writes": 0,
+      "audit": {
+        "sealed_date_only_rows": 5731389,
+        "streamed_rows": 6430307,
+        "training_timestamp_rows": 698918
+      },
+      "bound_minus_existing": 8196,
+      "budget_capped_upper_bound": 37748,
+      "dominates_existing_arrivals": true,
+      "existing_training_arrivals": 29552,
+      "original_development_opened": false,
+      "outcome_labels_computed": false,
+      "scope": "Any binary subsequence of complete valid training timestamps; count upper bound only",
+      "screen_decision": "exclude_below_target",
+      "sensor_message_fields_inspected": false,
+      "target": 70212,
+      "terminal_stop": null,
+      "test_opened": false,
+      "timestamp_upper_bound": 37748,
+      "training_end_exclusive": "2011-12-27",
+      "training_start": "2011-06-15",
+      "unresolved_buckets": 6,
+      "work": {
+        "candidate_buckets": 46084,
+        "eligible_buckets": 37748,
+        "expired_buckets": 8330,
+        "peak_pending_buckets": 6,
+        "potential_cutoff_rows": 674226,
+        "queue_pops": 46078,
+        "queue_pushes": 46084,
+        "timestamps": 698918
+      }
+    }
+  },
+  "test_opened": false,
+  "validation_sha256": "a62ab23f0aaa15cb546d38bde174009dbc58aae41c71e25dfd4e0f8df8efae24"
+}

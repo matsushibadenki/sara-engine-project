@@ -1,0 +1,3050 @@
+{
+  "HH103": {
+    "2011-06-15": {
+      "candidate_buckets": 117,
+      "eligible_buckets": 65,
+      "expired_buckets": 52,
+      "potential_cutoff_rows": 1369,
+      "timestamps": 1476
+    },
+    "2011-06-16": {
+      "candidate_buckets": 148,
+      "eligible_buckets": 76,
+      "expired_buckets": 72,
+      "potential_cutoff_rows": 1823,
+      "timestamps": 1966
+    },
+    "2011-06-17": {
+      "candidate_buckets": 158,
+      "eligible_buckets": 87,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 1749,
+      "timestamps": 1888
+    },
+    "2011-06-18": {
+      "candidate_buckets": 164,
+      "eligible_buckets": 90,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 1934,
+      "timestamps": 2076
+    },
+    "2011-06-19": {
+      "candidate_buckets": 99,
+      "eligible_buckets": 51,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 1295,
+      "timestamps": 1410
+    },
+    "2011-06-20": {
+      "candidate_buckets": 158,
+      "eligible_buckets": 99,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 1796,
+      "timestamps": 1942
+    },
+    "2011-06-21": {
+      "candidate_buckets": 147,
+      "eligible_buckets": 78,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 1888,
+      "timestamps": 2012
+    },
+    "2011-06-22": {
+      "candidate_buckets": 192,
+      "eligible_buckets": 111,
+      "expired_buckets": 81,
+      "potential_cutoff_rows": 2260,
+      "timestamps": 2416
+    },
+    "2011-06-23": {
+      "candidate_buckets": 155,
+      "eligible_buckets": 84,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 1982,
+      "timestamps": 2124
+    },
+    "2011-06-24": {
+      "candidate_buckets": 158,
+      "eligible_buckets": 72,
+      "expired_buckets": 86,
+      "potential_cutoff_rows": 1922,
+      "timestamps": 2126
+    },
+    "2011-06-25": {
+      "candidate_buckets": 149,
+      "eligible_buckets": 79,
+      "expired_buckets": 70,
+      "potential_cutoff_rows": 2071,
+      "timestamps": 2198
+    },
+    "2011-06-26": {
+      "candidate_buckets": 119,
+      "eligible_buckets": 70,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 1359,
+      "timestamps": 1472
+    },
+    "2011-06-27": {
+      "candidate_buckets": 147,
+      "eligible_buckets": 86,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 1717,
+      "timestamps": 1870
+    },
+    "2011-06-28": {
+      "candidate_buckets": 186,
+      "eligible_buckets": 115,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 2285,
+      "timestamps": 2438
+    },
+    "2011-06-29": {
+      "candidate_buckets": 178,
+      "eligible_buckets": 105,
+      "expired_buckets": 73,
+      "potential_cutoff_rows": 2111,
+      "timestamps": 2242
+    },
+    "2011-06-30": {
+      "candidate_buckets": 150,
+      "eligible_buckets": 82,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 1836,
+      "timestamps": 1968
+    },
+    "2011-07-01": {
+      "candidate_buckets": 161,
+      "eligible_buckets": 102,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 2016,
+      "timestamps": 2136
+    },
+    "2011-07-02": {
+      "candidate_buckets": 146,
+      "eligible_buckets": 82,
+      "expired_buckets": 64,
+      "potential_cutoff_rows": 1901,
+      "timestamps": 2040
+    },
+    "2011-07-03": {
+      "candidate_buckets": 163,
+      "eligible_buckets": 96,
+      "expired_buckets": 67,
+      "potential_cutoff_rows": 2031,
+      "timestamps": 2160
+    },
+    "2011-07-04": {
+      "candidate_buckets": 142,
+      "eligible_buckets": 69,
+      "expired_buckets": 73,
+      "potential_cutoff_rows": 1647,
+      "timestamps": 1808
+    },
+    "2011-07-05": {
+      "candidate_buckets": 189,
+      "eligible_buckets": 100,
+      "expired_buckets": 89,
+      "potential_cutoff_rows": 2302,
+      "timestamps": 2474
+    },
+    "2011-07-06": {
+      "candidate_buckets": 152,
+      "eligible_buckets": 86,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 1774,
+      "timestamps": 1924
+    },
+    "2011-07-07": {
+      "candidate_buckets": 154,
+      "eligible_buckets": 80,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 1834,
+      "timestamps": 2022
+    },
+    "2011-07-08": {
+      "candidate_buckets": 155,
+      "eligible_buckets": 74,
+      "expired_buckets": 81,
+      "potential_cutoff_rows": 1805,
+      "timestamps": 1960
+    },
+    "2011-07-09": {
+      "candidate_buckets": 132,
+      "eligible_buckets": 70,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 1593,
+      "timestamps": 1702
+    },
+    "2011-07-10": {
+      "candidate_buckets": 192,
+      "eligible_buckets": 122,
+      "expired_buckets": 70,
+      "potential_cutoff_rows": 2467,
+      "timestamps": 2600
+    },
+    "2011-07-11": {
+      "candidate_buckets": 222,
+      "eligible_buckets": 167,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 2455,
+      "timestamps": 2607
+    },
+    "2011-07-12": {
+      "candidate_buckets": 155,
+      "eligible_buckets": 89,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 1843,
+      "timestamps": 1972
+    },
+    "2011-07-13": {
+      "candidate_buckets": 202,
+      "eligible_buckets": 126,
+      "expired_buckets": 76,
+      "potential_cutoff_rows": 2438,
+      "timestamps": 2642
+    },
+    "2011-07-14": {
+      "candidate_buckets": 153,
+      "eligible_buckets": 87,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 1819,
+      "timestamps": 1944
+    },
+    "2011-07-15": {
+      "candidate_buckets": 161,
+      "eligible_buckets": 89,
+      "expired_buckets": 72,
+      "potential_cutoff_rows": 2011,
+      "timestamps": 2180
+    },
+    "2011-07-16": {
+      "candidate_buckets": 166,
+      "eligible_buckets": 91,
+      "expired_buckets": 75,
+      "potential_cutoff_rows": 2053,
+      "timestamps": 2202
+    },
+    "2011-07-17": {
+      "candidate_buckets": 149,
+      "eligible_buckets": 82,
+      "expired_buckets": 67,
+      "potential_cutoff_rows": 1814,
+      "timestamps": 1946
+    },
+    "2011-07-18": {
+      "candidate_buckets": 143,
+      "eligible_buckets": 75,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 1716,
+      "timestamps": 1852
+    },
+    "2011-07-19": {
+      "candidate_buckets": 161,
+      "eligible_buckets": 101,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 1700,
+      "timestamps": 1850
+    },
+    "2011-07-20": {
+      "candidate_buckets": 128,
+      "eligible_buckets": 70,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 1416,
+      "timestamps": 1538
+    },
+    "2011-07-21": {
+      "candidate_buckets": 159,
+      "eligible_buckets": 86,
+      "expired_buckets": 73,
+      "potential_cutoff_rows": 1937,
+      "timestamps": 2090
+    },
+    "2011-07-22": {
+      "candidate_buckets": 182,
+      "eligible_buckets": 106,
+      "expired_buckets": 76,
+      "potential_cutoff_rows": 2114,
+      "timestamps": 2272
+    },
+    "2011-07-23": {
+      "candidate_buckets": 95,
+      "eligible_buckets": 51,
+      "expired_buckets": 44,
+      "potential_cutoff_rows": 1082,
+      "timestamps": 1156
+    },
+    "2011-07-24": {
+      "candidate_buckets": 114,
+      "eligible_buckets": 63,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 1329,
+      "timestamps": 1458
+    },
+    "2011-07-25": {
+      "candidate_buckets": 145,
+      "eligible_buckets": 85,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 1598,
+      "timestamps": 1744
+    },
+    "2011-07-26": {
+      "candidate_buckets": 170,
+      "eligible_buckets": 89,
+      "expired_buckets": 81,
+      "potential_cutoff_rows": 1941,
+      "timestamps": 2136
+    },
+    "2011-07-27": {
+      "candidate_buckets": 144,
+      "eligible_buckets": 77,
+      "expired_buckets": 67,
+      "potential_cutoff_rows": 1582,
+      "timestamps": 1716
+    },
+    "2011-07-28": {
+      "candidate_buckets": 122,
+      "eligible_buckets": 65,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 1474,
+      "timestamps": 1622
+    },
+    "2011-07-29": {
+      "candidate_buckets": 119,
+      "eligible_buckets": 59,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 1352,
+      "timestamps": 1492
+    },
+    "2011-07-30": {
+      "candidate_buckets": 171,
+      "eligible_buckets": 105,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 1985,
+      "timestamps": 2166
+    },
+    "2011-07-31": {
+      "candidate_buckets": 139,
+      "eligible_buckets": 78,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 1673,
+      "timestamps": 1800
+    },
+    "2011-08-01": {
+      "candidate_buckets": 144,
+      "eligible_buckets": 76,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 1614,
+      "timestamps": 1768
+    },
+    "2011-08-02": {
+      "candidate_buckets": 162,
+      "eligible_buckets": 91,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 1961,
+      "timestamps": 2108
+    },
+    "2011-08-03": {
+      "candidate_buckets": 150,
+      "eligible_buckets": 71,
+      "expired_buckets": 79,
+      "potential_cutoff_rows": 1766,
+      "timestamps": 1944
+    },
+    "2011-08-04": {
+      "candidate_buckets": 181,
+      "eligible_buckets": 107,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 2007,
+      "timestamps": 2208
+    },
+    "2011-08-05": {
+      "candidate_buckets": 147,
+      "eligible_buckets": 90,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 1570,
+      "timestamps": 1728
+    },
+    "2011-08-06": {
+      "candidate_buckets": 162,
+      "eligible_buckets": 81,
+      "expired_buckets": 81,
+      "potential_cutoff_rows": 1869,
+      "timestamps": 2012
+    },
+    "2011-08-07": {
+      "candidate_buckets": 139,
+      "eligible_buckets": 71,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 1507,
+      "timestamps": 1668
+    },
+    "2011-08-08": {
+      "candidate_buckets": 141,
+      "eligible_buckets": 65,
+      "expired_buckets": 76,
+      "potential_cutoff_rows": 1664,
+      "timestamps": 1814
+    },
+    "2011-08-09": {
+      "candidate_buckets": 101,
+      "eligible_buckets": 48,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 1276,
+      "timestamps": 1406
+    },
+    "2011-08-10": {
+      "candidate_buckets": 170,
+      "eligible_buckets": 87,
+      "expired_buckets": 83,
+      "potential_cutoff_rows": 2016,
+      "timestamps": 2196
+    },
+    "2011-08-11": {
+      "candidate_buckets": 110,
+      "eligible_buckets": 55,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 1232,
+      "timestamps": 1360
+    },
+    "2011-08-12": {
+      "candidate_buckets": 151,
+      "eligible_buckets": 92,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 1877,
+      "timestamps": 1992
+    },
+    "2011-08-13": {
+      "candidate_buckets": 194,
+      "eligible_buckets": 104,
+      "expired_buckets": 90,
+      "potential_cutoff_rows": 2498,
+      "timestamps": 2658
+    },
+    "2011-08-14": {
+      "candidate_buckets": 137,
+      "eligible_buckets": 79,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 1684,
+      "timestamps": 1814
+    },
+    "2011-08-15": {
+      "candidate_buckets": 150,
+      "eligible_buckets": 83,
+      "expired_buckets": 67,
+      "potential_cutoff_rows": 1917,
+      "timestamps": 2068
+    },
+    "2011-08-16": {
+      "candidate_buckets": 215,
+      "eligible_buckets": 148,
+      "expired_buckets": 67,
+      "potential_cutoff_rows": 2687,
+      "timestamps": 2838
+    },
+    "2011-08-17": {
+      "candidate_buckets": 120,
+      "eligible_buckets": 63,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 1315,
+      "timestamps": 1430
+    },
+    "2011-08-18": {
+      "candidate_buckets": 113,
+      "eligible_buckets": 74,
+      "expired_buckets": 39,
+      "potential_cutoff_rows": 1206,
+      "timestamps": 1316
+    },
+    "2011-08-19": {
+      "candidate_buckets": 162,
+      "eligible_buckets": 99,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 1791,
+      "timestamps": 1960
+    },
+    "2011-08-20": {
+      "candidate_buckets": 155,
+      "eligible_buckets": 88,
+      "expired_buckets": 67,
+      "potential_cutoff_rows": 1850,
+      "timestamps": 2016
+    },
+    "2011-08-21": {
+      "candidate_buckets": 98,
+      "eligible_buckets": 55,
+      "expired_buckets": 43,
+      "potential_cutoff_rows": 1132,
+      "timestamps": 1242
+    },
+    "2011-08-22": {
+      "candidate_buckets": 126,
+      "eligible_buckets": 59,
+      "expired_buckets": 67,
+      "potential_cutoff_rows": 1356,
+      "timestamps": 1518
+    },
+    "2011-08-23": {
+      "candidate_buckets": 151,
+      "eligible_buckets": 105,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 1607,
+      "timestamps": 1760
+    },
+    "2011-08-24": {
+      "candidate_buckets": 153,
+      "eligible_buckets": 81,
+      "expired_buckets": 72,
+      "potential_cutoff_rows": 1787,
+      "timestamps": 1976
+    },
+    "2011-08-25": {
+      "candidate_buckets": 141,
+      "eligible_buckets": 86,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 1527,
+      "timestamps": 1710
+    },
+    "2011-08-26": {
+      "candidate_buckets": 147,
+      "eligible_buckets": 83,
+      "expired_buckets": 64,
+      "potential_cutoff_rows": 1468,
+      "timestamps": 1638
+    },
+    "2011-08-27": {
+      "candidate_buckets": 140,
+      "eligible_buckets": 83,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 1201,
+      "timestamps": 1374
+    },
+    "2011-08-28": {
+      "candidate_buckets": 138,
+      "eligible_buckets": 85,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 1158,
+      "timestamps": 1330
+    },
+    "2011-08-29": {
+      "candidate_buckets": 164,
+      "eligible_buckets": 83,
+      "expired_buckets": 81,
+      "potential_cutoff_rows": 1541,
+      "timestamps": 1750
+    },
+    "2011-08-30": {
+      "candidate_buckets": 185,
+      "eligible_buckets": 108,
+      "expired_buckets": 77,
+      "potential_cutoff_rows": 2095,
+      "timestamps": 2264
+    },
+    "2011-08-31": {
+      "candidate_buckets": 212,
+      "eligible_buckets": 141,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 2325,
+      "timestamps": 2556
+    },
+    "2011-09-01": {
+      "candidate_buckets": 144,
+      "eligible_buckets": 74,
+      "expired_buckets": 70,
+      "potential_cutoff_rows": 1641,
+      "timestamps": 1766
+    },
+    "2011-09-02": {
+      "candidate_buckets": 191,
+      "eligible_buckets": 123,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 2041,
+      "timestamps": 2178
+    },
+    "2011-09-03": {
+      "candidate_buckets": 151,
+      "eligible_buckets": 83,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 1995,
+      "timestamps": 2110
+    },
+    "2011-09-04": {
+      "candidate_buckets": 150,
+      "eligible_buckets": 88,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 1760,
+      "timestamps": 1916
+    },
+    "2011-09-05": {
+      "candidate_buckets": 159,
+      "eligible_buckets": 91,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 1640,
+      "timestamps": 1820
+    },
+    "2011-09-06": {
+      "candidate_buckets": 136,
+      "eligible_buckets": 74,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 1489,
+      "timestamps": 1636
+    },
+    "2011-09-07": {
+      "candidate_buckets": 140,
+      "eligible_buckets": 69,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 1673,
+      "timestamps": 1842
+    },
+    "2011-09-08": {
+      "candidate_buckets": 140,
+      "eligible_buckets": 85,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 1299,
+      "timestamps": 1432
+    },
+    "2011-09-09": {
+      "candidate_buckets": 139,
+      "eligible_buckets": 70,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 1535,
+      "timestamps": 1698
+    },
+    "2011-09-10": {
+      "candidate_buckets": 213,
+      "eligible_buckets": 135,
+      "expired_buckets": 78,
+      "potential_cutoff_rows": 2621,
+      "timestamps": 2794
+    },
+    "2011-09-11": {
+      "candidate_buckets": 145,
+      "eligible_buckets": 82,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 1652,
+      "timestamps": 1800
+    },
+    "2011-09-12": {
+      "candidate_buckets": 159,
+      "eligible_buckets": 90,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 2048,
+      "timestamps": 2204
+    },
+    "2011-09-13": {
+      "candidate_buckets": 159,
+      "eligible_buckets": 102,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 1981,
+      "timestamps": 2130
+    },
+    "2011-09-14": {
+      "candidate_buckets": 172,
+      "eligible_buckets": 94,
+      "expired_buckets": 78,
+      "potential_cutoff_rows": 1946,
+      "timestamps": 2118
+    },
+    "2011-09-15": {
+      "candidate_buckets": 161,
+      "eligible_buckets": 102,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 2034,
+      "timestamps": 2180
+    },
+    "2011-09-16": {
+      "candidate_buckets": 181,
+      "eligible_buckets": 111,
+      "expired_buckets": 70,
+      "potential_cutoff_rows": 2171,
+      "timestamps": 2322
+    },
+    "2011-09-17": {
+      "candidate_buckets": 161,
+      "eligible_buckets": 92,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 1990,
+      "timestamps": 2144
+    },
+    "2011-09-18": {
+      "candidate_buckets": 148,
+      "eligible_buckets": 92,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 1799,
+      "timestamps": 1956
+    },
+    "2011-09-19": {
+      "candidate_buckets": 168,
+      "eligible_buckets": 93,
+      "expired_buckets": 75,
+      "potential_cutoff_rows": 2028,
+      "timestamps": 2190
+    },
+    "2011-09-20": {
+      "candidate_buckets": 151,
+      "eligible_buckets": 80,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 1922,
+      "timestamps": 2054
+    },
+    "2011-09-21": {
+      "candidate_buckets": 174,
+      "eligible_buckets": 123,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 2284,
+      "timestamps": 2414
+    },
+    "2011-09-22": {
+      "candidate_buckets": 255,
+      "eligible_buckets": 190,
+      "expired_buckets": 65,
+      "potential_cutoff_rows": 2756,
+      "timestamps": 2938
+    },
+    "2011-09-23": {
+      "candidate_buckets": 280,
+      "eligible_buckets": 216,
+      "expired_buckets": 64,
+      "potential_cutoff_rows": 2893,
+      "timestamps": 3106
+    },
+    "2011-09-24": {
+      "candidate_buckets": 264,
+      "eligible_buckets": 202,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 2506,
+      "timestamps": 2722
+    },
+    "2011-09-25": {
+      "candidate_buckets": 173,
+      "eligible_buckets": 131,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 1661,
+      "timestamps": 1826
+    },
+    "2011-09-26": {
+      "candidate_buckets": 290,
+      "eligible_buckets": 243,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 2685,
+      "timestamps": 2870
+    },
+    "2011-09-27": {
+      "candidate_buckets": 251,
+      "eligible_buckets": 210,
+      "expired_buckets": 41,
+      "potential_cutoff_rows": 2612,
+      "timestamps": 2778
+    },
+    "2011-09-28": {
+      "candidate_buckets": 344,
+      "eligible_buckets": 258,
+      "expired_buckets": 86,
+      "potential_cutoff_rows": 3873,
+      "timestamps": 4140
+    },
+    "2011-09-29": {
+      "candidate_buckets": 333,
+      "eligible_buckets": 267,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 3687,
+      "timestamps": 3876
+    },
+    "2011-09-30": {
+      "candidate_buckets": 111,
+      "eligible_buckets": 86,
+      "expired_buckets": 25,
+      "potential_cutoff_rows": 1216,
+      "timestamps": 1304
+    },
+    "2011-10-02": {
+      "timestamps": 2
+    },
+    "2011-10-03": {
+      "candidate_buckets": 123,
+      "eligible_buckets": 101,
+      "expired_buckets": 22,
+      "potential_cutoff_rows": 1511,
+      "timestamps": 1576
+    },
+    "2011-10-04": {
+      "candidate_buckets": 402,
+      "eligible_buckets": 342,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 3876,
+      "timestamps": 4066
+    },
+    "2011-10-05": {
+      "candidate_buckets": 256,
+      "eligible_buckets": 211,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 2184,
+      "timestamps": 2338
+    },
+    "2011-10-06": {
+      "candidate_buckets": 307,
+      "eligible_buckets": 251,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 2841,
+      "timestamps": 2998
+    },
+    "2011-10-07": {
+      "candidate_buckets": 307,
+      "eligible_buckets": 236,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 3318,
+      "timestamps": 3464
+    },
+    "2011-10-08": {
+      "candidate_buckets": 280,
+      "eligible_buckets": 245,
+      "expired_buckets": 35,
+      "potential_cutoff_rows": 2757,
+      "timestamps": 2872
+    },
+    "2011-10-09": {
+      "candidate_buckets": 233,
+      "eligible_buckets": 173,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 2537,
+      "timestamps": 2674
+    },
+    "2011-10-10": {
+      "candidate_buckets": 269,
+      "eligible_buckets": 214,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 2466,
+      "timestamps": 2616
+    },
+    "2011-10-11": {
+      "candidate_buckets": 255,
+      "eligible_buckets": 192,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 2970,
+      "timestamps": 3090
+    },
+    "2011-10-12": {
+      "candidate_buckets": 388,
+      "eligible_buckets": 321,
+      "expired_buckets": 67,
+      "potential_cutoff_rows": 3587,
+      "timestamps": 3788
+    },
+    "2011-10-13": {
+      "candidate_buckets": 248,
+      "eligible_buckets": 193,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 2769,
+      "timestamps": 2888
+    },
+    "2011-10-14": {
+      "candidate_buckets": 276,
+      "eligible_buckets": 230,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 2757,
+      "timestamps": 2974
+    },
+    "2011-10-15": {
+      "candidate_buckets": 242,
+      "eligible_buckets": 168,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 2748,
+      "timestamps": 2914
+    },
+    "2011-10-16": {
+      "candidate_buckets": 250,
+      "eligible_buckets": 208,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 2291,
+      "timestamps": 2402
+    },
+    "2011-10-17": {
+      "candidate_buckets": 284,
+      "eligible_buckets": 226,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 2739,
+      "timestamps": 2900
+    },
+    "2011-10-18": {
+      "candidate_buckets": 333,
+      "eligible_buckets": 284,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 3188,
+      "timestamps": 3384
+    },
+    "2011-10-19": {
+      "candidate_buckets": 245,
+      "eligible_buckets": 189,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 2195,
+      "timestamps": 2346
+    },
+    "2011-10-20": {
+      "candidate_buckets": 269,
+      "eligible_buckets": 205,
+      "expired_buckets": 64,
+      "potential_cutoff_rows": 2853,
+      "timestamps": 3038
+    },
+    "2011-10-21": {
+      "candidate_buckets": 290,
+      "eligible_buckets": 234,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 3112,
+      "timestamps": 3306
+    },
+    "2011-10-22": {
+      "candidate_buckets": 252,
+      "eligible_buckets": 184,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 2933,
+      "timestamps": 3134
+    },
+    "2011-10-23": {
+      "candidate_buckets": 130,
+      "eligible_buckets": 91,
+      "expired_buckets": 39,
+      "potential_cutoff_rows": 1335,
+      "timestamps": 1404
+    },
+    "2011-10-24": {
+      "candidate_buckets": 272,
+      "eligible_buckets": 221,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 2582,
+      "timestamps": 2756
+    },
+    "2011-10-25": {
+      "candidate_buckets": 251,
+      "eligible_buckets": 194,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 2592,
+      "timestamps": 2768
+    },
+    "2011-10-26": {
+      "candidate_buckets": 227,
+      "eligible_buckets": 176,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 2491,
+      "timestamps": 2668
+    },
+    "2011-10-27": {
+      "candidate_buckets": 221,
+      "eligible_buckets": 164,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 2472,
+      "timestamps": 2578
+    },
+    "2011-10-28": {
+      "candidate_buckets": 277,
+      "eligible_buckets": 212,
+      "expired_buckets": 65,
+      "potential_cutoff_rows": 2571,
+      "timestamps": 2740
+    },
+    "2011-10-29": {
+      "candidate_buckets": 277,
+      "eligible_buckets": 217,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 2864,
+      "timestamps": 3112
+    },
+    "2011-10-30": {
+      "candidate_buckets": 301,
+      "eligible_buckets": 257,
+      "expired_buckets": 44,
+      "potential_cutoff_rows": 2754,
+      "timestamps": 2854
+    },
+    "2011-10-31": {
+      "candidate_buckets": 324,
+      "eligible_buckets": 268,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 2894,
+      "timestamps": 3090
+    },
+    "2011-11-01": {
+      "candidate_buckets": 177,
+      "eligible_buckets": 134,
+      "expired_buckets": 43,
+      "potential_cutoff_rows": 1847,
+      "timestamps": 1954
+    },
+    "2011-11-02": {
+      "candidate_buckets": 303,
+      "eligible_buckets": 245,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 2571,
+      "timestamps": 2716
+    },
+    "2011-11-03": {
+      "candidate_buckets": 337,
+      "eligible_buckets": 263,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 3096,
+      "timestamps": 3318
+    },
+    "2011-11-04": {
+      "candidate_buckets": 350,
+      "eligible_buckets": 281,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 3351,
+      "timestamps": 3520
+    },
+    "2011-11-05": {
+      "candidate_buckets": 258,
+      "eligible_buckets": 201,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 2655,
+      "timestamps": 2818
+    },
+    "2011-11-06": {
+      "candidate_buckets": 292,
+      "eligible_buckets": 240,
+      "expired_buckets": 52,
+      "potential_cutoff_rows": 2752,
+      "timestamps": 2880
+    },
+    "2011-11-07": {
+      "candidate_buckets": 194,
+      "eligible_buckets": 157,
+      "expired_buckets": 37,
+      "potential_cutoff_rows": 2110,
+      "timestamps": 2266
+    },
+    "2011-11-08": {
+      "candidate_buckets": 247,
+      "eligible_buckets": 186,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 2496,
+      "timestamps": 2662
+    },
+    "2011-11-09": {
+      "candidate_buckets": 270,
+      "eligible_buckets": 204,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 2710,
+      "timestamps": 2880
+    },
+    "2011-11-10": {
+      "candidate_buckets": 358,
+      "eligible_buckets": 281,
+      "expired_buckets": 77,
+      "potential_cutoff_rows": 3737,
+      "timestamps": 3958
+    },
+    "2011-11-11": {
+      "candidate_buckets": 342,
+      "eligible_buckets": 291,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 3167,
+      "timestamps": 3376
+    },
+    "2011-11-12": {
+      "candidate_buckets": 180,
+      "eligible_buckets": 138,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 1750,
+      "timestamps": 1876
+    },
+    "2011-11-13": {
+      "candidate_buckets": 335,
+      "eligible_buckets": 300,
+      "expired_buckets": 35,
+      "potential_cutoff_rows": 2947,
+      "timestamps": 3064
+    },
+    "2011-11-14": {
+      "candidate_buckets": 147,
+      "eligible_buckets": 99,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 1580,
+      "timestamps": 1690
+    },
+    "2011-11-15": {
+      "candidate_buckets": 291,
+      "eligible_buckets": 253,
+      "expired_buckets": 38,
+      "potential_cutoff_rows": 2914,
+      "timestamps": 3098
+    },
+    "2011-11-16": {
+      "candidate_buckets": 220,
+      "eligible_buckets": 175,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 2088,
+      "timestamps": 2206
+    },
+    "2011-11-17": {
+      "candidate_buckets": 301,
+      "eligible_buckets": 243,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 3288,
+      "timestamps": 3452
+    },
+    "2011-11-18": {
+      "candidate_buckets": 234,
+      "eligible_buckets": 176,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 2419,
+      "timestamps": 2592
+    },
+    "2011-11-19": {
+      "candidate_buckets": 184,
+      "eligible_buckets": 136,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 1940,
+      "timestamps": 2104
+    },
+    "2011-11-20": {
+      "candidate_buckets": 270,
+      "eligible_buckets": 204,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 2389,
+      "timestamps": 2608
+    },
+    "2011-11-21": {
+      "candidate_buckets": 259,
+      "eligible_buckets": 182,
+      "expired_buckets": 77,
+      "potential_cutoff_rows": 2400,
+      "timestamps": 2632
+    },
+    "2011-11-22": {
+      "candidate_buckets": 308,
+      "eligible_buckets": 237,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 3078,
+      "timestamps": 3266
+    },
+    "2011-11-23": {
+      "candidate_buckets": 282,
+      "eligible_buckets": 216,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 2780,
+      "timestamps": 3072
+    },
+    "2011-11-24": {
+      "candidate_buckets": 198,
+      "eligible_buckets": 148,
+      "expired_buckets": 50,
+      "potential_cutoff_rows": 1678,
+      "timestamps": 1846
+    },
+    "2011-11-25": {
+      "candidate_buckets": 306,
+      "eligible_buckets": 240,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 2559,
+      "timestamps": 2782
+    },
+    "2011-11-26": {
+      "candidate_buckets": 271,
+      "eligible_buckets": 211,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 2648,
+      "timestamps": 2932
+    },
+    "2011-11-27": {
+      "candidate_buckets": 220,
+      "eligible_buckets": 167,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 1831,
+      "timestamps": 1980
+    },
+    "2011-11-28": {
+      "candidate_buckets": 242,
+      "eligible_buckets": 176,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 2193,
+      "timestamps": 2368
+    },
+    "2011-11-29": {
+      "candidate_buckets": 278,
+      "eligible_buckets": 219,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 2723,
+      "timestamps": 2908
+    },
+    "2011-11-30": {
+      "candidate_buckets": 218,
+      "eligible_buckets": 155,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 2059,
+      "timestamps": 2296
+    },
+    "2011-12-01": {
+      "candidate_buckets": 269,
+      "eligible_buckets": 201,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 2646,
+      "timestamps": 2826
+    },
+    "2011-12-02": {
+      "candidate_buckets": 250,
+      "eligible_buckets": 184,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 2422,
+      "timestamps": 2632
+    },
+    "2011-12-03": {
+      "candidate_buckets": 245,
+      "eligible_buckets": 196,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 2343,
+      "timestamps": 2468
+    },
+    "2011-12-04": {
+      "candidate_buckets": 332,
+      "eligible_buckets": 279,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 3518,
+      "timestamps": 3678
+    },
+    "2011-12-05": {
+      "candidate_buckets": 299,
+      "eligible_buckets": 217,
+      "expired_buckets": 82,
+      "potential_cutoff_rows": 2708,
+      "timestamps": 2906
+    },
+    "2011-12-06": {
+      "candidate_buckets": 263,
+      "eligible_buckets": 200,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 2821,
+      "timestamps": 3036
+    },
+    "2011-12-07": {
+      "candidate_buckets": 239,
+      "eligible_buckets": 184,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 2359,
+      "timestamps": 2500
+    },
+    "2011-12-08": {
+      "candidate_buckets": 263,
+      "eligible_buckets": 212,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 2580,
+      "timestamps": 2732
+    },
+    "2011-12-09": {
+      "candidate_buckets": 262,
+      "eligible_buckets": 212,
+      "expired_buckets": 50,
+      "potential_cutoff_rows": 2867,
+      "timestamps": 3030
+    },
+    "2011-12-10": {
+      "candidate_buckets": 288,
+      "eligible_buckets": 203,
+      "expired_buckets": 85,
+      "potential_cutoff_rows": 3342,
+      "timestamps": 3534
+    },
+    "2011-12-11": {
+      "candidate_buckets": 177,
+      "eligible_buckets": 121,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 1951,
+      "timestamps": 2050
+    },
+    "2011-12-12": {
+      "candidate_buckets": 333,
+      "eligible_buckets": 291,
+      "expired_buckets": 40,
+      "potential_cutoff_rows": 3063,
+      "timestamps": 3254,
+      "unresolved_buckets": 2
+    }
+  },
+  "HH104": {
+    "2011-06-15": {
+      "candidate_buckets": 298,
+      "eligible_buckets": 225,
+      "expired_buckets": 73,
+      "potential_cutoff_rows": 4452,
+      "timestamps": 4735
+    },
+    "2011-06-16": {
+      "candidate_buckets": 282,
+      "eligible_buckets": 217,
+      "expired_buckets": 65,
+      "potential_cutoff_rows": 4295,
+      "timestamps": 4590
+    },
+    "2011-06-17": {
+      "candidate_buckets": 352,
+      "eligible_buckets": 291,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 5953,
+      "timestamps": 6234
+    },
+    "2011-06-18": {
+      "candidate_buckets": 301,
+      "eligible_buckets": 254,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 4575,
+      "timestamps": 4834
+    },
+    "2011-06-19": {
+      "candidate_buckets": 305,
+      "eligible_buckets": 249,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 5254,
+      "timestamps": 5550
+    },
+    "2011-06-20": {
+      "candidate_buckets": 404,
+      "eligible_buckets": 333,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 6768,
+      "timestamps": 7038
+    },
+    "2011-06-21": {
+      "candidate_buckets": 358,
+      "eligible_buckets": 295,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 5696,
+      "timestamps": 5953
+    },
+    "2011-06-22": {
+      "candidate_buckets": 308,
+      "eligible_buckets": 230,
+      "expired_buckets": 78,
+      "potential_cutoff_rows": 4884,
+      "timestamps": 5160
+    },
+    "2011-06-23": {
+      "candidate_buckets": 406,
+      "eligible_buckets": 334,
+      "expired_buckets": 72,
+      "potential_cutoff_rows": 7342,
+      "timestamps": 7588
+    },
+    "2011-06-24": {
+      "candidate_buckets": 293,
+      "eligible_buckets": 249,
+      "expired_buckets": 44,
+      "potential_cutoff_rows": 4918,
+      "timestamps": 5137
+    },
+    "2011-06-25": {
+      "candidate_buckets": 414,
+      "eligible_buckets": 350,
+      "expired_buckets": 64,
+      "potential_cutoff_rows": 6274,
+      "timestamps": 6580
+    },
+    "2011-06-26": {
+      "candidate_buckets": 323,
+      "eligible_buckets": 269,
+      "expired_buckets": 54,
+      "potential_cutoff_rows": 4612,
+      "timestamps": 4910
+    },
+    "2011-06-27": {
+      "candidate_buckets": 306,
+      "eligible_buckets": 259,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 5342,
+      "timestamps": 5596
+    },
+    "2011-06-28": {
+      "candidate_buckets": 324,
+      "eligible_buckets": 279,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 5178,
+      "timestamps": 5458
+    },
+    "2011-06-29": {
+      "candidate_buckets": 311,
+      "eligible_buckets": 249,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 4866,
+      "timestamps": 5123
+    },
+    "2011-06-30": {
+      "candidate_buckets": 461,
+      "eligible_buckets": 410,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 8075,
+      "timestamps": 8317
+    },
+    "2011-07-01": {
+      "candidate_buckets": 367,
+      "eligible_buckets": 321,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 5877,
+      "timestamps": 6190
+    },
+    "2011-07-02": {
+      "candidate_buckets": 420,
+      "eligible_buckets": 348,
+      "expired_buckets": 72,
+      "potential_cutoff_rows": 6451,
+      "timestamps": 6748
+    },
+    "2011-07-03": {
+      "candidate_buckets": 340,
+      "eligible_buckets": 292,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 5866,
+      "timestamps": 6124
+    },
+    "2011-07-04": {
+      "candidate_buckets": 317,
+      "eligible_buckets": 256,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 4425,
+      "timestamps": 4666
+    },
+    "2011-07-05": {
+      "candidate_buckets": 324,
+      "eligible_buckets": 273,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 5258,
+      "timestamps": 5507
+    },
+    "2011-07-06": {
+      "candidate_buckets": 347,
+      "eligible_buckets": 298,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 5411,
+      "timestamps": 5622
+    },
+    "2011-07-07": {
+      "candidate_buckets": 496,
+      "eligible_buckets": 422,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 8836,
+      "timestamps": 9134
+    },
+    "2011-07-08": {
+      "candidate_buckets": 359,
+      "eligible_buckets": 294,
+      "expired_buckets": 65,
+      "potential_cutoff_rows": 5184,
+      "timestamps": 5489
+    },
+    "2011-07-09": {
+      "candidate_buckets": 364,
+      "eligible_buckets": 284,
+      "expired_buckets": 80,
+      "potential_cutoff_rows": 5384,
+      "timestamps": 5661
+    },
+    "2011-07-10": {
+      "candidate_buckets": 305,
+      "eligible_buckets": 250,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 4350,
+      "timestamps": 4601
+    },
+    "2011-07-11": {
+      "candidate_buckets": 283,
+      "eligible_buckets": 225,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 4577,
+      "timestamps": 4740
+    },
+    "2011-07-12": {
+      "candidate_buckets": 322,
+      "eligible_buckets": 265,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 5261,
+      "timestamps": 5494
+    },
+    "2011-07-13": {
+      "candidate_buckets": 475,
+      "eligible_buckets": 421,
+      "expired_buckets": 54,
+      "potential_cutoff_rows": 8086,
+      "timestamps": 8320
+    },
+    "2011-07-14": {
+      "candidate_buckets": 381,
+      "eligible_buckets": 318,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 6731,
+      "timestamps": 7038
+    },
+    "2011-07-15": {
+      "candidate_buckets": 381,
+      "eligible_buckets": 297,
+      "expired_buckets": 84,
+      "potential_cutoff_rows": 5183,
+      "timestamps": 5460
+    },
+    "2011-07-16": {
+      "candidate_buckets": 345,
+      "eligible_buckets": 284,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 4787,
+      "timestamps": 5073
+    },
+    "2011-07-17": {
+      "candidate_buckets": 303,
+      "eligible_buckets": 243,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 4395,
+      "timestamps": 4648
+    },
+    "2011-07-18": {
+      "candidate_buckets": 343,
+      "eligible_buckets": 274,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 6249,
+      "timestamps": 6488
+    },
+    "2011-07-19": {
+      "candidate_buckets": 424,
+      "eligible_buckets": 356,
+      "expired_buckets": 68,
+      "potential_cutoff_rows": 6843,
+      "timestamps": 7102
+    },
+    "2011-07-20": {
+      "candidate_buckets": 376,
+      "eligible_buckets": 304,
+      "expired_buckets": 72,
+      "potential_cutoff_rows": 5165,
+      "timestamps": 5394
+    },
+    "2011-07-21": {
+      "candidate_buckets": 341,
+      "eligible_buckets": 280,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 4049,
+      "timestamps": 4302
+    },
+    "2011-07-22": {
+      "candidate_buckets": 257,
+      "eligible_buckets": 217,
+      "expired_buckets": 40,
+      "potential_cutoff_rows": 3865,
+      "timestamps": 4038
+    },
+    "2011-07-23": {
+      "candidate_buckets": 227,
+      "eligible_buckets": 173,
+      "expired_buckets": 54,
+      "potential_cutoff_rows": 3479,
+      "timestamps": 3694
+    },
+    "2011-07-24": {
+      "candidate_buckets": 309,
+      "eligible_buckets": 254,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 4755,
+      "timestamps": 5028
+    },
+    "2011-07-25": {
+      "candidate_buckets": 273,
+      "eligible_buckets": 222,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 3841,
+      "timestamps": 4098
+    },
+    "2011-07-26": {
+      "candidate_buckets": 308,
+      "eligible_buckets": 248,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 4374,
+      "timestamps": 4659
+    },
+    "2011-07-27": {
+      "candidate_buckets": 300,
+      "eligible_buckets": 251,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 4670,
+      "timestamps": 4867
+    },
+    "2011-07-28": {
+      "candidate_buckets": 457,
+      "eligible_buckets": 385,
+      "expired_buckets": 72,
+      "potential_cutoff_rows": 5801,
+      "timestamps": 6046
+    },
+    "2011-07-29": {
+      "candidate_buckets": 333,
+      "eligible_buckets": 288,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 4579,
+      "timestamps": 4822
+    },
+    "2011-07-30": {
+      "candidate_buckets": 362,
+      "eligible_buckets": 275,
+      "expired_buckets": 87,
+      "potential_cutoff_rows": 5829,
+      "timestamps": 6121
+    },
+    "2011-07-31": {
+      "candidate_buckets": 383,
+      "eligible_buckets": 347,
+      "expired_buckets": 36,
+      "potential_cutoff_rows": 5431,
+      "timestamps": 5636
+    },
+    "2011-08-01": {
+      "candidate_buckets": 294,
+      "eligible_buckets": 238,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 4337,
+      "timestamps": 4586
+    },
+    "2011-08-02": {
+      "candidate_buckets": 302,
+      "eligible_buckets": 227,
+      "expired_buckets": 75,
+      "potential_cutoff_rows": 5121,
+      "timestamps": 5414
+    },
+    "2011-08-03": {
+      "candidate_buckets": 318,
+      "eligible_buckets": 249,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 4992,
+      "timestamps": 5304
+    },
+    "2011-08-04": {
+      "candidate_buckets": 434,
+      "eligible_buckets": 358,
+      "expired_buckets": 76,
+      "potential_cutoff_rows": 6749,
+      "timestamps": 7040
+    },
+    "2011-08-05": {
+      "candidate_buckets": 289,
+      "eligible_buckets": 226,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 4108,
+      "timestamps": 4368
+    },
+    "2011-08-06": {
+      "candidate_buckets": 371,
+      "eligible_buckets": 315,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 5849,
+      "timestamps": 6104
+    },
+    "2011-08-07": {
+      "candidate_buckets": 210,
+      "eligible_buckets": 153,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 3068,
+      "timestamps": 3304
+    },
+    "2011-08-08": {
+      "candidate_buckets": 343,
+      "eligible_buckets": 269,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 5013,
+      "timestamps": 5238
+    },
+    "2011-08-09": {
+      "candidate_buckets": 508,
+      "eligible_buckets": 460,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 9519,
+      "timestamps": 9746
+    },
+    "2011-08-10": {
+      "candidate_buckets": 311,
+      "eligible_buckets": 264,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 4795,
+      "timestamps": 5062
+    },
+    "2011-08-11": {
+      "candidate_buckets": 362,
+      "eligible_buckets": 297,
+      "expired_buckets": 65,
+      "potential_cutoff_rows": 5040,
+      "timestamps": 5314
+    },
+    "2011-08-12": {
+      "candidate_buckets": 372,
+      "eligible_buckets": 299,
+      "expired_buckets": 73,
+      "potential_cutoff_rows": 5396,
+      "timestamps": 5637
+    },
+    "2011-08-13": {
+      "candidate_buckets": 491,
+      "eligible_buckets": 417,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 6935,
+      "timestamps": 7198
+    },
+    "2011-08-14": {
+      "candidate_buckets": 321,
+      "eligible_buckets": 255,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 4481,
+      "timestamps": 4772
+    },
+    "2011-08-15": {
+      "candidate_buckets": 392,
+      "eligible_buckets": 319,
+      "expired_buckets": 73,
+      "potential_cutoff_rows": 6386,
+      "timestamps": 6640
+    },
+    "2011-08-16": {
+      "candidate_buckets": 388,
+      "eligible_buckets": 328,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 6249,
+      "timestamps": 6510
+    },
+    "2011-08-17": {
+      "candidate_buckets": 386,
+      "eligible_buckets": 317,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 6763,
+      "timestamps": 7012
+    },
+    "2011-08-18": {
+      "candidate_buckets": 168,
+      "eligible_buckets": 131,
+      "expired_buckets": 37,
+      "potential_cutoff_rows": 2680,
+      "timestamps": 2847
+    },
+    "2011-08-19": {
+      "candidate_buckets": 243,
+      "eligible_buckets": 201,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 3457,
+      "timestamps": 3611
+    },
+    "2011-08-20": {
+      "candidate_buckets": 365,
+      "eligible_buckets": 304,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 4723,
+      "timestamps": 4989
+    },
+    "2011-08-21": {
+      "candidate_buckets": 303,
+      "eligible_buckets": 242,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 4618,
+      "timestamps": 4906
+    },
+    "2011-08-22": {
+      "candidate_buckets": 258,
+      "eligible_buckets": 193,
+      "expired_buckets": 65,
+      "potential_cutoff_rows": 4161,
+      "timestamps": 4410
+    },
+    "2011-08-23": {
+      "candidate_buckets": 340,
+      "eligible_buckets": 278,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 5336,
+      "timestamps": 5652
+    },
+    "2011-08-24": {
+      "candidate_buckets": 175,
+      "eligible_buckets": 135,
+      "expired_buckets": 40,
+      "potential_cutoff_rows": 2680,
+      "timestamps": 2864
+    },
+    "2011-08-25": {
+      "candidate_buckets": 419,
+      "eligible_buckets": 354,
+      "expired_buckets": 65,
+      "potential_cutoff_rows": 6216,
+      "timestamps": 6528
+    },
+    "2011-08-26": {
+      "candidate_buckets": 349,
+      "eligible_buckets": 291,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 4852,
+      "timestamps": 5134
+    },
+    "2011-08-27": {
+      "candidate_buckets": 386,
+      "eligible_buckets": 311,
+      "expired_buckets": 75,
+      "potential_cutoff_rows": 5676,
+      "timestamps": 5987
+    },
+    "2011-08-28": {
+      "candidate_buckets": 313,
+      "eligible_buckets": 250,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 5016,
+      "timestamps": 5299
+    },
+    "2011-08-29": {
+      "candidate_buckets": 293,
+      "eligible_buckets": 222,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 4190,
+      "timestamps": 4476
+    },
+    "2011-08-30": {
+      "candidate_buckets": 352,
+      "eligible_buckets": 274,
+      "expired_buckets": 78,
+      "potential_cutoff_rows": 5156,
+      "timestamps": 5476
+    },
+    "2011-08-31": {
+      "candidate_buckets": 299,
+      "eligible_buckets": 238,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 4897,
+      "timestamps": 5196
+    },
+    "2011-09-01": {
+      "candidate_buckets": 350,
+      "eligible_buckets": 293,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 5069,
+      "timestamps": 5368
+    },
+    "2011-09-02": {
+      "candidate_buckets": 328,
+      "eligible_buckets": 245,
+      "expired_buckets": 83,
+      "potential_cutoff_rows": 5624,
+      "timestamps": 5932
+    }
+  },
+  "HH105": {
+    "2011-06-15": {
+      "candidate_buckets": 215,
+      "eligible_buckets": 159,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 3009,
+      "timestamps": 3140
+    },
+    "2011-06-16": {
+      "candidate_buckets": 273,
+      "eligible_buckets": 217,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 4307,
+      "timestamps": 4460
+    },
+    "2011-06-17": {
+      "candidate_buckets": 304,
+      "eligible_buckets": 246,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 4399,
+      "timestamps": 4558
+    },
+    "2011-06-18": {
+      "candidate_buckets": 218,
+      "eligible_buckets": 175,
+      "expired_buckets": 43,
+      "potential_cutoff_rows": 3297,
+      "timestamps": 3402
+    },
+    "2011-06-19": {
+      "candidate_buckets": 216,
+      "eligible_buckets": 161,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 2491,
+      "timestamps": 2634
+    },
+    "2011-06-20": {
+      "candidate_buckets": 307,
+      "eligible_buckets": 244,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 4235,
+      "timestamps": 4396
+    },
+    "2011-06-21": {
+      "candidate_buckets": 297,
+      "eligible_buckets": 209,
+      "expired_buckets": 88,
+      "potential_cutoff_rows": 4075,
+      "timestamps": 4280
+    },
+    "2011-06-22": {
+      "candidate_buckets": 205,
+      "eligible_buckets": 178,
+      "expired_buckets": 27,
+      "potential_cutoff_rows": 2829,
+      "timestamps": 2944
+    },
+    "2011-06-23": {
+      "candidate_buckets": 282,
+      "eligible_buckets": 222,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 4051,
+      "timestamps": 4212
+    },
+    "2011-06-24": {
+      "candidate_buckets": 281,
+      "eligible_buckets": 224,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 3847,
+      "timestamps": 3982
+    },
+    "2011-06-25": {
+      "candidate_buckets": 206,
+      "eligible_buckets": 154,
+      "expired_buckets": 52,
+      "potential_cutoff_rows": 2910,
+      "timestamps": 3062
+    },
+    "2011-06-26": {
+      "candidate_buckets": 249,
+      "eligible_buckets": 222,
+      "expired_buckets": 27,
+      "potential_cutoff_rows": 3430,
+      "timestamps": 3556
+    },
+    "2011-06-27": {
+      "timestamps": 6
+    },
+    "2011-07-12": {
+      "candidate_buckets": 232,
+      "eligible_buckets": 195,
+      "expired_buckets": 37,
+      "potential_cutoff_rows": 3687,
+      "timestamps": 3854
+    },
+    "2011-07-13": {
+      "candidate_buckets": 332,
+      "eligible_buckets": 270,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 4627,
+      "timestamps": 4786
+    },
+    "2011-07-14": {
+      "candidate_buckets": 296,
+      "eligible_buckets": 247,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 4520,
+      "timestamps": 4646
+    },
+    "2011-07-15": {
+      "candidate_buckets": 257,
+      "eligible_buckets": 217,
+      "expired_buckets": 40,
+      "potential_cutoff_rows": 4239,
+      "timestamps": 4358
+    },
+    "2011-07-16": {
+      "timestamps": 8
+    },
+    "2011-07-17": {
+      "candidate_buckets": 86,
+      "eligible_buckets": 69,
+      "expired_buckets": 17,
+      "potential_cutoff_rows": 1678,
+      "timestamps": 1724
+    },
+    "2011-07-18": {
+      "candidate_buckets": 282,
+      "eligible_buckets": 240,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 4896,
+      "timestamps": 5040
+    },
+    "2011-07-19": {
+      "candidate_buckets": 363,
+      "eligible_buckets": 311,
+      "expired_buckets": 52,
+      "potential_cutoff_rows": 5407,
+      "timestamps": 5564
+    },
+    "2011-07-20": {
+      "candidate_buckets": 240,
+      "eligible_buckets": 205,
+      "expired_buckets": 35,
+      "potential_cutoff_rows": 3939,
+      "timestamps": 4056
+    },
+    "2011-07-21": {
+      "candidate_buckets": 344,
+      "eligible_buckets": 275,
+      "expired_buckets": 69,
+      "potential_cutoff_rows": 5055,
+      "timestamps": 5232
+    },
+    "2011-07-22": {
+      "candidate_buckets": 235,
+      "eligible_buckets": 193,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 3635,
+      "timestamps": 3784
+    },
+    "2011-07-23": {
+      "candidate_buckets": 127,
+      "eligible_buckets": 119,
+      "expired_buckets": 8,
+      "potential_cutoff_rows": 2294,
+      "timestamps": 2336
+    },
+    "2011-07-25": {
+      "timestamps": 10
+    },
+    "2011-07-26": {
+      "timestamps": 8
+    },
+    "2011-07-27": {
+      "timestamps": 10
+    },
+    "2011-07-28": {
+      "timestamps": 2
+    },
+    "2011-07-29": {
+      "timestamps": 2
+    },
+    "2011-07-30": {
+      "candidate_buckets": 177,
+      "eligible_buckets": 161,
+      "expired_buckets": 16,
+      "potential_cutoff_rows": 3094,
+      "timestamps": 3172
+    },
+    "2011-07-31": {
+      "candidate_buckets": 240,
+      "eligible_buckets": 191,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 3406,
+      "timestamps": 3526
+    },
+    "2011-08-01": {
+      "candidate_buckets": 236,
+      "eligible_buckets": 184,
+      "expired_buckets": 52,
+      "potential_cutoff_rows": 3699,
+      "timestamps": 3810
+    },
+    "2011-08-02": {
+      "candidate_buckets": 320,
+      "eligible_buckets": 250,
+      "expired_buckets": 70,
+      "potential_cutoff_rows": 4488,
+      "timestamps": 4682
+    },
+    "2011-08-03": {
+      "candidate_buckets": 212,
+      "eligible_buckets": 149,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 2924,
+      "timestamps": 3094
+    },
+    "2011-08-04": {
+      "candidate_buckets": 261,
+      "eligible_buckets": 214,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 3394,
+      "timestamps": 3598
+    },
+    "2011-08-05": {
+      "candidate_buckets": 348,
+      "eligible_buckets": 291,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 5464,
+      "timestamps": 5678
+    },
+    "2011-08-06": {
+      "candidate_buckets": 150,
+      "eligible_buckets": 125,
+      "expired_buckets": 25,
+      "potential_cutoff_rows": 2330,
+      "timestamps": 2392
+    },
+    "2011-08-07": {
+      "candidate_buckets": 242,
+      "eligible_buckets": 200,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 3921,
+      "timestamps": 4070
+    },
+    "2011-08-08": {
+      "candidate_buckets": 268,
+      "eligible_buckets": 215,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 3626,
+      "timestamps": 3814
+    },
+    "2011-08-09": {
+      "candidate_buckets": 238,
+      "eligible_buckets": 177,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 3204,
+      "timestamps": 3350
+    },
+    "2011-08-10": {
+      "candidate_buckets": 208,
+      "eligible_buckets": 161,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 2843,
+      "timestamps": 2982
+    },
+    "2011-08-11": {
+      "candidate_buckets": 268,
+      "eligible_buckets": 194,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 3684,
+      "timestamps": 3840
+    },
+    "2011-08-12": {
+      "candidate_buckets": 229,
+      "eligible_buckets": 182,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 2981,
+      "timestamps": 3126
+    },
+    "2011-08-13": {
+      "candidate_buckets": 205,
+      "eligible_buckets": 166,
+      "expired_buckets": 39,
+      "potential_cutoff_rows": 2793,
+      "timestamps": 2916
+    },
+    "2011-08-14": {
+      "candidate_buckets": 222,
+      "eligible_buckets": 164,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 2828,
+      "timestamps": 3002
+    },
+    "2011-08-15": {
+      "candidate_buckets": 271,
+      "eligible_buckets": 223,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 3531,
+      "timestamps": 3640
+    },
+    "2011-08-16": {
+      "candidate_buckets": 209,
+      "eligible_buckets": 161,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 2950,
+      "timestamps": 3150
+    },
+    "2011-08-17": {
+      "candidate_buckets": 314,
+      "eligible_buckets": 270,
+      "expired_buckets": 44,
+      "potential_cutoff_rows": 4758,
+      "timestamps": 4892
+    },
+    "2011-08-18": {
+      "candidate_buckets": 268,
+      "eligible_buckets": 219,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 4260,
+      "timestamps": 4424
+    },
+    "2011-08-19": {
+      "candidate_buckets": 303,
+      "eligible_buckets": 261,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 4436,
+      "timestamps": 4576
+    },
+    "2011-08-20": {
+      "candidate_buckets": 234,
+      "eligible_buckets": 198,
+      "expired_buckets": 36,
+      "potential_cutoff_rows": 3811,
+      "timestamps": 3924
+    },
+    "2011-08-21": {
+      "candidate_buckets": 135,
+      "eligible_buckets": 114,
+      "expired_buckets": 21,
+      "potential_cutoff_rows": 2106,
+      "timestamps": 2160
+    },
+    "2011-08-22": {
+      "candidate_buckets": 299,
+      "eligible_buckets": 252,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 4194,
+      "timestamps": 4368
+    },
+    "2011-08-23": {
+      "candidate_buckets": 234,
+      "eligible_buckets": 177,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 3188,
+      "timestamps": 3410
+    },
+    "2011-08-24": {
+      "candidate_buckets": 259,
+      "eligible_buckets": 205,
+      "expired_buckets": 54,
+      "potential_cutoff_rows": 3904,
+      "timestamps": 4112
+    },
+    "2011-08-25": {
+      "candidate_buckets": 266,
+      "eligible_buckets": 191,
+      "expired_buckets": 75,
+      "potential_cutoff_rows": 3225,
+      "timestamps": 3430
+    },
+    "2011-08-26": {
+      "candidate_buckets": 255,
+      "eligible_buckets": 181,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 3734,
+      "timestamps": 3912
+    },
+    "2011-08-27": {
+      "candidate_buckets": 212,
+      "eligible_buckets": 177,
+      "expired_buckets": 35,
+      "potential_cutoff_rows": 2879,
+      "timestamps": 2998
+    },
+    "2011-08-28": {
+      "candidate_buckets": 267,
+      "eligible_buckets": 223,
+      "expired_buckets": 44,
+      "potential_cutoff_rows": 3637,
+      "timestamps": 3780
+    },
+    "2011-08-29": {
+      "candidate_buckets": 260,
+      "eligible_buckets": 186,
+      "expired_buckets": 74,
+      "potential_cutoff_rows": 3849,
+      "timestamps": 4050
+    },
+    "2011-08-30": {
+      "candidate_buckets": 288,
+      "eligible_buckets": 224,
+      "expired_buckets": 64,
+      "potential_cutoff_rows": 4066,
+      "timestamps": 4218
+    },
+    "2011-08-31": {
+      "candidate_buckets": 334,
+      "eligible_buckets": 278,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 5297,
+      "timestamps": 5458
+    },
+    "2011-09-01": {
+      "candidate_buckets": 302,
+      "eligible_buckets": 240,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 4788,
+      "timestamps": 4950
+    },
+    "2011-09-02": {
+      "candidate_buckets": 389,
+      "eligible_buckets": 316,
+      "expired_buckets": 73,
+      "potential_cutoff_rows": 6838,
+      "timestamps": 6996
+    },
+    "2011-09-03": {
+      "candidate_buckets": 314,
+      "eligible_buckets": 265,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 5186,
+      "timestamps": 5374
+    },
+    "2011-09-04": {
+      "timestamps": 1
+    },
+    "2011-09-05": {
+      "timestamps": 6
+    },
+    "2011-09-06": {
+      "candidate_buckets": 160,
+      "eligible_buckets": 122,
+      "expired_buckets": 38,
+      "potential_cutoff_rows": 2408,
+      "timestamps": 2509
+    },
+    "2011-09-07": {
+      "candidate_buckets": 338,
+      "eligible_buckets": 292,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 4307,
+      "timestamps": 4481
+    },
+    "2011-09-08": {
+      "candidate_buckets": 244,
+      "eligible_buckets": 169,
+      "expired_buckets": 75,
+      "potential_cutoff_rows": 3727,
+      "timestamps": 3942
+    },
+    "2011-09-09": {
+      "candidate_buckets": 213,
+      "eligible_buckets": 167,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 3405,
+      "timestamps": 3534
+    },
+    "2011-09-10": {
+      "candidate_buckets": 272,
+      "eligible_buckets": 233,
+      "expired_buckets": 39,
+      "potential_cutoff_rows": 4302,
+      "timestamps": 4414
+    },
+    "2011-09-11": {
+      "candidate_buckets": 208,
+      "eligible_buckets": 159,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 2850,
+      "timestamps": 2979
+    },
+    "2011-09-12": {
+      "candidate_buckets": 270,
+      "eligible_buckets": 219,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 3814,
+      "timestamps": 3966
+    },
+    "2011-09-13": {
+      "candidate_buckets": 269,
+      "eligible_buckets": 199,
+      "expired_buckets": 70,
+      "potential_cutoff_rows": 3603,
+      "timestamps": 3746
+    },
+    "2011-09-14": {
+      "candidate_buckets": 259,
+      "eligible_buckets": 200,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 3461,
+      "timestamps": 3634
+    },
+    "2011-09-15": {
+      "candidate_buckets": 241,
+      "eligible_buckets": 182,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 3708,
+      "timestamps": 3832
+    },
+    "2011-09-16": {
+      "candidate_buckets": 274,
+      "eligible_buckets": 214,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 4067,
+      "timestamps": 4238
+    },
+    "2011-09-17": {
+      "candidate_buckets": 207,
+      "eligible_buckets": 168,
+      "expired_buckets": 39,
+      "potential_cutoff_rows": 2971,
+      "timestamps": 3106
+    },
+    "2011-09-18": {
+      "candidate_buckets": 279,
+      "eligible_buckets": 235,
+      "expired_buckets": 44,
+      "potential_cutoff_rows": 4231,
+      "timestamps": 4348
+    },
+    "2011-09-19": {
+      "candidate_buckets": 193,
+      "eligible_buckets": 147,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 2477,
+      "timestamps": 2594
+    },
+    "2011-09-20": {
+      "candidate_buckets": 288,
+      "eligible_buckets": 237,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 3912,
+      "timestamps": 4050
+    },
+    "2011-09-21": {
+      "candidate_buckets": 163,
+      "eligible_buckets": 112,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 2417,
+      "timestamps": 2558
+    },
+    "2011-09-22": {
+      "candidate_buckets": 250,
+      "eligible_buckets": 203,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 3653,
+      "timestamps": 3836
+    },
+    "2011-09-23": {
+      "candidate_buckets": 246,
+      "eligible_buckets": 205,
+      "expired_buckets": 41,
+      "potential_cutoff_rows": 3729,
+      "timestamps": 3882
+    },
+    "2011-09-24": {
+      "candidate_buckets": 239,
+      "eligible_buckets": 197,
+      "expired_buckets": 42,
+      "potential_cutoff_rows": 3737,
+      "timestamps": 3868
+    },
+    "2011-09-25": {
+      "candidate_buckets": 236,
+      "eligible_buckets": 187,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 3459,
+      "timestamps": 3624
+    },
+    "2011-09-26": {
+      "candidate_buckets": 350,
+      "eligible_buckets": 284,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 5082,
+      "timestamps": 5266
+    },
+    "2011-09-27": {
+      "candidate_buckets": 395,
+      "eligible_buckets": 355,
+      "expired_buckets": 40,
+      "potential_cutoff_rows": 5844,
+      "timestamps": 6022
+    },
+    "2011-09-28": {
+      "candidate_buckets": 261,
+      "eligible_buckets": 211,
+      "expired_buckets": 50,
+      "potential_cutoff_rows": 3649,
+      "timestamps": 3758
+    },
+    "2011-09-29": {
+      "candidate_buckets": 272,
+      "eligible_buckets": 219,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 4289,
+      "timestamps": 4432
+    },
+    "2011-09-30": {
+      "candidate_buckets": 295,
+      "eligible_buckets": 242,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 4589,
+      "timestamps": 4740
+    },
+    "2011-10-01": {
+      "candidate_buckets": 228,
+      "eligible_buckets": 177,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 3481,
+      "timestamps": 3577
+    },
+    "2011-10-02": {
+      "candidate_buckets": 203,
+      "eligible_buckets": 168,
+      "expired_buckets": 35,
+      "potential_cutoff_rows": 3028,
+      "timestamps": 3136
+    },
+    "2011-10-03": {
+      "candidate_buckets": 361,
+      "eligible_buckets": 329,
+      "expired_buckets": 32,
+      "potential_cutoff_rows": 5137,
+      "timestamps": 5232
+    },
+    "2011-10-04": {
+      "candidate_buckets": 370,
+      "eligible_buckets": 309,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 5353,
+      "timestamps": 5540
+    },
+    "2011-10-05": {
+      "candidate_buckets": 331,
+      "eligible_buckets": 277,
+      "expired_buckets": 54,
+      "potential_cutoff_rows": 4584,
+      "timestamps": 4746
+    },
+    "2011-10-06": {
+      "candidate_buckets": 350,
+      "eligible_buckets": 293,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 5248,
+      "timestamps": 5468
+    },
+    "2011-10-07": {
+      "candidate_buckets": 328,
+      "eligible_buckets": 272,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 4388,
+      "timestamps": 4566
+    },
+    "2011-10-08": {
+      "candidate_buckets": 267,
+      "eligible_buckets": 215,
+      "expired_buckets": 52,
+      "potential_cutoff_rows": 3662,
+      "timestamps": 3830
+    },
+    "2011-10-09": {
+      "candidate_buckets": 172,
+      "eligible_buckets": 140,
+      "expired_buckets": 32,
+      "potential_cutoff_rows": 2545,
+      "timestamps": 2624
+    },
+    "2011-10-10": {
+      "candidate_buckets": 280,
+      "eligible_buckets": 224,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 5292,
+      "timestamps": 5425
+    },
+    "2011-10-11": {
+      "candidate_buckets": 218,
+      "eligible_buckets": 167,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 3145,
+      "timestamps": 3272
+    },
+    "2011-10-12": {
+      "candidate_buckets": 265,
+      "eligible_buckets": 213,
+      "expired_buckets": 52,
+      "potential_cutoff_rows": 4248,
+      "timestamps": 4426
+    },
+    "2011-10-13": {
+      "candidate_buckets": 293,
+      "eligible_buckets": 242,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 4039,
+      "timestamps": 4235
+    },
+    "2011-10-14": {
+      "candidate_buckets": 351,
+      "eligible_buckets": 292,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 5029,
+      "timestamps": 5186
+    },
+    "2011-10-15": {
+      "candidate_buckets": 207,
+      "eligible_buckets": 177,
+      "expired_buckets": 30,
+      "potential_cutoff_rows": 3144,
+      "timestamps": 3210
+    },
+    "2011-10-16": {
+      "candidate_buckets": 312,
+      "eligible_buckets": 274,
+      "expired_buckets": 38,
+      "potential_cutoff_rows": 4699,
+      "timestamps": 4794
+    },
+    "2011-10-17": {
+      "candidate_buckets": 296,
+      "eligible_buckets": 251,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 4838,
+      "timestamps": 4950
+    },
+    "2011-10-18": {
+      "candidate_buckets": 438,
+      "eligible_buckets": 398,
+      "expired_buckets": 40,
+      "potential_cutoff_rows": 8176,
+      "timestamps": 8342
+    },
+    "2011-10-19": {
+      "candidate_buckets": 293,
+      "eligible_buckets": 245,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 4793,
+      "timestamps": 4948
+    },
+    "2011-10-20": {
+      "candidate_buckets": 268,
+      "eligible_buckets": 220,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 3875,
+      "timestamps": 3994
+    },
+    "2011-10-21": {
+      "candidate_buckets": 325,
+      "eligible_buckets": 280,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 5025,
+      "timestamps": 5213
+    },
+    "2011-10-22": {
+      "candidate_buckets": 376,
+      "eligible_buckets": 314,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 5693,
+      "timestamps": 5927
+    },
+    "2011-10-23": {
+      "candidate_buckets": 288,
+      "eligible_buckets": 237,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 4240,
+      "timestamps": 4392
+    },
+    "2011-10-24": {
+      "candidate_buckets": 376,
+      "eligible_buckets": 327,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 5311,
+      "timestamps": 5474
+    },
+    "2011-10-25": {
+      "candidate_buckets": 312,
+      "eligible_buckets": 249,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 4311,
+      "timestamps": 4469
+    },
+    "2011-10-26": {
+      "candidate_buckets": 375,
+      "eligible_buckets": 315,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 6547,
+      "timestamps": 6678
+    },
+    "2011-10-27": {
+      "candidate_buckets": 444,
+      "eligible_buckets": 410,
+      "expired_buckets": 34,
+      "potential_cutoff_rows": 8853,
+      "timestamps": 8936
+    },
+    "2011-10-28": {
+      "candidate_buckets": 284,
+      "eligible_buckets": 220,
+      "expired_buckets": 64,
+      "potential_cutoff_rows": 4896,
+      "timestamps": 5088
+    },
+    "2011-10-29": {
+      "candidate_buckets": 295,
+      "eligible_buckets": 245,
+      "expired_buckets": 50,
+      "potential_cutoff_rows": 4104,
+      "timestamps": 4242
+    },
+    "2011-10-30": {
+      "candidate_buckets": 302,
+      "eligible_buckets": 264,
+      "expired_buckets": 38,
+      "potential_cutoff_rows": 4161,
+      "timestamps": 4276
+    },
+    "2011-10-31": {
+      "candidate_buckets": 299,
+      "eligible_buckets": 240,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 4976,
+      "timestamps": 5138
+    },
+    "2011-11-01": {
+      "candidate_buckets": 331,
+      "eligible_buckets": 280,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 4805,
+      "timestamps": 4984
+    },
+    "2011-11-02": {
+      "candidate_buckets": 309,
+      "eligible_buckets": 243,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 4195,
+      "timestamps": 4372
+    },
+    "2011-11-03": {
+      "candidate_buckets": 218,
+      "eligible_buckets": 172,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 3040,
+      "timestamps": 3204
+    },
+    "2011-11-04": {
+      "candidate_buckets": 440,
+      "eligible_buckets": 384,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 7071,
+      "timestamps": 7226
+    },
+    "2011-11-05": {
+      "candidate_buckets": 271,
+      "eligible_buckets": 236,
+      "expired_buckets": 35,
+      "potential_cutoff_rows": 3897,
+      "timestamps": 3999
+    },
+    "2011-11-06": {
+      "candidate_buckets": 314,
+      "eligible_buckets": 257,
+      "expired_buckets": 57,
+      "potential_cutoff_rows": 4567,
+      "timestamps": 4724
+    },
+    "2011-11-07": {
+      "candidate_buckets": 239,
+      "eligible_buckets": 189,
+      "expired_buckets": 50,
+      "potential_cutoff_rows": 3338,
+      "timestamps": 3478
+    },
+    "2011-11-08": {
+      "candidate_buckets": 245,
+      "eligible_buckets": 182,
+      "expired_buckets": 63,
+      "potential_cutoff_rows": 3518,
+      "timestamps": 3672
+    },
+    "2011-11-09": {
+      "candidate_buckets": 311,
+      "eligible_buckets": 275,
+      "expired_buckets": 36,
+      "potential_cutoff_rows": 4497,
+      "timestamps": 4608
+    },
+    "2011-11-10": {
+      "candidate_buckets": 238,
+      "eligible_buckets": 183,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 3289,
+      "timestamps": 3406
+    },
+    "2011-11-11": {
+      "candidate_buckets": 269,
+      "eligible_buckets": 222,
+      "expired_buckets": 47,
+      "potential_cutoff_rows": 3940,
+      "timestamps": 4077
+    },
+    "2011-11-12": {
+      "candidate_buckets": 250,
+      "eligible_buckets": 209,
+      "expired_buckets": 41,
+      "potential_cutoff_rows": 3778,
+      "timestamps": 3911
+    },
+    "2011-11-13": {
+      "candidate_buckets": 243,
+      "eligible_buckets": 195,
+      "expired_buckets": 48,
+      "potential_cutoff_rows": 3303,
+      "timestamps": 3442
+    },
+    "2011-11-14": {
+      "candidate_buckets": 239,
+      "eligible_buckets": 186,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 3061,
+      "timestamps": 3220
+    },
+    "2011-11-15": {
+      "candidate_buckets": 263,
+      "eligible_buckets": 192,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 3876,
+      "timestamps": 4028
+    },
+    "2011-11-16": {
+      "candidate_buckets": 201,
+      "eligible_buckets": 157,
+      "expired_buckets": 44,
+      "potential_cutoff_rows": 3065,
+      "timestamps": 3200
+    },
+    "2011-11-17": {
+      "candidate_buckets": 227,
+      "eligible_buckets": 169,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 3173,
+      "timestamps": 3340
+    },
+    "2011-11-18": {
+      "candidate_buckets": 299,
+      "eligible_buckets": 246,
+      "expired_buckets": 53,
+      "potential_cutoff_rows": 4300,
+      "timestamps": 4468
+    },
+    "2011-11-19": {
+      "candidate_buckets": 210,
+      "eligible_buckets": 186,
+      "expired_buckets": 24,
+      "potential_cutoff_rows": 2945,
+      "timestamps": 3030
+    },
+    "2011-11-20": {
+      "candidate_buckets": 296,
+      "eligible_buckets": 251,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 4078,
+      "timestamps": 4267
+    },
+    "2011-11-21": {
+      "candidate_buckets": 307,
+      "eligible_buckets": 261,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 4683,
+      "timestamps": 4818
+    },
+    "2011-11-22": {
+      "candidate_buckets": 280,
+      "eligible_buckets": 209,
+      "expired_buckets": 71,
+      "potential_cutoff_rows": 4208,
+      "timestamps": 4410
+    },
+    "2011-11-23": {
+      "candidate_buckets": 366,
+      "eligible_buckets": 328,
+      "expired_buckets": 38,
+      "potential_cutoff_rows": 5409,
+      "timestamps": 5574
+    },
+    "2011-11-24": {
+      "candidate_buckets": 191,
+      "eligible_buckets": 162,
+      "expired_buckets": 29,
+      "potential_cutoff_rows": 2725,
+      "timestamps": 2802
+    },
+    "2011-11-25": {
+      "candidate_buckets": 143,
+      "eligible_buckets": 120,
+      "expired_buckets": 23,
+      "potential_cutoff_rows": 1910,
+      "timestamps": 1976
+    },
+    "2011-11-26": {
+      "candidate_buckets": 115,
+      "eligible_buckets": 89,
+      "expired_buckets": 26,
+      "potential_cutoff_rows": 1435,
+      "timestamps": 1546
+    },
+    "2011-11-27": {
+      "candidate_buckets": 271,
+      "eligible_buckets": 226,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 3691,
+      "timestamps": 3842
+    },
+    "2011-11-28": {
+      "candidate_buckets": 266,
+      "eligible_buckets": 220,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 3715,
+      "timestamps": 3850
+    },
+    "2011-11-29": {
+      "candidate_buckets": 239,
+      "eligible_buckets": 188,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 3374,
+      "timestamps": 3544
+    },
+    "2011-11-30": {
+      "candidate_buckets": 268,
+      "eligible_buckets": 202,
+      "expired_buckets": 66,
+      "potential_cutoff_rows": 3625,
+      "timestamps": 3764
+    },
+    "2011-12-01": {
+      "candidate_buckets": 294,
+      "eligible_buckets": 245,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 4387,
+      "timestamps": 4570
+    },
+    "2011-12-02": {
+      "candidate_buckets": 221,
+      "eligible_buckets": 193,
+      "expired_buckets": 28,
+      "potential_cutoff_rows": 3233,
+      "timestamps": 3316
+    },
+    "2011-12-03": {
+      "candidate_buckets": 129,
+      "eligible_buckets": 105,
+      "expired_buckets": 24,
+      "potential_cutoff_rows": 1710,
+      "timestamps": 1809
+    },
+    "2011-12-04": {
+      "candidate_buckets": 294,
+      "eligible_buckets": 256,
+      "expired_buckets": 38,
+      "potential_cutoff_rows": 4369,
+      "timestamps": 4518
+    },
+    "2011-12-05": {
+      "candidate_buckets": 272,
+      "eligible_buckets": 229,
+      "expired_buckets": 43,
+      "potential_cutoff_rows": 3633,
+      "timestamps": 3796
+    },
+    "2011-12-06": {
+      "candidate_buckets": 283,
+      "eligible_buckets": 224,
+      "expired_buckets": 59,
+      "potential_cutoff_rows": 3850,
+      "timestamps": 4022
+    },
+    "2011-12-07": {
+      "candidate_buckets": 240,
+      "eligible_buckets": 194,
+      "expired_buckets": 46,
+      "potential_cutoff_rows": 3288,
+      "timestamps": 3394
+    },
+    "2011-12-08": {
+      "candidate_buckets": 285,
+      "eligible_buckets": 230,
+      "expired_buckets": 55,
+      "potential_cutoff_rows": 4162,
+      "timestamps": 4312
+    },
+    "2011-12-09": {
+      "candidate_buckets": 362,
+      "eligible_buckets": 312,
+      "expired_buckets": 50,
+      "potential_cutoff_rows": 5100,
+      "timestamps": 5236
+    },
+    "2011-12-10": {
+      "candidate_buckets": 231,
+      "eligible_buckets": 210,
+      "expired_buckets": 21,
+      "potential_cutoff_rows": 3255,
+      "timestamps": 3346
+    },
+    "2011-12-11": {
+      "candidate_buckets": 235,
+      "eligible_buckets": 177,
+      "expired_buckets": 58,
+      "potential_cutoff_rows": 3201,
+      "timestamps": 3342
+    },
+    "2011-12-12": {
+      "candidate_buckets": 290,
+      "eligible_buckets": 245,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 3963,
+      "timestamps": 4078
+    },
+    "2011-12-13": {
+      "candidate_buckets": 388,
+      "eligible_buckets": 327,
+      "expired_buckets": 61,
+      "potential_cutoff_rows": 4682,
+      "timestamps": 4822
+    },
+    "2011-12-14": {
+      "candidate_buckets": 332,
+      "eligible_buckets": 272,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 3967,
+      "timestamps": 4122
+    },
+    "2011-12-15": {
+      "candidate_buckets": 278,
+      "eligible_buckets": 218,
+      "expired_buckets": 60,
+      "potential_cutoff_rows": 3729,
+      "timestamps": 3956
+    },
+    "2011-12-16": {
+      "candidate_buckets": 272,
+      "eligible_buckets": 241,
+      "expired_buckets": 31,
+      "potential_cutoff_rows": 3894,
+      "timestamps": 4022
+    },
+    "2011-12-17": {
+      "candidate_buckets": 201,
+      "eligible_buckets": 170,
+      "expired_buckets": 31,
+      "potential_cutoff_rows": 2648,
+      "timestamps": 2754
+    },
+    "2011-12-18": {
+      "candidate_buckets": 345,
+      "eligible_buckets": 312,
+      "expired_buckets": 33,
+      "potential_cutoff_rows": 5181,
+      "timestamps": 5308
+    },
+    "2011-12-19": {
+      "candidate_buckets": 280,
+      "eligible_buckets": 235,
+      "expired_buckets": 45,
+      "potential_cutoff_rows": 4170,
+      "timestamps": 4281
+    },
+    "2011-12-20": {
+      "candidate_buckets": 314,
+      "eligible_buckets": 252,
+      "expired_buckets": 62,
+      "potential_cutoff_rows": 4241,
+      "timestamps": 4434
+    },
+    "2011-12-21": {
+      "candidate_buckets": 271,
+      "eligible_buckets": 222,
+      "expired_buckets": 49,
+      "potential_cutoff_rows": 4047,
+      "timestamps": 4188
+    },
+    "2011-12-22": {
+      "candidate_buckets": 334,
+      "eligible_buckets": 278,
+      "expired_buckets": 56,
+      "potential_cutoff_rows": 4106,
+      "timestamps": 4262
+    },
+    "2011-12-23": {
+      "candidate_buckets": 379,
+      "eligible_buckets": 342,
+      "expired_buckets": 37,
+      "potential_cutoff_rows": 5361,
+      "timestamps": 5484
+    },
+    "2011-12-24": {
+      "candidate_buckets": 316,
+      "eligible_buckets": 282,
+      "expired_buckets": 34,
+      "potential_cutoff_rows": 3906,
+      "timestamps": 3978
+    },
+    "2011-12-25": {
+      "candidate_buckets": 156,
+      "eligible_buckets": 126,
+      "expired_buckets": 30,
+      "potential_cutoff_rows": 2441,
+      "timestamps": 2514
+    },
+    "2011-12-26": {
+      "candidate_buckets": 210,
+      "eligible_buckets": 153,
+      "expired_buckets": 51,
+      "potential_cutoff_rows": 2506,
+      "timestamps": 2646,
+      "unresolved_buckets": 6
+    }
+  }
+}

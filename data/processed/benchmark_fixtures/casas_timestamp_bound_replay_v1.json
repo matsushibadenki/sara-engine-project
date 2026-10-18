@@ -1,0 +1,16 @@
+{
+  "actual_learning_writes": 0,
+  "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 scripts/eval/casas_timestamp_bound.py replay",
+  "daily_bucket_audit_exact": true,
+  "daily_sha256": "83c43508064660003643998fba72d6d2def2f6ec06ebe0e20d306917766dd2a0",
+  "fresh_process_result_exact": true,
+  "new_identity_inputs_opened": false,
+  "original_development_opened": false,
+  "registration_sha256": "6033822229a216f6b9dee69a75fd10759933f3d61b3c2fc79217f6b2b2dacc06",
+  "related_tests_passed": 157,
+  "result_sha256": "7ab65be6f15f26df7877afa1f1089405f18d02353b5de68589bf635e151ac5bb",
+  "sensor_message_fields_inspected": false,
+  "synthetic_validation_exact": true,
+  "test_opened": false,
+  "validation_sha256": "a62ab23f0aaa15cb546d38bde174009dbc58aae41c71e25dfd4e0f8df8efae24"
+}
