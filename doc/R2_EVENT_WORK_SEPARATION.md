@@ -79,10 +79,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python scripts
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_event_work_separation.py
 ```
 
-🟠 [Next] Preregister a bounded, isolated **allocation-diagnostic pass** on these same synthetic inputs to investigate objects born and freed between boundaries. Attribute executor/returned-buffer/harness scopes explicitly and distinguish interpreter-traced allocation peaks from process RSS and uninstrumented execution. No new learner scoring, source search, timing-superiority claim, threshold change or R3 optimization.
+🟢 [Done] The subsequent [isolated allocation diagnostic](R2_EVENT_ALLOCATION_DIAGNOSTIC.md) is implemented, but its 144-worker finite run failed the fixed 8 MiB result-storage gate. No raw values or replay are retained; preserve this failure without relaxing the limit or rerunning. 411 tests pass with one expected pre-execution skip; 368 earlier artifacts/code pins and all seals remain intact.
+
+🟠 [Next] Preregister a report-representation preflight using the frozen schema/source inventory and existing synthetic fixtures only. Prove the serialized-size ceiling within the fixed 8 MiB budget, preserve ownership/unknown-site accounting and require a valid saved result before replication workers can start. No fresh allocation measurements or retry of the consumed failed run; retain all negatives and seals.
 
 ⭕️ [Pending] Independent usefulness, full deployment resource/physical-energy evidence, new acquisition and production promotion retain their original prerequisites. The circuit-efficiency idea remains useful as a design hypothesis: activate only necessary circuits while charging shared observation and delayed-result work equally to sufficient scalar controls. This audit supplies a cleaner measurement boundary, not the missing SNN-specific evidence.
 
-日本語: 同じ合成48ケースで計測分離を実装前に登録し、1,184回の操作境界と48回の終了処理後の状態、既存配送ハッシュ、診断なし実行との一致を検証しました。返却バッファと制御オブジェクトをメモリ計上に含め、関数内の一時割当・フレーム・RSSは未測定として残しました。381テストと別プロセス完全再現が成功し、既存363証跡、条件、負の結果、封印を保持しています。学習・採点は0で、SNN固有の速度・電力優位は未確認です。次は同じ入力の隔離された割当診断で境界間の未観測範囲を調べる条件を事前登録します。
+日本語: 同じ合成48ケースで計測分離を実装前に登録し、1,184回の操作境界と48回の終了処理後の状態、既存配送ハッシュ、診断なし実行との一致を検証しました。返却バッファと制御オブジェクトをメモリ計上に含め、関数内の一時割当・フレーム・RSSは未測定として残しました。381テストと別プロセス完全再現が成功し、既存363証跡、条件、負の結果、封印を保持しています。学習・採点は0で、SNN固有の速度・電力優位は未確認です。続く隔離割当診断は固定8 MiBの結果保存上限で不合格となり、生値は未保存です。失敗を保持し、次は新たな測定なしで報告形式の上限を事前検証します。
 
-简体中文：在实现前注册相同48个合成案例的测量分离契约，验证1,184个操作边界与48个清理边界的状态、既有回执哈希及无诊断执行结果一致。内存范围包含返回缓冲区和控制对象；函数内临时分配、栈帧和RSS仍为未知。381项测试及新进程精确重放通过，保留363项既有证据、原条件、负结果和封存。学习与评分为0，尚未证明SNN独有的速度或能耗优势。下一步为相同输入的隔离分配诊断预注册条件，调查边界间未观察到的分配。
+简体中文：在实现前注册相同48个合成案例的测量分离契约，验证1,184个操作边界与48个清理边界的状态、既有回执哈希及无诊断执行结果一致。内存范围包含返回缓冲区和控制对象；函数内临时分配、栈帧和RSS仍为未知。381项测试及新进程精确重放通过，保留363项既有证据、原条件、负结果和封存。学习与评分为0，尚未证明SNN独有的速度或能耗优势。后续隔离分配诊断因结果超过固定8 MiB上限而失败，原始数值未保存。保留失败；下一步不新增测量，先验证报告格式上界。

@@ -84,7 +84,9 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 -m pytest -q -o cache_dir=wor
 
 🟢 [Done] The subsequent [instrumentation-separation contract](R2_EVENT_WORK_SEPARATION.md) now passes the same 48 cases: 1,232 state comparisons including teardown, prior receipt hashes, receipt-only execution, 381 related tests and exact replay. All 363 earlier artifacts/code pins, negatives and seals are preserved. Returned buffers/control are counted; intra-call peaks remain unknown.
 
-🟠 [Next] Preregister an isolated allocation-diagnostic pass on the same synthetic inputs to investigate intra-call temporaries, with executor/returned-buffer/harness ownership and interpreter-tracing limits explicit. No new scores, source search, timing-superiority claim, task/threshold changes or R3 optimization; retain negatives and seals.
+🟢 [Done] The subsequent [isolated allocation diagnostic](R2_EVENT_ALLOCATION_DIAGNOSTIC.md) is implemented, but its 144-worker finite run failed the fixed 8 MiB result-storage gate. No raw values or replay are retained; preserve this failure without relaxing the limit or rerunning. 411 tests pass with one expected pre-execution skip; 368 earlier artifacts/code pins and all seals remain intact.
+
+🟠 [Next] Preregister a report-representation preflight using the frozen schema/source inventory and existing synthetic fixtures only. Prove the serialized-size ceiling within the fixed 8 MiB budget, preserve ownership/unknown-site accounting and require a valid saved result before replication workers can start. No fresh allocation measurements or retry of the consumed failed run; retain all negatives and seals.
 
 ⭕️ [Pending] New payload acquisition and independent SNN-usefulness/energy claims require a compatible independently justified source/task contract, scoped access/size/coverage metadata and the original preregistered causal/quality/resource gates. SPHERE/ECO documented-stream exclusions are closed; no automatic metadata retry or CASAS expansion.
 

@@ -1,0 +1,50 @@
+{
+  "actual_learning_writes": 0,
+  "all_allocation_gates_passed": false,
+  "command_exit_code": 1,
+  "cpu_seconds": null,
+  "energy_joules": null,
+  "evidence_basis": "Observed command exit 1 after the six worker progress lines through 144/144; traceback from scripts/eval/event_allocation.py save(result) reported ValueError: Artifact byte budget exceeded. This receipt records the failure after execution; it is not a reconstructed measurement result.",
+  "exception": "ValueError: Artifact byte budget exceeded",
+  "failed_stage": "JSON result serialization before exclusive result file creation",
+  "fresh_replication_executions": 0,
+  "independent_usefulness_established": false,
+  "measured_allocation_statistics": null,
+  "pins": {
+    "execution_sha256": "091fe09b3f8fdbd1680f9002380764e0198790d26aa3376a1eefa6c7037c3e3a",
+    "registration_sha256": "8b3d3c27e5c1a2fb2d3c203ea994c80db37bc58495db902e6c08fe2842856d8d",
+    "selection_sha256": "22a9bbfdc6feef6e2e87dd3a169cbf6f7730b02569401741ccedbd02ff6f5fa6"
+  },
+  "predictions_scored": 0,
+  "preserved_artifacts": 368,
+  "raw_or_learned_payload_reads": 0,
+  "recorded_at_utc": "2026-10-22T11:52:44.297744+00:00",
+  "registered_result_byte_limit": 8388608,
+  "rss_bytes": null,
+  "runtime": {
+    "byteorder": "little",
+    "implementation": "CPython",
+    "machine": "arm64",
+    "python": "3.10.20"
+  },
+  "runtime_promotion_authorized": false,
+  "saved_worker_measurements": 0,
+  "schema": "sara-event-allocation-failure-v1",
+  "semantic_replay_verified": false,
+  "serialized_result_bytes": null,
+  "serialized_result_lower_bound_bytes": 8388609,
+  "snn_resource_advantage_established": false,
+  "status": "failed_result_serialization_budget",
+  "stop_applied": "No budget increase, code/selection change, rerun, replication or recovery of unsaved measurements. Existing execution stays consumed and prior code/evidence/seals stay fixed. Any future diagnostic run needs a new preregistration retaining this failure.",
+  "test_opening_authorized": false,
+  "total_transient_peak_bytes": null,
+  "worker_progress_lines": [
+    "Allocation diagnostic workers completed: 24/144",
+    "Allocation diagnostic workers completed: 48/144",
+    "Allocation diagnostic workers completed: 72/144",
+    "Allocation diagnostic workers completed: 96/144",
+    "Allocation diagnostic workers completed: 120/144",
+    "Allocation diagnostic workers completed: 144/144"
+  ],
+  "worker_progress_reported": 144
+}

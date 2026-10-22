@@ -333,15 +333,17 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Input-only instrumentation separation](R2_EVENT_WORK_SEPARATION.md): selection and code registered before finite execution; all 48 cases match frozen-reference state at 1,184 operation and 48 teardown boundaries, prior receipt hashes and receipt-only execution. Shared observation remains fully charged to both arms. Returned buffers/control objects are included in external graph samples; intra-call byte peaks remain unknown. 381 related tests and exact fresh-process replay preserve 363 prior artifacts/code pins. Zero learning/scoring; no SNN advantage or seal opening.
 
-🟠 [Next] Preregister an isolated allocation-diagnostic pass on the same synthetic inputs to investigate intra-call temporaries, with executor/returned-buffer/harness ownership and interpreter-tracing limits explicit. No new scores, source search, timing-superiority claim, task/threshold changes or R3 optimization; retain negatives and seals. Earlier dated Next notes above are historical prerequisites, superseded by this queue.
+🟢 [Done] [Isolated Python allocation diagnostic](R2_EVENT_ALLOCATION_DIAGNOSTIC.md): contract/code registered before 48 cases in 144 fresh workers. Implementation and scope tests pass, but the final report exceeds the registered 8 MiB limit; overall audit fails, no raw measurements/result/replay are retained. Preserve the consumed execution and failure receipt without increasing the limit or rerunning. 411 tests pass with one expected pre-execution skip; 368 prior artifacts/code pins, conditions, negatives and seals remain intact. No quantitative allocation or SNN advantage claim.
+
+🟠 [Next] Preregister a report-representation preflight using the frozen schema/source inventory and existing synthetic fixtures only. Prove the serialized-size ceiling within the fixed 8 MiB budget, preserve ownership/unknown-site accounting and require a valid saved result before replication workers can start. No fresh allocation measurements or retry of the consumed failed run; retain all negatives and seals. Earlier dated Next notes remain historical prerequisites.
 
 ⭕️ [Pending] Independent usefulness, physical energy, source acquisition, structural growth and production promotion retain their original gates. No ANN-exclusive capability is established by sparse scheduling or local learning alone.
 
-日本語: 既存19件の監査と合成入力の計上契約に続き、計測分離を事前登録して検証しました。同じ48ケースで1,184操作境界と48終了境界の状態、既存配送記録、診断なし実行が一致し、381テストと完全再現で363証跡・条件・負の結果・封印を保持しました。一時メモリは返却バッファを計上し、関数内の割当ピークは未知のままです。SNN固有の優位は未確認で、次は同じ入力の隔離割当診断を事前登録します。
+日本語: 既存19件の監査と合成入力の計上契約に続き、計測分離を事前登録して検証しました。同じ48ケースで1,184操作境界と48終了境界の状態、既存配送記録、診断なし実行が一致し、381テストと完全再現で363証跡・条件・負の結果・封印を保持しました。一時メモリは返却バッファを計上し、関数内の割当ピークは未知のままです。続く隔離割当診断は固定8 MiBの結果保存上限で不合格となり、生値は未保存です。411テスト成功・1件の実行前スキップと失敗証跡を保持し、次は測定を再開せず報告形式の上限を事前検証します。SNN固有の優位は未確認です。
 
-简体中文：在既有19份证据审计和合成核算后，预注册并验证测量分离。相同48个案例在1,184个操作边界与48个清理边界的状态、既有回执及无诊断执行结果一致。381项测试与精确重放保留363项证据、原条件、负结果和封存。内存范围包含返回缓冲区，函数内分配峰值仍未知。SNN独有优势尚未确认；下一步预注册相同输入的隔离分配诊断。
+简体中文：在既有19份证据审计和合成核算后，预注册并验证测量分离。相同48个案例在1,184个操作边界与48个清理边界的状态、既有回执及无诊断执行结果一致。381项测试与精确重放保留363项证据、原条件、负结果和封存。内存范围包含返回缓冲区，函数内分配峰值仍未知。后续隔离分配诊断因结果超过固定8 MiB上限而失败，原始数值未保存。保留411项测试通过、1项执行前跳过及失败证据；下一步不重启测量，先验证报告格式上界。SNN独有优势仍未确认。
 
-🟢 [Done] The previously queued bounded read-only R2 decision audit is complete; its retained findings and subsequent accounting/separation checks are recorded above. The allocation-diagnostic contract is now the authoritative next step. No new search/acquisition, re-scoring, tuning, current-task change or R3 optimization is authorized by these results.
+🟢 [Done] The previously queued bounded read-only R2 decision audit is complete; its retained findings and subsequent accounting/separation checks are recorded above. The allocation diagnostic subsequently failed its result-storage budget; the report-representation preflight is now the authoritative next step. No new search/acquisition, re-scoring, tuning, current-task change or R3 optimization is authorized by these results.
 
 ⭕️ [Pending] New acquisition and independent usefulness/resource evidence require a compatible justified source/task contract and all original input, opposing-history, class/support, state/write-budget and quality gates. The SPHERE/ECO documented-stream exclusions are closed; no automatic retries or CASAS additions. Sparse event scheduling/local updates can be shared with non-spiking implementations, so actual matched-control evidence remains essential.
 
@@ -373,6 +375,6 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：已预注册并验证仅时间戳的安全上界，三个既有训练窗口均不可能达到固定目标；不重读事件值或标签，保留既有负结果与封存。
 
-日本語: 続くSPHERE/ECOの有限メタデータ監査も事前登録し、公表ストリームが元のKitchen ON定義に不適合と判断して終了しました。未確定のPIR期間・密度・サイズ・利用条件を残し、本体取得・候補追加・条件緩和・封印解除はしません。さらに既存19証跡の監査と合成入力48ケースの計上検証を完了し、356テストと別プロセス再現で負の結果を保持しました。続く計測分離も48ケース・381テストで成立し、次は同じ入力の隔離割当診断を事前登録します。
+日本語: 続くSPHERE/ECOの有限メタデータ監査も事前登録し、公表ストリームが元のKitchen ON定義に不適合と判断して終了しました。未確定のPIR期間・密度・サイズ・利用条件を残し、本体取得・候補追加・条件緩和・封印解除はしません。さらに既存19証跡の監査と合成入力48ケースの計上検証を完了し、356テストと別プロセス再現で負の結果を保持しました。続く計測分離は48ケース・381テストで成立しましたが、隔離割当診断は固定8 MiBの結果保存上限で不合格です。失敗と封印を保持し、次は新たな測定なしで報告形式の上限を事前検証します。
 
-简体中文：另行预注册并完成SPHERE/ECO有限元数据审计，判定其已描述数据流不符合原Kitchen ON定义并终止。保留PIR期间、密度、体积和使用条件的未知项，不采集本体、不扩充候选、不放宽条件或解除封存。随后完成19份既有证据审计和48个合成输入案例的核算验证，356项测试与新进程重放保留原负结果。后续测量分离也通过48个案例和381项测试，下一步预注册相同输入的隔离分配诊断。
+简体中文：另行预注册并完成SPHERE/ECO有限元数据审计，判定其已描述数据流不符合原Kitchen ON定义并终止。保留PIR期间、密度、体积和使用条件的未知项，不采集本体、不扩充候选、不放宽条件或解除封存。随后完成19份既有证据审计和48个合成输入案例的核算验证，356项测试与新进程重放保留原负结果。后续测量分离通过48个案例和381项测试，但隔离分配诊断因结果超过固定8 MiB上限而失败。保留失败与封存；下一步不新增测量，先验证报告格式上界。

@@ -76,10 +76,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 
 🟢 [Done] The subsequent [instrumentation-separation contract](R2_EVENT_WORK_SEPARATION.md) now passes the same 48 cases: 1,232 state comparisons including teardown, prior receipt hashes, receipt-only execution, 381 related tests and exact replay. All 363 earlier artifacts/code pins, negatives and seals are preserved. Returned buffers/control are counted; intra-call peaks remain unknown.
 
-🟠 [Next] Preregister an isolated allocation-diagnostic pass on the same synthetic inputs to investigate intra-call temporaries, with executor/returned-buffer/harness ownership and interpreter-tracing limits explicit. No new scores, source search, timing-superiority claim, task/threshold changes or R3 optimization; retain negatives and seals.
+🟢 [Done] The subsequent [isolated allocation diagnostic](R2_EVENT_ALLOCATION_DIAGNOSTIC.md) is implemented, but its 144-worker finite run failed the fixed 8 MiB result-storage gate. No raw values or replay are retained; preserve this failure without relaxing the limit or rerunning. 411 tests pass with one expected pre-execution skip; 368 earlier artifacts/code pins and all seals remain intact.
+
+🟠 [Next] Preregister a report-representation preflight using the frozen schema/source inventory and existing synthetic fixtures only. Prove the serialized-size ceiling within the fixed 8 MiB budget, preserve ownership/unknown-site accounting and require a valid saved result before replication workers can start. No fresh allocation measurements or retry of the consumed failed run; retain all negatives and seals.
 
 ⭕️ [Pending] Independent useful-system/energy evidence and new-source acquisition retain all original prerequisites and seals. No new compatible source is certified, and no metadata retry or CASAS expansion is authorized.
 
-日本語: 既知結果の集計証跡19件だけを対象に、読取上限・判断規則・コードを登録して監査しました。局所学習による時間履歴の識別成果は保持しますが、十分な履歴・スカラー対照を超える予測効果と総コスト優位は未確認です。実更新数は補充対照も含めて一致し、未計測費用はゼロとみなしません。本監査の333テストと完全再現で353件の証跡を保持しました。続く合成入力の計上契約も48ケースで成立し、356テストと再現が成功しました。続く計測分離も48ケース・381テストで成立し、次は同じ入力の隔離割当診断を事前登録します。
+日本語: 既知結果の集計証跡19件だけを対象に、読取上限・判断規則・コードを登録して監査しました。局所学習による時間履歴の識別成果は保持しますが、十分な履歴・スカラー対照を超える予測効果と総コスト優位は未確認です。実更新数は補充対照も含めて一致し、未計測費用はゼロとみなしません。本監査の333テストと完全再現で353件の証跡を保持しました。続く合成入力の計上契約も48ケースで成立し、356テストと再現が成功しました。続く計測分離は48ケース・381テストで成立しましたが、隔離割当診断は固定8 MiBの結果保存上限で不合格です。失敗を保持し、次は新たな測定なしで報告形式の上限を事前検証します。
 
-简体中文：仅针对19份已知结果的汇总证据，在注册读取预算、判断规则和代码后完成审计。保留局部学习识别时间历史的成果，但尚未证明相对充分历史和标量对照的预测增益或完整成本优势。包含补充对照的真实更新次数一致，未测成本不视为零。本审计的333项测试与精确重放保留353项证据。后续合成输入核算契约的48个案例也已通过，356项测试与重放成功。后续测量分离也通过48个案例和381项测试，下一步预注册相同输入的隔离分配诊断。
+简体中文：仅针对19份已知结果的汇总证据，在注册读取预算、判断规则和代码后完成审计。保留局部学习识别时间历史的成果，但尚未证明相对充分历史和标量对照的预测增益或完整成本优势。包含补充对照的真实更新次数一致，未测成本不视为零。本审计的333项测试与精确重放保留353项证据。后续合成输入核算契约的48个案例也已通过，356项测试与重放成功。后续测量分离通过48个案例和381项测试，但隔离分配诊断因结果超过固定8 MiB上限而失败。保留失败；下一步不新增测量，先验证报告格式上界。
