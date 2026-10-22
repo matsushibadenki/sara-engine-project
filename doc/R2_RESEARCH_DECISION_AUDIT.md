@@ -72,10 +72,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python scripts
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_r2_research_decision.py
 ```
 
-🟠 [Next] Preregister a bounded **input-only full-work-accounting feasibility contract** using existing synthetic causal witnesses. Freeze stage ownership, counter units, shared-stage charging, idle-gap/expiry behavior and an equally event-driven scalar comparator before executing accounting checks. No new learner scores, source search, task change or runtime optimization.
+🟢 [Done] The subsequent [input-only accounting contract](R2_EVENT_WORK_ACCOUNTING.md) was selected before implementation and passes all 48 finite cases, with exact neuron/scalar receipt/state traces, shared-charge reconciliation and expiry during idle. Zero learning/scoring, 356 related tests and exact fresh-process replay preserve earlier evidence and seals. No speed/energy superiority follows.
+
+🟠 [Next] Preregister input-only instrumentation separation on the same synthetic templates, preserving causal traces while moving diagnostic journal/object-graph probes out of the execution path and specifying control/transient-memory scope. No new scoring/search or R3 optimization.
 
 ⭕️ [Pending] Independent useful-system/energy evidence and new-source acquisition retain all original prerequisites and seals. No new compatible source is certified, and no metadata retry or CASAS expansion is authorized.
 
-日本語: 既知結果の集計証跡19件だけを対象に、読取上限・判断規則・コードを登録して監査しました。局所学習による時間履歴の識別成果は保持しますが、十分な履歴・スカラー対照を超える予測効果と総コスト優位は未確認です。実更新数は補充対照も含めて一致し、未計測費用はゼロとみなしません。333テストと別プロセスでの完全再現が成功し、353件の既存証跡・条件・負の結果・封印を維持しました。次は既存合成入力だけで、共有観測器・遅延結果・待機・期限切れ処理を公平に計上する契約を事前登録します。
+日本語: 既知結果の集計証跡19件だけを対象に、読取上限・判断規則・コードを登録して監査しました。局所学習による時間履歴の識別成果は保持しますが、十分な履歴・スカラー対照を超える予測効果と総コスト優位は未確認です。実更新数は補充対照も含めて一致し、未計測費用はゼロとみなしません。本監査の333テストと完全再現で353件の証跡を保持しました。続く合成入力の計上契約も48ケースで成立し、356テストと再現が成功しました。次は同じ入力で計測処理と実行経路を分離する条件を事前登録します。
 
-简体中文：仅针对19份已知结果的汇总证据，在注册读取预算、判断规则和代码后完成审计。保留局部学习识别时间历史的成果，但尚未证明相对充分历史和标量对照的预测增益或完整成本优势。包含补充对照的真实更新次数一致，未测成本不视为零。333项测试与新进程精确重放通过，保留353项既有证据、条件、负结果和封存。下一步仅用已有合成输入，预注册公平核算共享观测器、延迟结果、空闲和过期处理的契约。
+简体中文：仅针对19份已知结果的汇总证据，在注册读取预算、判断规则和代码后完成审计。保留局部学习识别时间历史的成果，但尚未证明相对充分历史和标量对照的预测增益或完整成本优势。包含补充对照的真实更新次数一致，未测成本不视为零。本审计的333项测试与精确重放保留353项证据。后续合成输入核算契约的48个案例也已通过，356项测试与重放成功。下一步预注册相同输入下测量工具与执行路径分离的条件。
