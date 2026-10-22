@@ -82,7 +82,9 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 -m pytest -q -o cache_dir=wor
 
 🟢 [Done] The [input-only work-accounting contract](R2_EVENT_WORK_ACCOUNTING.md) subsequently passes all 48 finite synthetic cases, including shared observer charges, delayed/late/missing receipts, idle expiry and exact event-driven scalar equivalence. Zero learning/scoring; 356 related tests and fresh-process replay preserve negatives and seals.
 
-🟠 [Next] Preregister instrumentation separation on those same synthetic inputs, preserving causal traces and specifying control/transient-memory scope. No new source search, re-scoring, timing-superiority claim or R3 optimization.
+🟢 [Done] The subsequent [instrumentation-separation contract](R2_EVENT_WORK_SEPARATION.md) now passes the same 48 cases: 1,232 state comparisons including teardown, prior receipt hashes, receipt-only execution, 381 related tests and exact replay. All 363 earlier artifacts/code pins, negatives and seals are preserved. Returned buffers/control are counted; intra-call peaks remain unknown.
+
+🟠 [Next] Preregister an isolated allocation-diagnostic pass on the same synthetic inputs to investigate intra-call temporaries, with executor/returned-buffer/harness ownership and interpreter-tracing limits explicit. No new scores, source search, timing-superiority claim, task/threshold changes or R3 optimization; retain negatives and seals.
 
 ⭕️ [Pending] New payload acquisition and independent SNN-usefulness/energy claims require a compatible independently justified source/task contract, scoped access/size/coverage metadata and the original preregistered causal/quality/resource gates. SPHERE/ECO documented-stream exclusions are closed; no automatic metadata retry or CASAS expansion.
 

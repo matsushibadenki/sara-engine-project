@@ -331,15 +331,17 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Input-only event-work accounting](R2_EVENT_WORK_ACCOUNTING.md) selects the contract before implementation and verifies all 48 fixed cases. The shared observer runs once physically and is charged fully to each arm. Existing arrival-indexed neurons and an independent event-driven scalar recurrence have identical state/receipt traces: 224 backend steps and timer pops per arm, including 112 expiries and 112 stale timers. Extending idle to one billion units adds no operation work. Learning/scoring remains zero; 356 tests and exact fresh-process replay preserve 358 prior artifacts and code pins. The sampled explicit-neuron graph is larger; CPU, energy and transient peaks are unknown, so no SNN advantage is established.
 
-🟠 [Next] The authoritative queue requires input-only instrumentation separation on the same synthetic templates: retain causal backend/receipt traces while separating journal/object-graph probes from execution and defining control/transient-memory scope. No retuning, source search, new learner scores, timing-superiority claims or R3 optimization. Earlier dated Next notes above are historical prerequisites, superseded by this queue.
+🟢 [Done] [Input-only instrumentation separation](R2_EVENT_WORK_SEPARATION.md): selection and code registered before finite execution; all 48 cases match frozen-reference state at 1,184 operation and 48 teardown boundaries, prior receipt hashes and receipt-only execution. Shared observation remains fully charged to both arms. Returned buffers/control objects are included in external graph samples; intra-call byte peaks remain unknown. 381 related tests and exact fresh-process replay preserve 363 prior artifacts/code pins. Zero learning/scoring; no SNN advantage or seal opening.
+
+🟠 [Next] Preregister an isolated allocation-diagnostic pass on the same synthetic inputs to investigate intra-call temporaries, with executor/returned-buffer/harness ownership and interpreter-tracing limits explicit. No new scores, source search, timing-superiority claim, task/threshold changes or R3 optimization; retain negatives and seals. Earlier dated Next notes above are historical prerequisites, superseded by this queue.
 
 ⭕️ [Pending] Independent usefulness, physical energy, source acquisition, structural growth and production promotion retain their original gates. No ANN-exclusive capability is established by sparse scheduling or local learning alone.
 
-日本語: 既存19件の監査に続き、既存合成入力の計上契約も実装前に登録しました。48ケースで共有処理・遅延結果・待機・期限切れの計上とスカラー一致が成立し、356テストと完全再現で条件・負の結果・封印を保持しました。速度・電力優位は未確認です。次は同じ入力で診断計測を実行経路から分離する条件を固定します。
+日本語: 既存19件の監査と合成入力の計上契約に続き、計測分離を事前登録して検証しました。同じ48ケースで1,184操作境界と48終了境界の状態、既存配送記録、診断なし実行が一致し、381テストと完全再現で363証跡・条件・負の結果・封印を保持しました。一時メモリは返却バッファを計上し、関数内の割当ピークは未知のままです。SNN固有の優位は未確認で、次は同じ入力の隔離割当診断を事前登録します。
 
-简体中文：在19份既有证据审计后，于实现前注册已有合成输入的核算契约。48个案例通过共享处理、延迟结果、空闲、过期处理与标量一致性检查，356项测试和精确重放保留原条件、负结果与封存。速度及能耗优势仍未确认。下一步固定相同输入下诊断测量与执行路径分离的条件。
+简体中文：在既有19份证据审计和合成核算后，预注册并验证测量分离。相同48个案例在1,184个操作边界与48个清理边界的状态、既有回执及无诊断执行结果一致。381项测试与精确重放保留363项证据、原条件、负结果和封存。内存范围包含返回缓冲区，函数内分配峰值仍未知。SNN独有优势尚未确认；下一步预注册相同输入的隔离分配诊断。
 
-🟠 [Next] Preregister a bounded read-only R2 decision audit from existing result/work receipts: a causal temporal/local mechanism beyond sufficient observers/scalar controls, complete active-event/observer/maintenance costs, and the evidence needed for an SNN implementation benefit. No new search/acquisition, re-scoring, tuning, current-task change or R3 optimization.
+🟢 [Done] The previously queued bounded read-only R2 decision audit is complete; its retained findings and subsequent accounting/separation checks are recorded above. The allocation-diagnostic contract is now the authoritative next step. No new search/acquisition, re-scoring, tuning, current-task change or R3 optimization is authorized by these results.
 
 ⭕️ [Pending] New acquisition and independent usefulness/resource evidence require a compatible justified source/task contract and all original input, opposing-history, class/support, state/write-budget and quality gates. The SPHERE/ECO documented-stream exclusions are closed; no automatic retries or CASAS additions. Sparse event scheduling/local updates can be shared with non-spiking implementations, so actual matched-control evidence remains essential.
 
@@ -371,6 +373,6 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：已预注册并验证仅时间戳的安全上界，三个既有训练窗口均不可能达到固定目标；不重读事件值或标签，保留既有负结果与封存。
 
-日本語: 続くSPHERE/ECOの有限メタデータ監査も事前登録し、公表ストリームが元のKitchen ON定義に不適合と判断して終了しました。未確定のPIR期間・密度・サイズ・利用条件を残し、本体取得・候補追加・条件緩和・封印解除はしません。さらに既存19証跡の監査と合成入力48ケースの計上検証を完了し、356テストと別プロセス再現で負の結果を保持しました。次は同じ合成入力で計測処理と実行経路を分離する条件を事前登録します。
+日本語: 続くSPHERE/ECOの有限メタデータ監査も事前登録し、公表ストリームが元のKitchen ON定義に不適合と判断して終了しました。未確定のPIR期間・密度・サイズ・利用条件を残し、本体取得・候補追加・条件緩和・封印解除はしません。さらに既存19証跡の監査と合成入力48ケースの計上検証を完了し、356テストと別プロセス再現で負の結果を保持しました。続く計測分離も48ケース・381テストで成立し、次は同じ入力の隔離割当診断を事前登録します。
 
-简体中文：另行预注册并完成SPHERE/ECO有限元数据审计，判定其已描述数据流不符合原Kitchen ON定义并终止。保留PIR期间、密度、体积和使用条件的未知项，不采集本体、不扩充候选、不放宽条件或解除封存。随后完成19份既有证据审计和48个合成输入案例的核算验证，356项测试与新进程重放保留原负结果。下一步预注册相同合成输入下测量工具与执行路径分离的条件。
+简体中文：另行预注册并完成SPHERE/ECO有限元数据审计，判定其已描述数据流不符合原Kitchen ON定义并终止。保留PIR期间、密度、体积和使用条件的未知项，不采集本体、不扩充候选、不放宽条件或解除封存。随后完成19份既有证据审计和48个合成输入案例的核算验证，356项测试与新进程重放保留原负结果。后续测量分离也通过48个案例和381项测试，下一步预注册相同输入的隔离分配诊断。

@@ -74,10 +74,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 
 🟢 [Done] The subsequent [input-only accounting contract](R2_EVENT_WORK_ACCOUNTING.md) was selected before implementation and passes all 48 finite cases, with exact neuron/scalar receipt/state traces, shared-charge reconciliation and expiry during idle. Zero learning/scoring, 356 related tests and exact fresh-process replay preserve earlier evidence and seals. No speed/energy superiority follows.
 
-🟠 [Next] Preregister input-only instrumentation separation on the same synthetic templates, preserving causal traces while moving diagnostic journal/object-graph probes out of the execution path and specifying control/transient-memory scope. No new scoring/search or R3 optimization.
+🟢 [Done] The subsequent [instrumentation-separation contract](R2_EVENT_WORK_SEPARATION.md) now passes the same 48 cases: 1,232 state comparisons including teardown, prior receipt hashes, receipt-only execution, 381 related tests and exact replay. All 363 earlier artifacts/code pins, negatives and seals are preserved. Returned buffers/control are counted; intra-call peaks remain unknown.
+
+🟠 [Next] Preregister an isolated allocation-diagnostic pass on the same synthetic inputs to investigate intra-call temporaries, with executor/returned-buffer/harness ownership and interpreter-tracing limits explicit. No new scores, source search, timing-superiority claim, task/threshold changes or R3 optimization; retain negatives and seals.
 
 ⭕️ [Pending] Independent useful-system/energy evidence and new-source acquisition retain all original prerequisites and seals. No new compatible source is certified, and no metadata retry or CASAS expansion is authorized.
 
-日本語: 既知結果の集計証跡19件だけを対象に、読取上限・判断規則・コードを登録して監査しました。局所学習による時間履歴の識別成果は保持しますが、十分な履歴・スカラー対照を超える予測効果と総コスト優位は未確認です。実更新数は補充対照も含めて一致し、未計測費用はゼロとみなしません。本監査の333テストと完全再現で353件の証跡を保持しました。続く合成入力の計上契約も48ケースで成立し、356テストと再現が成功しました。次は同じ入力で計測処理と実行経路を分離する条件を事前登録します。
+日本語: 既知結果の集計証跡19件だけを対象に、読取上限・判断規則・コードを登録して監査しました。局所学習による時間履歴の識別成果は保持しますが、十分な履歴・スカラー対照を超える予測効果と総コスト優位は未確認です。実更新数は補充対照も含めて一致し、未計測費用はゼロとみなしません。本監査の333テストと完全再現で353件の証跡を保持しました。続く合成入力の計上契約も48ケースで成立し、356テストと再現が成功しました。続く計測分離も48ケース・381テストで成立し、次は同じ入力の隔離割当診断を事前登録します。
 
-简体中文：仅针对19份已知结果的汇总证据，在注册读取预算、判断规则和代码后完成审计。保留局部学习识别时间历史的成果，但尚未证明相对充分历史和标量对照的预测增益或完整成本优势。包含补充对照的真实更新次数一致，未测成本不视为零。本审计的333项测试与精确重放保留353项证据。后续合成输入核算契约的48个案例也已通过，356项测试与重放成功。下一步预注册相同输入下测量工具与执行路径分离的条件。
+简体中文：仅针对19份已知结果的汇总证据，在注册读取预算、判断规则和代码后完成审计。保留局部学习识别时间历史的成果，但尚未证明相对充分历史和标量对照的预测增益或完整成本优势。包含补充对照的真实更新次数一致，未测成本不视为零。本审计的333项测试与精确重放保留353项证据。后续合成输入核算契约的48个案例也已通过，356项测试与重放成功。后续测量分离也通过48个案例和381项测试，下一步预注册相同输入的隔离分配诊断。

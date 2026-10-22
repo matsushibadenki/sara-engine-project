@@ -65,10 +65,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python scripts
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_event_work.py
 ```
 
-🟠 [Next] Preregister an input-only **instrumentation-separation check** on the same fixed synthetic templates. Verify identical causal backend/receipt semantics with diagnostic journal and object-graph probes separated from the execution path, and make control/transient-memory scope explicit. This prepares a valid measurement boundary; it does not start new learner scoring, source search, timing-superiority claims or R3 optimization.
+🟢 [Done] The subsequent [instrumentation-separation contract](R2_EVENT_WORK_SEPARATION.md) now passes the same 48 cases: 1,232 state comparisons including teardown, prior receipt hashes, receipt-only execution, 381 related tests and exact replay. All 363 earlier artifacts/code pins, negatives and seals are preserved. Returned buffers/control are counted; intra-call peaks remain unknown.
+
+🟠 [Next] Preregister an isolated allocation-diagnostic pass on the same synthetic inputs to investigate intra-call temporaries, with executor/returned-buffer/harness ownership and interpreter-tracing limits explicit. No new scores, source search, timing-superiority claim, task/threshold changes or R3 optimization; retain negatives and seals.
 
 ⭕️ [Pending] Independent usefulness, full deployment CPU/transient memory and physical energy evidence remain unestablished. New acquisition, original test opening and production promotion retain their original prerequisites.
 
-日本語: 既存6合成列と4種の結果配送、2種の終了時刻を実装前に登録し、48ケースで共有観測器・遅延結果・待機・期限切れの計上契約が成立しました。各方式224回のバックエンド更新、224件のタイマー消費を行い、112件の失効と112件の解決済みタイマー処理も計上しました。10億単位まで待機を延ばしても両方式の処理回数と状態列は変わりません。356テストと別プロセス再現が成功し、358件の既存証跡・条件・負の結果・封印を保持しました。学習・採点は0で、速度・電力優位は未確認です。次は同じ入力で計測処理を実行経路から分離する契約を固定します。
+日本語: 既存6合成列と4種の結果配送、2種の終了時刻を実装前に登録し、48ケースで共有観測器・遅延結果・待機・期限切れの計上契約が成立しました。各方式224回のバックエンド更新、224件のタイマー消費を行い、112件の失効と112件の解決済みタイマー処理も計上しました。10億単位まで待機を延ばしても両方式の処理回数と状態列は変わりません。356テストと別プロセス再現が成功し、358件の既存証跡・条件・負の結果・封印を保持しました。学習・採点は0で、速度・電力優位は未確認です。続く計測分離も48ケース・381テストで成立し、次は同じ入力の隔離割当診断を事前登録します。
 
-简体中文：在实现前固定已有6条合成输入、4类结果配送和2个结束时刻，48个案例均通过共享观测器、延迟结果、空闲和过期处理的核算契约。每个实现执行224次后端更新并消耗224个定时器，包含112次过期和112次已完成回执的残留定时器处理。将空闲延长至十亿单位不会改变两种实现的操作次数或状态轨迹。356项测试与新进程精确重放通过，保留358项既有证据、条件、负结果和封存。学习与评分为0，尚未证明速度或能耗优势。下一步用相同输入固定测量工具与执行路径分离的契约。
+简体中文：在实现前固定已有6条合成输入、4类结果配送和2个结束时刻，48个案例均通过共享观测器、延迟结果、空闲和过期处理的核算契约。每个实现执行224次后端更新并消耗224个定时器，包含112次过期和112次已完成回执的残留定时器处理。将空闲延长至十亿单位不会改变两种实现的操作次数或状态轨迹。356项测试与新进程精确重放通过，保留358项既有证据、条件、负结果和封存。学习与评分为0，尚未证明速度或能耗优势。后续测量分离也通过48个案例和381项测试，下一步预注册相同输入的隔离分配诊断。
