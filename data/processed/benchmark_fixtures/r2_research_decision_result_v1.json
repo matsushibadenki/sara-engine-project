@@ -1,0 +1,2666 @@
+{
+  "audit_learning_writes": 0,
+  "decision": "no_existing_receipt_licenses_snn_predictive_or_resource_advantage",
+  "identifiable_component": "Bounded causal history plus local delayed readout can identify controlled temporal contrasts; existing sufficient history/scalar controls recover that information.",
+  "learning_rows": [
+    {
+      "complete_work_accounting": false,
+      "component_identification_passed": true,
+      "component_scope": "Controlled first-order shared-observer local learning",
+      "id": "shared_observer_learning_result_receipt_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "backend_increment_passed": false,
+        "component_learning_passed": true,
+        "execution_integrity_passed": true
+      },
+      "scalar_equivalence": null,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": null
+    },
+    {
+      "complete_work_accounting": false,
+      "component_identification_passed": false,
+      "component_scope": "Controlled middle-order and gap local learning",
+      "id": "temporal_boundary_learning_result_receipt_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "component_learning_passed": false,
+        "execution_integrity_passed": true,
+        "strong_reference_superiority": false
+      },
+      "scalar_equivalence": null,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": null
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Independent prospective appliance comparison",
+      "id": "appliances_learning_result_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "actual_updates_equal": true,
+        "all_writes_changed": true,
+        "checkpoint_replay": true,
+        "ordinal_gap_equivalence": true,
+        "quality": false,
+        "shuffled_outcome": false,
+        "snn_increment": false,
+        "state_and_credit": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/analog/training/work/neuron_or_analog_steps",
+              "scope": "analog:training",
+              "unit": "backend_steps",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/analog/training/work/spikes",
+              "scope": "analog:training",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/analog/development/work/neuron_or_analog_steps",
+              "scope": "analog:development",
+              "unit": "backend_steps",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/analog/development/work/spikes",
+              "scope": "analog:development",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/histogram/training/work/neuron_or_analog_steps",
+              "scope": "histogram:training",
+              "unit": "backend_steps",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/histogram/training/work/spikes",
+              "scope": "histogram:training",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/histogram/development/work/neuron_or_analog_steps",
+              "scope": "histogram:development",
+              "unit": "backend_steps",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/histogram/development/work/spikes",
+              "scope": "histogram:development",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/joint/training/work/neuron_or_analog_steps",
+              "scope": "joint:training",
+              "unit": "backend_steps",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/joint/training/work/spikes",
+              "scope": "joint:training",
+              "unit": "spikes",
+              "value": 33528
+            },
+            {
+              "pointer": "/arms/joint/development/work/neuron_or_analog_steps",
+              "scope": "joint:development",
+              "unit": "backend_steps",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/joint/development/work/spikes",
+              "scope": "joint:development",
+              "unit": "spikes",
+              "value": 22634
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/work/neuron_or_analog_steps",
+              "scope": "joint_shuffled:training",
+              "unit": "backend_steps",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/work/spikes",
+              "scope": "joint_shuffled:training",
+              "unit": "spikes",
+              "value": 33528
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/work/neuron_or_analog_steps",
+              "scope": "joint_shuffled:development",
+              "unit": "backend_steps",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/work/spikes",
+              "scope": "joint_shuffled:development",
+              "unit": "spikes",
+              "value": 22634
+            },
+            {
+              "pointer": "/arms/ordinal/training/work/neuron_or_analog_steps",
+              "scope": "ordinal:training",
+              "unit": "backend_steps",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/ordinal/training/work/spikes",
+              "scope": "ordinal:training",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/ordinal/development/work/neuron_or_analog_steps",
+              "scope": "ordinal:development",
+              "unit": "backend_steps",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/ordinal/development/work/spikes",
+              "scope": "ordinal:development",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/snapshot/training/work/neuron_or_analog_steps",
+              "scope": "snapshot:training",
+              "unit": "backend_steps",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/snapshot/training/work/spikes",
+              "scope": "snapshot:training",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/snapshot/development/work/neuron_or_analog_steps",
+              "scope": "snapshot:development",
+              "unit": "backend_steps",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/snapshot/development/work/spikes",
+              "scope": "snapshot:development",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/transition_gap/training/work/neuron_or_analog_steps",
+              "scope": "transition_gap:training",
+              "unit": "backend_steps",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/transition_gap/training/work/spikes",
+              "scope": "transition_gap:training",
+              "unit": "spikes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/transition_gap/development/work/neuron_or_analog_steps",
+              "scope": "transition_gap:development",
+              "unit": "backend_steps",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/transition_gap/development/work/spikes",
+              "scope": "transition_gap:development",
+              "unit": "spikes",
+              "value": 0
+            }
+          ]
+        },
+        "changed_local_writes": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/analog/training/actual_counter_writes",
+              "scope": "analog:training",
+              "unit": "changed_counter_writes",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/analog/development/actual_counter_writes",
+              "scope": "analog:development",
+              "unit": "changed_counter_writes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/histogram/training/actual_counter_writes",
+              "scope": "histogram:training",
+              "unit": "changed_counter_writes",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/histogram/development/actual_counter_writes",
+              "scope": "histogram:development",
+              "unit": "changed_counter_writes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/joint/training/actual_counter_writes",
+              "scope": "joint:training",
+              "unit": "changed_counter_writes",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/joint/development/actual_counter_writes",
+              "scope": "joint:development",
+              "unit": "changed_counter_writes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/actual_counter_writes",
+              "scope": "joint_shuffled:training",
+              "unit": "changed_counter_writes",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/actual_counter_writes",
+              "scope": "joint_shuffled:development",
+              "unit": "changed_counter_writes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/ordinal/training/actual_counter_writes",
+              "scope": "ordinal:training",
+              "unit": "changed_counter_writes",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/ordinal/development/actual_counter_writes",
+              "scope": "ordinal:development",
+              "unit": "changed_counter_writes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/snapshot/training/actual_counter_writes",
+              "scope": "snapshot:training",
+              "unit": "changed_counter_writes",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/snapshot/development/actual_counter_writes",
+              "scope": "snapshot:development",
+              "unit": "changed_counter_writes",
+              "value": 0
+            },
+            {
+              "pointer": "/arms/transition_gap/training/actual_counter_writes",
+              "scope": "transition_gap:training",
+              "unit": "changed_counter_writes",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/transition_gap/development/actual_counter_writes",
+              "scope": "transition_gap:development",
+              "unit": "changed_counter_writes",
+              "value": 0
+            }
+          ]
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/analog/training/peak_pending",
+              "scope": "analog:training",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/analog/development/peak_pending",
+              "scope": "analog:development",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/histogram/training/peak_pending",
+              "scope": "histogram:training",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/histogram/development/peak_pending",
+              "scope": "histogram:development",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/joint/training/peak_pending",
+              "scope": "joint:training",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/joint/development/peak_pending",
+              "scope": "joint:development",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/peak_pending",
+              "scope": "joint_shuffled:training",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/peak_pending",
+              "scope": "joint_shuffled:development",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/ordinal/training/peak_pending",
+              "scope": "ordinal:training",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/ordinal/development/peak_pending",
+              "scope": "ordinal:development",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/snapshot/training/peak_pending",
+              "scope": "snapshot:training",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/snapshot/development/peak_pending",
+              "scope": "snapshot:development",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/transition_gap/training/peak_pending",
+              "scope": "transition_gap:training",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            },
+            {
+              "pointer": "/arms/transition_gap/development/peak_pending",
+              "scope": "transition_gap:development",
+              "unit": "peak_pending_receipts",
+              "value": 3
+            }
+          ]
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/analog/training/state_bound_bytes",
+              "scope": "analog:training",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/analog/training/measured_readout_object_bytes_at_end",
+              "scope": "analog:training",
+              "unit": "readout_object_bytes",
+              "value": 271274
+            },
+            {
+              "pointer": "/arms/analog/development/state_bound_bytes",
+              "scope": "analog:development",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/analog/development/measured_readout_object_bytes_at_end",
+              "scope": "analog:development",
+              "unit": "readout_object_bytes",
+              "value": 271274
+            },
+            {
+              "pointer": "/arms/histogram/training/state_bound_bytes",
+              "scope": "histogram:training",
+              "unit": "conservative_bound_bytes",
+              "value": 470016
+            },
+            {
+              "pointer": "/arms/histogram/training/measured_readout_object_bytes_at_end",
+              "scope": "histogram:training",
+              "unit": "readout_object_bytes",
+              "value": 131566
+            },
+            {
+              "pointer": "/arms/histogram/development/state_bound_bytes",
+              "scope": "histogram:development",
+              "unit": "conservative_bound_bytes",
+              "value": 470016
+            },
+            {
+              "pointer": "/arms/histogram/development/measured_readout_object_bytes_at_end",
+              "scope": "histogram:development",
+              "unit": "readout_object_bytes",
+              "value": 131566
+            },
+            {
+              "pointer": "/arms/joint/training/state_bound_bytes",
+              "scope": "joint:training",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/joint/training/measured_readout_object_bytes_at_end",
+              "scope": "joint:training",
+              "unit": "readout_object_bytes",
+              "value": 271274
+            },
+            {
+              "pointer": "/arms/joint/development/state_bound_bytes",
+              "scope": "joint:development",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/joint/development/measured_readout_object_bytes_at_end",
+              "scope": "joint:development",
+              "unit": "readout_object_bytes",
+              "value": 271274
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/state_bound_bytes",
+              "scope": "joint_shuffled:training",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/measured_readout_object_bytes_at_end",
+              "scope": "joint_shuffled:training",
+              "unit": "readout_object_bytes",
+              "value": 270854
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/state_bound_bytes",
+              "scope": "joint_shuffled:development",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/measured_readout_object_bytes_at_end",
+              "scope": "joint_shuffled:development",
+              "unit": "readout_object_bytes",
+              "value": 270854
+            },
+            {
+              "pointer": "/arms/ordinal/training/state_bound_bytes",
+              "scope": "ordinal:training",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/ordinal/training/measured_readout_object_bytes_at_end",
+              "scope": "ordinal:training",
+              "unit": "readout_object_bytes",
+              "value": 271274
+            },
+            {
+              "pointer": "/arms/ordinal/development/state_bound_bytes",
+              "scope": "ordinal:development",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/ordinal/development/measured_readout_object_bytes_at_end",
+              "scope": "ordinal:development",
+              "unit": "readout_object_bytes",
+              "value": 271274
+            },
+            {
+              "pointer": "/arms/snapshot/training/state_bound_bytes",
+              "scope": "snapshot:training",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/snapshot/training/measured_readout_object_bytes_at_end",
+              "scope": "snapshot:training",
+              "unit": "readout_object_bytes",
+              "value": 268446
+            },
+            {
+              "pointer": "/arms/snapshot/development/state_bound_bytes",
+              "scope": "snapshot:development",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/snapshot/development/measured_readout_object_bytes_at_end",
+              "scope": "snapshot:development",
+              "unit": "readout_object_bytes",
+              "value": 268446
+            },
+            {
+              "pointer": "/arms/transition_gap/training/state_bound_bytes",
+              "scope": "transition_gap:training",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/transition_gap/training/measured_readout_object_bytes_at_end",
+              "scope": "transition_gap:training",
+              "unit": "readout_object_bytes",
+              "value": 271274
+            },
+            {
+              "pointer": "/arms/transition_gap/development/state_bound_bytes",
+              "scope": "transition_gap:development",
+              "unit": "conservative_bound_bytes",
+              "value": 1006080
+            },
+            {
+              "pointer": "/arms/transition_gap/development/measured_readout_object_bytes_at_end",
+              "scope": "transition_gap:development",
+              "unit": "readout_object_bytes",
+              "value": 271274
+            }
+          ]
+        },
+        "prediction_readout": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/analog/training/prediction_route_visits",
+              "scope": "analog:training",
+              "unit": "route_visits",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/analog/development/prediction_route_visits",
+              "scope": "analog:development",
+              "unit": "route_visits",
+              "value": 177040
+            },
+            {
+              "pointer": "/arms/histogram/training/prediction_route_visits",
+              "scope": "histogram:training",
+              "unit": "route_visits",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/histogram/development/prediction_route_visits",
+              "scope": "histogram:development",
+              "unit": "route_visits",
+              "value": 177040
+            },
+            {
+              "pointer": "/arms/joint/training/prediction_route_visits",
+              "scope": "joint:training",
+              "unit": "route_visits",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/joint/development/prediction_route_visits",
+              "scope": "joint:development",
+              "unit": "route_visits",
+              "value": 177040
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/prediction_route_visits",
+              "scope": "joint_shuffled:training",
+              "unit": "route_visits",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/prediction_route_visits",
+              "scope": "joint_shuffled:development",
+              "unit": "route_visits",
+              "value": 177040
+            },
+            {
+              "pointer": "/arms/ordinal/training/prediction_route_visits",
+              "scope": "ordinal:training",
+              "unit": "route_visits",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/ordinal/development/prediction_route_visits",
+              "scope": "ordinal:development",
+              "unit": "route_visits",
+              "value": 177040
+            },
+            {
+              "pointer": "/arms/snapshot/training/prediction_route_visits",
+              "scope": "snapshot:training",
+              "unit": "route_visits",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/snapshot/development/prediction_route_visits",
+              "scope": "snapshot:development",
+              "unit": "route_visits",
+              "value": 177040
+            },
+            {
+              "pointer": "/arms/transition_gap/training/prediction_route_visits",
+              "scope": "transition_gap:training",
+              "unit": "route_visits",
+              "value": 282400
+            },
+            {
+              "pointer": "/arms/transition_gap/development/prediction_route_visits",
+              "scope": "transition_gap:development",
+              "unit": "route_visits",
+              "value": 177040
+            }
+          ]
+        },
+        "replay_instrumentation": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/analog/training/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "analog:training",
+              "unit": "cpu_seconds",
+              "value": 0.5324469999999999
+            },
+            {
+              "pointer": "/arms/analog/development/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "analog:development",
+              "unit": "cpu_seconds",
+              "value": 0.3231320000000002
+            },
+            {
+              "pointer": "/arms/histogram/training/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "histogram:training",
+              "unit": "cpu_seconds",
+              "value": 0.40044899999999983
+            },
+            {
+              "pointer": "/arms/histogram/development/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "histogram:development",
+              "unit": "cpu_seconds",
+              "value": 0.22723300000000002
+            },
+            {
+              "pointer": "/arms/joint/training/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "joint:training",
+              "unit": "cpu_seconds",
+              "value": 1.0592640000000006
+            },
+            {
+              "pointer": "/arms/joint/development/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "joint:development",
+              "unit": "cpu_seconds",
+              "value": 0.6556600000000001
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "joint_shuffled:training",
+              "unit": "cpu_seconds",
+              "value": 1.0278419999999997
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "joint_shuffled:development",
+              "unit": "cpu_seconds",
+              "value": 0.6359709999999996
+            },
+            {
+              "pointer": "/arms/ordinal/training/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "ordinal:training",
+              "unit": "cpu_seconds",
+              "value": 0.37984399999999985
+            },
+            {
+              "pointer": "/arms/ordinal/development/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "ordinal:development",
+              "unit": "cpu_seconds",
+              "value": 0.2160289999999998
+            },
+            {
+              "pointer": "/arms/snapshot/training/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "snapshot:training",
+              "unit": "cpu_seconds",
+              "value": 0.36453899999999995
+            },
+            {
+              "pointer": "/arms/snapshot/development/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "snapshot:development",
+              "unit": "cpu_seconds",
+              "value": 0.22662899999999997
+            },
+            {
+              "pointer": "/arms/transition_gap/training/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "transition_gap:training",
+              "unit": "cpu_seconds",
+              "value": 0.4222929999999998
+            },
+            {
+              "pointer": "/arms/transition_gap/development/cpu_seconds_including_reference_and_instrumentation",
+              "scope": "transition_gap:development",
+              "unit": "cpu_seconds",
+              "value": 0.24349699999999963
+            }
+          ]
+        },
+        "shared_observer_projection": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/analog/training/work/history_visits",
+              "scope": "analog:training",
+              "unit": "history_visits",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/analog/development/work/history_visits",
+              "scope": "analog:development",
+              "unit": "history_visits",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/histogram/training/work/history_visits",
+              "scope": "histogram:training",
+              "unit": "history_visits",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/histogram/development/work/history_visits",
+              "scope": "histogram:development",
+              "unit": "history_visits",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/joint/training/work/history_visits",
+              "scope": "joint:training",
+              "unit": "history_visits",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/joint/development/work/history_visits",
+              "scope": "joint:development",
+              "unit": "history_visits",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/joint_shuffled/training/work/history_visits",
+              "scope": "joint_shuffled:training",
+              "unit": "history_visits",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/joint_shuffled/development/work/history_visits",
+              "scope": "joint_shuffled:development",
+              "unit": "history_visits",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/ordinal/training/work/history_visits",
+              "scope": "ordinal:training",
+              "unit": "history_visits",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/ordinal/development/work/history_visits",
+              "scope": "ordinal:development",
+              "unit": "history_visits",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/snapshot/training/work/history_visits",
+              "scope": "snapshot:training",
+              "unit": "history_visits",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/snapshot/development/work/history_visits",
+              "scope": "snapshot:development",
+              "unit": "history_visits",
+              "value": 159336
+            },
+            {
+              "pointer": "/arms/transition_gap/training/work/history_visits",
+              "scope": "transition_gap:training",
+              "unit": "history_visits",
+              "value": 254160
+            },
+            {
+              "pointer": "/arms/transition_gap/development/work/history_visits",
+              "scope": "transition_gap:development",
+              "unit": "history_visits",
+              "value": 159336
+            }
+          ]
+        }
+      },
+      "write_parity": {
+        "actual_changed_writes": {
+          "analog": 282400,
+          "histogram": 282400,
+          "joint": 282400,
+          "joint_shuffled": 282400,
+          "ordinal": 282400,
+          "snapshot": 282400,
+          "transition_gap": 282400
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "analog": 0,
+          "histogram": 0,
+          "joint": 0,
+          "joint_shuffled": 0,
+          "ordinal": 0,
+          "snapshot": 0,
+          "transition_gap": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_identification_passed": true,
+      "component_scope": "Post-support training-only posterior identification",
+      "id": "room_local_identification_result_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {},
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/age/changed_writes",
+              "scope": "age",
+              "unit": "changed_counter_writes",
+              "value": 10400
+            },
+            {
+              "pointer": "/arms/current/changed_writes",
+              "scope": "current",
+              "unit": "changed_counter_writes",
+              "value": 10400
+            },
+            {
+              "pointer": "/arms/current_fine/changed_writes",
+              "scope": "current_fine",
+              "unit": "changed_counter_writes",
+              "value": 10400
+            },
+            {
+              "pointer": "/arms/histogram/changed_writes",
+              "scope": "histogram",
+              "unit": "changed_counter_writes",
+              "value": 10400
+            },
+            {
+              "pointer": "/arms/scalar_age/changed_writes",
+              "scope": "scalar_age",
+              "unit": "changed_counter_writes",
+              "value": 10400
+            },
+            {
+              "pointer": "/arms/sequence/changed_writes",
+              "scope": "sequence",
+              "unit": "changed_counter_writes",
+              "value": 10400
+            }
+          ]
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/age/delivered_outcomes",
+              "scope": "age",
+              "unit": "delivered_outcomes",
+              "value": 5200
+            },
+            {
+              "pointer": "/arms/current/delivered_outcomes",
+              "scope": "current",
+              "unit": "delivered_outcomes",
+              "value": 5200
+            },
+            {
+              "pointer": "/arms/current_fine/delivered_outcomes",
+              "scope": "current_fine",
+              "unit": "delivered_outcomes",
+              "value": 5200
+            },
+            {
+              "pointer": "/arms/histogram/delivered_outcomes",
+              "scope": "histogram",
+              "unit": "delivered_outcomes",
+              "value": 5200
+            },
+            {
+              "pointer": "/arms/scalar_age/delivered_outcomes",
+              "scope": "scalar_age",
+              "unit": "delivered_outcomes",
+              "value": 5200
+            },
+            {
+              "pointer": "/arms/sequence/delivered_outcomes",
+              "scope": "sequence",
+              "unit": "delivered_outcomes",
+              "value": 5200
+            }
+          ]
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/arms/age/routes",
+              "scope": "age",
+              "unit": "routes",
+              "value": 865
+            },
+            {
+              "pointer": "/arms/current/routes",
+              "scope": "current",
+              "unit": "routes",
+              "value": 376
+            },
+            {
+              "pointer": "/arms/current_fine/routes",
+              "scope": "current_fine",
+              "unit": "routes",
+              "value": 2138
+            },
+            {
+              "pointer": "/arms/histogram/routes",
+              "scope": "histogram",
+              "unit": "routes",
+              "value": 1330
+            },
+            {
+              "pointer": "/arms/scalar_age/routes",
+              "scope": "scalar_age",
+              "unit": "routes",
+              "value": 865
+            },
+            {
+              "pointer": "/arms/sequence/routes",
+              "scope": "sequence",
+              "unit": "routes",
+              "value": 1878
+            }
+          ]
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": {
+        "actual_changed_writes": {
+          "age": 10400,
+          "current": 10400,
+          "current_fine": 10400,
+          "histogram": 10400,
+          "scalar_age": 10400,
+          "sequence": 10400
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": null,
+        "frozen_period_zero": null
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Post-support HH102 diagnostic",
+      "id": "casas_notification_diagnostic_result_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": false,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/constant_gap/changed_writes",
+              "scope": "constant_gap",
+              "unit": "changed_counter_writes",
+              "value": 18192
+            },
+            {
+              "pointer": "/comparison/arms/current/changed_writes",
+              "scope": "current",
+              "unit": "changed_counter_writes",
+              "value": 18192
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/changed_writes",
+              "scope": "current_fine",
+              "unit": "changed_counter_writes",
+              "value": 18192
+            },
+            {
+              "pointer": "/comparison/arms/histogram/changed_writes",
+              "scope": "histogram",
+              "unit": "changed_counter_writes",
+              "value": 18192
+            },
+            {
+              "pointer": "/comparison/arms/joint/changed_writes",
+              "scope": "joint",
+              "unit": "changed_counter_writes",
+              "value": 18192
+            },
+            {
+              "pointer": "/comparison/arms/scalar_joint/changed_writes",
+              "scope": "scalar_joint",
+              "unit": "changed_counter_writes",
+              "value": 18192
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_outcome/changed_writes",
+              "scope": "shuffled_outcome",
+              "unit": "changed_counter_writes",
+              "value": 18192
+            },
+            {
+              "pointer": "/comparison/arms/transition/changed_writes",
+              "scope": "transition",
+              "unit": "changed_counter_writes",
+              "value": 18192
+            }
+          ]
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/constant_gap/peak_pending",
+              "scope": "constant_gap",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/current/peak_pending",
+              "scope": "current",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/peak_pending",
+              "scope": "current_fine",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/histogram/peak_pending",
+              "scope": "histogram",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/joint/peak_pending",
+              "scope": "joint",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/scalar_joint/peak_pending",
+              "scope": "scalar_joint",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_outcome/peak_pending",
+              "scope": "shuffled_outcome",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/transition/peak_pending",
+              "scope": "transition",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            }
+          ]
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/constant_gap/routes",
+              "scope": "constant_gap",
+              "unit": "routes",
+              "value": 4811
+            },
+            {
+              "pointer": "/comparison/arms/current/routes",
+              "scope": "current",
+              "unit": "routes",
+              "value": 3793
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/routes",
+              "scope": "current_fine",
+              "unit": "routes",
+              "value": 4989
+            },
+            {
+              "pointer": "/comparison/arms/histogram/routes",
+              "scope": "histogram",
+              "unit": "routes",
+              "value": 4840
+            },
+            {
+              "pointer": "/comparison/arms/joint/routes",
+              "scope": "joint",
+              "unit": "routes",
+              "value": 6008
+            },
+            {
+              "pointer": "/comparison/arms/scalar_joint/routes",
+              "scope": "scalar_joint",
+              "unit": "routes",
+              "value": 6008
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_outcome/routes",
+              "scope": "shuffled_outcome",
+              "unit": "routes",
+              "value": 6008
+            },
+            {
+              "pointer": "/comparison/arms/transition/routes",
+              "scope": "transition",
+              "unit": "routes",
+              "value": 4811
+            }
+          ]
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": {
+        "actual_changed_writes": {
+          "constant_gap": 18192,
+          "current": 18192,
+          "current_fine": 18192,
+          "histogram": 18192,
+          "joint": 18192,
+          "scalar_joint": 18192,
+          "shuffled_outcome": 18192,
+          "transition": 18192
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "constant_gap": 0,
+          "current": 0,
+          "current_fine": 0,
+          "histogram": 0,
+          "joint": 0,
+          "scalar_joint": 0,
+          "shuffled_outcome": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Independent HH103 comparison",
+      "id": "casas_180_result_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/constant_gap/changed_writes",
+              "scope": "constant_gap",
+              "unit": "changed_counter_writes",
+              "value": 56028
+            },
+            {
+              "pointer": "/comparison/arms/current/changed_writes",
+              "scope": "current",
+              "unit": "changed_counter_writes",
+              "value": 56028
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/changed_writes",
+              "scope": "current_fine",
+              "unit": "changed_counter_writes",
+              "value": 56028
+            },
+            {
+              "pointer": "/comparison/arms/histogram/changed_writes",
+              "scope": "histogram",
+              "unit": "changed_counter_writes",
+              "value": 56028
+            },
+            {
+              "pointer": "/comparison/arms/joint/changed_writes",
+              "scope": "joint",
+              "unit": "changed_counter_writes",
+              "value": 56028
+            },
+            {
+              "pointer": "/comparison/arms/scalar_joint/changed_writes",
+              "scope": "scalar_joint",
+              "unit": "changed_counter_writes",
+              "value": 56028
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_outcome/changed_writes",
+              "scope": "shuffled_outcome",
+              "unit": "changed_counter_writes",
+              "value": 56028
+            },
+            {
+              "pointer": "/comparison/arms/transition/changed_writes",
+              "scope": "transition",
+              "unit": "changed_counter_writes",
+              "value": 56028
+            }
+          ]
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/constant_gap/peak_pending",
+              "scope": "constant_gap",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/current/peak_pending",
+              "scope": "current",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/peak_pending",
+              "scope": "current_fine",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/histogram/peak_pending",
+              "scope": "histogram",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/joint/peak_pending",
+              "scope": "joint",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/scalar_joint/peak_pending",
+              "scope": "scalar_joint",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_outcome/peak_pending",
+              "scope": "shuffled_outcome",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/transition/peak_pending",
+              "scope": "transition",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            }
+          ]
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/constant_gap/routes",
+              "scope": "constant_gap",
+              "unit": "routes",
+              "value": 9132
+            },
+            {
+              "pointer": "/comparison/arms/current/routes",
+              "scope": "current",
+              "unit": "routes",
+              "value": 6689
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/routes",
+              "scope": "current_fine",
+              "unit": "routes",
+              "value": 9399
+            },
+            {
+              "pointer": "/comparison/arms/histogram/routes",
+              "scope": "histogram",
+              "unit": "routes",
+              "value": 10440
+            },
+            {
+              "pointer": "/comparison/arms/joint/routes",
+              "scope": "joint",
+              "unit": "routes",
+              "value": 11691
+            },
+            {
+              "pointer": "/comparison/arms/scalar_joint/routes",
+              "scope": "scalar_joint",
+              "unit": "routes",
+              "value": 11691
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_outcome/routes",
+              "scope": "shuffled_outcome",
+              "unit": "routes",
+              "value": 11691
+            },
+            {
+              "pointer": "/comparison/arms/transition/routes",
+              "scope": "transition",
+              "unit": "routes",
+              "value": 9132
+            }
+          ]
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": {
+        "actual_changed_writes": {
+          "constant_gap": 56028,
+          "current": 56028,
+          "current_fine": 56028,
+          "histogram": 56028,
+          "joint": 56028,
+          "scalar_joint": 56028,
+          "shuffled_outcome": 56028,
+          "transition": 56028
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "constant_gap": 0,
+          "current": 0,
+          "current_fine": 0,
+          "histogram": 0,
+          "joint": 0,
+          "scalar_joint": 0,
+          "shuffled_outcome": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Reused HH103 training confidence diagnostic",
+      "id": "casas_confidence_result_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/confidence/changed_writes",
+              "scope": "confidence",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            },
+            {
+              "pointer": "/comparison/arms/confidence_constant/changed_writes",
+              "scope": "confidence_constant",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            },
+            {
+              "pointer": "/comparison/arms/constant_gap/changed_writes",
+              "scope": "constant_gap",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            },
+            {
+              "pointer": "/comparison/arms/current/changed_writes",
+              "scope": "current",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            },
+            {
+              "pointer": "/comparison/arms/joint/changed_writes",
+              "scope": "joint",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            },
+            {
+              "pointer": "/comparison/arms/scalar_confidence/changed_writes",
+              "scope": "scalar_confidence",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_confidence/changed_writes",
+              "scope": "shuffled_confidence",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            },
+            {
+              "pointer": "/comparison/arms/transition/changed_writes",
+              "scope": "transition",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            }
+          ]
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/confidence/peak_pending",
+              "scope": "confidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/confidence_constant/peak_pending",
+              "scope": "confidence_constant",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/constant_gap/peak_pending",
+              "scope": "constant_gap",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/current/peak_pending",
+              "scope": "current",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/joint/peak_pending",
+              "scope": "joint",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/scalar_confidence/peak_pending",
+              "scope": "scalar_confidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_confidence/peak_pending",
+              "scope": "shuffled_confidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/transition/peak_pending",
+              "scope": "transition",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            }
+          ]
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/confidence/routes",
+              "scope": "confidence",
+              "unit": "routes",
+              "value": 7430
+            },
+            {
+              "pointer": "/comparison/arms/confidence_constant/routes",
+              "scope": "confidence_constant",
+              "unit": "routes",
+              "value": 5956
+            },
+            {
+              "pointer": "/comparison/arms/constant_gap/routes",
+              "scope": "constant_gap",
+              "unit": "routes",
+              "value": 5956
+            },
+            {
+              "pointer": "/comparison/arms/current/routes",
+              "scope": "current",
+              "unit": "routes",
+              "value": 4685
+            },
+            {
+              "pointer": "/comparison/arms/joint/routes",
+              "scope": "joint",
+              "unit": "routes",
+              "value": 7430
+            },
+            {
+              "pointer": "/comparison/arms/scalar_confidence/routes",
+              "scope": "scalar_confidence",
+              "unit": "routes",
+              "value": 7430
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_confidence/routes",
+              "scope": "shuffled_confidence",
+              "unit": "routes",
+              "value": 7430
+            },
+            {
+              "pointer": "/comparison/arms/transition/routes",
+              "scope": "transition",
+              "unit": "routes",
+              "value": 5956
+            }
+          ]
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": {
+        "actual_changed_writes": {
+          "confidence": 27972,
+          "confidence_constant": 27972,
+          "constant_gap": 27972,
+          "current": 27972,
+          "current_fine": 27972,
+          "histogram": 27972,
+          "joint": 27972,
+          "scalar_confidence": 27972,
+          "shuffled_confidence": 27972,
+          "transition": 27972
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "confidence": 0,
+          "confidence_constant": 0,
+          "constant_gap": 0,
+          "current": 0,
+          "current_fine": 0,
+          "histogram": 0,
+          "joint": 0,
+          "scalar_confidence": 0,
+          "shuffled_confidence": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "HH103 confidence sufficient-reference supplement",
+      "id": "casas_confidence_references_result_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": null,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/references/current_fine/changed_writes",
+              "scope": "current_fine",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            },
+            {
+              "pointer": "/references/histogram/changed_writes",
+              "scope": "histogram",
+              "unit": "changed_counter_writes",
+              "value": 27972
+            }
+          ]
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": {
+        "actual_changed_writes": {
+          "current_fine": 27972,
+          "histogram": 27972
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "current_fine": 0,
+          "histogram": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "HH104 training evidence diagnostic",
+      "id": "casas_evidence_result_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/confidence/changed_writes",
+              "scope": "confidence",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/constant_gap/changed_writes",
+              "scope": "constant_gap",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/current/changed_writes",
+              "scope": "current",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/changed_writes",
+              "scope": "current_fine",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/evidence/changed_writes",
+              "scope": "evidence",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/evidence_constant/changed_writes",
+              "scope": "evidence_constant",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/histogram/changed_writes",
+              "scope": "histogram",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/joint/changed_writes",
+              "scope": "joint",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/scalar_evidence/changed_writes",
+              "scope": "scalar_evidence",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_evidence/changed_writes",
+              "scope": "shuffled_evidence",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            },
+            {
+              "pointer": "/comparison/arms/transition/changed_writes",
+              "scope": "transition",
+              "unit": "changed_counter_writes",
+              "value": 82062
+            }
+          ]
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/confidence/peak_pending",
+              "scope": "confidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/constant_gap/peak_pending",
+              "scope": "constant_gap",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/current/peak_pending",
+              "scope": "current",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/peak_pending",
+              "scope": "current_fine",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/evidence/peak_pending",
+              "scope": "evidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/evidence_constant/peak_pending",
+              "scope": "evidence_constant",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/histogram/peak_pending",
+              "scope": "histogram",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/joint/peak_pending",
+              "scope": "joint",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/scalar_evidence/peak_pending",
+              "scope": "scalar_evidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_evidence/peak_pending",
+              "scope": "shuffled_evidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/transition/peak_pending",
+              "scope": "transition",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            }
+          ]
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/confidence/routes",
+              "scope": "confidence",
+              "unit": "routes",
+              "value": 21612
+            },
+            {
+              "pointer": "/comparison/arms/constant_gap/routes",
+              "scope": "constant_gap",
+              "unit": "routes",
+              "value": 15037
+            },
+            {
+              "pointer": "/comparison/arms/current/routes",
+              "scope": "current",
+              "unit": "routes",
+              "value": 9217
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/routes",
+              "scope": "current_fine",
+              "unit": "routes",
+              "value": 13435
+            },
+            {
+              "pointer": "/comparison/arms/evidence/routes",
+              "scope": "evidence",
+              "unit": "routes",
+              "value": 21612
+            },
+            {
+              "pointer": "/comparison/arms/evidence_constant/routes",
+              "scope": "evidence_constant",
+              "unit": "routes",
+              "value": 15037
+            },
+            {
+              "pointer": "/comparison/arms/histogram/routes",
+              "scope": "histogram",
+              "unit": "routes",
+              "value": 15128
+            },
+            {
+              "pointer": "/comparison/arms/joint/routes",
+              "scope": "joint",
+              "unit": "routes",
+              "value": 21612
+            },
+            {
+              "pointer": "/comparison/arms/scalar_evidence/routes",
+              "scope": "scalar_evidence",
+              "unit": "routes",
+              "value": 21612
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_evidence/routes",
+              "scope": "shuffled_evidence",
+              "unit": "routes",
+              "value": 21612
+            },
+            {
+              "pointer": "/comparison/arms/transition/routes",
+              "scope": "transition",
+              "unit": "routes",
+              "value": 15037
+            }
+          ]
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": {
+        "actual_changed_writes": {
+          "confidence": 82062,
+          "constant_gap": 82062,
+          "current": 82062,
+          "current_fine": 82062,
+          "evidence": 82062,
+          "evidence_constant": 82062,
+          "histogram": 82062,
+          "joint": 82062,
+          "scalar_evidence": 82062,
+          "shuffled_evidence": 82062,
+          "transition": 82062
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "confidence": 0,
+          "constant_gap": 0,
+          "current": 0,
+          "current_fine": 0,
+          "evidence": 0,
+          "evidence_constant": 0,
+          "histogram": 0,
+          "joint": 0,
+          "scalar_evidence": 0,
+          "shuffled_evidence": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Reused HH104 training pooling diagnostic",
+      "id": "casas_pooling_result_v1",
+      "independent_usefulness_passed": false,
+      "interpretation": "Retain the original scope and gates. Shared temporal information/local updates are identifiable components, not evidence of an extra predictive effect over a sufficient scalar/history control. Scalar equivalence does not rule out a separately measured implementation cost benefit.",
+      "resource_advantage_established": false,
+      "retained_feasibility_gates": {
+        "active_days": false,
+        "bounded_pooling": true,
+        "coverage": false,
+        "opposing_contexts": false
+      },
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "work_ledger": {
+        "active_backend": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "changed_local_writes": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/current/changed_writes",
+              "scope": "current",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/changed_writes",
+              "scope": "current_fine",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/histogram/changed_writes",
+              "scope": "histogram",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/joint/changed_writes",
+              "scope": "joint",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/joint_evidence/changed_writes",
+              "scope": "joint_evidence",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/pool/changed_writes",
+              "scope": "pool",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/pool_constant/changed_writes",
+              "scope": "pool_constant",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/pool_evidence/changed_writes",
+              "scope": "pool_evidence",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/pool_order/changed_writes",
+              "scope": "pool_order",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/pool_timing/changed_writes",
+              "scope": "pool_timing",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/scalar_pool/changed_writes",
+              "scope": "scalar_pool",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_pool/changed_writes",
+              "scope": "shuffled_pool",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            },
+            {
+              "pointer": "/comparison/arms/transition/changed_writes",
+              "scope": "transition",
+              "unit": "changed_counter_writes",
+              "value": 52659
+            }
+          ]
+        },
+        "deployment_cpu": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "energy": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "expiry_maintenance": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "feedback_enqueue_delivery": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/current/peak_pending",
+              "scope": "current",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/peak_pending",
+              "scope": "current_fine",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/histogram/peak_pending",
+              "scope": "histogram",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/joint/peak_pending",
+              "scope": "joint",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/joint_evidence/peak_pending",
+              "scope": "joint_evidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/pool/peak_pending",
+              "scope": "pool",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/pool_constant/peak_pending",
+              "scope": "pool_constant",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/pool_evidence/peak_pending",
+              "scope": "pool_evidence",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/pool_order/peak_pending",
+              "scope": "pool_order",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/pool_timing/peak_pending",
+              "scope": "pool_timing",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/scalar_pool/peak_pending",
+              "scope": "scalar_pool",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_pool/peak_pending",
+              "scope": "shuffled_pool",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            },
+            {
+              "pointer": "/comparison/arms/transition/peak_pending",
+              "scope": "transition",
+              "unit": "peak_pending_receipts",
+              "value": 5
+            }
+          ]
+        },
+        "input_decode": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "live_and_transient_memory": {
+          "coverage": "partial",
+          "observations": [
+            {
+              "pointer": "/comparison/arms/current/routes",
+              "scope": "current",
+              "unit": "routes",
+              "value": 7335
+            },
+            {
+              "pointer": "/comparison/arms/current_fine/routes",
+              "scope": "current_fine",
+              "unit": "routes",
+              "value": 10282
+            },
+            {
+              "pointer": "/comparison/arms/histogram/routes",
+              "scope": "histogram",
+              "unit": "routes",
+              "value": 11071
+            },
+            {
+              "pointer": "/comparison/arms/joint/routes",
+              "scope": "joint",
+              "unit": "routes",
+              "value": 15322
+            },
+            {
+              "pointer": "/comparison/arms/joint_evidence/routes",
+              "scope": "joint_evidence",
+              "unit": "routes",
+              "value": 15322
+            },
+            {
+              "pointer": "/comparison/arms/pool/routes",
+              "scope": "pool",
+              "unit": "routes",
+              "value": 9219
+            },
+            {
+              "pointer": "/comparison/arms/pool_constant/routes",
+              "scope": "pool_constant",
+              "unit": "routes",
+              "value": 7953
+            },
+            {
+              "pointer": "/comparison/arms/pool_evidence/routes",
+              "scope": "pool_evidence",
+              "unit": "routes",
+              "value": 9219
+            },
+            {
+              "pointer": "/comparison/arms/pool_order/routes",
+              "scope": "pool_order",
+              "unit": "routes",
+              "value": 7953
+            },
+            {
+              "pointer": "/comparison/arms/pool_timing/routes",
+              "scope": "pool_timing",
+              "unit": "routes",
+              "value": 8642
+            },
+            {
+              "pointer": "/comparison/arms/scalar_pool/routes",
+              "scope": "scalar_pool",
+              "unit": "routes",
+              "value": 9219
+            },
+            {
+              "pointer": "/comparison/arms/shuffled_pool/routes",
+              "scope": "shuffled_pool",
+              "unit": "routes",
+              "value": 9219
+            },
+            {
+              "pointer": "/comparison/arms/transition/routes",
+              "scope": "transition",
+              "unit": "routes",
+              "value": 11131
+            }
+          ]
+        },
+        "prediction_readout": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "replay_instrumentation": {
+          "coverage": "unreported",
+          "observations": []
+        },
+        "shared_observer_projection": {
+          "coverage": "unreported",
+          "observations": []
+        }
+      },
+      "write_parity": {
+        "actual_changed_writes": {
+          "current": 52659,
+          "current_fine": 52659,
+          "histogram": 52659,
+          "joint": 52659,
+          "joint_evidence": 52659,
+          "pool": 52659,
+          "pool_constant": 52659,
+          "pool_evidence": 52659,
+          "pool_order": 52659,
+          "pool_timing": 52659,
+          "scalar_pool": 52659,
+          "shuffled_pool": 52659,
+          "transition": 52659
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "current": 0,
+          "current_fine": 0,
+          "histogram": 0,
+          "joint": 0,
+          "joint_evidence": 0,
+          "pool": 0,
+          "pool_constant": 0,
+          "pool_evidence": 0,
+          "pool_order": 0,
+          "pool_timing": 0,
+          "scalar_pool": 0,
+          "shuffled_pool": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    }
+  ],
+  "new_acquisition_or_search_authorized": false,
+  "new_predictions_scored": 0,
+  "next_step": "Preregister an input-only synthetic full-work-accounting feasibility contract using existing causal witnesses; validate stage ownership, idle gaps, delayed feedback and an event-driven scalar comparator. No new scoring or optimization.",
+  "preserved_artifacts": 353,
+  "r3_optimization_authorized": false,
+  "raw_or_model_payload_reads": 0,
+  "receipt_bytes_read": 216721,
+  "receipt_count": 19,
+  "remaining_hypothesis": "A sparse asynchronous SNN implementation may reduce complete deployment work at equal useful predictions versus an equally event-driven scalar implementation. This is unmeasured, not ANN-exclusive.",
+  "reported_write_parity_passed": true,
+  "required_work_contract": {
+    "comparator": "Same causal native input and shared current/history access; sufficient history and event-driven scalar emulator with identical receipt/expiry scheduling. No compulsory dense polling or free reference/observer computation.",
+    "dimensions": [
+      "input_decode",
+      "shared_observer_projection",
+      "active_backend",
+      "prediction_readout",
+      "feedback_enqueue_delivery",
+      "expiry_maintenance",
+      "changed_local_writes",
+      "live_and_transient_memory",
+      "deployment_cpu",
+      "replay_instrumentation",
+      "energy"
+    ],
+    "gate": "Quality/source/causal/state/write gates remain prerequisites for useful-system benefit; synthetic work feasibility alone never promotes runtime or establishes natural-data usefulness.",
+    "measurement": "Separate deployment from data generation, reference checks, hashing, replay and instrumentation. Report idle baseline, wall/CPU time, live/transient memory and hardware/sampling scope. Energy remains pending independent measurement.",
+    "ownership": "Every native input, observer update/projection, prediction, delayed receipt, timer expiry and maintenance action has one stage/arm owner. Charge shared stages to every arm; report physical shared execution separately.",
+    "units": "Keep source-level visits, writes, bytes, CPU seconds and joules separate. Do not add heterogeneous counts or substitute wire bytes/routes/peak queue length for memory/total work.",
+    "writes": "Compare positive actual changed local writes, including every changed counter; count attempts, allocations, queue/state/metadata writes separately. Freeze evaluation learning."
+  },
+  "retained_support_and_acquisition_limits": {
+    "closed_world_joint_forecast": {
+      "branches_within_cap": 2297,
+      "branches_without_finite_scale": 6423,
+      "branchwise_oracle_only": false,
+      "closed_world_budget_feasible": true,
+      "closed_world_routes_required": 15322,
+      "conservative_state_budget_feasible": false,
+      "fit_mass_fraction_within_cap": 0.19916823335042444,
+      "fit_mass_within_cap": 3496,
+      "fit_mass_within_state_safe_cap": 60,
+      "minimum_global_scale_for_targets": 5,
+      "no_complement_branches": 1359,
+      "open_world_routes_at_required_scale": 155746,
+      "opposing_contexts_within_cap": 360,
+      "opposing_contexts_within_state_safe_cap": 0,
+      "required_extra_observations": 70212,
+      "required_extra_writes": 210636,
+      "zero_contrast_branches": 5064
+    },
+    "finite_household_screen": "stop_roster_no_survivor",
+    "hh105_arrival_gate": false,
+    "pool_count_categories": {
+      "evidence_pass": 0,
+      "margin_impossible": 99,
+      "no_complement": 2140,
+      "observed_below_bound": 112,
+      "support_impossible": 3200
+    },
+    "public_metadata_decision": "no_acquisition_ready_source_within_registered_metadata_review",
+    "room_pre_score_stop": false,
+    "sphere_eco_decision": "stop_finite_metadata_audit_no_payload_authorized",
+    "traffic_pre_score_stop": {
+      "passed": false,
+      "reason": "Fixed support/current-contrast gate failed before scoring"
+    },
+    "unrestricted_event_capacity_certified": false
+  },
+  "runtime_promotion_authorized": false,
+  "schema": "sara-r2-research-decision-v1",
+  "seal_opening_authorized": false
+}

@@ -78,7 +78,9 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 scripts/eval/sphere_eco_metad
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_sphere_eco_metadata.py
 ```
 
-🟠 [Next] Preregister a bounded read-only R2 research-decision audit using existing result/work receipts: what temporal/local mechanism remains identifiable beyond sufficient observers/scalar controls, and what complete work accounting would test an SNN benefit. No new source search, re-scoring, tuning, learned-state changes or R3 optimization is implied.
+🟢 [Done] The [read-only R2 research-decision audit](R2_RESEARCH_DECISION_AUDIT.md) subsequently registered and checked 19 known aggregate receipts, with zero new scores/learning. Local temporal components remain identifiable, but predictive/resource superiority over sufficient controls remains unestablished. Missing cost stages stay unknown; 333 related tests and exact replay preserve all earlier results and seals.
+
+🟠 [Next] Preregister an input-only full-work-accounting feasibility contract using existing synthetic witnesses, stage ownership/units, shared observer costs, delayed receipts, idle gaps/expiry and an equally event-driven scalar comparator. No new source search, re-scoring, tuning or R3 optimization.
 
 ⭕️ [Pending] New payload acquisition and independent SNN-usefulness/energy claims require a compatible independently justified source/task contract, scoped access/size/coverage metadata and the original preregistered causal/quality/resource gates. SPHERE/ECO documented-stream exclusions are closed; no automatic metadata retry or CASAS expansion.
 

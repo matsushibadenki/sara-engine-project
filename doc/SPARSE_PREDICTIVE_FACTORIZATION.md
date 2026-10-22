@@ -325,6 +325,18 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Finite SPHERE/ECO metadata contract audit](R2_SPHERE_ECO_METADATA_AUDIT.md) preregisters candidates, code, strict Kitchen ON semantics and total limits before new external inspection. Eight searches/13 pages retain six ECO metadata entries but no payload/preview/archive range/learning. Documented PIR packets and entrance/occupancy/electrical streams are incompatible with the fixed target. Label-day support is not PIR coverage/density; package/terms gaps remain unknown. Exact replay and 241 related tests preserve 345 earlier artifacts and code pins, old negatives and all seals. No SNN-specific advantage is inferred from metadata.
 
+## Retained temporal evidence and SNN work-accounting decision — 2026-10-22
+
+🟢 [Done] [Read-only R2 decision audit](R2_RESEARCH_DECISION_AUDIT.md) registers 19 existing aggregate receipts and a 1 MiB parsing budget before execution. Actual reads total 216,721 bytes; changed-write parity includes all ten confidence arms, with zero reported frozen-period updates. Controlled local temporal identification is retained, while sufficient history/scalar controls and all prior negative quality gates block SNN predictive promotion. Eleven separate work dimensions expose missing observer/receipt/expiry/deployment costs; instrumented CPU, route counts and queue peaks are not complete resource evidence. Zero new learner scores/writes/raw or model payload reads, exact replay, 333 related tests and 353 prior artifact pins plus registered code preserved.
+
+🟠 [Next] The authoritative queue now requires an input-only full-work-accounting feasibility contract using existing synthetic witnesses and an equally event-driven scalar comparator. Register shared-stage ownership, counter units, delayed receipt lifecycle, idle gaps and expiry before accounting checks. This prepares a fair implementation-cost hypothesis without retuning predictive factors, resuming source search or starting R3 optimization. Earlier dated Next notes above are historical prerequisites, superseded by this queue.
+
+⭕️ [Pending] Independent usefulness, physical energy, source acquisition, structural growth and production promotion retain their original gates. No ANN-exclusive capability is established by sparse scheduling or local learning alone.
+
+日本語: 既存19件の集計監査を登録・実行し、局所的な時間履歴識別の成果と、SNNの予測・総コスト優位が未確認である点を分離しました。333テストと完全再現で条件・負の結果・封印を保持しました。次は既存合成入力に限定し、イベント駆動のスカラー対照と共有処理・遅延結果・待機・期限切れの計上契約を固定します。
+
+简体中文：注册并执行19份既有汇总证据的审计，区分局部时间历史识别成果与尚未确认的SNN预测及完整成本优势。333项测试和精确重放保留原条件、负结果与封存。下一步仅用已有合成输入，固定事件驱动标量对照以及共享处理、延迟结果、空闲和过期操作的核算契约。
+
 🟠 [Next] Preregister a bounded read-only R2 decision audit from existing result/work receipts: a causal temporal/local mechanism beyond sufficient observers/scalar controls, complete active-event/observer/maintenance costs, and the evidence needed for an SNN implementation benefit. No new search/acquisition, re-scoring, tuning, current-task change or R3 optimization.
 
 ⭕️ [Pending] New acquisition and independent usefulness/resource evidence require a compatible justified source/task contract and all original input, opposing-history, class/support, state/write-budget and quality gates. The SPHERE/ECO documented-stream exclusions are closed; no automatic retries or CASAS additions. Sparse event scheduling/local updates can be shared with non-spiking implementations, so actual matched-control evidence remains essential.
@@ -357,6 +369,6 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 简体中文：已预注册并验证仅时间戳的安全上界，三个既有训练窗口均不可能达到固定目标；不重读事件值或标签，保留既有负结果与封存。
 
-日本語: 続くSPHERE/ECOの有限メタデータ監査も事前登録し、公表ストリームが元のKitchen ON定義に不適合と判断して終了しました。未確定のPIR期間・密度・サイズ・利用条件を残し、本体取得・候補追加・条件緩和・封印解除はしません。241テストと別プロセス再現が成功しました。次は既存証跡だけで、SNNの時間状態・局所更新を十分な非スパイク対照から識別できる仮説と総処理量の条件を整理します。
+日本語: 続くSPHERE/ECOの有限メタデータ監査も事前登録し、公表ストリームが元のKitchen ON定義に不適合と判断して終了しました。未確定のPIR期間・密度・サイズ・利用条件を残し、本体取得・候補追加・条件緩和・封印解除はしません。さらに既存19証跡の監査を完了し、333テストと別プロセス再現で負の結果を保持しました。次は既存合成入力だけで、共有観測器・遅延結果・待機・期限切れ費用をイベント駆動スカラー対照と公平に計上する契約を事前登録します。
 
-简体中文：另行预注册并完成SPHERE/ECO有限元数据审计，判定其已描述数据流不符合原Kitchen ON定义并终止。保留PIR期间、密度、体积和使用条件的未知项，不采集本体、不扩充候选、不放宽条件或解除封存。241项测试与新进程重放通过。下一步仅据既有证据明确SNN时间状态、局部更新相对充分非脉冲对照的可识别假设及完整处理成本。
+简体中文：另行预注册并完成SPHERE/ECO有限元数据审计，判定其已描述数据流不符合原Kitchen ON定义并终止。保留PIR期间、密度、体积和使用条件的未知项，不采集本体、不扩充候选、不放宽条件或解除封存。随后完成19份既有证据审计，333项测试与新进程重放保留原负结果。下一步仅用已有合成输入，预注册对共享观测器、延迟结果、空闲和过期成本与事件驱动标量对照进行公平核算的契约。
