@@ -1,0 +1,280 @@
+{
+  "actual_learning_writes": 0,
+  "case_count": 48,
+  "cpu_seconds": null,
+  "decision": "retained_allocation_diagnostics_no_snn_advantage_established",
+  "energy_joules": null,
+  "independent_usefulness_established": false,
+  "modes": {
+    "neuron": {
+      "max_boundary_graph_bytes": {
+        "executor_graph_bytes": 10354,
+        "executor_only_bytes": 9363,
+        "output_graph_bytes": 1859,
+        "output_only_bytes": 716,
+        "shared_reachable_bytes": 1435,
+        "union_bytes": 10778
+      },
+      "max_by_stage_bytes": {
+        "advance": {
+          "new_live_at_return_bytes": 816,
+          "new_peak_bytes": 816,
+          "peak_excess_over_return_bytes": 0,
+          "tracer_metadata_after_snapshot_bytes": 2160
+        },
+        "close": {
+          "new_live_at_return_bytes": 832,
+          "new_peak_bytes": 1152,
+          "peak_excess_over_return_bytes": 320,
+          "tracer_metadata_after_snapshot_bytes": 1648
+        },
+        "initialize": {
+          "new_live_at_return_bytes": 1808,
+          "new_peak_bytes": 1808,
+          "peak_excess_over_return_bytes": 0,
+          "tracer_metadata_after_snapshot_bytes": 3824
+        },
+        "input": {
+          "new_live_at_return_bytes": 3048,
+          "new_peak_bytes": 3048,
+          "peak_excess_over_return_bytes": 0,
+          "tracer_metadata_after_snapshot_bytes": 5904
+        },
+        "notify": {
+          "new_live_at_return_bytes": 424,
+          "new_peak_bytes": 424,
+          "peak_excess_over_return_bytes": 0,
+          "tracer_metadata_after_snapshot_bytes": 2000
+        }
+      },
+      "max_new_traced_bytes": {
+        "new_live_at_return_bytes": 3048,
+        "new_peak_bytes": 3048,
+        "peak_excess_over_return_bytes": 320,
+        "tracer_metadata_after_snapshot_bytes": 5904
+      },
+      "recorded_calls": 1280,
+      "service_receipts": {
+        "neuron": {
+          "cancelled": 16,
+          "created": 224,
+          "delivered": 96,
+          "expired": 112,
+          "rejected_result": 100,
+          "stale_timer": 112
+        }
+      },
+      "shared_input_calls": 224,
+      "windows_with_peak_excess": 48,
+      "workers": 48
+    },
+    "paired": {
+      "max_boundary_graph_bytes": {
+        "executor_graph_bytes": 12865,
+        "executor_only_bytes": 11563,
+        "output_graph_bytes": 2194,
+        "output_only_bytes": 1060,
+        "shared_reachable_bytes": 1634,
+        "union_bytes": 13425
+      },
+      "max_by_stage_bytes": {
+        "advance": {
+          "new_live_at_return_bytes": 984,
+          "new_peak_bytes": 1456,
+          "peak_excess_over_return_bytes": 472,
+          "tracer_metadata_after_snapshot_bytes": 2416
+        },
+        "close": {
+          "new_live_at_return_bytes": 0,
+          "new_peak_bytes": 320,
+          "peak_excess_over_return_bytes": 320,
+          "tracer_metadata_after_snapshot_bytes": 1392
+        },
+        "initialize": {
+          "new_live_at_return_bytes": 1712,
+          "new_peak_bytes": 1904,
+          "peak_excess_over_return_bytes": 192,
+          "tracer_metadata_after_snapshot_bytes": 3984
+        },
+        "input": {
+          "new_live_at_return_bytes": 3424,
+          "new_peak_bytes": 3896,
+          "peak_excess_over_return_bytes": 472,
+          "tracer_metadata_after_snapshot_bytes": 6320
+        },
+        "notify": {
+          "new_live_at_return_bytes": 672,
+          "new_peak_bytes": 1208,
+          "peak_excess_over_return_bytes": 536,
+          "tracer_metadata_after_snapshot_bytes": 2288
+        }
+      },
+      "max_new_traced_bytes": {
+        "new_live_at_return_bytes": 3424,
+        "new_peak_bytes": 3896,
+        "peak_excess_over_return_bytes": 536,
+        "tracer_metadata_after_snapshot_bytes": 6320
+      },
+      "recorded_calls": 1280,
+      "service_receipts": {
+        "neuron": {
+          "cancelled": 16,
+          "created": 224,
+          "delivered": 96,
+          "expired": 112,
+          "rejected_result": 100,
+          "stale_timer": 112
+        },
+        "scalar": {
+          "cancelled": 16,
+          "created": 224,
+          "delivered": 96,
+          "expired": 112,
+          "rejected_result": 100,
+          "stale_timer": 112
+        }
+      },
+      "shared_input_calls": 224,
+      "windows_with_peak_excess": 1280,
+      "workers": 48
+    },
+    "scalar": {
+      "max_boundary_graph_bytes": {
+        "executor_graph_bytes": 8212,
+        "executor_only_bytes": 7221,
+        "output_graph_bytes": 1859,
+        "output_only_bytes": 716,
+        "shared_reachable_bytes": 1435,
+        "union_bytes": 8636
+      },
+      "max_by_stage_bytes": {
+        "advance": {
+          "new_live_at_return_bytes": 816,
+          "new_peak_bytes": 816,
+          "peak_excess_over_return_bytes": 0,
+          "tracer_metadata_after_snapshot_bytes": 2160
+        },
+        "close": {
+          "new_live_at_return_bytes": 832,
+          "new_peak_bytes": 1152,
+          "peak_excess_over_return_bytes": 320,
+          "tracer_metadata_after_snapshot_bytes": 1744
+        },
+        "initialize": {
+          "new_live_at_return_bytes": 1808,
+          "new_peak_bytes": 1808,
+          "peak_excess_over_return_bytes": 0,
+          "tracer_metadata_after_snapshot_bytes": 3824
+        },
+        "input": {
+          "new_live_at_return_bytes": 2280,
+          "new_peak_bytes": 2280,
+          "peak_excess_over_return_bytes": 0,
+          "tracer_metadata_after_snapshot_bytes": 5136
+        },
+        "notify": {
+          "new_live_at_return_bytes": 424,
+          "new_peak_bytes": 424,
+          "peak_excess_over_return_bytes": 0,
+          "tracer_metadata_after_snapshot_bytes": 2000
+        }
+      },
+      "max_new_traced_bytes": {
+        "new_live_at_return_bytes": 2280,
+        "new_peak_bytes": 2280,
+        "peak_excess_over_return_bytes": 320,
+        "tracer_metadata_after_snapshot_bytes": 5136
+      },
+      "recorded_calls": 1280,
+      "service_receipts": {
+        "scalar": {
+          "cancelled": 16,
+          "created": 224,
+          "delivered": 96,
+          "expired": 112,
+          "rejected_result": 100,
+          "stale_timer": 112
+        }
+      },
+      "shared_input_calls": 224,
+      "windows_with_peak_excess": 48,
+      "workers": 48
+    }
+  },
+  "predictions_scored": 0,
+  "prior_artifacts_preserved": 378,
+  "replication": {
+    "byte_identical_windows": 3840,
+    "compared_windows": 3840,
+    "per_mode_run_max_ranges_bytes": {
+      "neuron": {
+        "new_live_at_return_bytes": [
+          3048,
+          3048
+        ],
+        "new_peak_bytes": [
+          3048,
+          3048
+        ],
+        "peak_excess_over_return_bytes": [
+          320,
+          320
+        ],
+        "tracer_metadata_after_snapshot_bytes": [
+          5904,
+          5904
+        ]
+      },
+      "paired": {
+        "new_live_at_return_bytes": [
+          3424,
+          3424
+        ],
+        "new_peak_bytes": [
+          3896,
+          3896
+        ],
+        "peak_excess_over_return_bytes": [
+          536,
+          536
+        ],
+        "tracer_metadata_after_snapshot_bytes": [
+          6320,
+          6320
+        ]
+      },
+      "scalar": {
+        "new_live_at_return_bytes": [
+          2280,
+          2280
+        ],
+        "new_peak_bytes": [
+          2280,
+          2280
+        ],
+        "peak_excess_over_return_bytes": [
+          320,
+          320
+        ],
+        "tracer_metadata_after_snapshot_bytes": [
+          5136,
+          5136
+        ]
+      }
+    },
+    "raw_witnesses_equal": true,
+    "semantic_and_ownership_exact_match": true
+  },
+  "replication_bytes": 608412,
+  "replication_sha256": "06b9df9890be40c142fbb3e7d729ff3ac9d7455093df0951746f44a006a15e52",
+  "result_bytes": 608412,
+  "result_sha256": "ca6f1b32455966c4c54e206fcaa942f0f43baf0e211c66ad3a82929212217d4b",
+  "rss_bytes": null,
+  "runtime_promotion_authorized": false,
+  "schema": "sara-event-allocation-v2-summary-v1",
+  "scope": "Per-call newly traced blocks under fixed GC/probe regime; graph ownership is a separate boundary measure. Neither is total process memory. Source-site snapshots are post-query live blocks, not freed allocation sites.",
+  "snn_resource_advantage_established": false,
+  "test_opening_authorized": false,
+  "total_transient_peak_bytes": null,
+  "workers_per_phase": 144
+}

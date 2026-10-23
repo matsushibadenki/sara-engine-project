@@ -50,7 +50,9 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python scripts
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_allocation_report.py tests/test_event_allocation_failure.py tests/test_project_paths.py
 ```
 
-🟠 [Next] Separately preregister a fresh allocation-diagnostic v2 on the same fixed inputs, using the bounded encoder and saved-result gate, retaining complete results before replication and failing explicitly on any representation or measurement overflow. Preserve the failed v1 run. Keep shared observation and output ownership equally charged to event-driven scalar and neuron controls; no acquisition, learner scoring, threshold change or R3 optimization.
+🟢 [Done] A separately registered [allocation diagnostic v2](R2_EVENT_ALLOCATION_V2.md) now retains primary/replica reports of 608,412 bytes each, with 3,840 matching windows and 51 tests. Preserve 378 earlier artifacts/code pins, failed v1 and seals. No neuron memory saving or CPU/energy advantage is established.
+
+🟠 [Next] Preregister a finite retained-evidence decision gate combining original predictive/mechanism results with completed accounting/separation/allocation receipts. Identify a decision-changing SNN mechanism and independently qualifiable task prerequisite, or hold further resource work. No new measurement, scoring, search/acquisition, automatic v3, threshold change or R3 optimization.
 
 ⭕️ [Pending] Actual allocation statistics, complete deployment resource/physical-energy evidence and independent SNN usefulness retain their prerequisites. A smaller report improves evidence retention for both implementations; it does not show an ANN-absent SNN benefit. The circuit-efficiency hypothesis still requires causal/useful behavior and sufficiently strong matched controls.
 

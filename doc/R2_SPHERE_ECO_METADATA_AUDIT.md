@@ -88,7 +88,9 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 -m pytest -q -o cache_dir=wor
 
 🟢 [Done] The subsequent [report-representation preflight](R2_ALLOCATION_REPORT_PREFLIGHT.md) proves a conditional 7,302,888-byte ceiling within fixed 8 MiB, with lossless ownership/unknown-site encoding and pre-launch saved-result validation. 41 tests and exact static replay pass, preserving 372 prior artifacts, failure and seals. No allocation measurement or diagnostic worker is run.
 
-🟠 [Next] Separately preregister a fresh allocation-diagnostic v2 on the same fixed inputs with the bounded report encoder and saved-result gate. Retain a complete result before replication, fail explicitly on capacity overflow, and preserve failed v1. Equal shared/output ownership for neuron and event-driven scalar controls; no acquisition, learner scoring, threshold change or R3 optimization.
+🟢 [Done] A separately registered [allocation diagnostic v2](R2_EVENT_ALLOCATION_V2.md) now retains primary/replica reports of 608,412 bytes each, with 3,840 matching windows and 51 tests. Preserve 378 earlier artifacts/code pins, failed v1 and seals. No neuron memory saving or CPU/energy advantage is established.
+
+🟠 [Next] Preregister a finite retained-evidence decision gate combining original predictive/mechanism results with completed accounting/separation/allocation receipts. Identify a decision-changing SNN mechanism and independently qualifiable task prerequisite, or hold further resource work. No new measurement, scoring, search/acquisition, automatic v3, threshold change or R3 optimization.
 
 ⭕️ [Pending] New payload acquisition and independent SNN-usefulness/energy claims require a compatible independently justified source/task contract, scoped access/size/coverage metadata and the original preregistered causal/quality/resource gates. SPHERE/ECO documented-stream exclusions are closed; no automatic metadata retry or CASAS expansion.
 

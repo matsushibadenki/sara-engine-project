@@ -62,10 +62,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 
 🟢 [Done] The subsequent [report-representation preflight](R2_ALLOCATION_REPORT_PREFLIGHT.md) proves a conditional 7,302,888-byte ceiling within fixed 8 MiB, with lossless ownership/unknown-site encoding and pre-launch saved-result validation. 41 tests and exact static replay pass, preserving 372 prior artifacts, failure and seals. No allocation measurement or diagnostic worker is run.
 
-🟠 [Next] Separately preregister a fresh allocation-diagnostic v2 on the same fixed inputs with the bounded report encoder and saved-result gate. Retain a complete result before replication, fail explicitly on capacity overflow, and preserve failed v1. Equal shared/output ownership for neuron and event-driven scalar controls; no acquisition, learner scoring, threshold change or R3 optimization.
+🟢 [Done] A separately registered [allocation diagnostic v2](R2_EVENT_ALLOCATION_V2.md) now retains primary/replica reports of 608,412 bytes each, with 3,840 matching windows and 51 tests. Preserve 378 earlier artifacts/code pins, failed v1 and seals. No neuron memory saving or CPU/energy advantage is established.
+
+🟠 [Next] Preregister a finite retained-evidence decision gate combining original predictive/mechanism results with completed accounting/separation/allocation receipts. Identify a decision-changing SNN mechanism and independently qualifiable task prerequisite, or hold further resource work. No new measurement, scoring, search/acquisition, automatic v3, threshold change or R3 optimization.
 
 ⭕️ [Pending] Reproducible finite allocation statistics, complete deployment resource evidence and independent SNN usefulness remain unestablished. The circuit-efficiency idea remains a hypothesis to test against sufficient event-driven scalar controls. The failure justifies fixing report feasibility first, not loosening prediction/support/source conditions, adding CASAS candidates, opening seals, promoting runtime or starting R3 optimization.
 
-日本語: 同じ48ケース・144隔離プロセスの診断を実装前に登録しました。実行部・返却バッファ・計測処理を分ける実装と対照テストは成立しましたが、結果保存時に固定8 MiB上限を超え、監査全体は不合格です。生の割当結果は保存されず、定量値や再現成功は主張しません。411テスト成功・1件の実行前スキップを記録し、368既存証跡、条件、負の結果、封印を保持しました。上限変更・再実行は行わず、続く形式事前検証は上限7,302,888バイト・41テスト・完全再現で成功しました。割当計測は0で、次の診断には別の事前登録が必要です。
+日本語: 同じ48ケース・144隔離プロセスの診断を実装前に登録しました。実行部・返却バッファ・計測処理を分ける実装と対照テストは成立しましたが、結果保存時に固定8 MiB上限を超え、監査全体は不合格です。生の割当結果は保存されず、定量値や再現成功は主張しません。411テスト成功・1件の実行前スキップを記録し、368既存証跡、条件、負の結果、封印を保持しました。上限変更・再実行は行わず、続く形式事前検証は上限7,302,888バイト・41テスト・完全再現で成功しました。続くv2も別登録し、各608,412バイトの結果保存と3,840窓の一致、51テストを確認しました。SNNのメモリ優位は示されず、次は既存証跡だけで機構検証へ進む根拠を有限に判断します。
 
-简体中文：在实现前注册相同48个案例、144个隔离进程的诊断。执行部、返回缓冲区和测量工具的边界及对照测试已实现，但保存结果时超过固定8 MiB上限，整个审计判定失败。原始分配数据未保存，不声称定量结果或重放成功。记录411项测试通过、1项执行前跳过，并保留368项既有证据、原条件、负结果和封存。没有提高上限或重新运行；后续格式预检以7,302,888字节上界、41项测试和精确重放通过，新增分配测量为0；下一次诊断需要另行预注册。
+简体中文：在实现前注册相同48个案例、144个隔离进程的诊断。执行部、返回缓冲区和测量工具的边界及对照测试已实现，但保存结果时超过固定8 MiB上限，整个审计判定失败。原始分配数据未保存，不声称定量结果或重放成功。记录411项测试通过、1项执行前跳过，并保留368项既有证据、原条件、负结果和封存。没有提高上限或重新运行；后续格式预检以7,302,888字节上界、41项测试和精确重放通过，后续v2也已单独注册，各保存608,412字节，3,840个窗口一致且51项测试通过。未显示SNN内存优势；下一步仅用已有证据有限判断机制验证的依据。
