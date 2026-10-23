@@ -86,7 +86,9 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 -m pytest -q -o cache_dir=wor
 
 🟢 [Done] The subsequent [isolated allocation diagnostic](R2_EVENT_ALLOCATION_DIAGNOSTIC.md) is implemented, but its 144-worker finite run failed the fixed 8 MiB result-storage gate. No raw values or replay are retained; preserve this failure without relaxing the limit or rerunning. 411 tests pass with one expected pre-execution skip; 368 earlier artifacts/code pins and all seals remain intact.
 
-🟠 [Next] Preregister a report-representation preflight using the frozen schema/source inventory and existing synthetic fixtures only. Prove the serialized-size ceiling within the fixed 8 MiB budget, preserve ownership/unknown-site accounting and require a valid saved result before replication workers can start. No fresh allocation measurements or retry of the consumed failed run; retain all negatives and seals.
+🟢 [Done] The subsequent [report-representation preflight](R2_ALLOCATION_REPORT_PREFLIGHT.md) proves a conditional 7,302,888-byte ceiling within fixed 8 MiB, with lossless ownership/unknown-site encoding and pre-launch saved-result validation. 41 tests and exact static replay pass, preserving 372 prior artifacts, failure and seals. No allocation measurement or diagnostic worker is run.
+
+🟠 [Next] Separately preregister a fresh allocation-diagnostic v2 on the same fixed inputs with the bounded report encoder and saved-result gate. Retain a complete result before replication, fail explicitly on capacity overflow, and preserve failed v1. Equal shared/output ownership for neuron and event-driven scalar controls; no acquisition, learner scoring, threshold change or R3 optimization.
 
 ⭕️ [Pending] New payload acquisition and independent SNN-usefulness/energy claims require a compatible independently justified source/task contract, scoped access/size/coverage metadata and the original preregistered causal/quality/resource gates. SPHERE/ECO documented-stream exclusions are closed; no automatic metadata retry or CASAS expansion.
 

@@ -60,10 +60,12 @@ These are implementation checks, not retained quantitative findings from the 48-
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_event_allocation_failure.py
 ```
 
-🟠 [Next] Preregister a **bounded report-representation preflight** using the frozen schema, source inventory and existing synthetic fixtures only. Prove a serialized-size ceiling within the unchanged 8 MiB budget before any further allocation run, preserve ownership/unknown-site accounting, and fail closed before worker launch when a valid execution result is absent. No fresh allocation measurements or retry of this consumed run. Any later experiment needs a separate preregistration retaining this failure.
+🟢 [Done] The subsequent [report-representation preflight](R2_ALLOCATION_REPORT_PREFLIGHT.md) proves a conditional 7,302,888-byte ceiling within fixed 8 MiB, with lossless ownership/unknown-site encoding and pre-launch saved-result validation. 41 tests and exact static replay pass, preserving 372 prior artifacts, failure and seals. No allocation measurement or diagnostic worker is run.
+
+🟠 [Next] Separately preregister a fresh allocation-diagnostic v2 on the same fixed inputs with the bounded report encoder and saved-result gate. Retain a complete result before replication, fail explicitly on capacity overflow, and preserve failed v1. Equal shared/output ownership for neuron and event-driven scalar controls; no acquisition, learner scoring, threshold change or R3 optimization.
 
 ⭕️ [Pending] Reproducible finite allocation statistics, complete deployment resource evidence and independent SNN usefulness remain unestablished. The circuit-efficiency idea remains a hypothesis to test against sufficient event-driven scalar controls. The failure justifies fixing report feasibility first, not loosening prediction/support/source conditions, adding CASAS candidates, opening seals, promoting runtime or starting R3 optimization.
 
-日本語: 同じ48ケース・144隔離プロセスの診断を実装前に登録しました。実行部・返却バッファ・計測処理を分ける実装と対照テストは成立しましたが、結果保存時に固定8 MiB上限を超え、監査全体は不合格です。生の割当結果は保存されず、定量値や再現成功は主張しません。411テスト成功・1件の実行前スキップを記録し、368既存証跡、条件、負の結果、封印を保持しました。上限変更・再実行は行わず、次は新たな測定をせずに報告形式のサイズ上限を事前検証します。
+日本語: 同じ48ケース・144隔離プロセスの診断を実装前に登録しました。実行部・返却バッファ・計測処理を分ける実装と対照テストは成立しましたが、結果保存時に固定8 MiB上限を超え、監査全体は不合格です。生の割当結果は保存されず、定量値や再現成功は主張しません。411テスト成功・1件の実行前スキップを記録し、368既存証跡、条件、負の結果、封印を保持しました。上限変更・再実行は行わず、続く形式事前検証は上限7,302,888バイト・41テスト・完全再現で成功しました。割当計測は0で、次の診断には別の事前登録が必要です。
 
-简体中文：在实现前注册相同48个案例、144个隔离进程的诊断。执行部、返回缓冲区和测量工具的边界及对照测试已实现，但保存结果时超过固定8 MiB上限，整个审计判定失败。原始分配数据未保存，不声称定量结果或重放成功。记录411项测试通过、1项执行前跳过，并保留368项既有证据、原条件、负结果和封存。没有提高上限或重新运行；下一步在不新增测量的情况下，预注册并验证报告格式的大小上界。
+简体中文：在实现前注册相同48个案例、144个隔离进程的诊断。执行部、返回缓冲区和测量工具的边界及对照测试已实现，但保存结果时超过固定8 MiB上限，整个审计判定失败。原始分配数据未保存，不声称定量结果或重放成功。记录411项测试通过、1项执行前跳过，并保留368项既有证据、原条件、负结果和封存。没有提高上限或重新运行；后续格式预检以7,302,888字节上界、41项测试和精确重放通过，新增分配测量为0；下一次诊断需要另行预注册。

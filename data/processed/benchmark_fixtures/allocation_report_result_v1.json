@@ -1,0 +1,77 @@
+{
+  "actual_learning_writes": 0,
+  "all_report_preflight_gates_passed": true,
+  "allocation_measurements": 0,
+  "byte_proof": {
+    "budget_bytes": 8388608,
+    "conditional_on_domain_validation": true,
+    "proved_upper_bound_bytes": 7302888,
+    "remaining_budget_bytes": 1085720,
+    "saturation_is_a_relaxed_syntax_witness_not_measurement": true,
+    "saturation_sha256": "0c99c0c4f7c942bd8b2c399e5a4855d3cd3da5ca056b23974c4acdb507fa1f3c",
+    "saturation_witness_bytes": 7293366
+  },
+  "constructed_records": 9504,
+  "constructed_report_bytes": 699788,
+  "constructed_report_is_measurement": false,
+  "constructed_report_sha256": "bd8bdde47c6e05a916baaae17bd5557e19d3cf9b1958abd9fe9aa195b32fa8a2",
+  "cpu_seconds": null,
+  "decision": "bounded_report_representation_verified_no_measurement_authorized",
+  "energy_joules": null,
+  "future_site_capacity_certified": false,
+  "lossless_round_trip": true,
+  "predictions_scored": 0,
+  "prior_artifacts_preserved": 372,
+  "rss_bytes": null,
+  "runtime_promotion_authorized": false,
+  "schema": "sara-allocation-report-preflight-result-v1",
+  "snn_resource_advantage_established": false,
+  "source_inventory": [
+    {
+      "lines": 303,
+      "path": "src/sara_engine/evaluation/event_allocation.py",
+      "sha256": "a3b537c46f77c736f1eb391bc052c74bd44685d2b16a2b5c82dadbc2af749c38",
+      "site_example_json_bytes": 50
+    },
+    {
+      "lines": 51,
+      "path": "src/sara_engine/evaluation/event_allocation_execution.py",
+      "sha256": "0e175cbec3d7861b3304d1e75b7c6c67863c12b258d3c800baed180eca1539d5",
+      "site_example_json_bytes": 60
+    },
+    {
+      "lines": 153,
+      "path": "src/sara_engine/evaluation/event_execution.py",
+      "sha256": "58a061365ed998bd982f4803b25cb04efaf1479085bb0fe415a3fe3b28c804bb",
+      "site_example_json_bytes": 49
+    },
+    {
+      "lines": 63,
+      "path": "src/sara_engine/evaluation/temporal_information.py",
+      "sha256": "a0b33e98d6d33d1db8d915c6a772750aff807a5a7e6fcb233aa92417a5723bd1",
+      "site_example_json_bytes": 54
+    },
+    {
+      "lines": 83,
+      "path": "src/sara_engine/evaluation/temporal_capability_boundary.py",
+      "sha256": "6a7aca8c40f91fcaa5622027d2686829528769c022d7edb9975c741e41c36a68",
+      "site_example_json_bytes": 62
+    },
+    {
+      "lines": 123,
+      "path": "src/sara_engine/neuro/neuron.py",
+      "sha256": "0ca80ed781d37b64817bf2c5a9bc4fe313a0bcccf63037a8aeef43bc7d995c9f",
+      "site_example_json_bytes": 35
+    },
+    {
+      "lines": 130,
+      "path": "scripts/eval/event_allocation.py",
+      "sha256": "b9674e20c90c139f9098f9f78f0397276b362ea38758be2b8355a9aabb9bfe4a",
+      "site_example_json_bytes": 36
+    }
+  ],
+  "test_opening_authorized": false,
+  "total_transient_peak_bytes": null,
+  "unknown_sites_preserved": true,
+  "worker_launches": 0
+}

@@ -78,10 +78,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 
 🟢 [Done] The subsequent [isolated allocation diagnostic](R2_EVENT_ALLOCATION_DIAGNOSTIC.md) is implemented, but its 144-worker finite run failed the fixed 8 MiB result-storage gate. No raw values or replay are retained; preserve this failure without relaxing the limit or rerunning. 411 tests pass with one expected pre-execution skip; 368 earlier artifacts/code pins and all seals remain intact.
 
-🟠 [Next] Preregister a report-representation preflight using the frozen schema/source inventory and existing synthetic fixtures only. Prove the serialized-size ceiling within the fixed 8 MiB budget, preserve ownership/unknown-site accounting and require a valid saved result before replication workers can start. No fresh allocation measurements or retry of the consumed failed run; retain all negatives and seals.
+🟢 [Done] The subsequent [report-representation preflight](R2_ALLOCATION_REPORT_PREFLIGHT.md) proves a conditional 7,302,888-byte ceiling within fixed 8 MiB, with lossless ownership/unknown-site encoding and pre-launch saved-result validation. 41 tests and exact static replay pass, preserving 372 prior artifacts, failure and seals. No allocation measurement or diagnostic worker is run.
+
+🟠 [Next] Separately preregister a fresh allocation-diagnostic v2 on the same fixed inputs with the bounded report encoder and saved-result gate. Retain a complete result before replication, fail explicitly on capacity overflow, and preserve failed v1. Equal shared/output ownership for neuron and event-driven scalar controls; no acquisition, learner scoring, threshold change or R3 optimization.
 
 ⭕️ [Pending] Independent useful-system/energy evidence and new-source acquisition retain all original prerequisites and seals. No new compatible source is certified, and no metadata retry or CASAS expansion is authorized.
 
-日本語: 既知結果の集計証跡19件だけを対象に、読取上限・判断規則・コードを登録して監査しました。局所学習による時間履歴の識別成果は保持しますが、十分な履歴・スカラー対照を超える予測効果と総コスト優位は未確認です。実更新数は補充対照も含めて一致し、未計測費用はゼロとみなしません。本監査の333テストと完全再現で353件の証跡を保持しました。続く合成入力の計上契約も48ケースで成立し、356テストと再現が成功しました。続く計測分離は48ケース・381テストで成立しましたが、隔離割当診断は固定8 MiBの結果保存上限で不合格です。失敗を保持し、次は新たな測定なしで報告形式の上限を事前検証します。
+日本語: 既知結果の集計証跡19件だけを対象に、読取上限・判断規則・コードを登録して監査しました。局所学習による時間履歴の識別成果は保持しますが、十分な履歴・スカラー対照を超える予測効果と総コスト優位は未確認です。実更新数は補充対照も含めて一致し、未計測費用はゼロとみなしません。本監査の333テストと完全再現で353件の証跡を保持しました。続く合成入力の計上契約も48ケースで成立し、356テストと再現が成功しました。続く計測分離は48ケース・381テストで成立しましたが、隔離割当診断は固定8 MiBの結果保存上限で不合格です。失敗を保持し、続く形式事前検証は上限7,302,888バイト・41テスト・完全再現で成功しました。割当計測は0で、次の診断には別の事前登録が必要です。
 
-简体中文：仅针对19份已知结果的汇总证据，在注册读取预算、判断规则和代码后完成审计。保留局部学习识别时间历史的成果，但尚未证明相对充分历史和标量对照的预测增益或完整成本优势。包含补充对照的真实更新次数一致，未测成本不视为零。本审计的333项测试与精确重放保留353项证据。后续合成输入核算契约的48个案例也已通过，356项测试与重放成功。后续测量分离通过48个案例和381项测试，但隔离分配诊断因结果超过固定8 MiB上限而失败。保留失败；下一步不新增测量，先验证报告格式上界。
+简体中文：仅针对19份已知结果的汇总证据，在注册读取预算、判断规则和代码后完成审计。保留局部学习识别时间历史的成果，但尚未证明相对充分历史和标量对照的预测增益或完整成本优势。包含补充对照的真实更新次数一致，未测成本不视为零。本审计的333项测试与精确重放保留353项证据。后续合成输入核算契约的48个案例也已通过，356项测试与重放成功。后续测量分离通过48个案例和381项测试，但隔离分配诊断因结果超过固定8 MiB上限而失败。保留失败；后续格式预检以7,302,888字节上界、41项测试和精确重放通过，新增分配测量为0；下一次诊断需要另行预注册。
