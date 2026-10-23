@@ -60,10 +60,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python scripts
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_event_allocation_v2.py tests/test_allocation_report.py tests/test_event_allocation_failure.py tests/test_project_paths.py
 ```
 
-🟠 [Next] Preregister a finite **retained-evidence decision gate** combining the original predictive/mechanism results with completed accounting/separation/allocation receipts. Identify a decision-changing SNN-specific causal mechanism and independently qualifiable task prerequisite, or explicitly hold further resource work. Close this synthetic measurement-feasibility branch rather than adding diagnostic variants to seek a favorable spike result. No new measurement, scoring, source search/acquisition, automatic v3, threshold change or R3 optimization.
+🟢 [Done] [Finite retained-evidence mechanism/task audit](R2_MECHANISM_DECISION_GATE.md): 26 aggregate receipts / 1,062,066 bytes; original predictive decisions and accounting/replication reconcile. Conditional branch-local delayed eligibility remains untested; no qualified fresh independent task is established. Additional resource work is held. Exact replay, 63 passing tests, 386 prior artifact pins; zero new measurement/scoring/acquisition, unchanged conditions, negatives and seals.
+
+⭕️ [Pending] Qualify a causal branch-local eligibility effect and a fresh independent task under the unchanged original gates before considering a separately registered resource protocol. No automatic diagnostic v3, source expansion, scoring, condition relaxation or seal opening.
 
 ⭕️ [Pending] Independent predictive usefulness and full deployment/physical-energy evidence retain their original gates. Circuit sparsity/local learning remains a design hypothesis, but the scalar control shares sparse scheduling and the retained diagnostic does not favor a neuron memory saving. Future work needs evidence that can change the mechanism decision, not a relabeling of shared costs as an SNN-only benefit.
 
-日本語: 診断v2を実装前に別登録し、固定48ケース・各144プロセスの本実行と独立再現を完了しました。詳細結果は各608,412バイトで保存され、3,840窓の割当値、状態・配送・所有権が一致しました。単独方式の最大新規割当ピークはニューロン3,048／スカラー2,280バイトで、SNNのメモリ優位は示されません。51テストが成功し、378既存証跡、v1失敗、条件・負の結果・封印を保持しました。次は測定の派生を増やさず、既存証跡だけで次の機構検証へ進む根拠を有限に判断します。速度・電力・独立有用性は未確認です。
+日本語: 診断v2を実装前に別登録し、固定48ケース・各144プロセスの本実行と独立再現を完了しました。詳細結果は各608,412バイトで保存され、3,840窓の割当値、状態・配送・所有権が一致しました。単独方式の最大新規割当ピークはニューロン3,048／スカラー2,280バイトで、SNNのメモリ優位は示されません。51テストが成功し、378既存証跡、v1失敗、条件・負の結果・封印を保持しました。続く26件の有限判断監査も63テストと完全再現で完了しました。枝ごとの遅延適格性は条件付き設計候補ですが、因果効果と新しい独立課題の根拠が不足するため追加資源計測を保留します。速度・電力・独立有用性は未確認です。
 
-简体中文：在实现前单独注册诊断v2，完成固定48个案例、每阶段144个进程的主执行及独立复现。详细结果各608,412字节，3,840个窗口的分配值、状态、回执和所有权一致。独立实现的新分配峰值为神经元3,048／标量2,280字节，未显示SNN内存优势。51项测试通过，保留378项既有证据、v1失败、原条件、负结果和封存。下一步不扩充分配诊断，仅依据已有证据有限判断继续机制验证的依据。速度、能耗和独立效用仍未确认。
+简体中文：在实现前单独注册诊断v2，完成固定48个案例、每阶段144个进程的主执行及独立复现。详细结果各608,412字节，3,840个窗口的分配值、状态、回执和所有权一致。独立实现的新分配峰值为神经元3,048／标量2,280字节，未显示SNN内存优势。51项测试通过，保留378项既有证据、v1失败、原条件、负结果和封存。后续26项证据的有限判断审计也以63项测试和完全重放通过；候选机制的因果效果和新独立任务仍缺乏证据，暂停额外资源测量。速度、能耗和独立效用仍未确认。

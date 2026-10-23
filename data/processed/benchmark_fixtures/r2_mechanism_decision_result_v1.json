@@ -1,0 +1,853 @@
+{
+  "additional_resource_work": {
+    "failed": [
+      "independent_usefulness"
+    ],
+    "measurement_authorized": false,
+    "status": "hold",
+    "unknown": [
+      "fresh_independent_task_qualified",
+      "causal_mechanism_effect_with_matched_controls",
+      "positive_actual_write_and_state_fairness",
+      "decision_changing_resource_question"
+    ]
+  },
+  "audit_learning_writes": 0,
+  "decision": "hold_additional_resource_work_until_causal_mechanism_and_independent_task_prerequisites",
+  "diagnostic_worker_launches": 0,
+  "historical_parity_scope": "Per-comparison positive actual writes; overlapping confidence supplement rows are not summed as independent experiments.",
+  "historical_prediction_audit_exactly_reconstructed": true,
+  "historical_write_parity_passed": true,
+  "independent_task": {
+    "fixed_definition": {
+      "current": "Exact raw sensor/message, weekday/hour/15-minute bin; original support/class/day/recurrence/contrast/log(80)/state/write/quality gates unchanged.",
+      "cutoff_spacing_seconds": 60,
+      "delay_seconds": [
+        300,
+        600
+      ],
+      "development_split": "min(60,N//6)",
+      "history_events": 8,
+      "history_max_gap_seconds": 300,
+      "minimum_valid_recorded_dates": 180,
+      "positive": "First observed eligible binary notification in delay window; raw sensor name lowercased starts with kitchen and raw message equals ON. Other observed eligible notifications are negative, absent results are not negatives. Binary messages exactly ON/OFF/OPEN/CLOSE/CLOSED. No room renaming, power thresholding, bit-to-ON conversion, occupancy or clinical-target substitution, packet-history expansion/backdating, artificial duplication or extra households.",
+      "target_arrivals": 70212,
+      "training_split": "min(180,2*N//3)"
+    },
+    "readiness": "not_established_by_selected_receipts",
+    "required_conditions": [
+      "fresh identity/fit support qualified before labels or scores",
+      "native target-compatible source, 180-day minimum and original fit/development split; 270 dates for 180 fit dates",
+      "at least 70212 eligible arrivals within fixed acquisition/state budgets; unknown events retained",
+      "exact-current/time recurrence plus sufficient opposing-history, both-class and date support under unchanged evidence rules",
+      "native 300-600 second delayed outcomes; absent outcomes are not negative; no relabeling or backdating",
+      "all original quality/gap/state/positive changed-write/frozen-period gates, test sealed",
+      "matching positive actual writes must be possible without dummy/no-op/duplicate updates or private history"
+    ],
+    "selected_source": null,
+    "source_constraints": {
+      "finite_unused_household_survivors": {
+        "pointer": "/survivors",
+        "receipt": "casas_roster_screen_result_v1",
+        "scope": "Fixed exhausted roster, not all possible sources",
+        "unit": null,
+        "value": []
+      },
+      "hh105_arrival_gate": {
+        "pointer": "/gates/arrival_target",
+        "receipt": "casas_arrival_preflight_result_v1",
+        "scope": "Consumed training-only input preflight",
+        "unit": null,
+        "value": false
+      },
+      "public_acquisitions_approved": {
+        "pointer": "/approved_payload_acquisitions",
+        "receipt": "source_metadata_feasibility_result_v1",
+        "scope": "No ready source from the fixed review",
+        "unit": null,
+        "value": []
+      },
+      "source_dates_for_180_fit": {
+        "pointer": "/minimum_valid_source_dates_for_180_fit_dates",
+        "receipt": "source_metadata_feasibility_result_v1",
+        "scope": "Original fit-split prerequisite",
+        "unit": "recorded dates",
+        "value": 270
+      },
+      "sphere_eco_acquisitions_approved": {
+        "pointer": "/approved_payload_acquisitions",
+        "receipt": "sphere_eco_metadata_result_v1",
+        "scope": "Documented streams fail unchanged target semantics",
+        "unit": null,
+        "value": []
+      }
+    }
+  },
+  "learning_evidence": [
+    {
+      "complete_work_accounting": false,
+      "component_identification_passed": true,
+      "component_scope": "Controlled first-order shared-observer local learning",
+      "id": "shared_observer_learning_result_receipt_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/0",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "backend_increment_passed": false,
+        "component_learning_passed": true,
+        "execution_integrity_passed": true
+      },
+      "scalar_equivalence": null,
+      "snn_predictive_increment_established": false,
+      "write_parity": null
+    },
+    {
+      "complete_work_accounting": false,
+      "component_identification_passed": false,
+      "component_scope": "Controlled middle-order and gap local learning",
+      "id": "temporal_boundary_learning_result_receipt_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/1",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "component_learning_passed": false,
+        "execution_integrity_passed": true,
+        "strong_reference_superiority": false
+      },
+      "scalar_equivalence": null,
+      "snn_predictive_increment_established": false,
+      "write_parity": null
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Independent prospective appliance comparison",
+      "id": "appliances_learning_result_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/2",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "actual_updates_equal": true,
+        "all_writes_changed": true,
+        "checkpoint_replay": true,
+        "ordinal_gap_equivalence": true,
+        "quality": false,
+        "shuffled_outcome": false,
+        "snn_increment": false,
+        "state_and_credit": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "write_parity": {
+        "actual_changed_writes": {
+          "analog": 282400,
+          "histogram": 282400,
+          "joint": 282400,
+          "joint_shuffled": 282400,
+          "ordinal": 282400,
+          "snapshot": 282400,
+          "transition_gap": 282400
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "analog": 0,
+          "histogram": 0,
+          "joint": 0,
+          "joint_shuffled": 0,
+          "ordinal": 0,
+          "snapshot": 0,
+          "transition_gap": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_identification_passed": true,
+      "component_scope": "Post-support training-only posterior identification",
+      "id": "room_local_identification_result_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/3",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {},
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "write_parity": {
+        "actual_changed_writes": {
+          "age": 10400,
+          "current": 10400,
+          "current_fine": 10400,
+          "histogram": 10400,
+          "scalar_age": 10400,
+          "sequence": 10400
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": null,
+        "frozen_period_zero": null
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Post-support HH102 diagnostic",
+      "id": "casas_notification_diagnostic_result_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/4",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": false,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "write_parity": {
+        "actual_changed_writes": {
+          "constant_gap": 18192,
+          "current": 18192,
+          "current_fine": 18192,
+          "histogram": 18192,
+          "joint": 18192,
+          "scalar_joint": 18192,
+          "shuffled_outcome": 18192,
+          "transition": 18192
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "constant_gap": 0,
+          "current": 0,
+          "current_fine": 0,
+          "histogram": 0,
+          "joint": 0,
+          "scalar_joint": 0,
+          "shuffled_outcome": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Independent HH103 comparison",
+      "id": "casas_180_result_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/5",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "write_parity": {
+        "actual_changed_writes": {
+          "constant_gap": 56028,
+          "current": 56028,
+          "current_fine": 56028,
+          "histogram": 56028,
+          "joint": 56028,
+          "scalar_joint": 56028,
+          "shuffled_outcome": 56028,
+          "transition": 56028
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "constant_gap": 0,
+          "current": 0,
+          "current_fine": 0,
+          "histogram": 0,
+          "joint": 0,
+          "scalar_joint": 0,
+          "shuffled_outcome": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Reused HH103 training confidence diagnostic",
+      "id": "casas_confidence_result_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/6",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "write_parity": {
+        "actual_changed_writes": {
+          "confidence": 27972,
+          "confidence_constant": 27972,
+          "constant_gap": 27972,
+          "current": 27972,
+          "current_fine": 27972,
+          "histogram": 27972,
+          "joint": 27972,
+          "scalar_confidence": 27972,
+          "shuffled_confidence": 27972,
+          "transition": 27972
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "confidence": 0,
+          "confidence_constant": 0,
+          "constant_gap": 0,
+          "current": 0,
+          "current_fine": 0,
+          "histogram": 0,
+          "joint": 0,
+          "scalar_confidence": 0,
+          "shuffled_confidence": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "HH103 confidence sufficient-reference supplement",
+      "id": "casas_confidence_references_result_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/7",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": null,
+      "snn_predictive_increment_established": false,
+      "write_parity": {
+        "actual_changed_writes": {
+          "current_fine": 27972,
+          "histogram": 27972
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "current_fine": 0,
+          "histogram": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "HH104 training evidence diagnostic",
+      "id": "casas_evidence_result_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/8",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "write_parity": {
+        "actual_changed_writes": {
+          "confidence": 82062,
+          "constant_gap": 82062,
+          "current": 82062,
+          "current_fine": 82062,
+          "evidence": 82062,
+          "evidence_constant": 82062,
+          "histogram": 82062,
+          "joint": 82062,
+          "scalar_evidence": 82062,
+          "shuffled_evidence": 82062,
+          "transition": 82062
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "confidence": 0,
+          "constant_gap": 0,
+          "current": 0,
+          "current_fine": 0,
+          "evidence": 0,
+          "evidence_constant": 0,
+          "histogram": 0,
+          "joint": 0,
+          "scalar_evidence": 0,
+          "shuffled_evidence": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    },
+    {
+      "complete_work_accounting": false,
+      "component_scope": "Reused HH104 training pooling diagnostic",
+      "id": "casas_pooling_result_v1",
+      "independent_usefulness_passed": false,
+      "provenance": {
+        "pointer": "/learning_rows/9",
+        "receipt": "r2_research_decision_result_v1",
+        "reconstructed_from_original_receipts": true
+      },
+      "resource_advantage_established": false,
+      "retained_feasibility_gates": {
+        "active_days": false,
+        "bounded_pooling": true,
+        "coverage": false,
+        "opposing_contexts": false
+      },
+      "retained_gates": {
+        "balanced_gain": false,
+        "brier_gain": false,
+        "gap_necessity": false,
+        "paired_outcome": true,
+        "scalar_equivalence": true
+      },
+      "scalar_equivalence": true,
+      "snn_predictive_increment_established": false,
+      "write_parity": {
+        "actual_changed_writes": {
+          "current": 52659,
+          "current_fine": 52659,
+          "histogram": 52659,
+          "joint": 52659,
+          "joint_evidence": 52659,
+          "pool": 52659,
+          "pool_constant": 52659,
+          "pool_evidence": 52659,
+          "pool_order": 52659,
+          "pool_timing": 52659,
+          "scalar_pool": 52659,
+          "shuffled_pool": 52659,
+          "transition": 52659
+        },
+        "equal_positive_actual_writes": true,
+        "frozen_period_writes": {
+          "current": 0,
+          "current_fine": 0,
+          "histogram": 0,
+          "joint": 0,
+          "joint_evidence": 0,
+          "pool": 0,
+          "pool_constant": 0,
+          "pool_evidence": 0,
+          "pool_order": 0,
+          "pool_timing": 0,
+          "scalar_pool": 0,
+          "shuffled_pool": 0,
+          "transition": 0
+        },
+        "frozen_period_zero": true
+      }
+    }
+  ],
+  "measurement_evidence": {
+    "aggregate_service_volumes": {
+      "neuron": {
+        "backend.spike": 96,
+        "backend.step": 224,
+        "expiry.expired": 112,
+        "expiry.pop": 224,
+        "expiry.push": 224,
+        "expiry.stale": 112,
+        "feedback.cancel": 16,
+        "feedback.cancelled": 16,
+        "feedback.delivered": 96,
+        "feedback.rejected": 100,
+        "feedback.result": 196,
+        "probe.create": 224,
+        "wait.advance": 748
+      },
+      "scalar": {
+        "backend.spike": 96,
+        "backend.step": 224,
+        "expiry.expired": 112,
+        "expiry.pop": 224,
+        "expiry.push": 224,
+        "expiry.stale": 112,
+        "feedback.cancel": 16,
+        "feedback.cancelled": 16,
+        "feedback.delivered": 96,
+        "feedback.rejected": 100,
+        "feedback.result": 196,
+        "probe.create": 224,
+        "wait.advance": 748
+      },
+      "shared": {
+        "input.decode": 224,
+        "input.fields": 448,
+        "observer.channels": 1200,
+        "observer.ordinal": 224,
+        "observer.prefix_copy": 656,
+        "observer.projection": 224,
+        "observer.sequence": 224,
+        "observer.snapshot": 448,
+        "observer.sort_input": 400
+      }
+    },
+    "allocation_replication_reconciled": true,
+    "deployment_cpu": null,
+    "neuron_not_smaller_in_selected_peak_and_graph_samples": true,
+    "new_call_peak_observations": {
+      "pointer": "/modes",
+      "receipt": "event_allocation_v2_summary_v1",
+      "scope": "Input-only instrumented per-call/new-block and boundary-graph maxima, not full deployment cost",
+      "unit": null,
+      "value": {
+        "neuron": {
+          "max_boundary_graph_bytes": {
+            "executor_graph_bytes": 10354,
+            "executor_only_bytes": 9363,
+            "output_graph_bytes": 1859,
+            "output_only_bytes": 716,
+            "shared_reachable_bytes": 1435,
+            "union_bytes": 10778
+          },
+          "max_by_stage_bytes": {
+            "advance": {
+              "new_live_at_return_bytes": 816,
+              "new_peak_bytes": 816,
+              "peak_excess_over_return_bytes": 0,
+              "tracer_metadata_after_snapshot_bytes": 2160
+            },
+            "close": {
+              "new_live_at_return_bytes": 832,
+              "new_peak_bytes": 1152,
+              "peak_excess_over_return_bytes": 320,
+              "tracer_metadata_after_snapshot_bytes": 1648
+            },
+            "initialize": {
+              "new_live_at_return_bytes": 1808,
+              "new_peak_bytes": 1808,
+              "peak_excess_over_return_bytes": 0,
+              "tracer_metadata_after_snapshot_bytes": 3824
+            },
+            "input": {
+              "new_live_at_return_bytes": 3048,
+              "new_peak_bytes": 3048,
+              "peak_excess_over_return_bytes": 0,
+              "tracer_metadata_after_snapshot_bytes": 5904
+            },
+            "notify": {
+              "new_live_at_return_bytes": 424,
+              "new_peak_bytes": 424,
+              "peak_excess_over_return_bytes": 0,
+              "tracer_metadata_after_snapshot_bytes": 2000
+            }
+          },
+          "max_new_traced_bytes": {
+            "new_live_at_return_bytes": 3048,
+            "new_peak_bytes": 3048,
+            "peak_excess_over_return_bytes": 320,
+            "tracer_metadata_after_snapshot_bytes": 5904
+          },
+          "recorded_calls": 1280,
+          "service_receipts": {
+            "neuron": {
+              "cancelled": 16,
+              "created": 224,
+              "delivered": 96,
+              "expired": 112,
+              "rejected_result": 100,
+              "stale_timer": 112
+            }
+          },
+          "shared_input_calls": 224,
+          "windows_with_peak_excess": 48,
+          "workers": 48
+        },
+        "paired": {
+          "max_boundary_graph_bytes": {
+            "executor_graph_bytes": 12865,
+            "executor_only_bytes": 11563,
+            "output_graph_bytes": 2194,
+            "output_only_bytes": 1060,
+            "shared_reachable_bytes": 1634,
+            "union_bytes": 13425
+          },
+          "max_by_stage_bytes": {
+            "advance": {
+              "new_live_at_return_bytes": 984,
+              "new_peak_bytes": 1456,
+              "peak_excess_over_return_bytes": 472,
+              "tracer_metadata_after_snapshot_bytes": 2416
+            },
+            "close": {
+              "new_live_at_return_bytes": 0,
+              "new_peak_bytes": 320,
+              "peak_excess_over_return_bytes": 320,
+              "tracer_metadata_after_snapshot_bytes": 1392
+            },
+            "initialize": {
+              "new_live_at_return_bytes": 1712,
+              "new_peak_bytes": 1904,
+              "peak_excess_over_return_bytes": 192,
+              "tracer_metadata_after_snapshot_bytes": 3984
+            },
+            "input": {
+              "new_live_at_return_bytes": 3424,
+              "new_peak_bytes": 3896,
+              "peak_excess_over_return_bytes": 472,
+              "tracer_metadata_after_snapshot_bytes": 6320
+            },
+            "notify": {
+              "new_live_at_return_bytes": 672,
+              "new_peak_bytes": 1208,
+              "peak_excess_over_return_bytes": 536,
+              "tracer_metadata_after_snapshot_bytes": 2288
+            }
+          },
+          "max_new_traced_bytes": {
+            "new_live_at_return_bytes": 3424,
+            "new_peak_bytes": 3896,
+            "peak_excess_over_return_bytes": 536,
+            "tracer_metadata_after_snapshot_bytes": 6320
+          },
+          "recorded_calls": 1280,
+          "service_receipts": {
+            "neuron": {
+              "cancelled": 16,
+              "created": 224,
+              "delivered": 96,
+              "expired": 112,
+              "rejected_result": 100,
+              "stale_timer": 112
+            },
+            "scalar": {
+              "cancelled": 16,
+              "created": 224,
+              "delivered": 96,
+              "expired": 112,
+              "rejected_result": 100,
+              "stale_timer": 112
+            }
+          },
+          "shared_input_calls": 224,
+          "windows_with_peak_excess": 1280,
+          "workers": 48
+        },
+        "scalar": {
+          "max_boundary_graph_bytes": {
+            "executor_graph_bytes": 8212,
+            "executor_only_bytes": 7221,
+            "output_graph_bytes": 1859,
+            "output_only_bytes": 716,
+            "shared_reachable_bytes": 1435,
+            "union_bytes": 8636
+          },
+          "max_by_stage_bytes": {
+            "advance": {
+              "new_live_at_return_bytes": 816,
+              "new_peak_bytes": 816,
+              "peak_excess_over_return_bytes": 0,
+              "tracer_metadata_after_snapshot_bytes": 2160
+            },
+            "close": {
+              "new_live_at_return_bytes": 832,
+              "new_peak_bytes": 1152,
+              "peak_excess_over_return_bytes": 320,
+              "tracer_metadata_after_snapshot_bytes": 1744
+            },
+            "initialize": {
+              "new_live_at_return_bytes": 1808,
+              "new_peak_bytes": 1808,
+              "peak_excess_over_return_bytes": 0,
+              "tracer_metadata_after_snapshot_bytes": 3824
+            },
+            "input": {
+              "new_live_at_return_bytes": 2280,
+              "new_peak_bytes": 2280,
+              "peak_excess_over_return_bytes": 0,
+              "tracer_metadata_after_snapshot_bytes": 5136
+            },
+            "notify": {
+              "new_live_at_return_bytes": 424,
+              "new_peak_bytes": 424,
+              "peak_excess_over_return_bytes": 0,
+              "tracer_metadata_after_snapshot_bytes": 2000
+            }
+          },
+          "max_new_traced_bytes": {
+            "new_live_at_return_bytes": 2280,
+            "new_peak_bytes": 2280,
+            "peak_excess_over_return_bytes": 320,
+            "tracer_metadata_after_snapshot_bytes": 5136
+          },
+          "recorded_calls": 1280,
+          "service_receipts": {
+            "scalar": {
+              "cancelled": 16,
+              "created": 224,
+              "delivered": 96,
+              "expired": 112,
+              "rejected_result": 100,
+              "stale_timer": 112
+            }
+          },
+          "shared_input_calls": 224,
+          "windows_with_peak_excess": 48,
+          "workers": 48
+        }
+      }
+    },
+    "per_mode_calls": 1280,
+    "physical_energy": null,
+    "replicated_windows": 3840,
+    "report_preflight_is_resource_measurement": false,
+    "source": {
+      "aggregation": "sum identical typed metrics; no heterogeneous cost sum",
+      "pointer": "/cases",
+      "receipt": "event_work_result_v1"
+    },
+    "state_and_receipt_contracts_reconciled": true,
+    "total_process_transient_peak": null,
+    "v1_failure_retained": true
+  },
+  "mechanism_candidates": [
+    {
+      "evidence": [
+        {
+          "pointer": "/component_learning_passed",
+          "receipt": "shared_observer_learning_result_receipt_v1",
+          "scope": "Controlled shared-observer learning",
+          "unit": null,
+          "value": true
+        },
+        {
+          "pointer": "/backend_increment_passed",
+          "receipt": "shared_observer_learning_result_receipt_v1",
+          "scope": "Fixed LIF increment gate",
+          "unit": null,
+          "value": false
+        }
+      ],
+      "id": "shared_temporal_information",
+      "status": "retained_component_not_snn_increment",
+      "status_rule": "retain component only; sufficient nonspiking controls also recover history"
+    },
+    {
+      "evidence": [
+        {
+          "pointer": "/strong_reference_superiority",
+          "receipt": "temporal_boundary_learning_result_receipt_v1",
+          "scope": "Joint middle-order/gap comparison",
+          "unit": null,
+          "value": false
+        },
+        {
+          "pointer": "/decision",
+          "receipt": "temporal_boundary_learning_result_receipt_v1",
+          "scope": "Preserve joint failure and reported gap-only positive scope",
+          "unit": null,
+          "value": "Retain negative joint quality result without retuning; middle-order Brier exceeds 0.20 in every seed; gap quality and all mechanism gates pass. Sufficient non-spiking references have lower Brier in both families."
+        }
+      ],
+      "id": "arrival_indexed_lif_retuning",
+      "status": "closed_known_formulation",
+      "status_rule": "closed for this known formulation; preserve failed backend increment and stronger-reference results"
+    },
+    {
+      "evidence": [
+        {
+          "pointer": "/modes/scalar/shared_input_calls",
+          "receipt": "event_allocation_v2_summary_v1",
+          "scope": "Equally event-driven scalar input service",
+          "unit": "calls",
+          "value": 224
+        }
+      ],
+      "id": "event_driven_scheduling_only",
+      "status": "shared_implementation_opportunity",
+      "status_rule": "shared implementation opportunity, not an SNN-specific mechanism; no additional diagnostic variants"
+    },
+    {
+      "causal_question": "Does bounded branch-local activity eligibility assign delayed outcomes to the causally relevant past branch under fixed observation and actual-update budgets?",
+      "constraints": [
+        "CPU/local/sparse/auditable updates, no global backpropagation/matrices/GPU",
+        "fixed routing and observer; no structural growth, new labels, extra history, future access or backdated packets",
+        "same native arrivals, delayed results, expiry, state/route bounds and all changed counters counted",
+        "if matching actual positive writes needs dummy/no-op/duplicate updates or condition changes, candidate is ineligible",
+        "independent original-task usefulness and causal ablation effect precede another resource protocol"
+      ],
+      "experiment_authorized": false,
+      "id": "branch_local_delayed_eligibility",
+      "increment_established_by_selected_receipts": null,
+      "independently_qualified_task": null,
+      "required_controls": [
+        "strong exact-current/time baseline",
+        "sufficient shared-history nonspiking local readout",
+        "eligibility disabled/permuted causal ablation with the same legal positive actual changed writes",
+        "equation-matched event-driven scalar eligibility emulator; require equivalence, not superiority over identical equations"
+      ],
+      "selection_status": "conditional_design_candidate_only",
+      "status_rule": "conditional next design candidate, not demonstrated or authorized by selected receipts"
+    }
+  ],
+  "new_acquisition_or_search_authorized": false,
+  "new_acquisitions": 0,
+  "new_measurements": 0,
+  "new_predictions_scored": 0,
+  "new_resource_measurement_authorized": false,
+  "next_step": "Prerequisite-only mechanism/task design or external compatible-source evidence; no implementation/measurement restart without a separately registered qualifying contract. Keep synthetic measurement feasibility closed.",
+  "prerequisite_scope": "Independent usefulness is false for the retained comparisons. Fresh-task/candidate causal effect and fairness are unknown; the untested candidate is not labeled a failed experiment.",
+  "prior_artifacts_preserved": 386,
+  "r3_optimization_authorized": false,
+  "raw_example_or_model_semantic_reads": 0,
+  "receipt_bytes_read": 1062066,
+  "receipt_count": 26,
+  "resource_prerequisites": {
+    "causal_mechanism_effect_with_matched_controls": null,
+    "decision_changing_resource_question": null,
+    "fresh_independent_task_qualified": null,
+    "independent_usefulness": false,
+    "positive_actual_write_and_state_fairness": null
+  },
+  "runtime_promotion_authorized": false,
+  "schema": "sara-r2-mechanism-decision-result-v1",
+  "seal_opening_authorized": false
+}
