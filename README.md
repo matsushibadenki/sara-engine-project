@@ -235,6 +235,12 @@ Proxy advantages must be labeled as proxies. They must not be presented as measu
 
 Python 3.10 or newer and a working Rust toolchain are required for the integrated extension build.
 
+The project-local development environment `workspace/.venv310` uses **Python 3.10.22**, the final 3.10 release, updated on 2026-10-23. Its existing package set is preserved. Activate it with `source workspace/.venv310/bin/activate`. Historical measurement registrations retain their exact original runtime: keep the managed 3.10.20 installation for those checks; do not rewrite registered evidence or loosen runtime guards. Python 3.10 is now end-of-life ([official release notes](https://www.python.org/downloads/release/python-31022/)).
+
+日本語: プロジェクト内の開発環境を3.10.22へ更新しました。既存パッケージと過去の実験証跡を保持し、厳密固定された旧計測の検証には保存した3.10.20を使用します。
+
+简体中文：项目内开发环境已升级至3.10.22，保留既有软件包及历史实验记录；严格绑定旧运行时的计量验证继续使用保留的3.10.20。
+
 ```bash
 git clone https://github.com/matsushibadenki/sara-engine-project.git
 cd sara-engine-project
