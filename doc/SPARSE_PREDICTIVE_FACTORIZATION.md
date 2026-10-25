@@ -341,6 +341,8 @@ Promotion requires a preregistered improvement over the single-factor control on
 
 🟢 [Done] [Finite retained-evidence mechanism/task audit](R2_MECHANISM_DECISION_GATE.md): 26 aggregate receipts / 1,062,066 bytes; original predictive decisions and accounting/replication reconcile. Conditional branch-local delayed eligibility remains untested; no qualified fresh independent task is established. Additional resource work is held. Exact replay, 63 passing tests, 386 prior artifact pins; zero new measurement/scoring/acquisition, unchanged conditions, negatives and seals.
 
+🟢 [Done] [Branch-local delayed-credit static contract](R2_LOCAL_CREDIT_CONTRACT.md): preregistered causal receipt/membership and six-control proposal checks reject no-ops, duplicate updates, counter padding, private history, expiry and shared-observer mismatches. Four symbolic proposed changed fields per arm, zero applied learning writes; 100 tests and exact static replay pass under Python 3.10.22. No learning-rule proof, actual execution parity, independent task or SNN advantage is established. Original conditions, negatives and seals remain unchanged; further experiments/resources stay held.
+
 ⭕️ [Pending] Qualify a causal branch-local eligibility effect and a fresh independent task under the unchanged original gates before considering a separately registered resource protocol. No automatic diagnostic v3, source expansion, scoring, condition relaxation or seal opening.
 
 ⭕️ [Pending] Independent usefulness, physical energy, source acquisition, structural growth and production promotion retain their original gates. No ANN-exclusive capability is established by sparse scheduling or local learning alone.

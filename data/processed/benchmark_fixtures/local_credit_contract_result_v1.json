@@ -1,0 +1,96 @@
+{
+  "actual_applied_writes": 0,
+  "applied_learning_writes": 0,
+  "causal_effect_established": null,
+  "decision": "hold_execution_and_resource_work_pending_separate_qualified_protocol",
+  "experiment_authorized": false,
+  "independent_task": {
+    "fixed_definition": {
+      "current": "Exact raw sensor/message, weekday/hour/15-minute bin; original support/class/day/recurrence/contrast/log(80)/state/write/quality gates unchanged.",
+      "cutoff_spacing_seconds": 60,
+      "delay_seconds": [
+        300,
+        600
+      ],
+      "development_split": "min(60,N//6)",
+      "history_events": 8,
+      "history_max_gap_seconds": 300,
+      "minimum_valid_recorded_dates": 180,
+      "positive": "First observed eligible binary notification in delay window; raw sensor name lowercased starts with kitchen and raw message equals ON. Other observed eligible notifications are negative, absent results are not negatives. Binary messages exactly ON/OFF/OPEN/CLOSE/CLOSED. No room renaming, power thresholding, bit-to-ON conversion, occupancy or clinical-target substitution, packet-history expansion/backdating, artificial duplication or extra households.",
+      "target_arrivals": 70212,
+      "training_split": "min(180,2*N//3)"
+    },
+    "readiness": "not_established_by_selected_receipts",
+    "required_conditions": [
+      "fresh identity/fit support qualified before labels or scores",
+      "native target-compatible source, 180-day minimum and original fit/development split; 270 dates for 180 fit dates",
+      "at least 70212 eligible arrivals within fixed acquisition/state budgets; unknown events retained",
+      "exact-current/time recurrence plus sufficient opposing-history, both-class and date support under unchanged evidence rules",
+      "native 300-600 second delayed outcomes; absent outcomes are not negative; no relabeling or backdating",
+      "all original quality/gap/state/positive changed-write/frozen-period gates, test sealed",
+      "matching positive actual writes must be possible without dummy/no-op/duplicate updates or private history"
+    ],
+    "selected_source": null,
+    "source_constraints": {
+      "finite_unused_household_survivors": {
+        "pointer": "/survivors",
+        "receipt": "casas_roster_screen_result_v1",
+        "scope": "Fixed exhausted roster, not all possible sources",
+        "unit": null,
+        "value": []
+      },
+      "hh105_arrival_gate": {
+        "pointer": "/gates/arrival_target",
+        "receipt": "casas_arrival_preflight_result_v1",
+        "scope": "Consumed training-only input preflight",
+        "unit": null,
+        "value": false
+      },
+      "public_acquisitions_approved": {
+        "pointer": "/approved_payload_acquisitions",
+        "receipt": "source_metadata_feasibility_result_v1",
+        "scope": "No ready source from the fixed review",
+        "unit": null,
+        "value": []
+      },
+      "source_dates_for_180_fit": {
+        "pointer": "/minimum_valid_source_dates_for_180_fit_dates",
+        "receipt": "source_metadata_feasibility_result_v1",
+        "scope": "Original fit-split prerequisite",
+        "unit": "recorded dates",
+        "value": 270
+      },
+      "sphere_eco_acquisitions_approved": {
+        "pointer": "/approved_payload_acquisitions",
+        "receipt": "sphere_eco_metadata_result_v1",
+        "scope": "Documented streams fail unchanged target semantics",
+        "unit": null,
+        "value": []
+      }
+    }
+  },
+  "independent_task_qualified": null,
+  "new_acquisitions": 0,
+  "new_measurements": 0,
+  "new_predictions_scored": 0,
+  "prior_resource_prerequisites": {
+    "causal_mechanism_effect_with_matched_controls": null,
+    "decision_changing_resource_question": null,
+    "fresh_independent_task_qualified": null,
+    "independent_usefulness": false,
+    "positive_actual_write_and_state_fairness": null
+  },
+  "proposed_changed_fields": {
+    "current": 4,
+    "disabled": 4,
+    "eligibility": 4,
+    "history": 4,
+    "permuted": 4,
+    "scalar_emulator": 4
+  },
+  "resource_measurement_authorized": false,
+  "schema": "sara-local-credit-contract-result-v1",
+  "scope": "Symbolic metadata only; no execution, learning-rule proof or measured write parity",
+  "structural_contract_passed": true,
+  "test_opened": false
+}

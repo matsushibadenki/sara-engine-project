@@ -1,0 +1,9 @@
+{
+  "files": {
+    "data/processed/benchmark_fixtures/local_credit_contract_selection_v1.json": "26c42e680d62acce6be1f3619952dfe647392e7ee9d74890eb836f31621eafd6",
+    "scripts/eval/local_credit_contract.py": "106e14b982839a88c1f3f6d8946d0326f3580c829ebd6cf127074c75365f6d39",
+    "src/sara_engine/evaluation/local_credit_contract.py": "3379e7977ac6af79012bdd35211186acc3f68e8180a6fdcfc3a2347291026a3a",
+    "tests/test_local_credit_contract.py": "5afa5ecfbf62fbdbb4200696d42fd5608ef6c05aa916237e73f4562cdc3d8039"
+  },
+  "registered_at_utc": "2026-10-25T08:17:21.057354+00:00"
+}

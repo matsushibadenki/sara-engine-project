@@ -58,3 +58,5 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 日本語: 26件の既存集計証跡だけを使う有限監査を実装前に登録し、元の予測判断と計測証跡を再構成しました。63テストと別プロセスでの完全再現が成功し、386既存証跡・負の結果・条件・封印を保持しました。枝ごとの遅延適格性を条件付きの設計候補に整理しましたが、その因果効果と新しい独立課題は未成立です。追加資源計測を保留し、新しい測定・採点・取得・条件緩和は行いません。
 
 简体中文：在实现前注册仅使用26项既有汇总证据的有限审计，重建原有预测判断并核对计量证据。63项测试及独立进程完全重放通过，保留386项既有证据、负结果、原条件和封存。分支局部延迟资格迹仅作为有条件的设计候选，其因果效果与新的独立任务尚未成立。暂停额外资源测量，不开展新测量、评分、获取或条件放宽。
+
+🟢 [Done] Follow-up prerequisite design: the [static local-credit proposal contract](R2_LOCAL_CREDIT_CONTRACT.md) checks causal metadata and proposed changed-field parity without running a learner. It does not change this decision or authorize a new experiment.

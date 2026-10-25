@@ -1,0 +1,40 @@
+{
+  "arms": [
+    "current",
+    "history",
+    "eligibility",
+    "disabled",
+    "permuted",
+    "scalar_emulator"
+  ],
+  "limits": {
+    "arms": 6,
+    "artifact_bytes": 65536,
+    "history_events": 8,
+    "state_slots": 4096,
+    "value_bound": 1000000,
+    "writes_per_arm": 16
+  },
+  "prior_receipts": {
+    "data/processed/benchmark_fixtures/r2_mechanism_decision_execution_v1.json": "cbeba2dc90adf628ab9c598b0ef08b4510edecd4ad759d69ec604d9b7dbf7cdb",
+    "data/processed/benchmark_fixtures/r2_mechanism_decision_registration_v1.json": "c472212d45c4e035511ab10a1d17599f60d11474d45445b8eb91a814452080d4",
+    "data/processed/benchmark_fixtures/r2_mechanism_decision_replay_execution_v1.json": "ae391ce7eb447aeeb29a60bdf6615723fff895e38236d844e02fc47b3fb06716",
+    "data/processed/benchmark_fixtures/r2_mechanism_decision_replay_v1.json": "9889632b4e2ec0792e97045f267f6d5abef26997c575c30dd6f0a265966e88b0",
+    "data/processed/benchmark_fixtures/r2_mechanism_decision_result_v1.json": "9e3da66071bd2edefd01048468211fee78b639f0c9c8b2fc7ece6752653feaa8",
+    "data/processed/benchmark_fixtures/r2_mechanism_decision_selection_v1.json": "cfc43147a4cd801dbcccfb0fbc09bfd2541ec292e38d026c7385fe114bd11e20"
+  },
+  "qualification": "All original task/evidence/current conditions remain pinned; fresh source and causal efficacy remain unknown. Future execution needs separate preregistration.",
+  "registered_at_utc": "2026-10-25T08:15:28.431668+00:00",
+  "rules": [
+    "One fixed delivered receipt shared by every arm, identical observer digest and declared state ceiling.",
+    "Creation/outcome times use original 300-600 second window; outcome observed by receipt delivery and delivery no later than inclusive expiry.",
+    "Updates refer to existing arm-local routes and causally preceding shared event IDs no older than 300 seconds; no future or private event.",
+    "One route update has a changed bounded integer weight and an observation counter increment of exactly one; count both changed fields.",
+    "No no-op, duplicate route, duplicated receipt reuse, unknown fields, missing arm, boolean-as-integer, extra slots or mismatched initial emulator state.",
+    "All six arms have identical positive actual proposed changed-field counts; exact candidate/emulator proposals must agree.",
+    "Intent validation is not execution, a learning-rule proof, measured actual writes, causal usefulness, independent-task qualification or experiment authorization."
+  ],
+  "schema": "sara-local-credit-contract-selection-v1",
+  "scope": "Design-only static validation of symbolic update proposals, not a learner, new prediction task, resource diagnostic or empirical experiment.",
+  "stop": "One retained static validation result and exact read-only replay. No experiment, scoring, acquisition, tracer or worker launch."
+}
