@@ -1,0 +1,11 @@
+{
+  "python": "3.10.22",
+  "registered_at_utc": "2026-10-26T06:00:54.004105+00:00",
+  "sources": {
+    "data/processed/benchmark_fixtures/route_failure_audit_selection_v1.json": "c3a740c6049bd2b9e3f2a7facf63d2904e3c71b92f54249727dc9dcd43dcfeed",
+    "scripts/eval/route_failure_audit.py": "cfe40ccc55974ff5d9e8546ab564aae0b25e105c8d50ec825b6ae162be9f96bc",
+    "src/sara_engine/evaluation/route_failure_audit.py": "4ffff80b9909a74f14faa1a14ec4abf71fe044a10d09b0fde1e616f380a68862",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06",
+    "tests/test_route_failure_audit.py": "86e1defda6dd439953c124e376e649ae3b67eb86bdb7e23b5efff5cd9c2c6c61"
+  }
+}

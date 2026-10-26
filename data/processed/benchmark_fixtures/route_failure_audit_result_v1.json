@@ -1,0 +1,3910 @@
+{
+  "changed_case_detail": [
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 186,
+        "committed_window_start": 518,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              6
+            ],
+            "post_commit_predictions": 6,
+            "pre_commit_predictions": 58,
+            "start": 640,
+            "stored_total_correct": 8
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 70,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 698,
+        "first_start_at_or_after_change": 518,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 6,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 64
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 256,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": true,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "retained",
+      "seed": 1201,
+      "source_pointer": "/payload/cases/1",
+      "task": "independent",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 188,
+        "committed_window_start": 520,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              4
+            ],
+            "post_commit_predictions": 4,
+            "pre_commit_predictions": 60,
+            "start": 640,
+            "stored_total_correct": 8
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 68,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 700,
+        "first_start_at_or_after_change": 520,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 8,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 64
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 256,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": true,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "retained",
+      "seed": 1213,
+      "source_pointer": "/payload/cases/3",
+      "task": "independent",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 189,
+        "committed_window_start": 521,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              3
+            ],
+            "post_commit_predictions": 3,
+            "pre_commit_predictions": 61,
+            "start": 640,
+            "stored_total_correct": 11
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 67,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 701,
+        "first_start_at_or_after_change": 521,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 9,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 64
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 256,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": true,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "retained",
+      "seed": 1229,
+      "source_pointer": "/payload/cases/5",
+      "task": "independent",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 186,
+        "committed_window_start": 518,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              6
+            ],
+            "post_commit_predictions": 6,
+            "pre_commit_predictions": 58,
+            "start": 640,
+            "stored_total_correct": 9
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 70,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 698,
+        "first_start_at_or_after_change": 518,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 6,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.9375,
+              0.9375
+            ],
+            "post_commit_correct_bounds": [
+              60,
+              60
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 60
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 256,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": false,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "exact_retention_failure_with_high_reported_accuracy",
+      "seed": 1237,
+      "source_pointer": "/payload/cases/7",
+      "task": "independent",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 187,
+        "committed_window_start": 519,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              5
+            ],
+            "post_commit_predictions": 5,
+            "pre_commit_predictions": 59,
+            "start": 640,
+            "stored_total_correct": 9
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 69,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 699,
+        "first_start_at_or_after_change": 519,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 7,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 64
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 256,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": true,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "retained",
+      "seed": 1249,
+      "source_pointer": "/payload/cases/9",
+      "task": "independent",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 188,
+        "committed_window_start": 520,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              4
+            ],
+            "post_commit_predictions": 4,
+            "pre_commit_predictions": 60,
+            "start": 640,
+            "stored_total_correct": 11
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              0.515625,
+              0.515625
+            ],
+            "post_commit_correct_bounds": [
+              33,
+              33
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 33
+          }
+        ],
+        "deadline_remaining_after_commit": 68,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 700,
+        "first_start_at_or_after_change": 520,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": null,
+        "reported_recovery_ticks": null,
+        "trigger_delay_ticks": 8,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.25,
+              0.25
+            ],
+            "post_commit_correct_bounds": [
+              16,
+              16
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 16
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              0.21875,
+              0.21875
+            ],
+            "post_commit_correct_bounds": [
+              14,
+              14
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 14
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": null,
+        "reported_recovery_ticks": null,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": false,
+      "reported_frozen_exact": 0.54296875,
+      "reported_tail_exact": 0.453125,
+      "retention_class": "retention_failure_with_lower_reported_accuracy",
+      "seed": 1201,
+      "source_pointer": "/payload/cases/11",
+      "task": "interacting",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 187,
+        "committed_window_start": 519,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              5
+            ],
+            "post_commit_predictions": 5,
+            "pre_commit_predictions": 59,
+            "start": 640,
+            "stored_total_correct": 11
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 69,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 699,
+        "first_start_at_or_after_change": 519,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 7,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.46875,
+              0.46875
+            ],
+            "post_commit_correct_bounds": [
+              30,
+              30
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 30
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              0.421875,
+              0.421875
+            ],
+            "post_commit_correct_bounds": [
+              27,
+              27
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 27
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 512,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": true,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "retained",
+      "seed": 1213,
+      "source_pointer": "/payload/cases/13",
+      "task": "interacting",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 189,
+        "committed_window_start": 521,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              3
+            ],
+            "post_commit_predictions": 3,
+            "pre_commit_predictions": 61,
+            "start": 640,
+            "stored_total_correct": 9
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              0.984375,
+              0.984375
+            ],
+            "post_commit_correct_bounds": [
+              63,
+              63
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 63
+          }
+        ],
+        "deadline_remaining_after_commit": 67,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 701,
+        "first_start_at_or_after_change": 521,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 9,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.546875,
+              0.546875
+            ],
+            "post_commit_correct_bounds": [
+              35,
+              35
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 35
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              0.4375,
+              0.4375
+            ],
+            "post_commit_correct_bounds": [
+              28,
+              28
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 28
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 512,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": true,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "retained",
+      "seed": 1229,
+      "source_pointer": "/payload/cases/15",
+      "task": "interacting",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 187,
+        "committed_window_start": 519,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              0,
+              5
+            ],
+            "post_commit_predictions": 5,
+            "pre_commit_predictions": 59,
+            "start": 640,
+            "stored_total_correct": 9
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              1.0,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              64,
+              64
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 64
+          }
+        ],
+        "deadline_remaining_after_commit": 69,
+        "earliest_wholly_post_commit_pair_end_delay": 320,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 699,
+        "first_start_at_or_after_change": 519,
+        "first_wholly_post_commit_block_start": 704,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 7,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.46875,
+              0.46875
+            ],
+            "post_commit_correct_bounds": [
+              30,
+              30
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 30
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              0.453125,
+              0.453125
+            ],
+            "post_commit_correct_bounds": [
+              29,
+              29
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 29
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 512,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": false,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "exact_retention_failure_with_high_reported_accuracy",
+      "seed": 1237,
+      "source_pointer": "/payload/cases/17",
+      "task": "interacting",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    },
+    {
+      "candidate_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 193,
+        "committed_window_start": 525,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": null,
+            "post_commit_correct_bounds": [
+              0,
+              0
+            ],
+            "post_commit_predictions": 0,
+            "pre_commit_predictions": 64,
+            "start": 640,
+            "stored_total_correct": 4
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              0.9841269841269841,
+              1.0
+            ],
+            "post_commit_correct_bounds": [
+              62,
+              63
+            ],
+            "post_commit_predictions": 63,
+            "pre_commit_predictions": 1,
+            "start": 704,
+            "stored_total_correct": 63
+          }
+        ],
+        "deadline_remaining_after_commit": 63,
+        "earliest_wholly_post_commit_pair_end_delay": 384,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 705,
+        "first_start_at_or_after_change": 525,
+        "first_wholly_post_commit_block_start": 768,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": true,
+        "reported_recovery_ticks": 320,
+        "trigger_delay_ticks": 13,
+        "two_wholly_post_commit_blocks_fit_deadline": false,
+        "window_post_change_receipts": 180,
+        "window_pre_change_receipts": 0
+      },
+      "condition": "changed",
+      "periodic_timing": {
+        "causal_effect_of_shorter_exploration": null,
+        "commit_delay_ticks": 104,
+        "committed_window_start": 436,
+        "deadline_last_pair": [
+          {
+            "end_exclusive": 704,
+            "post_commit_accuracy_bounds": [
+              0.421875,
+              0.421875
+            ],
+            "post_commit_correct_bounds": [
+              27,
+              27
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 640,
+            "stored_total_correct": 27
+          },
+          {
+            "end_exclusive": 768,
+            "post_commit_accuracy_bounds": [
+              0.4375,
+              0.4375
+            ],
+            "post_commit_correct_bounds": [
+              28,
+              28
+            ],
+            "post_commit_predictions": 64,
+            "pre_commit_predictions": 0,
+            "start": 704,
+            "stored_total_correct": 28
+          }
+        ],
+        "deadline_remaining_after_commit": 152,
+        "earliest_wholly_post_commit_pair_end_delay": 256,
+        "exploration_receipts": 180,
+        "first_post_change_commit": 616,
+        "first_start_at_or_after_change": 692,
+        "first_wholly_post_commit_block_start": 640,
+        "original_gate_impossible": null,
+        "reported_pair_contains_pre_commit_predictions": false,
+        "reported_recovery_ticks": 512,
+        "trigger_delay_ticks": 180,
+        "two_wholly_post_commit_blocks_fit_deadline": true,
+        "window_post_change_receipts": 104,
+        "window_pre_change_receipts": 76
+      },
+      "reported_exact_retention": true,
+      "reported_frozen_exact": 1.0,
+      "reported_tail_exact": 1.0,
+      "retention_class": "retained",
+      "seed": 1249,
+      "source_pointer": "/payload/cases/19",
+      "task": "interacting",
+      "unknowns": {
+        "causal_effect_of_shorter_exploration": null,
+        "functional_substitution_proven": null,
+        "missing_dependency_ids": null,
+        "recent_route_support": null,
+        "route_score_margins": null,
+        "within_block_prediction_order": null
+      }
+    }
+  ],
+  "component_passed": false,
+  "conditions_relaxed": false,
+  "input_bytes_read": 1593723,
+  "interpretation": "Delayed pool commits leave insufficient room for two wholly post-commit blocks under the unchanged gate. Old/mixed blocks could still pass; this is not proof of impossibility or causal benefit from shortening exploration. Exact-route failure and finite predictive accuracy are distinct; missing route identities/ranks/support are unrecorded.",
+  "learner_executions": 0,
+  "lifecycle_rows": [
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/0/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/0/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/0/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/0/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        11,
+        17,
+        21,
+        22,
+        33,
+        34,
+        39
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        4,
+        12,
+        15,
+        20,
+        25,
+        44
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/0/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/1/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/1/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        4,
+        6,
+        11,
+        18,
+        23,
+        31,
+        34,
+        36,
+        38
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        1,
+        3,
+        14,
+        16,
+        25,
+        26,
+        30,
+        33,
+        41
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/1/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        4,
+        6,
+        11,
+        18,
+        23,
+        27,
+        28,
+        31,
+        38
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        698
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        1,
+        3,
+        14,
+        16,
+        25,
+        26,
+        30,
+        33,
+        41
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/1/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        518
+      ],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        0,
+        9,
+        10,
+        13,
+        16,
+        18,
+        29,
+        38
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        4,
+        12,
+        15,
+        20,
+        25,
+        28,
+        44
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/1/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/2/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/2/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/2/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/2/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        3,
+        4,
+        10,
+        12,
+        24,
+        29,
+        34,
+        38
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        2,
+        6,
+        9,
+        16,
+        21,
+        40,
+        41,
+        43
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/2/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/3/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/3/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        4,
+        9,
+        14,
+        16,
+        21,
+        31,
+        36,
+        41,
+        44
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        2,
+        3,
+        7,
+        23,
+        26,
+        28,
+        30,
+        33,
+        37
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/3/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        4,
+        9,
+        14,
+        16,
+        21,
+        31,
+        36,
+        41,
+        44
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        700
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        2,
+        3,
+        7,
+        23,
+        26,
+        28,
+        30,
+        33,
+        37
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/3/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        520
+      ],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        3,
+        7,
+        12,
+        17,
+        23,
+        24,
+        28,
+        37
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        2,
+        6,
+        9,
+        14,
+        16,
+        21,
+        40,
+        43
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/3/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/4/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/4/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/4/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/4/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        3,
+        4,
+        10,
+        11,
+        30,
+        32
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        5,
+        18,
+        20,
+        21,
+        25,
+        34
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/4/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/5/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/5/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        2,
+        4,
+        9,
+        16,
+        17,
+        20,
+        21,
+        34,
+        36
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        7,
+        14,
+        15,
+        26,
+        28,
+        30,
+        37,
+        44
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/5/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        2,
+        4,
+        9,
+        16,
+        17,
+        20,
+        21,
+        34,
+        42
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        701
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        7,
+        14,
+        15,
+        26,
+        28,
+        30,
+        37,
+        44
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/5/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        521
+      ],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        1,
+        3,
+        8,
+        9,
+        11,
+        16,
+        33,
+        43
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        5,
+        7,
+        15,
+        18,
+        20,
+        21,
+        25,
+        34
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/5/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/6/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/6/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/6/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/6/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        20,
+        23,
+        29,
+        33,
+        37
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        7,
+        11,
+        15,
+        32,
+        44
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/6/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/7/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/7/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        7,
+        11,
+        19,
+        27,
+        28,
+        30,
+        33,
+        38,
+        44
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        0,
+        5,
+        13,
+        15,
+        17,
+        24,
+        29,
+        40,
+        43
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/7/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        7,
+        11,
+        19,
+        27,
+        28,
+        30,
+        33,
+        38,
+        44
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        698
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        0,
+        5,
+        13,
+        15,
+        17,
+        24,
+        29,
+        40,
+        43
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/7/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        518
+      ],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        10,
+        13,
+        14,
+        33,
+        36,
+        43
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        7,
+        12,
+        15,
+        22,
+        32,
+        34
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/7/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/8/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/8/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/8/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/8/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        3,
+        9,
+        11,
+        18,
+        38,
+        40,
+        44
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        0,
+        12,
+        17,
+        20,
+        22,
+        26,
+        39
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/8/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/9/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/9/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        2,
+        3,
+        13,
+        15,
+        20,
+        23,
+        33,
+        34,
+        40
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        5,
+        6,
+        10,
+        17,
+        22,
+        29,
+        36,
+        37,
+        39
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/9/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        2,
+        3,
+        13,
+        15,
+        23,
+        25,
+        26,
+        33,
+        40
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        699
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        5,
+        6,
+        10,
+        17,
+        22,
+        29,
+        36,
+        37,
+        39
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/9/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        519
+      ],
+      "task": "independent",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        2,
+        7,
+        10,
+        18,
+        25,
+        27,
+        36,
+        41
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        0,
+        1,
+        4,
+        12,
+        20,
+        22,
+        26,
+        39
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/9/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "independent",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/10/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/10/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        14,
+        17
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        11,
+        32
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/10/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/10/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        2,
+        17,
+        21,
+        22,
+        33,
+        34,
+        39
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        4,
+        5,
+        12,
+        14,
+        15,
+        25
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/10/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/11/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/11/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        4,
+        21,
+        24,
+        31,
+        34,
+        36,
+        44
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        1,
+        3,
+        16,
+        25,
+        26,
+        30,
+        33
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/11/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        4,
+        5,
+        6,
+        14,
+        15,
+        28,
+        31,
+        36
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        700
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        1,
+        3,
+        11,
+        16,
+        25,
+        30,
+        32,
+        33
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/11/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        520
+      ],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        9,
+        10,
+        13,
+        16,
+        33,
+        35,
+        39,
+        41
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        4,
+        5,
+        12,
+        14,
+        15,
+        25,
+        28
+      ],
+      "seed": 1201,
+      "source_pointer": "/payload/cases/11/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/12/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/12/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        17,
+        35
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        26,
+        44
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/12/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/12/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        3,
+        4,
+        10,
+        12,
+        14,
+        20,
+        24,
+        34,
+        44
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        6,
+        9,
+        16,
+        17,
+        21,
+        23,
+        40,
+        41,
+        43
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/12/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/13/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/13/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        4,
+        12,
+        16,
+        21,
+        31,
+        35,
+        38,
+        41,
+        42
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        7,
+        20,
+        26,
+        28,
+        30,
+        33,
+        37,
+        44
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/13/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        2,
+        4,
+        6,
+        8,
+        16,
+        31,
+        35,
+        39,
+        42
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        699
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        7,
+        20,
+        26,
+        28,
+        30,
+        33,
+        37,
+        44
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/13/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        519
+      ],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        2,
+        3,
+        5,
+        7,
+        14,
+        28,
+        36,
+        37
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        6,
+        16,
+        17,
+        21,
+        23,
+        40,
+        41,
+        43
+      ],
+      "seed": 1213,
+      "source_pointer": "/payload/cases/13/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/14/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/14/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        32,
+        35
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        8,
+        26
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/14/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/14/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        3,
+        4,
+        10,
+        11,
+        23,
+        30
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        14,
+        18,
+        21,
+        25,
+        34,
+        35
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/14/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/15/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/15/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        4,
+        16,
+        17,
+        20,
+        21,
+        24,
+        34,
+        39
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        3,
+        7,
+        8,
+        15,
+        28,
+        30,
+        37,
+        41
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/15/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        4,
+        6,
+        16,
+        17,
+        21,
+        34
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        701
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        7,
+        15,
+        26,
+        28,
+        30,
+        37
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/15/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        521
+      ],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        0,
+        1,
+        6,
+        9,
+        16,
+        26,
+        43
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        7,
+        14,
+        15,
+        18,
+        21,
+        25,
+        34
+      ],
+      "seed": 1229,
+      "source_pointer": "/payload/cases/15/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/16/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/16/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        16
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        7
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/16/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/16/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        13,
+        20,
+        23,
+        29,
+        31,
+        33,
+        43
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        1,
+        11,
+        15,
+        16,
+        32,
+        40,
+        44
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/16/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/17/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/17/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        8,
+        14,
+        27,
+        28,
+        30,
+        33,
+        37,
+        38
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        0,
+        1,
+        5,
+        15,
+        17,
+        24,
+        25,
+        29
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/17/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        13,
+        26,
+        27,
+        28,
+        30,
+        33,
+        38,
+        43
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        699
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        0,
+        1,
+        7,
+        15,
+        17,
+        24,
+        25,
+        29
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/17/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        519
+      ],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        2,
+        13,
+        33,
+        36,
+        37,
+        41
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        12,
+        15,
+        16,
+        32,
+        40,
+        44
+      ],
+      "seed": 1237,
+      "source_pointer": "/payload/cases/17/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/18/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/18/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        7
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        4
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/18/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "error_triggered",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/18/arms/error_triggered",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        3,
+        7,
+        9,
+        11,
+        18,
+        28,
+        38,
+        44
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "stationary",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        0,
+        1,
+        12,
+        17,
+        20,
+        26,
+        37,
+        39
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/18/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [],
+      "arm": "round_robin",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/19/arms/round_robin",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [],
+      "arm": "permanent",
+      "commit_count": 0,
+      "commit_ticks": [],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/19/arms/permanent",
+      "start_count": 0,
+      "starts": [],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        3,
+        15,
+        16,
+        22,
+        26,
+        32,
+        33,
+        34,
+        38
+      ],
+      "arm": "periodic",
+      "commit_count": 2,
+      "commit_ticks": [
+        616,
+        872
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        4,
+        5,
+        6,
+        17,
+        29,
+        31,
+        36,
+        37,
+        39
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/19/arms/periodic",
+      "start_count": 3,
+      "starts": [
+        436,
+        692,
+        948
+      ],
+      "task": "interacting",
+      "unfinished": true
+    },
+    {
+      "added_from_initial": [
+        3,
+        11,
+        15,
+        26,
+        33,
+        34
+      ],
+      "arm": "error_triggered",
+      "commit_count": 1,
+      "commit_ticks": [
+        705
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        4,
+        5,
+        6,
+        29,
+        36,
+        39
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/19/arms/error_triggered",
+      "start_count": 1,
+      "starts": [
+        525
+      ],
+      "task": "interacting",
+      "unfinished": false
+    },
+    {
+      "added_from_initial": [
+        7,
+        14,
+        18,
+        27,
+        28,
+        36,
+        44
+      ],
+      "arm": "shuffled_error",
+      "commit_count": 3,
+      "commit_ticks": [
+        360,
+        604,
+        848
+      ],
+      "condition": "changed",
+      "final_pool_reconciled": true,
+      "removed_from_initial": [
+        0,
+        1,
+        12,
+        20,
+        26,
+        37,
+        39
+      ],
+      "seed": 1249,
+      "source_pointer": "/payload/cases/19/arms/shuffled_error",
+      "start_count": 4,
+      "starts": [
+        180,
+        424,
+        668,
+        912
+      ],
+      "task": "interacting",
+      "unfinished": true
+    }
+  ],
+  "new_acquisitions": 0,
+  "new_experiment_authorized": false,
+  "new_measurements": 0,
+  "new_predictions_scored": 0,
+  "old_discarded_trace_equality": null,
+  "old_failed_replay_reclassified": false,
+  "preserved_hashes": 432,
+  "promotion_authorized": false,
+  "saved_numerical_equivalence_verified": true,
+  "schema": "sara-route-failure-audit-result-v1",
+  "source_input_sha256": {
+    "route_numeric_v2_primary_v1.json": "8574c01c05ef4f82e134abdf4fb75471b3961940ca94dc6040d7843eeb5e9994",
+    "route_numeric_v2_replication_v1.json": "5ae9bbc3003c2ca1b3fbd874b4db9b3486a782b6007950145ec48b7346442fce",
+    "route_numeric_v2_result_v1.json": "11f1d2e62c2d6dd6705503f73cfb3e712595e3cee8b6d58777ab1453ce7ed103",
+    "route_numeric_v2_selection_v1.json": "3f818ccde2cd11d084c1d0b2904ab0eb8f384a139b93f41054db065582528c1c",
+    "sparse_route_reactivation_failure_v1.json": "d07ff2b2169a319b70b06be579d66eab6c59fafd20f83a8fa3d230b62a5875ba",
+    "sparse_route_reactivation_result_v1.json": "66e75f708314e771d22d938239532e161f230c9fd334fe7fa4127822681b3c07",
+    "sparse_route_reactivation_selection_v1.json": "4270ed450df82d391cdefa2204e207f1e1a3c7d66fb8b50fe5b053db1b789f4a"
+  },
+  "source_report": "route_numeric_v2_primary_v1.json",
+  "stationary_controls": [
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1201,
+      "task": "independent"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1213,
+      "task": "independent"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1229,
+      "task": "independent"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1237,
+      "task": "independent"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1249,
+      "task": "independent"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1201,
+      "task": "interacting"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1213,
+      "task": "interacting"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1229,
+      "task": "interacting"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1237,
+      "task": "interacting"
+    },
+    {
+      "condition": "stationary",
+      "false_start_count": 0,
+      "original_gates": {
+        "false_starts": true,
+        "stationary_noninferiority": true
+      },
+      "seed": 1249,
+      "task": "interacting"
+    }
+  ],
+  "summary": {
+    "changed_cases": 10,
+    "deadline_lacks_two_wholly_post_commit_blocks": 10,
+    "exact_retention_failures": 3,
+    "high_accuracy_exact_retention_failures": 2,
+    "pool_lifecycles_reconciled": 100,
+    "recovery_failures": 10,
+    "stationary_false_starts": 0
+  },
+  "test_opened": false
+}

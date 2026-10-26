@@ -67,3 +67,5 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 日本語: 条件を固定した別バージョンv2を実装前に登録し、新実行と別プロセスの独立再実行で全比較ペイロードの完全一致を確認しました。事前登録した来歴2項目の対応付け後、旧保存報告の科学的結果とも一致しました。56テストが成功し、422既存ファイルのハッシュ・旧再現失敗・負の結果・封印を保持しました。変更10ケースすべての回復基準不合格も再現され、機構の成功には変更しません。旧実行は再開せず、破棄された旧再現報告の数値一致は未確認のままです。
 
 简体中文：在实现前注册条件固定的独立v2版本，新执行与另一进程的独立重复执行中，完整比较载荷完全一致。按事前注册的两个来源字段进行绑定后，与历史保存报告的科学结果也一致。56项测试通过，保留422个既有文件哈希、旧重放失败、负结果和封存。全部10个变化案例的恢复门槛失败也被复现，不改判为机制成功。不恢复旧执行，已丢弃的旧重放报告的数值一致性仍未知。
+
+🟢 [Done] Follow-up [finite saved-report failure audit](SPARSE_ROUTE_FAILURE_AUDIT.md) separates timing constraints, exact dependency membership, reported accuracy and missing causal evidence without another learner run. Original failures and thresholds remain unchanged.
