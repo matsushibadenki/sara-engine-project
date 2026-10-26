@@ -1,0 +1,12 @@
+{
+  "python": "3.10.22",
+  "registered_at_utc": "2026-10-26T01:01:03.004051+00:00",
+  "sources": {
+    "scripts/eval/sparse_route_reactivation.py": "f0543d9edad59f6394aa6b659a434be712223a04d91d94981bf29c784ab4a56b",
+    "src/sara_engine/evaluation/sparse_factor_routing.py": "2c9f089794fe2d7e8f41bfbf09d56cb8eb0157a089549ba85e6fa9737ffa5ed4",
+    "src/sara_engine/evaluation/sparse_predictive_memory.py": "b08e57e7e5f80471b55465657576f4df4fcfd8dcc964477b5cfddc14132186e8",
+    "src/sara_engine/evaluation/sparse_route_budget.py": "bb5acc06dc8e57882af6e5ab0bc21079647355062eb8f6ba2d83a01da9f000c3",
+    "src/sara_engine/evaluation/sparse_route_reactivation.py": "61574ef19e5f3df67e1b5984146c36d8e4483d9428456e914e4858f144d2e423",
+    "tests/test_sparse_route_reactivation.py": "171c7b15ad0335af32d6436bf4c3c40d86b3e01824eb347c1680c9accf258fb4"
+  }
+}

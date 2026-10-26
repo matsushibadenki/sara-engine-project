@@ -1,0 +1,19 @@
+{
+  "conditions_relaxed": false,
+  "error": "ValueError: Exact deterministic replay differs",
+  "full_replay_verified": false,
+  "known_comparator_defect": "initial_pool is a Python tuple returned by training and a JSON list after saving. Direct Python equality rejects these shapes. This defect alone does not establish equality of all numerical traces.",
+  "new_study_run_authorized": false,
+  "next": "Pure saved-report codec preflight only before separately authorizing any future replay; keep consumed primary and failed replay untouched. No coefficient/seed/window tuning.",
+  "numeric_trace_equality": null,
+  "phase": "replay",
+  "post_result_regression_tests_sha256": "ec923ccf27d8eab1c452b2e20517918aab73a76a05443278b6cde4670b16cba8",
+  "recorded_at_utc": "2026-10-26T01:02:41.289794+00:00",
+  "replay_execution_sha256": "b674f53ac162cbb48cdc369f4525f13ae8b89bd225fba584f07710fe0363f2b2",
+  "resource_measurements": 0,
+  "result_sha256": "66e75f708314e771d22d938239532e161f230c9fd334fe7fa4127822681b3c07",
+  "schema": "sara-route-reactivation-replay-failure-v1",
+  "source_patch_applied": false,
+  "status": "failed_exact_report_comparison",
+  "test_opened": false
+}

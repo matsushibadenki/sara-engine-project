@@ -8,7 +8,8 @@
 
 🟢 [Done] The actual-update-matched candidate-pruning study passes all registered component gates across two tasks × five fresh seeds. Every arm executes 4,608 outcome route updates. Residual pruning reduces active candidates from 45 to nine, preserves the required shared dependencies and 100% exact accuracy, and lowers mean shifted Brier by 92.02% versus round-robin. This is a stationary toy-task component result, not production promotion.
 
-🟠 [Next] Register a separate nonstationary dependency-change study comparing permanent pruning with bounded candidate reactivation under the same actual update budget. Freeze revision timing, unseen dependencies and recovery/false-reactivation gates before execution; do not tune this completed study.
+🟢 [Done] [Nonstationary candidate reactivation](SPARSE_ROUTE_REACTIVATION.md): separately preregistered 20 cases × five arms, each with 9,216 actual route updates / 36,864 changed learning fields. All ten changed cases fail 256-tick recovery; three fail exact new-dependency retention. Stationary false starts are zero. Whole-report replay fails (known tuple/list comparator defect; full numerical equality unknown). Preserve primary and consumed replay failure; 121 tests pass and 399 prior pins verify. No tuning, restart, SNN/resource promotion or sealed access.
+🟠 [Next] Preregister saved-report codec/equality preflight only; no learner rerun, threshold/seed/window tuning or claim of numerical replication from shape normalization. Nonstationary promotion and the authoritative R2 independent-task/resource holds remain closed.
 
 🔴 [Later] Structural growth and runtime integration require independent evidence for learned specialization.
 
