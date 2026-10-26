@@ -62,3 +62,5 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 日本語: 保存済み報告と失敗証跡だけを使う事前検証を実装前に登録し、19チェック・35テスト・別プロセスでの静的結果の完全再現が成功しました。tuple/listの同一視を既知の80か所に限定し、数値の最小単位の差、型差、配列順序、欠落・追加を検出します。412ファイルのハッシュ、既存の負の結果・再現失敗・条件・封印を保持しました。学習器の実行・採点・取得・計測はゼロであり、元の完全な数値一致は未確認のままです。
 
 简体中文：在实现前注册仅使用已保存报告和失败证据的序列化与等价比较预检。19项检查、35项测试及独立进程的静态结果完全重放通过。tuple/list等价仅限已知80处，检测最小浮点差、类型差、数组顺序及缺失/新增字段。保留412个文件哈希、负结果、重放失败、原条件和封存。学习器执行、评分、获取、测量均为零，原完整数值一致性仍未知。
+
+🟢 [Done] Separately authorized follow-up: [fixed-condition numerical reproduction v2](SPARSE_ROUTE_NUMERIC_V2.md) completes new primary/fresh-process replication using this unchanged codec. Numerical values match while all original scientific negatives and the discarded old replay failure remain unchanged. No old phase was resumed.

@@ -1,0 +1,16 @@
+{
+  "registered_at_utc": "2026-10-26T04:22:51.413470+00:00",
+  "runtime": {
+    "executable": "/Users/Shared/Program/python310/sara-engine-project/workspace/.venv310/bin/python",
+    "implementation": "CPython",
+    "machine": "arm64",
+    "python": "3.10.22",
+    "version": "3.10.22 (main, Oct  9 2026, 15:10:41) [Clang 22.1.3 ]"
+  },
+  "sources": {
+    "data/processed/benchmark_fixtures/route_numeric_v2_selection_v1.json": "3f818ccde2cd11d084c1d0b2904ab0eb8f384a139b93f41054db065582528c1c",
+    "scripts/eval/route_numeric_v2.py": "5ca2d00321682ed25f154b9a8ca3af0724db364bed2ee4bac79db2deabe6ea7e",
+    "src/sara_engine/evaluation/route_numeric_v2.py": "8faf059b61b910d2bec0e1cbca8d2a709a33237f59f2f957beb073c0f20fec0a",
+    "tests/test_route_numeric_v2.py": "a1c832dc56671fae5cec2cbeb2562d826acfddf76a187aff27f7bfb71a69ccf5"
+  }
+}
