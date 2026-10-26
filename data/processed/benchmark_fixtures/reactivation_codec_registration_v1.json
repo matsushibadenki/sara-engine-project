@@ -1,0 +1,11 @@
+{
+  "python": "3.10.22",
+  "registered_at_utc": "2026-10-26T04:02:23.500017+00:00",
+  "sources": {
+    "data/processed/benchmark_fixtures/reactivation_codec_selection_v1.json": "a634fecb6c348f4ca0dfecc4fbdf54efb00d0208fbc22ea0a936a0d8f3f4e255",
+    "scripts/eval/reactivation_codec.py": "01387ec83644453bcca51d8395ccf170e1a552e6bd5fcb1393a780ddbbf6fa6b",
+    "src/sara_engine/evaluation/reactivation_codec.py": "c2154bc31c468aeedb5d64f59ab6954835c7de4f2a7e15b38dfad53fe5223aaa",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06",
+    "tests/test_reactivation_codec.py": "d7445287281b3216f55afa6dfd7e271c4168845e0581d6c37bbd2a5b7531b917"
+  }
+}

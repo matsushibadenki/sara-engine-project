@@ -65,7 +65,8 @@ Implementation: [learner/evaluator](../src/sara_engine/evaluation/sparse_route_r
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_sparse_route_reactivation.py tests/test_sparse_route_reactivation_failure.py tests/test_local_credit_contract.py tests/test_r2_mechanism_decision.py tests/test_r2_research_decision.py tests/test_project_paths.py
 ```
 
-🟠 [Next] Preregister a pure saved-report codec/equality preflight to reject representation-only comparison defects before any separately justified future replication. Do not rerun this consumed learner attempt, tune the mechanism or infer numerical equality from a codec test.
+🟢 [Done] [Saved-report serialization/equality preflight](SPARSE_ROUTE_REACTIVATION_CODEC.md): registered before implementation, parses only the saved primary/failure reports (465,308 bytes). All 19 checks and 35 tests pass; exact static replay preserves 412 hashes. Tuple/list interchange is restricted to 80 initial-pool paths; numeric/type/order/field differences are not hidden. Zero learner execution/scoring/acquisition/measurement. Original replay failure and negative gates remain unchanged; full numerical equality stays unknown.
+⭕️ [Pending] Any future numeric replication needs a separately justified/versioned protocol and explicit authorization. No restart of the consumed learner/replay, threshold/seed/window tuning, automatic retry or extra codec-audit loop. Nonstationary promotion and the authoritative R2 independent-task/resource holds remain closed.
 
 ⭕️ [Pending] Nonstationary mechanism promotion and further predictive experiments remain held after the recovery/retention failures. R2 fresh independent task qualification, causal delayed-credit evidence, physical energy and production remain under their existing holds. Circuit-selective reactivation remains a shared non-spiking design opportunity, not an established SNN advantage.
 
