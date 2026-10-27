@@ -91,3 +91,5 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 日本語: 採取済み160境界だけを使う有限監査を実装前に登録し、480比較・30区間の分解を実施しました。累積と直近誤差の二重計上を避け、比較相手を固定し、丸め差まで含め有理数で厳密照合しました。保持失敗3件中2件では幅コストが依存側を0.005優遇しても、誤差差約0.06253が上回りました。残る1件は誤差差約0.01416に幅0.005が加わりました。148テスト・静的完全再現が成功し、462既存ハッシュを保全しました。学習器再実行・条件調整・新たな予測採点はゼロで、因果原因・反実仮想の改善効果は未知のまま、旧失敗・負の結果・封印を維持します。
 
 简体中文：在实现前注册仅用已采集160个边界的有限审计，完成480组比较与30个窗口分解。避免累计与近期误差重复相加，固定比较对象，并以有理数保留浮点舍入残差。3项保留失败中2项宽度成本已优惠依赖0.005，但约0.06253的误差差超过该优势；另1项约0.01416误差差加上0.005宽度项。148项测试及静态完全重放通过，保留462个既有文件哈希。不重跑学习器、不调条件、不新增预测评分；因果原因和反事实改善仍未知，保留旧失败、负结果和封存。
+
+🟢 [Done] Follow-up [captured count-mixture audit](SPARSE_ROUTE_COUNT_MIXTURE.md) separates old/recent class counts and the original smoothing prior in endpoint local probabilities. Count shares and time-weighted error-normalizer shares are distinct; no learner is rerun and causal/counterfactual conclusions remain unknown.

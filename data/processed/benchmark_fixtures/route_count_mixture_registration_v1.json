@@ -1,0 +1,11 @@
+{
+  "python": "3.10.22",
+  "registered_at_utc": "2026-10-27T12:09:30.111890+00:00",
+  "sources": {
+    "data/processed/benchmark_fixtures/route_count_mixture_selection_v1.json": "77b5c86f5e6c5fc18e87b6c10dce4d26238fb03f6df5a286b2cf867eccac47ce",
+    "scripts/eval/route_count_mixture.py": "b2bac85fa94ca9ef9d841e80d4870dbefcebd1c8bca54e547f1e32a72ad0d699",
+    "src/sara_engine/evaluation/route_count_mixture.py": "e38097e39aa8fa96599bce5f1399d777fec07cc7d495536db86f5f89e7afa565",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06",
+    "tests/test_route_count_mixture.py": "0ea32d654afb3842ed03ddc1117476b3f52f43830fdea4a9064177240678de57"
+  }
+}
