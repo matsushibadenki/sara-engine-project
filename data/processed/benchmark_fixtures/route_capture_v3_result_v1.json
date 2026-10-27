@@ -1,0 +1,39 @@
+{
+  "actual_snapshots": 160,
+  "analysis_sha256": "cfc2b4404342dc70f5602910f8daff7d7afc72c182f69504ff4ed375fcec15fa",
+  "baseline_sha256": "6fbddcd1bf569d9cfae4955708158ab85259cf3bc4a8de97bce7f1ce5f3b27e0",
+  "capture_sha256": "38dfcfb305ccd3540d6d7e26b68218a728a446f4e168bec392383deb4a0813e4",
+  "causal_attribution": null,
+  "collection_sha256": "248c6ca8dc53b6f0568044ce259298f4275257f26900c55bf4dad18a912978ab",
+  "complete_state_read_only_checks": 160,
+  "component_passed": false,
+  "conditions_relaxed": false,
+  "counterfactual_accuracy": null,
+  "historical_values_exact_match": true,
+  "independent_processes": true,
+  "new_real_data_reads": 0,
+  "numerical_noninterference_passed": true,
+  "old_discarded_trace_equality": null,
+  "old_failed_replay_reclassified": false,
+  "promotion_authorized": false,
+  "registration_sha256": "9b22b7e731714ea3bb80ef7df432da54d7b2caa834ab935f3f7ed41703e64112",
+  "resource_measurements": 0,
+  "schema": "sara-route-capture-proof-v3",
+  "selection_sha256": "f6bbe9940c42d47ced0b846e6de2406b28f91aaae9592c8f558515eb7450d68e",
+  "summary": {
+    "commit_dependency_support_below16": 0,
+    "commit_exclusions_by_score": 3,
+    "commit_exclusions_by_tie_break": 0,
+    "diagnosed_case_arms": 40,
+    "exploration_windows": 10,
+    "final_candidate_retention_failure_cases": [
+      "independent:1237:changed",
+      "interacting:1201:changed",
+      "interacting:1237:changed"
+    ],
+    "missing_at_commit_but_window_top_three": 0,
+    "missing_dependency_count_at_commit": 3,
+    "snapshot_count": 160
+  },
+  "test_opened": false
+}

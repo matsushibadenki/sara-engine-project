@@ -73,3 +73,5 @@ Selective circuit use remains a design opportunity shared with non-spiking contr
 简体中文：在实现前注册仅使用7份保存报告、1,593,723字节的有限审计，90项测试与独立进程完全重放通过。分离触发延迟6–13 tick、提交延迟186–193 tick及期限剩余63–70 tick，核对全部100个候选池的增删记录。提交后两个完整区块无法容纳，不等于原门槛不可能达成。3项精确依赖保留失败中2项报告准确率为100%，仍保留失败判定。缺失依赖、候选分数与支持不足的因果原因未记录，保持未知。保留432个既有哈希、旧重放失败、负结果和封存，不重跑学习器、不评分、不调整条件。
 
 🟢 [Done] Follow-up design: [prospective bounded route snapshot collector/contract](SPARSE_ROUTE_SNAPSHOT_CONTRACT.md) implements the missing evidence interface and static capacity checks. Actual hook integration/collection remains pending; no old state is reconstructed or learner restarted.
+
+🟢 [Done] The separately registered [actual collection v3](SPARSE_ROUTE_CAPTURE_V3.md) supplies new, provenance-bound state evidence: the three missing dependencies pass the original total-support threshold and are excluded by score rank at commit. This does not reconstruct missing old snapshots or establish a causal benefit from changing the rule.

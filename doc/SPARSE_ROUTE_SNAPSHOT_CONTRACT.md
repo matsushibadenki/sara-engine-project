@@ -1,6 +1,6 @@
 # Prospective bounded route-evidence contract — 2026-10-27
 
-🟢 [Done] Implemented an external, read-only snapshot collector and validator to address the missing route-level evidence identified by the [failure audit](SPARSE_ROUTE_FAILURE_AUDIT.md). The static contract/capacity preflight and exact pure replay pass. **No actual model snapshots have been collected, and no learner or new experiment has run.** Old states are not reconstructed; the existing causal unknowns, negatives, failed replay and seals remain unchanged.
+🟢 [Done] Implemented an external, read-only snapshot collector and validator to address the missing route-level evidence identified by the [failure audit](SPARSE_ROUTE_FAILURE_AUDIT.md). The static contract/capacity preflight and exact pure replay pass. **This static contract step collects no actual model snapshots and runs no learner.** Old states are not reconstructed; the existing causal unknowns, negatives, failed replay and seals remain unchanged.
 
 ## Registration and finite boundary plan
 
@@ -57,7 +57,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python scripts
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pytest -q -o cache_dir=workspace/cache/pytest tests/test_route_snapshot_contract.py tests/test_route_failure_audit.py tests/test_route_numeric_v2.py tests/test_reactivation_codec.py tests/test_project_paths.py
 ```
 
-⭕️ [Pending] Actual hook integration and collection require a separately authorized future protocol with unchanged scientific conditions, comparison against the frozen uninstrumented traces and bounded source/evaluator provenance. Collection creates extra observer/encoding work; it must be accounted for and cannot be called free or an SNN energy benefit. No trial, old-attempt restart, new scoring, condition tuning, resource diagnostic or additional automatic audit is queued here. Existing R2 independent-task, causal branch-local credit, nonstationary promotion, energy and production holds remain in force.
+🟢 [Done] [Separately authorized fixed-condition collection v3](SPARSE_ROUTE_CAPTURE_V3.md) connects these hooks to actual models and verifies all 160 boundaries and numerical noninterference. This contract step remains the historical static preflight; v3 has its own immutable registration and execution artifacts. Collection creates extra observer/encoding work; it must be accounted for and cannot be called free or an SNN energy benefit. No further trial, old-attempt restart, new scoring, condition tuning, resource diagnostic or additional automatic audit is queued here. Existing R2 independent-task, causal branch-local credit, nonstationary promotion, energy and production holds remain in force.
 
 日本語: 未保存だった候補別支持数・誤差・順位を次回の証跡に残すため、外部の読み取り専用採取器と検査器を事前登録・実装しました。全45候補、選択前後の不変性、直近180tickの差分支持数、評価者専用の依存ID分離を検証しました。計画は候補100／永久削減60の計160境界で、条件付き保存上限1,376,417バイトは2 MiB以内です。127テストと静的完全再現が成功し、441既存ハッシュを保持しました。実モデルの採取・学習器実行・採点はゼロで、原因の未知、旧再現失敗、負の結果、封印を維持します。実験への接続・実採取は別登録・承認が必要な保留事項です。
 

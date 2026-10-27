@@ -1,0 +1,16 @@
+{
+  "registered_at_utc": "2026-10-27T11:12:49.973166+00:00",
+  "runtime": {
+    "executable": "/Users/Shared/Program/python310/sara-engine-project/workspace/.venv310/bin/python",
+    "implementation": "CPython",
+    "machine": "arm64",
+    "python": "3.10.22",
+    "version": "3.10.22 (main, Oct  9 2026, 15:10:41) [Clang 22.1.3 ]"
+  },
+  "sources": {
+    "data/processed/benchmark_fixtures/route_capture_v3_selection_v1.json": "f6bbe9940c42d47ced0b846e6de2406b28f91aaae9592c8f558515eb7450d68e",
+    "scripts/eval/route_capture_v3.py": "3fd64beb1ae6f9a159414bb166227feec182b2f27942c01abf01902aafb5aff0",
+    "src/sara_engine/evaluation/route_capture_v3.py": "44094b8db620bdfd350f3fb0500096bb562d8cf44e4e4c7cc576c854042156e7",
+    "tests/test_route_capture_v3.py": "6328e183f862ec0da596bbc874b4c9d69f1b3a7213f068bb2bfa442b78cf2abc"
+  }
+}
