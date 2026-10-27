@@ -1,0 +1,11 @@
+{
+  "python": "3.10.22",
+  "registered_at_utc": "2026-10-27T11:53:33.352554+00:00",
+  "sources": {
+    "data/processed/benchmark_fixtures/route_score_audit_selection_v1.json": "95e5facb0a7f81e470d954cebc254dcae4163e013430ee77cc6c961c3608af29",
+    "scripts/eval/route_score_audit.py": "1fa21fc8f3b93ad86cd62635cc2d67c7405a8355a596e16697ee941fffaa919e",
+    "src/sara_engine/evaluation/route_score_audit.py": "e8ae87defa4939bf1a2ab6315771d981e979ebf50102d7cb456ab28c34f448b7",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06",
+    "tests/test_route_score_audit.py": "4ff5f9d75374079f1443f8bd45367a2cd823d4495f2aaf91de1525c079e5fc40"
+  }
+}

@@ -81,3 +81,5 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. workspace/.venv310/bin/python -m pyte
 日本語: 条件を固定した別登録v3で採取器を実モデルに接続し、採取なし基準と全数値の完全一致、160境界の完全性、採取前後の全状態ハッシュ不変を確認しました。依存保持失敗3件は支持数72／412／72で16観測基準を満たし、確定時4／8／4位のスコア除外でした。同率タイブレークや既存支持閾値不足とは切り分けましたが、スコア不利の因果原因・規則変更の反実仮想精度は未知です。143テストと保存証跡検証が成功し、450既存ハッシュ、旧再現失敗、負の結果、条件、封印を保持しました。
 
 简体中文：在条件固定、独立注册的v3中，将采集器接入实际模型，确认与无采集基准完整数值一致、160个边界齐全、采集前后完整状态哈希不变。3项依赖保留失败的支持数为72／412／72，均满足原16次观测门槛；提交时排名4／8／4，均因分数被排除，而非同分决胜。分数不利的因果原因和规则更改后的反事实准确率仍未知。143项测试和保存证据验证通过，保留450个既有文件哈希、旧重放失败、负结果、原条件及封存。
+
+🟢 [Done] The subsequent [finite saved-evidence score audit](SPARSE_ROUTE_SCORE_AUDIT.md) separates cumulative/window error contributions and key-width cost with exact rounding residuals, without another learner or capture run. Existing negative results and causal unknowns remain intact.
