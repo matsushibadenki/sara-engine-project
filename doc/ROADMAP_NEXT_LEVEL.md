@@ -1628,6 +1628,20 @@ Compare seven equal-source and equal-resource arms:
 
 **Goal:** test whether evidence-linked structures learned in one sensory or symbolic channel can improve prediction in another, while learning a bounded continuum between broadly reusable, modality-family, and modality-specific structure instead of forcing all observations into one common representation.
 
+### Neural-coordination design intent — 2026-10-27
+
+🔴 [Later] The owner supplied [マルチモーダル学習法](chatgpt-conversation://6ae084fa-a5c0-83ee-b962-9e0efa0d2afc) as design context. The accessible reference contains questions about learning language, video, audio and touch with similar methods, then sharing/cooperating through neural mechanisms. Assistant answers were returned only as content-reference markers and were not available for review. This note incorporates the visible design intent, not unverified technical claims from those answers.
+
+- Preserve modality-specific frontends and native evidence while testing a common local predictive-learning principle. Sharing a mechanism does not require putting raw text, pixels, sound and pressure into one identical representation or one processing timescale.
+- A future neural-coordination candidate may use bounded shared spiking populations, branch-local eligibility and local competition to learn which temporal/relational information to exchange. Treat this as an untested hypothesis. Typed event interfaces and scheduling are software plumbing; a hand-coded semantic switch, paired-ID lookup or declared binding rule is not evidence that neural cooperation has been learned.
+- Compare that candidate with independent modality-local learning, fixed symbolic fusion and a sufficient event-driven scalar control, including an equation-matched emulator where appropriate. Match actual changed local updates and retain all necessary shared observations. Missing-modality, conflicting-evidence and temporal/mapping-shuffle controls must selectively test coordination; equivalent equations are expected to match, not to establish a spike-only capability.
+- Retain route-level support, score/rank, participation and delayed-credit provenance in a separately preregistered bounded evidence contract, informed by the [v3 route capture](SPARSE_ROUTE_CAPTURE_V3.md). Better binding or finite accuracy alone cannot establish shared neural structure, causal credit, cross-modal transfer or energy savings.
+- Keep the Phase 23 verification/durable-admission rules and Phase 42 independent-source/negative-transfer gates. Touch still requires independent licensed/consented sensor evidence and tactile controls. This reference authorizes no acquisition, new experiment, condition relaxation or seal opening and does not supersede the current R2/mechanism holds.
+
+日本語: モダリティ固有の入口を残し、共通の局所学習原理と疎な神経回路による協調を将来検証する方向を参考として記録しました。共通イベント形式や手書きの融合処理を、ニューロンが共有・協調を学習した証拠とは扱いません。参照先の回答本文は未取得で、確認できた質問の意図だけを反映しています。現行の保留・負の結果・封印は維持します。
+
+简体中文：记录未来保留模态专用入口、以共同局部学习原则和稀疏神经回路检验协作的设计意图。统一事件接口或手写融合规则不代表神经元已学会共享协作。参考会话的回答正文未能获取，仅采用可见问题的意图；保留现有暂停条件、负结果和封存。
+
 ### Research Hypothesis
 
 - Keep modality-local values and shared relational structure distinct:
