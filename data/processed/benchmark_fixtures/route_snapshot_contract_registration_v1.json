@@ -1,0 +1,11 @@
+{
+  "python": "3.10.22",
+  "registered_at_utc": "2026-10-27T10:56:24.264086+00:00",
+  "sources": {
+    "data/processed/benchmark_fixtures/route_snapshot_contract_selection_v1.json": "04ceb20739961386c075ecbbff6d110ae3a3eb50ce4fb8b28e5ffb028b803663",
+    "scripts/eval/route_snapshot_contract.py": "b58e80a1a8f2e208eaf769f4891a2a8c499e04cc87421fd28fee5da5e7d6657c",
+    "src/sara_engine/evaluation/route_snapshot_contract.py": "f06dd80945a5d1e09af9915b63bcbc38a806acd15e8b923a7c86b863ae4963f3",
+    "src/sara_engine/utils/project_paths.py": "277645cd8382f189bc60d93d93f28ed7cadcd48d55c25d442c8d9ed3ea194b06",
+    "tests/test_route_snapshot_contract.py": "f8fdbb580dec5f26050225d79bb902c9a76b4512c9d7ab6c7bb04c2d9f66657a"
+  }
+}

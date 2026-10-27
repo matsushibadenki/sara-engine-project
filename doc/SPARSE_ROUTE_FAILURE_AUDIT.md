@@ -71,3 +71,5 @@ Selective circuit use remains a design opportunity shared with non-spiking contr
 日本語: 保存済み7報告・1,593,723バイトだけを使う有限監査を実装前に登録し、90テストと別プロセスの完全再現が成功しました。再探索開始6〜13tick、確定186〜193tick、期限残り63〜70tickを切り分け、全100候補群の増減記録を照合しました。確定後2ブロックが収まらないことと、元の基準が不可能だったという主張は区別します。依存保持失敗3件のうち2件は報告精度100%ですが、保持判定は不合格のままです。真の欠落依存・候補別スコア・支持不足の因果原因は未記録で未知とし、432既存ハッシュ・旧再現失敗・負の結果・封印を保持しました。学習器再実行・採点・条件調整はゼロです。
 
 简体中文：在实现前注册仅使用7份保存报告、1,593,723字节的有限审计，90项测试与独立进程完全重放通过。分离触发延迟6–13 tick、提交延迟186–193 tick及期限剩余63–70 tick，核对全部100个候选池的增删记录。提交后两个完整区块无法容纳，不等于原门槛不可能达成。3项精确依赖保留失败中2项报告准确率为100%，仍保留失败判定。缺失依赖、候选分数与支持不足的因果原因未记录，保持未知。保留432个既有哈希、旧重放失败、负结果和封存，不重跑学习器、不评分、不调整条件。
+
+🟢 [Done] Follow-up design: [prospective bounded route snapshot collector/contract](SPARSE_ROUTE_SNAPSHOT_CONTRACT.md) implements the missing evidence interface and static capacity checks. Actual hook integration/collection remains pending; no old state is reconstructed or learner restarted.
