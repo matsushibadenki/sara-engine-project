@@ -1,0 +1,6 @@
+{
+  "registered_at_utc": "2026-10-28T01:49:27.572369+00:00",
+  "selection_sha256": "fe67f5e06ed23237ce5cbb8db4dde0dd2087d959094a5d4486a2898079089952",
+  "before_implementation": true,
+  "correction": "Scope text 60 paired-cell contrasts per boundary is an arithmetic typo: 20 cases * 6 pairs = 120 per boundary, 480 total. All six pairs and all20cases remain mandatory. Budgets and conditions unchanged."
+}
