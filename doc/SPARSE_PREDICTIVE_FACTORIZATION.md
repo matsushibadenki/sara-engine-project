@@ -41,6 +41,28 @@
 
 🔴 [Later] The full anonymous-factor proposal translates the factorized predictive principle in [JEPA-Anything](https://arxiv.org/abs/2609.20800) into a SARA-compatible research hypothesis. It is not a production change, a claim that SARA has a world model, or evidence for a spike-specific advantage. The paper reports orthogonal predictive factorization across heterogeneous domains, intervention prediction, out-of-distribution evaluation, and long-horizon dynamics; its abstract also makes clear that the reference training uses a conventional predictive architecture, so SARA must not import its gradient-based optimization as a runtime requirement. [Paper source](https://arxiv.org/abs/2609.20800)
 
+## Weight-space programming design note
+
+🟢 [Done] Literature/design review recorded on 2026-11-03; no model modification, experiment, training, scoring or resource measurement was performed for this note. Source: Takehi, Teoh, Zhang and Khattab, [Sparks of Weight-Space Programming](https://rikiyat.github.io/blog/weight-space-programming/) (2026-11-02). This is an early research blog report, not independent evidence about SARA.
+
+The authors report direct LLM interpretation and editing of network weights, with different access/feedback budgets across experiments. They also report important negatives: weights alone did not identify the sycophantic model, and attention observations were then provided; editing a rarely looping Gemma model did not establish improved math performance. The large Qwen improvement primarily removes a looping obstacle and must not be equated with acquiring new reasoning ability. Small edit fraction does not establish absence of behavioral regressions. [Source and experimental setups](https://rikiyat.github.io/blog/weight-space-programming/)
+
+The following are SARA design inferences, not results reproduced from that article:
+
+- **Read-only diagnosis before intervention.** A bounded inspector could describe saved route/count/eligibility structure and propose a falsifiable failure hypothesis. Its explanation is a candidate, not authenticated provenance or causal evidence. Do not expose sealed outcomes or use the explanation as a target label.
+- **Separate proposals from application.** If justified later, an optional offline proposer may emit a small declarative patch with owner, field addresses, typed old/new values, predecessor digest, rationale and explicit scope. An independent local validator must check the frozen allowed-write set, finite values, actual changes, unchanged fields and atomic refusal before any application. Unrestricted generated code or an LLM response is not an update authority. No proposer, patch schema or application path is implemented by this note.
+- **Validate behavior beyond the proposed repair.** A future separately preregistered experiment would need an untouched baseline, matched-budget non-spiking scalar control, fixed random/sham and revert controls where applicable, and checks of retained dependencies, recovery, unrelated behavior and stationary false starts. Fewer modified parameters does not substitute for these checks. A targeted patch may mask a symptom; the existing recovery/retention negatives remain valid.
+- **Account for external knowledge and all work.** An LLM's pretrained knowledge, task/source descriptions, inspection calls, feedback episodes, proposal attempts and validation/rollback work are separate inputs/costs. Zero target gradient updates is not zero total computation or evidence of autonomous factor discovery. A supplied circuit is an engineered prior, not learned anonymous specialization.
+- **Preserve SARA's runtime constraints.** Routine learning remains local, sparse and auditable, with no required external LLM, global backpropagation, dense matrix calculation or GPU. A possible offline diagnostic tool would not establish a spike-specific mechanism or resource advantage; its own costs must be charged before efficiency claims.
+
+🔴 [Later] Consider bounded read-only structural diagnosis and declarative local patch proposals only after a justified task, separately frozen experiment and independent causal checks exist. No direct weight edits, learning runs, new data access, tuning, changed scientific thresholds or production promotion are authorized here.
+
+The current 🟠 [Next] allocation-presence/immutable receipt-time-probability contract remains the priority. Literal arithmetic equality, runtime write provenance, successful repair and acquisition of a new capability remain distinct evidence categories; old failures, negatives and seals are unchanged.
+
+日本語: 重み空間プログラミングから、読み取り専用の故障仮説、宣言的な局所変更案、独立検証の分離を設計方針として取り入れます。LLMの説明や変更率の小ささは因果根拠・副作用の不存在を証明しません。記事の重み単独判別の失敗と、ループしないモデルの数学改善が未成立だった結果も保持します。外部LLMの事前知識・試行・検証費用を別計上し、現在の局所学習方針・次の検証優先度・負の結果・封印を維持します。今回モデルや実行部の変更はありません。
+
+简体中文：从权重空间编程中采纳只读故障假设、声明式局部修改提案和独立验证相分离的设计原则。LLM解释及少量权重修改不证明因果机制或无行为副作用；保留原文仅凭权重判别失败，以及无法确立非循环模型数学改善的负面结果。外部LLM的先验知识、尝试与验证费用须分别核算。当前局部学习约束、下一步验证优先级、负面结果和封存保持不变；本次未修改模型或执行路径。
+
 ## Memory Mosaics contribution and boundaries
 
 Useful additions from [Memory Mosaics, Sections 3–6](https://arxiv.org/html/2405.06394v3#S3):
