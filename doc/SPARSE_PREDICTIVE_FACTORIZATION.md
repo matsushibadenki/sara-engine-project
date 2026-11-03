@@ -42,6 +42,26 @@
 
 🔴 [Later] The full anonymous-factor proposal translates the factorized predictive principle in [JEPA-Anything](https://arxiv.org/abs/2609.20800) into a SARA-compatible research hypothesis. It is not a production change, a claim that SARA has a world model, or evidence for a spike-specific advantage. The paper reports orthogonal predictive factorization across heterogeneous domains, intervention prediction, out-of-distribution evaluation, and long-horizon dynamics; its abstract also makes clear that the reference training uses a conventional predictive architecture, so SARA must not import its gradient-based optimization as a runtime requirement. [Paper source](https://arxiv.org/abs/2609.20800)
 
+## Latent Sparse Attention design reference
+
+🟢 [Done] Literature/design review recorded on 2026-11-03 for Kubicek et al., [Latent Sparse Attention: Towards Subquadratic Ultra-Long Context Attention, arXiv:2610.42147v1](https://arxiv.org/html/2610.42147v1). This note adds prospective design criteria only, with no implementation, experiment, learner execution, scoring, acquisition of data/model payloads or resource measurement.
+
+The paper groups keys by content and searches summaries, either flat or hierarchically, while retaining a recent window. It separates indexer work from attention. Its reported GPU results are not CPU/SNN evidence: tree search loses accuracy in some settings, short contexts can pay more selection overhead than they save, and retained KV storage still grows with context. Native training is evaluated with flat search; native tree training remains open. Layer speedup must also be distinguished from end-to-end speedup. [Design, evaluation and limitations, §§3–5](https://arxiv.org/html/2610.42147v1)
+
+The following are SARA-specific hypotheses and prerequisites, not results established by LSA or by the current SARA code:
+
+- **Charge selection and maintenance.** In a future justified comparison, account for visited candidates, scalar score calls, index construction/insertion/split/rebuild, fallback scans, expiry, duplicate removal and temporary/resident metadata. A smaller selected set alone does not establish lower total work, memory or energy. Keep current resource-measurement holds; this note launches no profiling.
+- **Separate retrieval from retention and learning.** A bounded scalar index could route reads to retained memories without deleting them or changing the fixed training allocation. Preserve required shared inputs and explicit recent/unindexed coverage. Record which candidates were searched and excluded. Fewer scored routes does not imply fewer stored states, learned factor discovery or better dependency retention.
+- **Make approximation failures visible.** Before any implementation, preregister collision/rare-dependency witnesses, identical-current/opposite-future histories, stale summaries, newly arrived entries and missing-key cases. Compare retrieval against an exact CPU scalar scan, temporal grouping and a fixed simple hash/random control at equal candidate, state and actual-write budgets. Check dependency recall and task quality as well as work; do not silently rescue misses with an uncharged full scan.
+- **Bind index versions to receipts.** Any future read-selection proposal must freeze candidate IDs, index revision, allocation presence and probability at receipt time. Rebuilding the index before delayed delivery cannot rewrite a pending observation. Index metadata and maintenance writes remain separate from the four local learning fields; diagnostic routing cannot modify the authoritative fixed allocation.
+- **Require a measured crossover on a qualified workload.** Keep a simple exact-scan baseline unless a separately preregistered workload shows a quality-preserving total-cost benefit. Do not reopen the failed retention-hierarchy fixture family, relax support/current-state gates or add sources merely to exercise a tree. A valid independent task and causal evidence are still prerequisites for resource promotion.
+
+🔴 [Later] Consider bounded content-based scalar retrieval only after the current frozen-receipt/numeric-delta contract and independent-task prerequisites. Any prototype must preserve local auditable updates and CPU-only operation, without requiring dense projection/PCA machinery, global backpropagation or the paper's GPU kernels. No LSA model port, automatic candidate growth, new experiment, measurement, condition adjustment or seal opening is authorized by this review. SNN-specific advantage remains unestablished.
+
+日本語: 将来の検索設計には、候補探索だけでなく索引の構築・保守・フォールバックも含む総費用、共有入力と最近の未索引項目の保持、まれな依存の検索漏れを確認する条件を追記しました。検索の削減と保存状態の削減を区別し、索引が変わっても受信時の候補・割り当て・確率を保持します。正確なスカラー走査を強い対照とし、現在の次項目・資源計測保留・負の結果・封印を維持します。今回は文書のみの変更です。
+
+简体中文：为未来检索设计增加总成本核算，包括索引构建、维护和回退，并要求保留共享输入及尚未入索引的近期项、检查稀有依赖漏检。区分检索减少与存储减少，索引变化不得改写接收时的候选、分配状态和概率。以精确标量扫描为强对照，保持当前下一步、资源测量暂停、负面结果及封存。本次仅更新文档。
+
 ## Weight-space programming design note
 
 🟢 [Done] Literature/design review recorded on 2026-11-03; no model modification, experiment, training, scoring or resource measurement was performed for this note. Source: Takehi, Teoh, Zhang and Khattab, [Sparks of Weight-Space Programming](https://rikiyat.github.io/blog/weight-space-programming/) (2026-11-02). This is an early research blog report, not independent evidence about SARA.
