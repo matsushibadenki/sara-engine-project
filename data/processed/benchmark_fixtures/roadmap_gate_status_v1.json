@@ -1,0 +1,43 @@
+{
+  "entries": [
+    {
+      "evidence": "doc/CARTPOLE_DEVELOPMENT_RESULT_V2.md",
+      "evidence_sha256": "7363cef82f43a987a41a41c4396772d0186cb5e25e3ffe28c1e6e677d56a4871",
+      "id": "cartpole-fixed-comparison",
+      "reason": "The fixed comparison was preregistered and consumed; V1 failed serialization and V2 failed its frozen quality gate. Neither held-out split is open.",
+      "status": "Done"
+    },
+    {
+      "evidence": "doc/CARTPOLE_DEVELOPMENT_RESULT_V2.md",
+      "evidence_sha256": "7363cef82f43a987a41a41c4396772d0186cb5e25e3ffe28c1e6e677d56a4871",
+      "id": "cartpole-fresh-task",
+      "reason": "A new task/hypothesis and fresh development identities are required before a new trial. Do not rerun or retune the fixed CartPole comparison.",
+      "status": "Pending"
+    },
+    {
+      "evidence": "doc/SPARSE_ROUTE_CAPTURE_PROTOCOL.md",
+      "evidence_sha256": "ca941020b7b747d79b734a20ee541f79a1547c1d7e632be682d06527f51a1724",
+      "id": "authoritative-receipt-capture",
+      "reason": "Trusted owner/revision/pause authority and outcome-free receipt access remain missing; no runtime launch.",
+      "status": "Pending"
+    },
+    {
+      "evidence": "doc/CARTPOLE_REFRACTORY_MECHANISM_RESULT.md",
+      "evidence_sha256": "c9a8f6bfc036d2c2fd4fad2ab95b4b8cd671e1882db1e547008512c144decf30",
+      "id": "snn-specific-advantage",
+      "reason": "Compact timing and refractory controls match on the narrow positive control; SNN-specific causal benefit is not established.",
+      "status": "Pending"
+    }
+  ],
+  "forbidden_next_phrases": [
+    "Complete the matched learner/control preregistration for the fixed CartPole terminal-feedback task before scoring any arm."
+  ],
+  "input_byte_limit": 1048576,
+  "roadmaps": [
+    "doc/ROADMAP.md",
+    "doc/ROADMAP_NEXT_LEVEL.md"
+  ],
+  "runtime_authorized": false,
+  "schema": "sara-roadmap-gates-v1",
+  "scope": "four_selected_gates_only_not_global_roadmap_completion"
+}

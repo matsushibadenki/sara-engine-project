@@ -1,5 +1,15 @@
 # SARA Engine Next-Level Roadmap
 
+## Selected execution gates — 2026-11-06
+
+- 🟢 [Done] [Roadmap gate consistency checker](ROADMAP_GATE_CHECK.md): corrects the stale fixed-CartPole preregistration item; checks four selected statuses against pinned source documents in both roadmaps. Documentation validation only, no experiment/model execution or launch authorization.
+- 🟢 [Done] Fixed CartPole comparison completed with a negative V2 gate; no retry. <!-- gate:cartpole-fixed-comparison -->
+- ⭕️ [Pending] New task/hypothesis and fresh development identities before another local-credit trial. <!-- gate:cartpole-fresh-task -->
+- ⭕️ [Pending] Trusted owner/revision/pause and outcome-free access before actual receipt capture. <!-- gate:authoritative-receipt-capture -->
+- ⭕️ [Pending] SNN-specific causal benefit over matched event-driven scalar controls. <!-- gate:snn-specific-advantage -->
+
+This register does not grant execution permission, authenticate evidence or classify the entire roadmap. A new proposal must satisfy the relevant gate instead of treating historical Next text as an unconsumed experiment. No extra hand fixtures, source acquisition, scoring, resource work, condition change or sealed access is selected here.
+
 この文書は、v1.1の実装完了後にSARAを「構造を保持するSNN」から「構造を検証しながら成長させる知能」へ進めるための新しいロードマップです。
 
 現行の完了状況は [ROADMAP.md](ROADMAP.md) と [IMPLEMENTED_FEATURES.md](IMPLEMENTED_FEATURES.md) を正とします。この文書は新しい研究・製品レベルの目標だけを扱い、完了済みの実装履歴は再掲しません。
