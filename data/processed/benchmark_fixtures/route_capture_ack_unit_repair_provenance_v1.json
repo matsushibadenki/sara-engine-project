@@ -1,0 +1,12 @@
+{
+  "archived_bytes_match_v1_registered_sha256": "5d0453cbb742e318c9530bc70573f53dd794087232fe6c05c451083fda9ab0df",
+  "archived_test_path": "data/processed/benchmark_fixtures/route_capture_ack_failed_unit_source_v1.py.txt",
+  "original_registered_test_path": "tests/test_route_capture_ack.py",
+  "schema": "route-capture-ack-unit-repair-provenance-v1",
+  "scope": "Unit expectation/location repair only, not scientific parameter adjustment or model reproduction.",
+  "v1_attempt_restart_authorized": false,
+  "v1_failed_test_not_in_active_discovery": true,
+  "v1_test_location_archived_not_available_for_old_source_verify": true,
+  "v1_v2_hand_reports_exact_except_registration_and_preservation_counts": true,
+  "v2_implementation_and_harness_unchanged": true
+}

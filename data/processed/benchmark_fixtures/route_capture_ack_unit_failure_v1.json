@@ -1,0 +1,12 @@
+{
+  "actual_exception": "AdmissionError",
+  "expected_exception": "HostError",
+  "implementation_rejected_invalid_token": true,
+  "old_run_restart_authorized": false,
+  "primary_and_replay_reports_preserved": true,
+  "repair": "Separate V2 registration; same implementation and conditions, corrected unit expectation only.",
+  "schema": "route-capture-ack-unit-failure-v1",
+  "test": "test_ack_copy_is_not_authority",
+  "unit_tests_failed": 1,
+  "unit_tests_passed": 8
+}
