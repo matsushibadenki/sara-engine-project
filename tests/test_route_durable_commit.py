@@ -1,18 +1,20 @@
 """Verify SQLite recovery using the saved cold receipt and real model updates."""
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import replace
+from dataclasses import asdict, replace
 import json
 import os
 from pathlib import Path
+import sqlite3
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from sara_engine.evaluation.route_capture_candidate import CapturePair, PhaseCapture
 from sara_engine.evaluation.route_capture_layout import ROUTES, project
 from sara_engine.evaluation.route_durable_commit import RouteReceiptStore, _tuple_tree
-from sara_engine.evaluation.route_outcome_admission import AdmissionGate, CaptureAck, Input
+from sara_engine.evaluation.route_outcome_admission import AdmissionGate, CaptureAck, Delivery, Input
 from sara_engine.utils.project_paths import ensure_output_directory, processed_data_path, workspace_path
 
 
@@ -66,12 +68,13 @@ class DurableCommitTest(unittest.TestCase):
         self.assertEqual({(route, rank) for route, rank, flag in projection.allocations if flag}, allocated)
         return after
 
-    def crash(self, stage):
+    def crash(self, stage, delivery=None):
         code = """
 import os
 import sys
 from unittest.mock import patch
-from test_route_durable_commit import staged_receipt
+import json
+from sara_engine.evaluation.route_outcome_admission import CaptureAck, Delivery, Input
 from sara_engine.evaluation.route_durable_commit import RouteReceiptStore
 
 def crash_at(stage):
@@ -79,9 +82,13 @@ def crash_at(stage):
         os._exit(73)
 
 with patch('sara_engine.evaluation.route_durable_commit._interrupt', crash_at):
-    RouteReceiptStore(sys.argv[1]).apply(staged_receipt()[1])
+    raw = json.loads(sys.argv[3])
+    packet = Input(**dict(raw['input'], events=tuple(raw['input']['events'])))
+    ack = CaptureAck(**dict(raw['capture'], routes=tuple(raw['capture']['routes'])))
+    RouteReceiptStore(sys.argv[1]).apply(Delivery(packet, ack, raw['tick'], tuple(raw['outcome'])))
 """
-        child = subprocess.run([sys.executable, '-c', code, str(self.path), stage],
+        child = subprocess.run([sys.executable, '-c', code, str(self.path), stage,
+                                json.dumps(asdict(delivery or self.delivery))],
                                env=dict(os.environ, PYTHONPATH='src:tests:.'),
                                capture_output=True, text=True, timeout=15)
         self.assertEqual(child.returncode, 73, child.stderr)
@@ -112,6 +119,73 @@ with patch('sara_engine.evaluation.route_durable_commit._interrupt', crash_at):
         committed = self.assert_committed()
         self.assertFalse(RouteReceiptStore(self.path).apply(self.delivery))
         self.assertEqual(self.store.read(), (committed, True))
+
+    def next_delivery(self, receiving_id):
+        packet = replace(self.delivery.input, receiving_id=receiving_id, source_id=receiving_id)
+        ack = self.store.stage_next(packet)
+        gate, producer, collector = AdmissionGate.create(ack)
+        gate.admit(producer, packet)
+        gate.acknowledge(collector, ack)
+        return gate.release(producer, receiving_id + 1, self.delivery.outcome)
+
+    def test_sequential_resume_with_old_duplicate_and_future_delivery(self):
+        self.assertTrue(self.store.apply(self.delivery))
+        first = self.store.read_committed()
+        second = self.next_delivery(1)
+        self.assertEqual(second.capture.pre_revision, first.revision)
+        self.assertEqual(second.capture.pre_digest, first.digest)
+        self.assertEqual(second.capture.receipt_revision, first.revision + 2)
+        self.assertEqual(self.store.read_committed(), first)
+        self.assertFalse(self.store.read()[1])
+        self.assertFalse(self.store.apply(self.delivery))
+        with self.assertRaisesRegex(ValueError, 'Conflicting duplicate'):
+            self.store.apply(replace(self.delivery, outcome=(0, 0, 1)))
+        future = replace(second, input=replace(second.input, receiving_id=2), tick=3)
+        with self.assertRaisesRegex(ValueError, 'out of order'):
+            self.store.apply(future)
+        self.crash('before_commit', second)
+        self.store = RouteReceiptStore(self.path)
+        self.assertEqual(self.store.read_committed(), first)
+        self.assertFalse(self.store.read()[1])
+        self.crash('after_commit', second)
+        self.store = RouteReceiptStore(self.path)
+        committed = self.store.read_committed()
+        self.assertEqual(committed.revision, first.revision + 4)
+        self.assertFalse(self.store.apply(second))
+        self.assertFalse(self.store.apply(self.delivery))
+        self.assertEqual(self.store.read()[0]['updates'], 18)
+        third = self.next_delivery(2)
+        self.assertEqual(third.capture.pre_digest, committed.digest)
+        self.assertTrue(self.store.apply(third))
+        self.assertEqual(self.store.read()[0]['updates'], 27)
+
+    def test_stage_refuses_revision_gap_and_pending_overwrite(self):
+        self.assertTrue(self.store.apply(self.delivery))
+        packet = replace(self.delivery.input, receiving_id=1, source_id=1)
+        with patch.object(self.store, 'stage') as stage:
+            self.store.stage_next(packet)
+        pair, ack = stage.call_args.args
+        shifted = replace(pair,
+                          predecessor=replace(pair.predecessor, revision=pair.predecessor.revision + 2),
+                          receipt=replace(pair.receipt, revision=pair.receipt.revision + 2))
+        with self.assertRaisesRegex(ValueError, 'does not continue'):
+            self.store.stage(shifted, replace(ack, pre_revision=ack.pre_revision + 2,
+                                              receipt_revision=ack.receipt_revision + 2))
+        self.store.stage(pair, ack)
+        with self.assertRaisesRegex(ValueError, 'still pending'):
+            self.store.stage(pair, ack)
+
+    def test_legacy_committed_database_continues(self):
+        self.assertTrue(self.store.apply(self.delivery))
+        committed = self.store.read_committed()
+        # The original schema stored the final state in receipt and had no checkpoint table.
+        with sqlite3.connect(self.path) as connection:
+            connection.execute('DROP TABLE checkpoint')
+        self.assertEqual(self.store.read_committed(), committed)
+        second = self.next_delivery(1)
+        self.assertEqual(self.store.read_committed(), committed)
+        self.assertTrue(self.store.apply(second))
+        self.assertEqual(self.store.read_committed().revision, committed.revision + 4)
 
     def test_wrong_tick_leaves_pending_state(self):
         with self.assertRaisesRegex(ValueError, 'does not bind'):
