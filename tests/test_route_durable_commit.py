@@ -13,9 +13,13 @@ from unittest.mock import patch
 
 from sara_engine.evaluation.route_capture_candidate import CapturePair, PhaseCapture
 from sara_engine.evaluation.route_capture_layout import ROUTES, project
+from sara_engine.evaluation.route_delivery_origin import RouteOriginKeys, input_tag, outcome_tag
 from sara_engine.evaluation.route_durable_commit import RouteReceiptStore, _tuple_tree
 from sara_engine.evaluation.route_outcome_admission import AdmissionGate, CaptureAck, Delivery, Input
 from sara_engine.utils.project_paths import ensure_output_directory, processed_data_path, workspace_path
+
+
+TEST_KEYS = RouteOriginKeys(b'i' * 32, b'o' * 32)
 
 
 def staged_receipt():
@@ -68,7 +72,7 @@ class DurableCommitTest(unittest.TestCase):
         self.assertEqual({(route, rank) for route, rank, flag in projection.allocations if flag}, allocated)
         return after
 
-    def crash(self, stage, delivery=None):
+    def crash(self, stage, delivery=None, *, authenticated=False):
         code = """
 import os
 import sys
@@ -85,10 +89,16 @@ with patch('sara_engine.evaluation.route_durable_commit._interrupt', crash_at):
     raw = json.loads(sys.argv[3])
     packet = Input(**dict(raw['input'], events=tuple(raw['input']['events'])))
     ack = CaptureAck(**dict(raw['capture'], routes=tuple(raw['capture']['routes'])))
-    RouteReceiptStore(sys.argv[1]).apply(Delivery(packet, ack, raw['tick'], tuple(raw['outcome'])))
+    delivery = Delivery(packet, ack, raw['tick'], tuple(raw['outcome']))
+    if sys.argv[4] == '1':
+        from test_route_durable_commit import TEST_KEYS, outcome_tag
+        RouteReceiptStore(sys.argv[1], origin_keys=TEST_KEYS).apply(
+            delivery, outcome_tag=outcome_tag(TEST_KEYS.outcome_key, delivery))
+    else:
+        RouteReceiptStore(sys.argv[1]).apply(delivery)
 """
         child = subprocess.run([sys.executable, '-c', code, str(self.path), stage,
-                                json.dumps(asdict(delivery or self.delivery))],
+                                json.dumps(asdict(delivery or self.delivery)), str(int(authenticated))],
                                env=dict(os.environ, PYTHONPATH='src:tests:.'),
                                capture_output=True, text=True, timeout=15)
         self.assertEqual(child.returncode, 73, child.stderr)
@@ -186,6 +196,50 @@ with patch('sara_engine.evaluation.route_durable_commit._interrupt', crash_at):
         self.assertEqual(self.store.read_committed(), committed)
         self.assertTrue(self.store.apply(second))
         self.assertEqual(self.store.read_committed().revision, committed.revision + 4)
+
+    def test_external_origin_survives_recovery_and_binds_source_revision(self):
+        self.path = Path(self.temp.name) / 'authenticated.sqlite'
+        self.store = RouteReceiptStore(self.path, origin_keys=TEST_KEYS)
+        pair, first = staged_receipt()
+        tag = input_tag(TEST_KEYS.input_key, pair.input, pair.predecessor.revision, pair.predecessor.digest)
+        with self.assertRaisesRegex(ValueError, 'origin verification'):
+            self.store.stage(pair, first.capture)
+        self.store.stage(pair, first.capture, input_tag=tag)
+        self.assertTrue(self.store.apply(first, outcome_tag=outcome_tag(TEST_KEYS.outcome_key, first)))
+        pre = self.store.read_committed()
+        packet = replace(first.input, receiving_id=1, source_id=77)
+        with self.assertRaisesRegex(ValueError, 'origin verification'):
+            self.store.stage_next(packet, input_tag=input_tag(TEST_KEYS.input_key, packet,
+                                                              pre.revision + 2, pre.digest))
+        ack = self.store.stage_next(packet, input_tag=input_tag(TEST_KEYS.input_key, packet,
+                                                               pre.revision, pre.digest))
+        second = Delivery(packet, ack, 2, first.outcome)
+        proof = outcome_tag(TEST_KEYS.outcome_key, second)
+        for changed in (replace(second, input=replace(packet, source_id=78)),
+                        replace(second, input=replace(packet, receiving_id=2), tick=3),
+                        replace(second, capture=replace(ack, receipt_revision=ack.receipt_revision + 2))):
+            with self.assertRaisesRegex(ValueError, 'origin verification'):
+                self.store.apply(changed, outcome_tag=proof)
+            with self.assertRaisesRegex(ValueError, 'does not bind'):
+                self.store.apply(changed, outcome_tag=outcome_tag(TEST_KEYS.outcome_key, changed))
+        self.assertEqual(self.store.read_committed(), pre)
+        self.crash('before_commit', second, authenticated=True)
+        self.store = RouteReceiptStore(self.path, origin_keys=TEST_KEYS)
+        self.assertEqual(self.store.read_committed(), pre)
+        with self.assertRaisesRegex(ValueError, 'origin policy'):
+            RouteReceiptStore(self.path).apply(second)
+        with self.assertRaisesRegex(ValueError, 'origin policy'):
+            RouteReceiptStore(self.path, origin_keys=RouteOriginKeys(b'x' * 32, b'y' * 32)).apply(second,
+                                                                                               outcome_tag=proof)
+        with self.assertRaisesRegex(ValueError, 'origin verification'):
+            self.store.apply(second, outcome_tag=outcome_tag(TEST_KEYS.input_key, second))
+        self.crash('after_commit', second, authenticated=True)
+        self.store = RouteReceiptStore(self.path, origin_keys=TEST_KEYS)
+        self.assertFalse(self.store.apply(second, outcome_tag=proof))
+        with self.assertRaisesRegex(ValueError, 'origin verification'):
+            self.store.apply(second)
+        self.assertEqual(self.store.read_committed().revision, pre.revision + 4)
+        self.assertEqual(self.store.read()[0]['updates'], 18)
 
     def test_wrong_tick_leaves_pending_state(self):
         with self.assertRaisesRegex(ValueError, 'does not bind'):

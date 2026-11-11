@@ -25,3 +25,17 @@ Eight focused tests pass. The sequential recovery test commits the first receipt
 日本語：同一DBの3受信で、状態版の連続性、過去の重複、順序違いの配送、2件目のコミット前後の中断と3件目への再開を確認した。
 
 简体中文：在同一数据库中验证三个连续接收，覆盖版本连续性、历史重复、乱序投递、第二次提交前后的中断以及第三次接收的恢复。
+
+## External input and outcome provenance
+
+🟢 [Done] A new database can pin separate input and outcome keys through `RouteOriginKeys`. Producers attach HMAC-SHA256 tags to canonical records. The input tag covers the owner, epoch, receiving ID, source ID, events and predecessor revision and digest. The outcome tag covers the complete delivery, including its acknowledgement, receipt revision, route list, tick and outcome.
+
+The database stores key fingerprints and input tags when staging. It checks the configured policy and outcome tag before duplicate handling, then checks the staged receipt and its stored input tag before applying an update. The outcome tag, state and consumed ID commit together. Recovery requires the same keys for writes. Existing databases using local admission continue under their original policy.
+
+Nine focused tests pass using separate test keys. They cover modified receiving and source IDs and receipt revisions, including correctly authenticated records that conflict with the staged receipt. They also cover an input tag for the wrong predecessor revision, termination before and after the second commit, recovery with missing or different keys and authentication on duplicate delivery.
+
+⭕️ [Pending] Production key distribution, rotation and connection to an independent external producer remain open. This verification uses local test producers and shared keys.
+
+日本語：入力と結果を別鍵で認証し、受信ID・元ID・状態版を既存の永続化に結び付けた。復旧後も鍵の相違、記録の改変、未認証の重複配送を拒否した。
+
+简体中文：使用不同密钥验证输入和结果，将接收 ID、来源 ID 和状态版本绑定到持久化流程。恢复后仍拒绝错误密钥、篡改记录及未认证的重复投递。
