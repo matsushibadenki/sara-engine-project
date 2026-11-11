@@ -30,7 +30,7 @@ Eight focused tests pass. The sequential recovery test commits the first receipt
 
 🟢 [Done] A new database can pin separate input and outcome keys through `RouteOriginKeys`. Producers attach HMAC-SHA256 tags to canonical records. The input tag covers the owner, epoch, receiving ID, source ID, events and predecessor revision and digest. The outcome tag covers the complete delivery, including its acknowledgement, receipt revision, route list, tick and outcome.
 
-The database stores key fingerprints and input tags when staging. It checks the configured policy and outcome tag before duplicate handling, then checks the staged receipt and its stored input tag before applying an update. The outcome tag, state and consumed ID commit together. Recovery requires the same keys for writes. Existing databases using local admission continue under their original policy.
+The database stores key fingerprints and input tags when staging. It checks the configured policy before delivery handling. A new outcome requires a valid tag and matching staged receipt and stored input tag. The outcome tag, state and consumed ID commit together. Recovery requires the same keys for writes. Existing databases using local admission continue under their original policy.
 
 Nine focused tests pass using separate test keys. They cover modified receiving and source IDs and receipt revisions, including correctly authenticated records that conflict with the staged receipt. They also cover an input tag for the wrong predecessor revision, termination before and after the second commit, recovery with missing or different keys and authentication on duplicate delivery.
 
@@ -39,3 +39,15 @@ Nine focused tests pass using separate test keys. They cover modified receiving 
 日本語：入力と結果を別鍵で認証し、受信ID・元ID・状態版を既存の永続化に結び付けた。復旧後も鍵の相違、記録の改変、未認証の重複配送を拒否した。
 
 简体中文：使用不同密钥验证输入和结果，将接收 ID、来源 ID 和状态版本绑定到持久化流程。恢复后仍拒绝错误密钥、篡改记录及未认证的重复投递。
+
+## Key rotation
+
+🟢 [Done] `rotate_origin_keys` checks the current policy and replaces both producer keys in a SQLite transaction at a committed receipt boundary. A pending receipt keeps its current policy. Reopening requires the new keys for staging and application. The database stores fingerprints and tags.
+
+An exact historical retry compares its payload and original tag with the committed records. This lets the current store acknowledge an old duplicate after rotation using the trusted local ledger. New deliveries require the current outcome key. Ten focused tests pass, including rejection of old keys for new input and outcomes, refusal during a pending receipt, and successful redelivery after reopening.
+
+⭕️ [Pending] Independent producer deployment and operational key distribution.
+
+日本語：確定済み受信の境界で入力鍵と結果鍵を一括更新する。更新後の再起動で新しい鍵を使い、過去の正規の重複配送は保存済み記録と照合する。
+
+简体中文：在已提交接收边界原子更新输入与结果密钥。重启后使用新密钥，历史重复投递与已保存的记录核对。

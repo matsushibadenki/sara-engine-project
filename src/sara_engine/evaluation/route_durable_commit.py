@@ -61,6 +61,25 @@ class RouteReceiptStore:
             connection.execute('CREATE TABLE receipt_origin (receiving_id INTEGER PRIMARY KEY, '
                                'input_tag BLOB NOT NULL, outcome_tag BLOB)')
 
+    def rotate_origin_keys(self, replacement):
+        """Replace producer keys between receipts and return a handle using the new keys."""
+        if self.origin_keys is None or type(replacement) is not RouteOriginKeys:
+            raise ValueError('Rotation requires current and replacement origin keys')
+        if set((replacement.input_key, replacement.outcome_key)) & set(
+            (self.origin_keys.input_key, self.origin_keys.outcome_key)
+        ):
+            raise ValueError('Replacement keys must differ from both current keys')
+        with closing(self._connect()) as connection, connection:
+            connection.execute('BEGIN IMMEDIATE')
+            self._verify_origin_policy(connection)
+            packet, = connection.execute('SELECT packet FROM receipt WHERE slot = 1').fetchone()
+            if not connection.execute('SELECT 1 FROM consumed WHERE receiving_id = ?',
+                                      (json.loads(packet)['receiving_id'],)).fetchone():
+                raise ValueError('Cannot rotate keys while a receipt is pending')
+            connection.execute('UPDATE origin_policy SET binding = ? WHERE slot = 1',
+                               (replacement.binding(),))
+        return RouteReceiptStore(self.path, origin_keys=replacement)
+
     def read_committed(self):
         """Return the latest committed phase, even while a later receipt is staged."""
         with closing(self._connect()) as connection, connection:
@@ -157,9 +176,7 @@ class RouteReceiptStore:
             packet, ack, state = connection.execute(
                 'SELECT packet, ack, state FROM receipt WHERE slot = 1').fetchone()
             self._verify_origin_policy(connection)
-            if self.origin_keys is not None:
-                verify_tag(sign_outcome(self.origin_keys.outcome_key, delivery), outcome_tag)
-            elif outcome_tag is not None:
+            if self.origin_keys is None and outcome_tag is not None:
                 raise ValueError('Outcome tag requires a configured origin policy')
             receiving_id = delivery.input.receiving_id
             identity = json.loads(packet)
@@ -170,9 +187,17 @@ class RouteReceiptStore:
             prior = connection.execute('SELECT delivery FROM consumed WHERE receiving_id = ?',
                                        (receiving_id,)).fetchone()
             if prior is not None:
+                if self.origin_keys is not None:
+                    stored = connection.execute('SELECT outcome_tag FROM receipt_origin WHERE receiving_id = ?',
+                                                (receiving_id,)).fetchone()
+                    if not stored or stored[0] is None:
+                        raise ValueError('Missing committed outcome origin')
+                    verify_tag(stored[0], outcome_tag)
                 if prior[0] != payload:
                     raise ValueError('Conflicting duplicate delivery')
                 return False
+            if self.origin_keys is not None:
+                verify_tag(sign_outcome(self.origin_keys.outcome_key, delivery), outcome_tag)
             if canonical(asdict(delivery.input)) != packet or canonical(asdict(delivery.capture)) != ack:
                 raise ValueError('Delivery is out of order or does not bind the staged receipt')
             if self.origin_keys is not None:

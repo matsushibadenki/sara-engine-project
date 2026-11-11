@@ -241,6 +241,40 @@ with patch('sara_engine.evaluation.route_durable_commit._interrupt', crash_at):
         self.assertEqual(self.store.read_committed().revision, pre.revision + 4)
         self.assertEqual(self.store.read()[0]['updates'], 18)
 
+    def test_rotate_keys_between_receipts_and_reopen(self):
+        pair, first = staged_receipt()
+        path = Path(self.temp.name) / 'rotation.sqlite'
+        store = RouteReceiptStore(path, origin_keys=TEST_KEYS)
+        pre = pair.predecessor
+        store.stage(pair, first.capture, input_tag=input_tag(TEST_KEYS.input_key, pair.input,
+                                                              pre.revision, pre.digest))
+        replacement = RouteOriginKeys(b'n' * 32, b'p' * 32)
+        with self.assertRaisesRegex(ValueError, 'receipt is pending'):
+            store.rotate_origin_keys(replacement)
+        first_proof = outcome_tag(TEST_KEYS.outcome_key, first)
+        self.assertTrue(store.apply(first, outcome_tag=first_proof))
+        checkpoint = store.read_committed()
+        store.rotate_origin_keys(replacement)
+        reopened = RouteReceiptStore(path, origin_keys=replacement)
+        self.assertEqual(reopened.read_committed(), checkpoint)
+        with self.assertRaisesRegex(ValueError, 'origin policy'):
+            store.apply(first, outcome_tag=first_proof)
+        self.assertFalse(reopened.apply(first, outcome_tag=first_proof))
+        with self.assertRaisesRegex(ValueError, 'origin verification'):
+            reopened.apply(first)
+        packet = replace(first.input, receiving_id=1, source_id=77)
+        with self.assertRaisesRegex(ValueError, 'origin verification'):
+            reopened.stage_next(packet, input_tag=input_tag(TEST_KEYS.input_key, packet,
+                                                                checkpoint.revision, checkpoint.digest))
+        ack = reopened.stage_next(packet, input_tag=input_tag(replacement.input_key, packet,
+                                                               checkpoint.revision, checkpoint.digest))
+        second = Delivery(packet, ack, 2, first.outcome)
+        with self.assertRaisesRegex(ValueError, 'origin verification'):
+            reopened.apply(second, outcome_tag=outcome_tag(TEST_KEYS.outcome_key, second))
+        self.assertTrue(reopened.apply(second, outcome_tag=outcome_tag(replacement.outcome_key, second)))
+        self.assertEqual(reopened.read()[0]['updates'], 18)
+        self.assertFalse(reopened.apply(first, outcome_tag=first_proof))
+
     def test_wrong_tick_leaves_pending_state(self):
         with self.assertRaisesRegex(ValueError, 'does not bind'):
             self.store.apply(replace(self.delivery, tick=2))
