@@ -492,3 +492,13 @@ Promotion requires a preregistered improvement over the single-factor control on
 日本語: 続くSPHERE/ECOの有限メタデータ監査も事前登録し、公表ストリームが元のKitchen ON定義に不適合と判断して終了しました。未確定のPIR期間・密度・サイズ・利用条件を残し、本体取得・候補追加・条件緩和・封印解除はしません。さらに既存19証跡の監査と合成入力48ケースの計上検証を完了し、356テストと別プロセス再現で負の結果を保持しました。続く計測分離は48ケース・381テストで成立しましたが、隔離割当診断は固定8 MiBの結果保存上限で不合格です。失敗と封印を保持し、続く形式事前検証は上限7,302,888バイト・41テスト・完全再現で成功しました。続くv2も別登録し、各608,412バイトの結果保存と3,840窓の一致、51テストを確認しました。SNNのメモリ優位は示されず、続く26件の有限判断監査も完了し、63テストと完全再現で386証跡を保持しました。枝ごとの遅延適格性は条件付き設計候補ですが、因果効果と新しい独立課題の根拠が不足するため追加資源計測を保留します。
 
 简体中文：另行预注册并完成SPHERE/ECO有限元数据审计，判定其已描述数据流不符合原Kitchen ON定义并终止。保留PIR期间、密度、体积和使用条件的未知项，不采集本体、不扩充候选、不放宽条件或解除封存。随后完成19份既有证据审计和48个合成输入案例的核算验证，356项测试与新进程重放保留原负结果。后续测量分离通过48个案例和381项测试，但隔离分配诊断因结果超过固定8 MiB上限而失败。保留失败与封存；后续格式预检以7,302,888字节上界、41项测试和精确重放通过，后续v2也已单独注册，各保存608,412字节，3,840个窗口一致且51项测试通过。未显示SNN内存优势；后续26项证据的有限判断审计也已完成，63项测试与完全重放通过。分支局部延迟资格迹仅为有条件的设计候选，因果效果和新独立任务证据不足，暂停额外资源测量。
+
+## LittleBit design reference
+
+🔴 [Later] LittleBit v5 uses binarized low-rank factors with scales and an optional residual path. Its effective bit rate accounts for the learned representation, and its latency analysis distinguishes kernel results from practical inference. [LittleBit v5, Sections 3 and 5 and Appendix D](https://arxiv.org/html/2506.13771v5)
+
+For SARA, evaluate a compact scalar representation of local route state against exact state and simple fixed precision. Compare the main representation alone with bounded residuals at equal total byte budgets. Include indexes, scales, residuals and temporary decoding buffers. Check rare-route retention and end-to-end CPU cost, including decoding and updates. Keep route identities and receipt/consumption metadata exact. Treat this as a later CPU-only representation study under the existing independent task and causal evidence gates. The paper's matrix factorization, quantization-aware training and GPU kernel results apply to its LLM setting.
+
+日本語: 主表現・補正・索引・一時領域まで含めた総バイト数を揃え、補正の有無による希少経路の保持とCPU処理全体の費用を比較する。既存の独立課題と因果検証の条件を満たした後の候補とする。
+
+简体中文：按相同总字节预算比较有无残差补偿，计入主体表示、缩放参数、索引与临时缓冲区，并检查稀有路径保留和端到端 CPU 开销。通过现有独立任务和因果证据门槛后再开展。
