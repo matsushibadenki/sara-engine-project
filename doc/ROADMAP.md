@@ -19,6 +19,19 @@ This page tracks current progress, priorities and the conditions for advancing. 
 2. 🟠 [Next] Prepare the independent producer pilot with reviewed trust material, revision handling and key distribution. Measure authority review, revision completeness, availability, latency and complete-path cost under the existing pilot conditions. [Publisher pilot readiness](ROADMAP_NEXT_READINESS.md#independent-https-publisher-pilot) · [Publisher pilot context](ROADMAP_HISTORY.md#existing-research-queue)
 3. ⭕️ [Pending] Promote a mechanism or begin new resource comparisons only after the independent task and causal gates pass. Existing event-work and allocation diagnostics retain their recorded results. [Research focus and promotion gates](ROADMAP_NEXT_LEVEL.md)
 4. 🔴 [Later] Compare bounded local representations at equal total byte budgets, including indexes, decoding, residuals and rare-route retention. [LittleBit design reference](SPARSE_PREDICTIVE_FACTORIZATION.md#littlebit-design-reference)
+5. 🔴 [Later] Evaluate exact reuse of local readouts when their dependencies are unchanged, after the independent-task and causal gates pass. [Evaluation contract](#local-readout-reuse)
+
+### Local readout reuse
+
+The referenced computation-reduction proposal motivates reusing a derived local readout while its key, contributing state versions and time-dependent inputs remain equal. Start with a bounded per-route cache for a read-only probability. Recompute on a missing entry, dependency change or uncertain validity. An unchanged input can still coincide with trace decay, a delayed result, expiry or a restored state, so these transitions must be covered by the reuse check. Capture the probability at receipt time and preserve it through delivery.
+
+Require exact output and state parity with the uncached implementation, including delayed results, expiry, recovery and rare-route cases. Apply the same reuse opportunity to the event-driven scalar control and match actual local writes. Account for dependency checks, cache memory, invalidation, fallback and shared event processing using the existing [work accounting contract](R2_EVENT_WORK_ACCOUNTING.md). Attribute a benefit to SNN dynamics only if an advantage survives the matched scalar comparison and the existing causal gate.
+
+Treat error-based omission of local writes as a separate learning intervention. Small errors alone provide insufficient evidence to skip updates that may preserve rare dependencies or aid recovery. Semantic planning and text rendering separation remains outside this route-level comparison.
+
+日本語：依存状態が一致する局所読み出しの再利用を将来候補に追加。遅延結果・期限切れ・復旧を含む完全一致と、同じ再利用を備えたスカラー対照を条件とする。
+
+简体中文：将依赖状态一致时复用局部读出列为后续候选，要求在延迟结果、过期和恢复时完全一致，并采用具备相同复用机制的标量对照。
 
 ## Selected execution gates
 
