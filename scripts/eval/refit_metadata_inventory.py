@@ -28,10 +28,19 @@ def inventory(source):
         raise ValueError("Survey contains no buildings")
     summary = Counter()
     for building in buildings:
-        counts = Counter(
-            variable.get("variableType")
-            for variable in building.iter(NAMESPACE + "TimeSeriesVariable")
-        )
+        parents = {child: parent for parent in building.iter() for child in parent}
+        counts = Counter()
+        for variable in building.iter(NAMESPACE + "TimeSeriesVariable"):
+            channel = variable.get("variableType")
+            if channel not in CHANNELS:
+                continue
+            counts[channel] += 1
+            if variable.get("hasMissingData") is None:
+                summary["without_missing_data_flag"] += 1
+            if channel == "Open/Closed":
+                sensor = parents[variable]
+                if sensor.tag == NAMESPACE + "Sensor" and parents[sensor] is building:
+                    summary["building_level_contacts"] += 1
         for channel in CHANNELS:
             summary[channel] += counts[channel]
         summary["buildings_with_both"] += all(counts[channel] for channel in CHANNELS)
@@ -40,6 +49,8 @@ def inventory(source):
         "buildings_with_both": summary["buildings_with_both"],
         "motion_variables": summary["Motion"],
         "open_closed_variables": summary["Open/Closed"],
+        "building_level_contacts": summary["building_level_contacts"],
+        "without_missing_data_flag": summary["without_missing_data_flag"],
         "coverage_verified": False,
     }
 
