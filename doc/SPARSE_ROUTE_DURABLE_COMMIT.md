@@ -51,3 +51,19 @@ An exact historical retry compares its payload and original tag with the committ
 日本語：確定済み受信の境界で入力鍵と結果鍵を一括更新する。更新後の再起動で新しい鍵を使い、過去の正規の重複配送は保存済み記録と照合する。
 
 简体中文：在已提交接收边界原子更新输入与结果密钥。重启后使用新密钥，历史重复投递与已保存的记录核对。
+
+## Separate-process delivery ingress
+
+🟢 [Done] The stdin ingress accepts one JSON message for an existing authenticated SQLite store. The envelope has `operation`, `payload` and `tag` fields. The tag is a 64-character hexadecimal HMAC. The parser rejects duplicate JSON fields and caps each message at 16 KiB.
+
+Run `PYTHONPATH=src python scripts/eval/route_delivery_ingress.py <database>` with the current input and outcome keys supplied through `SARA_ROUTE_INPUT_KEY_HEX` and `SARA_ROUTE_OUTCOME_KEY_HEX`. Bootstrap the first receipt through the store API. The input producer uses the committed predecessor revision and digest to sign an input packet. Send it with operation `stage` to obtain the acknowledgement. The outcome producer uses that acknowledgement to sign the full delivery. Send it with operation `apply` to receive the commit status. A rejected message exits with status 1.
+
+An integration test signs inputs and outcomes in separate producer processes, each with its role key. Fresh ingress processes reopen the database after rotation. The test rejects a retired input key and a modified source ID, then commits the valid outcome and suppresses the duplicate after another reopen. The final checkpoint advances four revisions and the cumulative update count reaches 18.
+
+The ingress and durable store suites pass in separate Python processes. The existing ledger preflight suite also passes in isolation. Collecting the existing durable store and ledger suites in the same process reproduces a failure in the ledger's unloaded-learner assertion.
+
+⭕️ [Pending] Production producer deployment and operational key distribution.
+
+日本語：別プロセスの送信元が署名したJSONを標準入力で受け取るCLIを追加した。鍵更新後の再起動、旧鍵・改変の拒否、重複配送の抑止を確認した。
+
+简体中文：新增从标准输入接收独立进程签名 JSON 的命令行入口，并验证密钥轮换后的重启、旧密钥与篡改拒绝及重复投递抑制。
