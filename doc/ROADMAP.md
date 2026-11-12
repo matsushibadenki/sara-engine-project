@@ -21,6 +21,8 @@ This page tracks current progress, priorities and the conditions for advancing. 
 4. 🔴 [Later] Compare bounded local representations at equal total byte budgets, including indexes, decoding, residuals and rare-route retention. [LittleBit design reference](SPARSE_PREDICTIVE_FACTORIZATION.md#littlebit-design-reference)
 5. 🔴 [Later] Evaluate exact reuse of local readouts when their dependencies are unchanged, after the independent-task and causal gates pass. [Evaluation contract](#local-readout-reuse)
 
+6. 🔴 [Later] Evaluate bounded inference escalation after the same independent-task and causal gates pass. [Evaluation contract](#bounded-inference-escalation)
+
 ### Local readout reuse
 
 The referenced computation-reduction proposal motivates reusing a derived local readout while its key, contributing state versions and time-dependent inputs remain equal. Start with a bounded per-route cache for a read-only probability. Recompute on a missing entry, dependency change or uncertain validity. An unchanged input can still coincide with trace decay, a delayed result, expiry or a restored state, so these transitions must be covered by the reuse check. Capture the probability at receipt time and preserve it through delivery.
@@ -32,6 +34,16 @@ Treat error-based omission of local writes as a separate learning intervention. 
 日本語：依存状態が一致する局所読み出しの再利用を将来候補に追加。遅延結果・期限切れ・復旧を含む完全一致と、同じ再利用を備えたスカラー対照を条件とする。
 
 简体中文：将依赖状态一致时复用局部读出列为后续候选，要求在延迟结果、过期和恢复时完全一致，并采用具备相同复用机制的标量对照。
+
+### Bounded inference escalation
+
+Start with the existing current-state readout. Use development-only evidence of support and uncertainty to decide whether to consult the temporal readout. Escalate on unknown keys or insufficient support. Fix the policy and quality margins before evaluation. Inference routing leaves the receipt lifecycle and local write schedule intact.
+
+Compare always-current, always-temporal and conditional readouts, and give the event-driven scalar control the same routing opportunity. Check aggregate quality and the quality of predictions that stayed on the cheap path, including rare histories and delayed outcomes. Use the existing work-accounting contract to include routing, both readouts on fallback, shared event processing and memory. Report fallback frequency and tail latency alongside total work. Evaluate this policy separately from exact reuse before testing their combination.
+
+日本語：現在状態から読み出し、根拠が不足する場合に時間履歴を参照する段階推論を将来候補に追加。
+
+简体中文：将分级推理列为后续候选，先读取当前状态，证据不足时再读取时间历史。
 
 ## Selected execution gates
 
