@@ -4,7 +4,11 @@
 
 The REFIT Smart Home dataset (DOI 10.17028/rd.lboro.2070091.v1) is a candidate for a new task. The catalogue identifies a 2013–2015 study of 20 UK households with motion and door sensors and measurements before and after installation. The project span does not establish continuous coverage for any household. [University catalogue](https://www.research.ed.ac.uk/en/datasets/refit-smart-home-dataset/)
 
-A hypothesis to review is whether the order of recent motion events predicts a later opening on a separately recorded door channel when the current sensor state is the same. First verify that the released files contain synchronized motion and door channels with stable household and sensor identities, explicit coverage and missingness, and usable timestamps. The catalogue does not establish these details, per-household duration, event density, download and expanded sizes, or the applicable reuse terms. The DOI landing page was inaccessible during this review. No data files were obtained.
+A hypothesis to review is whether the order of recent motion events predicts a later opening on a separately recorded door channel when the current sensor state is the same. First verify that the released files contain synchronized motion and door channels with stable household and sensor identities, explicit coverage and missingness, and usable timestamps. The repository README documents the join from time-series variable IDs to the building survey XML. It places smart-device installation in June or October 2014 and collection end in April 2015. Even granting the first day of each installation month and the last day of April, the inclusive calendar ceilings are 334 and 212 days respectively. These are ceilings on calendar span, with no guarantee of overlap, continuity or usable development days. Earlier building survey dates cannot extend coverage of these smart devices.
+
+The deposit lists CC BY 4.0 and a 98,567,363-byte compressed time-series archive. The README reports 25,312,397 rows across all variables. Neither figure bounds expanded bytes or establishes motion arrivals or door coverage for an individual household. This review retrieved only public metadata and the README. The survey XML and observation archive were not acquired. [Loughborough deposit](https://repository.lboro.ac.uk/articles/dataset/REFIT_Smart_Home_dataset/2070091)
+
+**Decision:** retain REFIT as a candidate. The next bounded check is the household-to-sensor mapping and paired coverage, using source metadata first. Where continuity cannot be established, an absent door opening cannot be classified as a negative outcome. No fixed household roster or archive acquisition is justified by the aggregate figures alone.
 
 Before acquisition, fix the household roster, acquisition and state budgets, chronological development split and outcome horizon. Require coverage through the entire horizon for both classes. Keep the established current-state definition and support thresholds, and verify in development that identical current states recur across distinct histories with adequate support and both outcomes. Compare against the strongest current-state control and an event-driven scalar with the same delayed outcomes and actual local writes. Stop before scoring if any gate fails. The proposed door outcome is a separate hypothesis. The original Kitchen ON outcome and its 70,212-arrival gate retain their recorded status. [Decision gate](R2_MECHANISM_DECISION_GATE.md) · [Prior task evidence](ROADMAP_HISTORY.md#existing-research-queue)
 
@@ -48,6 +52,6 @@ Record operator-side revision and withdrawal evidence alongside the client decis
 
 The local runner tests cover its conditional refresh and configuration checks. Independent operation remains pending because the operator, endpoint and approved trust material were unavailable.
 
-日本語：REFIT は別の遅延結果課題の候補です。取得前に世帯別の同期・観測範囲と利用条件の確認が必要です。HTTPS 試験は独立運用者・接続先・審査済み信頼情報の確定待ちです。
+日本語：REFIT は別の遅延結果課題の候補です。取得前にCC BY 4.0 と圧縮サイズを確認済みで、世帯別の同期・観測範囲は未確認です。HTTPS 試験は独立運用者・接続先・審査済み信頼情報の確定待ちです。
 
-简体中文：REFIT 是另一项延迟结果任务的候选来源。获取前需确认各家庭的时间同步、观测覆盖和使用条款。HTTPS 试点仍需独立运营方、端点和经审核的信任材料。
+简体中文：REFIT 是另一项延迟结果任务的候选来源。已确认 CC BY 4.0 和压缩大小，仍需核实各家庭的时间同步和观测覆盖。HTTPS 试点仍需独立运营方、端点和经审核的信任材料。
