@@ -56,6 +56,18 @@ Neither candidate advanced. Require a published household-level channel map and 
 
 简体中文：UK-DALE 公开了各户记录时段及总电表运行天数，但未记录入户门结果。SHAPES 包含运动和磁性传感器，仍缺少逐户安装日期及可用区间的公开证据。
 
+## SHAPES follow-up and HOMESENSE priority
+
+**SHAPES remains on hold.** The [household deposit](https://zenodo.org/records/14832143) lists an observation archive without a separate deployment or uptime supplement. The related [Smart Mirror validation paper](https://mdpi-res.com/d_attachment/sensors/sensors-21-07938/article_deploy/sensors-21-07938.pdf) reports a two-month validation in March–April 2021 and combines door and window counts. That validation falls short of 180 days, and the reviewed sources do not link its installation to a specific household in the deposit. The later [anomaly-detection paper](https://pure.qub.ac.uk/en/publications/unsupervised-convolutional-neural-networks-using-home-presence-se/) and [MIRATAR release](https://zenodo.org/records/15800926) concern a separate 50-home collection and synthetic anomaly labels. They supply no basis for certifying the SHAPES deposit's per-household deployment dates, entrance mapping or paired PIR/contact uptime.
+
+**Prioritize HOMESENSE for metadata follow-up.** The independent Dutch release documents a 366-day publication grid across 11 dwellings and per-value flags that distinguish observed, interpolated, reset-imputed and missing values. Its [release preparation code](https://zenodo.org/records/21687970/files/preprocess_release.py?download=1) documents aggregation of categorical states onto the 10-minute grid. The grid length is a calendar ceiling. Public materials reviewed did not establish a specific home's front-door mapping, 180 development days with paired observed coverage, or whether an opening and closing within one bin survive aggregation. An observed flag proves support for the published value. It does not certify every instant in the bin or show that no transition occurred. [Data descriptor](https://www.nature.com/articles/s41597-026-08321-w) · [Deposit](https://zenodo.org/records/21687970)
+
+Before advancing, require a published channel map and development-only paired coverage summary for the full history and outcome windows. If exact opening events cannot be recovered, any grid-defined outcome needs a separate hypothesis and registration under the existing gates. No observation archive, CSV or data preview was opened. The 180-day gate, current-state and support conditions, Kitchen ON target, negative results and test seals retain their recorded status.
+
+日本語：SHAPESは根拠不足で保留。欠測フラグが公開されているHOMESENSEを優先するが、世帯別の180日と玄関開放の識別は未確認。
+
+简体中文：SHAPES 证据不足，继续暂缓。优先核查公开质量标记的 HOMESENSE，各户180天覆盖和入户门开启识别仍待确认。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
