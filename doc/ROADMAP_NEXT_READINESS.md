@@ -42,6 +42,20 @@ Reviewed the authors' data format, acquisition and validation sections, limitati
 
 简体中文：公开资料未证实各户安装时间和双传感器可用区间，180天开发期及可区分缺测的观测覆盖仍未确认。
 
+## Independent source screen with household uptime
+
+**UK-DALE, January 2015 release.** Prioritized because Table 1 gives household observation dates and mains uptime separately. House 1 first recorded on 2012-11-09, finished meter installation on 2013-04-12 and last recorded on 2015-01-05. The paper reports 786 days of total span and 655 days of aggregate mains uptime. The other houses report 140, 36, 155 and 131 days of mains uptime. Only House 1 clears a necessary aggregate-uptime screen for a mains-based 180-day task. The published mean dropout rate excludes large gaps. The figures establish neither 180 eligible days in a frozen development split nor coverage of a particular appliance channel during each history and outcome window. [Original paper, Table 1](https://pmc.ncbi.nlm.nih.gov/articles/PMC4432654/) · [Release notes](https://jack-kelly.com/data/index.html)
+
+**Outcome decision.** A dedicated appliance submeter could support a separate future electrical-activation hypothesis if its channel, activation rule and missingness semantics were fixed before acquisition. The original paper documents electricity meters, so this source cannot establish the PIR-to-entrance-opening outcome or the original Kitchen ON event. Aggregate mains uptime cannot certify a submeter outcome, and an unobserved sample cannot be counted as an inactive appliance. UK-DALE stays unqualified under the existing task conditions.
+
+**Outcome-compatible lead.** The SHAPES household deposit describes motion and magnetic sensors, but its public listing does not provide household deployment dates, dated channel availability or a mapping that distinguishes the entrance from other doors or windows. The listing alone cannot establish 180 development days or the delayed outcome. The public listing was checked without opening its archive or preview. [SHAPES deposit v1](https://zenodo.org/records/14832143)
+
+Neither candidate advanced. Require a published household-level channel map and dated paired coverage before fixing a development roster. Recurring current states, contrasting histories, both development classes and the existing support thresholds remain required. No observations were acquired. The 70,212-arrival target for the original Kitchen ON task, previous negative results and test seals remain in force.
+
+日本語：UK-DALEは世帯別の期間と主電力計の稼働日数を確認できるが、玄関ドア結果は観測対象外。SHAPESは動体・開閉センサーを含むが、世帯別の設置期間と稼働範囲は未確認。
+
+简体中文：UK-DALE 公开了各户记录时段及总电表运行天数，但未记录入户门结果。SHAPES 包含运动和磁性传感器，仍缺少逐户安装日期及可用区间的公开证据。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
