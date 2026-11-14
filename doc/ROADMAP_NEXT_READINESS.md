@@ -82,6 +82,20 @@ Reviewed the v1.0.0 deposit listing, data descriptor and public preprocessing sc
 
 简体中文：质量标记可区分实测和缺测，但同一十分钟内先开后关的事件会丢失。各户入户门映射及180天共同实测覆盖尚未确认。
 
+## Native-timestamp entrance sensor screen
+
+**Prioritize Örebro E-care@home v1 for a coverage follow-up.** Table 3 maps D01 to the entrance reed contact and M01–M06 to room PIR sensors at the same residence (location 711). The release describes native one-second timestamped state samples, including explicit open and closed observations. Consecutive valid samples can bracket a sampled closed-to-open transition. They cannot recover transitions that open and close between samples. An absent sample is unobserved and cannot be classified as closed. This source supplies native samples, with no separate exact transition timestamp established. [Original paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC7758366/) · [Deposit](https://data.mendeley.com/datasets/t9n68ykfk3/1)
+
+The campaign ran from 2020-02-26 through 2020-08-26, a ceiling of 183 calendar dates including both endpoints. Sensors were installed on a rolling basis. Figure 2 summarizes recorded days by sensor. Separate day totals cannot establish their dated intersection, within-day gaps, or the portion available before a sealed test boundary. No dated paired PIR/D01 availability record was verified in the materials reviewed. The 180-day development gate and coverage of complete history and outcome windows remain unverified.
+
+**UMass Smart* 2013 Home A does not advance.** Table 2 describes timestamped motion and contact events, but the original deployment identifies the documented contacts as refrigerator and freezer doors. The release listing does not establish an entrance channel or a dated paired-uptime record. [Original paper](https://www.ecs.umass.edu/irwin/sustkdd12.pdf) · [Release listing](https://traces.cs.umass.edu/docs/traces/smartstar/)
+
+No source qualified for the existing exact entrance-opening task. Reassess E-care@home only with dated development-only coverage for D01 and the required PIR channels and evidence that the outcome timing meets the registered definition. A sampled-state transition would require a separate hypothesis if exact events are required. No data files or previews were opened. Existing thresholds, negative results and test seals remain in force.
+
+日本語：玄関センサーを特定できるE-care@homeを優先。公開資料では180日の同時稼働と正確な開閉イベント時刻は未確認。
+
+简体中文：优先跟进可识别入户门传感器的 E-care@home。公开资料尚不能确认180天共同覆盖及精确开闭时间。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
