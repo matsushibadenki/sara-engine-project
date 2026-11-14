@@ -14,6 +14,21 @@ The deposit lists CC BY 4.0 and a 98,567,363-byte compressed time-series archive
 
 Before acquisition, fix the household roster, acquisition and state budgets, chronological development split and outcome horizon. Require coverage through the entire horizon for both classes. Keep the established current-state definition and support thresholds, and verify in development that identical current states recur across distinct histories with adequate support and both outcomes. Compare against the strongest current-state control and an event-driven scalar with the same delayed outcomes and actual local writes. Stop before scoring if any gate fails. The proposed door outcome is a separate hypothesis. The original Kitchen ON outcome and its 70,212-arrival gate retain their recorded status. [Decision gate](R2_MECHANISM_DECISION_GATE.md) · [Prior task evidence](ROADMAP_HISTORY.md#existing-research-queue)
 
+## REFIT alternatives — 2026-11-14
+
+This screen covers two independent residential releases and uses only the authors' papers and deposit listings. Advance a candidate only with a physical outcome mapping and evidence of paired channel observation throughout each eligible outcome window. Keep the 180-day development requirement, the existing current-state and support gates, and the established scalar comparison at matched actual local writes. The original Kitchen ON definition and its 70,212-arrival gate still apply to that original task.
+
+| Candidate | Verified metadata | Decision |
+| --- | --- | --- |
+| Winterberger et al., Zenodo v1 | A separate reed contact at the main entrance of some homes records open or closed. PIR reports motion events. The study spans 359 days across 62 installations, with no event sensors in Switzerland. The authors report server, gateway and sensor outages and staggered installation. Event archive is 6.8 MB as listed. [Paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC12145531/) · [Deposit](https://zenodo.org/records/14243471) | First choice for a coverage follow-up. Published global extent and aggregate counts give no 180-day paired development guarantee. Require per-installation deployment dates and timestamped availability for both channels. Verify reuse terms and fix the acquisition budget before obtaining observations. |
+| Residential homecare, Data 11(9), 233 | Authors document door-contact streams and per-participant spans, including a wholly absent contact stream and a roughly 11-day interruption on another. Table 4 reports a maximum actual span of 34.0 days across ten participants. [Paper, Table 4](https://www.mdpi.com/2306-5729/11/9/233#table4-data-11-00233) | Exclude at the duration gate. Combining several households cannot satisfy the single-household development requirement. |
+
+No candidate qualified. A periodic reading on the separate environmental pipeline cannot certify availability of the PIR or reed contact, and gaps between contact events cannot establish either outage or a no-opening outcome. If adequate availability evidence is obtained, fix the development roster and delayed outcome window before checking exact current-state recurrence, history support and both classes. No archive was acquired. Existing negative results and sealed test periods remain in force.
+
+日本語：玄関ドアの結果が明記された欧州4か国データを追跡候補に選定。世帯別の連続観測と180日の開発期間は未確認。期間が最長34日の在宅ケアデータは除外。
+
+简体中文：将明确记录入户门开闭的四国数据列为首选跟进对象。各户成对观测覆盖及180天开发期尚未确认。最长34天的居家护理数据未达到时长门槛。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
