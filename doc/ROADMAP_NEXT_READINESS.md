@@ -29,6 +29,19 @@ No candidate qualified. A periodic reading on the separate environmental pipelin
 
 简体中文：将明确记录入户门开闭的四国数据列为首选跟进对象。各户成对观测覆盖及180天开发期尚未确认。最长34天的居家护理数据未达到时长门槛。
 
+### Four-country coverage follow-up
+
+Reviewed the authors' data format, acquisition and validation sections, limitations, and the v1 deposit file listing. The deposit lists only event and periodic observation archives. No separate public installation schedule or availability log was identified in these materials. [Paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC12145531/) · [Deposit v1](https://zenodo.org/records/14243471)
+
+- **180-day development period — unverified.** The 359-day project extent and the anonymized installation IDs do not give installation or removal dates for the paired PIR and entrance contact at any household. The authors report staggered installation and no event sensors at Swiss sites. No household can be certified from this evidence.
+- **Coverage of outcome windows — unverified.** The documented event schema contains timestamp, installation, country, room, sensor type and value. It has no availability field. The authors report interruptions at the devices, gateways and server without providing dated intervals by installation. The PIR spot checks used care visit diaries for a subset of households and do not establish continuous PIR or door coverage. An event confirms a reported transition at its timestamp. It does not resolve subsequent silence. Environmental samples come through a separate path and cannot certify the event path.
+
+**Decision:** keep this candidate on hold. Reassess only with a source-provided installation schedule keyed to anonymized IDs and dated availability evidence covering both devices and their delivery path. Intersect the documented intervals with the development split and require coverage for the full history and outcome windows. Treat unverifiable windows as missing. Both archives and their previews stayed unopened. No threshold, negative finding or test seal changed.
+
+日本語：公開資料では世帯別設置期間と両センサーの稼働区間を確認できず、180日の開発期間と欠測を区別できる観測範囲は未確認。
+
+简体中文：公开资料未证实各户安装时间和双传感器可用区间，180天开发期及可区分缺测的观测覆盖仍未确认。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
