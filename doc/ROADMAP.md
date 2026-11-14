@@ -18,10 +18,20 @@ This page tracks current progress, priorities and the conditions for advancing. 
 1. 🟠 [Next] Identify a fresh independently observed delayed-outcome task. Require repeated current states, distinguishable histories, both classes and the existing support and source gates before preregistering a comparison. Use the strongest current-state control and match actual local writes. [Four-country coverage follow-up](ROADMAP_NEXT_READINESS.md#four-country-coverage-follow-up) · [Alternative-source screen](ROADMAP_NEXT_READINESS.md#refit-alternatives--2026-11-14) · [REFIT metadata review](ROADMAP_NEXT_READINESS.md#independent-delayed-outcome-task) · [Independent-task history and gates](ROADMAP_HISTORY.md#existing-research-queue)
 2. 🟠 [Next] Prepare the independent producer pilot with reviewed trust material, revision handling and key distribution. Measure authority review, revision completeness, availability, latency and complete-path cost under the existing pilot conditions. [Publisher pilot readiness](ROADMAP_NEXT_READINESS.md#independent-https-publisher-pilot) · [Publisher pilot context](ROADMAP_HISTORY.md#existing-research-queue)
 3. ⭕️ [Pending] Promote a mechanism or begin new resource comparisons only after the independent task and causal gates pass. Existing event-work and allocation diagnostics retain their recorded results. [Research focus and promotion gates](ROADMAP_NEXT_LEVEL.md)
-4. 🔴 [Later] Compare bounded local representations at equal total byte budgets, including indexes, decoding, residuals and rare-route retention. [LittleBit design reference](SPARSE_PREDICTIVE_FACTORIZATION.md#littlebit-design-reference)
+4. 🔴 [Later] Compare bounded local representations at equal total byte budgets, including indexes, decoding, residuals and rare-route retention. [Early route selection](#early-route-selection) · [LittleBit design reference](SPARSE_PREDICTIVE_FACTORIZATION.md#littlebit-design-reference)
 5. 🔴 [Later] Evaluate exact reuse of local readouts when their dependencies are unchanged, after the independent-task and causal gates pass. [Evaluation contract](#local-readout-reuse)
 
 6. 🔴 [Later] Evaluate bounded inference escalation after the same independent-task and causal gates pass. [Evaluation contract](#bounded-inference-escalation)
+
+### Early route selection
+
+The Lottery Ticket Hypothesis motivates controlling separately for the retained structure and its initial state. In SARA, test whether a bounded early development prefix can identify local routes worth retaining, using only evidence available at the checkpoint. Take the checkpoint after pending outcomes have settled within the registered horizon. Preserve rare routes with insufficient support and evaluate masking before committing any structural deletion. [Frankle and Carbin](https://arxiv.org/abs/1803.03635)
+
+At the same retained byte budget, compare selected routes with retained local state, the same selection with reset local state, a seeded random selection at the same checkpoint, and a sparse-from-start arm. Keep the unpruned run as a quality reference. Use identical follow-up receipts and delayed outcomes. Fix the update allocation in advance and verify actual local writes for the mechanism comparison. If workloads differ in an end-to-end saving comparison, report the write difference separately. Give the event-driven scalar control the same selection opportunity. Measure immediate loss separately from recovery and dependency retention, including rare histories and regime shifts. Include selection, temporary branches, indexes and fallback in total cost.
+
+日本語：初期の開発データだけで残す経路を選び、経路選択と局所状態の保持の効果を分けて比較する将来候補を追加。
+
+简体中文：新增后续候选，仅在开发期早段选择保留路径，分别检验路径选择与局部状态保留的效果。
 
 ### Local readout reuse
 
