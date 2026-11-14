@@ -68,6 +68,20 @@ Before advancing, require a published channel map and development-only paired co
 
 简体中文：SHAPES 证据不足，继续暂缓。优先核查公开质量标记的 HOMESENSE，各户180天覆盖和入户门开启识别仍待确认。
 
+### HOMESENSE release-code audit
+
+Reviewed the v1.0.0 deposit listing, data descriptor and public preprocessing script (SHA-256 `f0103df987df4b39ec8dd979b41dca76fced18d4f24d12cc0bc0654e3266740f`). The script was inspected as text. Household CSVs and previews stayed unopened. [Deposit](https://zenodo.org/records/21687970) · [Descriptor](https://www.nature.com/articles/s41597-026-08321-w) · [Preprocessing code](https://zenodo.org/records/21687970/files/preprocess_release.py?download=1)
+
+- **Entrance mapping — unverified.** The code uses a location from the input manifest and identifies the reed-contact channel. The reviewed public documentation gives no household-by-household correspondence between those channels and physical entrance doors.
+- **180 paired development days — unverified.** The common 366-day grid includes missing and filled bins. The reviewed material lacks a dated household-level intersection of observed PIR and entrance-contact coverage. AM307 PIR uses maximum reported status without gap fill. WS202 can fill eligible internal gaps with zero. Such zeros are distinct from observed reports.
+- **Within-bin opening — lost in general.** The digital contact retains the last valid state per 10-minute bin. The current contact gap limit cannot fill a whole empty bin. QC therefore distinguishes a bin with a valid contact report from a missing bin, but a closed-only report sequence and an open-then-closed sequence produce the same observed closed output. Within-bin order and event time are lost, and an observed bin does not establish uninterrupted coverage.
+
+**Decision:** hold HOMESENSE for the exact entrance-opening hypothesis. A separately registered grid-state hypothesis would need its own outcome definition plus a source-backed entrance map and paired development coverage. Keep the 180-day requirement, current-state and support rules, original Kitchen ON target, negative results and test seals.
+
+日本語：実測と欠測は区別できるが、10分枠内で開いて閉じた事象は失われる。玄関の対応と180日の実測重複も未確認のため保留。
+
+简体中文：质量标记可区分实测和缺测，但同一十分钟内先开后关的事件会丢失。各户入户门映射及180天共同实测覆盖尚未确认。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
