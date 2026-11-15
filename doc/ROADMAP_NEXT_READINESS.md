@@ -144,6 +144,18 @@ No observation files or previews were accessed. Existing eligibility rules, nega
 
 简体中文：TIHM 公开版本最多覆盖91个日历日，LACE House 为31天，均未达到时长门槛。TIHM 的开闭方向、时间来源和共同运行范围尚未确认。
 
+### TigerPlace and Tokyo smart-room screen
+
+**TigerPlace remains unqualified.** Prioritized this independent deployment because researchers documented monitoring over years and sensors at the front door and in rooms. The multi-year research description does not identify a released household trace with directional contact events or define where its timestamps originate. A separate TigerPlace paper reports 3–48 months for its Kinect cohort. Those durations concern depth-sensor recordings and cannot verify PIR and entrance-contact coverage. The reviewed public material gives no dwelling-level intersection of operating days or dated outage intervals for those two channels. Neither 180 eligible development days nor a delayed entrance-opening outcome can be certified. [Deployment paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC3001103/) · [Longitudinal research overview](https://c2ship.missouri.edu/wp-content/uploads/2024/01/TigerPlace-An-Innovative-Educational-and-Research-Environment.pdf) · [Kinect cohort](https://pmc.ncbi.nlm.nih.gov/articles/PMC5272917/)
+
+**Tokyo smart rooms fail the duration gate.** The data descriptor documents PIR and open/closed sensors but reports individual recording stays from one week to two months. Combining stays from different residents cannot meet the same-household development requirement. The duration failure rules out advancement even if channel direction, time provenance and coverage are documented separately. [Data descriptor](https://pmc.ncbi.nlm.nih.gov/articles/PMC9898591/)
+
+Keep the independent task pending. Advance a release only with a source-backed residential entrance channel map, directional opening and closing timestamps with documented provenance, and dated paired availability and outage intervals sufficient for 180 development dates and complete history and outcome windows. No data files or previews were opened. Existing eligibility rules, negative findings and sealed test periods remain in force.
+
+日本語：TigerPlaceでは年単位の研究を確認したが、玄関接点とPIRの同時稼働や開閉時刻の由来は未確認。東京のスマートルームは個人あたり最長2か月で除外。
+
+简体中文：TigerPlace 有多年研究记录，但入户门与 PIR 的共同覆盖及事件时间来源仍未确认。东京智能房间每位住户最长记录两个月，未达时长门槛。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
