@@ -206,6 +206,18 @@ No qualifying source was identified in this search. Observation files and previe
 
 简体中文：homedata 区分前门与后门，开闭记录仅四个月，未达时长门槛。原始时间来源与 PIR 共同覆盖仍未确认。
 
+### Overijssel IEBB dwelling screen
+
+Prioritized the Overijssel IEBB study because it documents one year of monitoring in each of three dwellings, from December 2021 through November 2022. Section 2.1 reports recording door and window openings and closings on action. Table 1 documents 12-month availability in all three dwellings for living-room movement/light and the doors from the living room to the hall, storage and staircase. This supports a calendar span longer than 180 days for those channels. The table provides month-level availability and does not certify dated development coverage. [SHE2024 proceedings, section 2, Figure 1 and Table 1](https://pure.tue.nl/ws/portalfiles/portal/355569775/SHE2024_Book_of_Proceedings_Second_Edition_1.pdf)
+
+**Hold at the entrance-outcome and coverage gates.** The published floor plan shows door and movement/light sensor placements, but the availability table covers bedrooms and living rooms and does not map a released channel to the physical entrance for any dwelling. The paper describes event-triggered collection without specifying the released open/close encoding, timestamp assignment point or original event resolution. It does not identify PIR hardware for the movement/light channel or provide a dated intersection of PIR and entrance-contact uptime and gaps. No public observation release or separate coverage manifest was verified. An eligible 180-day development period and a delayed opening label therefore remain unverified. Reassess only with those source records.
+
+No observations or previews were accessed. Existing eligibility gates, negative results and sealed test periods remain in force.
+
+日本語：IEBBは3世帯で1年の観測を確認。玄関イベントの元時刻、PIRとの共通稼働日と欠測区間が未確認で保留。
+
+简体中文：IEBB 记录了三户一年的观测，入户门原始事件时间、与 PIR 的共同运行日期及缺测区间尚未确认。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
