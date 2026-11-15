@@ -180,6 +180,20 @@ No candidate advanced. Require a documented independent release, a dwelling-leve
 
 简体中文：年度住宅观测研究未证实公开数据的独立性、开闭时间来源及共同覆盖。ARAS 每户约一个月，未达到时长门槛。
 
+### Fritz and Cook supplement and provenance follow-up
+
+**Keep the source on hold.** The publisher's article exposes no linked appendix with a deployment ledger, sensor dictionary or outage calendar. The article and the CASAS free-living deposit acknowledge the same two NIH awards, R01NR016732 and R01EB009675. This establishes a shared funding lineage. Household-level overlap remains unresolved because the reviewed publications provide no cohort-to-release crosswalk. The CASAS deposit's generic contact schema cannot establish how the study's physical entrance channels were mapped, how open and close were encoded, or where original timestamps were assigned. [Fritz and Cook article](https://nursing.jmir.org/2025/1/e69052) · [CASAS deposit metadata](https://zenodo.org/records/15708568)
+
+The article reports monitoring for at least one year and describes exclusion of unreliable sensors and dates without sensor reports. Those statements provide no dwelling-specific dates or intervals for joint PIR and entrance-contact coverage. They cannot establish 180 eligible development days or distinguish a missing outcome window from a window with no entrance opening. Eligibility requires an independent provenance record, a directional entrance-event schema with timestamp provenance, and dated paired coverage through the full history and outcome windows.
+
+**Independent alternative screened.** The Grenoble LIG VocADom@DOMUS release documents synchronized home automation recordings in an instrumented apartment. Its public duration table reports 14 hours, 51 minutes and 30 seconds across the listed participants, so it fails the 180-day gate. Continue to prioritize independent residential releases with a documented long deployment span. [Project corpus documentation](https://vocadom.imag.fr/index4df3.html?page_id=290)
+
+Observation files and previews stayed unopened. Existing eligibility rules, negative findings and sealed test periods remain in force.
+
+日本語：Fritz・Cook研究とCASASは助成番号が共通し、世帯単位の独立性と同時稼働範囲は未確認。VocADom@DOMUSは期間条件で除外。
+
+简体中文：Fritz 和 Cook 的研究与 CASAS 共用资助编号，各户独立性与共同观测范围仍未确认。VocADom@DOMUS 未达到时长门槛。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
