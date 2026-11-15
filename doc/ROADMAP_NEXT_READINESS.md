@@ -168,6 +168,18 @@ No observation files or previews were accessed. Existing eligibility rules, nega
 
 简体中文：TigerPlace 证实入口附近装有 PIR，但缺少门开闭事件及共同覆盖证据。van Kasteren 原版仅28天，未达时长门槛。
 
+### Longitudinal ambient sensing and ARAS screen
+
+**Fritz and Cook longitudinal study.** Prioritized this lead because the authors report at least one year of collection per participant using room PIR and magnetic contacts on exterior doors and cabinets. The reported study span is compatible with a 180-day development period in principle. The authors removed unreliable sensors and excluded dates when all sensors failed to report. The public methods do not identify a released household trace with a physical entrance map, separate open and close values, original event timestamp provenance, or dated paired coverage and outage intervals. The publication does not establish a release independent of the existing CASAS evidence. Keep the study as an unqualified lead. Its deployment duration cannot certify 180 eligible development days or a delayed opening outcome. [Original study](https://nursing.jmir.org/2025/1/e69052)
+
+**ARAS independent release.** The authors report a month per dwelling across two homes. Each dwelling fails the duration gate on its own. The combined duration cannot qualify a household and no channel or timestamp assumption can change that bound. [Original dataset paper](https://open.metu.edu.tr/bitstream/handle/11511/36652/index.pdf)
+
+No candidate advanced. Require a documented independent release, a dwelling-level entrance channel map, directional opening and closing records with timestamp provenance, and dated paired availability sufficient for the existing 180-day gate and full history and outcome windows. No observation files or previews were accessed. The existing eligibility rules, negative results and test seals remain in force.
+
+日本語：年単位の住宅観測研究では公開データの独立性・開閉時刻・同時稼働が未確認。ARASは各世帯約1か月で期間条件を満たさない。
+
+简体中文：年度住宅观测研究未证实公开数据的独立性、开闭时间来源及共同覆盖。ARAS 每户约一个月，未达到时长门槛。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
