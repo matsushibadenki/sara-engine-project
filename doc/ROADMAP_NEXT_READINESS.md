@@ -96,6 +96,16 @@ No source qualified for the existing exact entrance-opening task. Reassess E-car
 
 简体中文：优先跟进可识别入户门传感器的 E-care@home。公开资料尚不能确认180天共同覆盖及精确开闭时间。
 
+### E-care@home supplement follow-up
+
+The original article XML indexes Figure 2 as a sensor-level day-count figure and contains no separate supplementary-material entry. The v1 deposit and article did not establish the D01 or PIR installation dates, dated outage intervals, or shared recording dates. Aggregate counts cannot certify paired coverage within development. The campaign ceiling remains 183 calendar dates, and the native one-second state samples bound a detected transition to the interval between reports. Exact opening time and openings entirely between samples remain unobservable under this format. Keep E-care@home on hold. [Article and Figure 2](https://pmc.ncbi.nlm.nih.gov/articles/PMC7758366/#fig0002) · [Deposit](https://data.mendeley.com/datasets/t9n68ykfk3/1)
+
+The alternative screen prioritized releases with timestamped contacts. Mi4A-HomeData documents timestamped contact and PIR states, but its release dates (3–16 April 2024) cap development at 14 calendar dates. The independent DomoCare study documents entrance open/close events, PIR and sensor-day validity methods, but access to original observations requires ethics approval and its public aggregates cannot certify dated paired coverage. Neither advances. Prioritize a fresh independent release that publicly documents a dated household-level coverage intersection and original entrance-event timestamps. No observation files or previews were opened. The 180-day requirement, outcome definition, other eligibility conditions, previous negative results and test seals stay fixed. [Mi4A deposit](https://zenodo.org/records/19182995) · [DomoCare study](https://pmc.ncbi.nlm.nih.gov/articles/PMC9381599/)
+
+日本語：E-care@homeは同時稼働と正確な開放時刻の根拠不足で保留。代替2候補も成立条件を満たす公開証拠がない。
+
+简体中文：E-care@home 暂缓，缺少共同覆盖和精确开门时间的证据。两项替代来源也未通过公开证据筛查。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
