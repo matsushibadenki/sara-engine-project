@@ -218,6 +218,18 @@ No observations or previews were accessed. Existing eligibility gates, negative 
 
 简体中文：IEBB 记录了三户一年的观测，入户门原始事件时间、与 PIR 的共同运行日期及缺测区间尚未确认。
 
+### IEBB appendix follow-up
+
+TNO report 2025 R11086, Appendix A, names the same three dwellings (HKJH, QIMU and WEJH) and confirms the 12-month campaign. The appendix reports window-opening analyses using environmental, movement/light and window-contact measurements. It supplies no dwelling-level entrance contact ID, PIR device specification, original door timestamp definition, or dated joint uptime and outage records. The existing proceedings describe action-triggered opening and closing but document interior doors in the availability table. Taken together, the public materials establish the campaign span but leave 180 eligible development days and complete delayed entrance-opening windows unverified. Keep IEBB on hold. [TNO report, Appendix A](https://publications.tno.nl/publication/34644624/pPpnNquM/TNO-2025-R11086.pdf#page=21) · [Proceedings, section 2](https://pure.tue.nl/ws/portalfiles/portal/355569775/SHE2024_Book_of_Proceedings_Second_Edition_1.pdf)
+
+Screened the independent Home Monitoring System release because its public schema names a front-door signal and hallway motion. Its single 21-day period fails the duration gate. The six-minute rows also provide no verified original directional entrance events. Prioritize independent releases with a documented longer span and dated paired coverage. [Publisher README](https://github.com/MBJamshidi/HomeMonitoringSystemDataSet)
+
+Observation files and previews stayed unopened. Existing eligibility rules, negative findings and test seals remain in force.
+
+日本語：TNO付録で同じ3世帯の12か月観測を確認。玄関イベントの元時刻とPIRとの同時稼働は未確認。代替候補は21日で除外。
+
+简体中文：TNO 附录确认同三户的12个月监测。入户门原始事件时间及与 PIR 的共同覆盖仍未确认。替代来源仅21天。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
