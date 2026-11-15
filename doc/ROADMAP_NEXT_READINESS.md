@@ -106,6 +106,18 @@ The alternative screen prioritized releases with timestamped contacts. Mi4A-Home
 
 简体中文：E-care@home 暂缓，缺少共同覆盖和精确开门时间的证据。两项替代来源也未通过公开证据筛查。
 
+### ORCATECH and Orange4Home screen
+
+Prioritized ORCATECH/CART because its public protocol documents room PIR and egress-door contacts, timestamped hub records and monitoring for outages. An ORCATECH-based protocol plans up to 40 weeks per participant. That planned duration cannot certify 180 eligible development days at any household. The reviewed public materials do not give a dwelling-level main-entrance channel map, confirm that exported timestamps preserve original contact-event times, or provide dated paired uptime and outage intervals. OHSU lists a request process for research data. Public evidence leaves the delayed outcome and duration gates unverified. [Study protocol](https://formative.jmir.org/2024/1/e53192) · [OHSU data resources](https://www.ohsu.edu/oregon-center-for-aging-and-technology/data-resources)
+
+Orange4Home independently fails the duration screen. The authors' release dates, January 30 through February 24, 2017, allow at most 26 calendar dates even before accounting for recording hours or a sealed split. [Author's release documentation](https://github.com/JCumin/jcumin.github.io/blob/main/datasets.md)
+
+No source advances. Keep ORCATECH/CART on hold pending public evidence that ties a household's entrance channel and original event times to dated paired coverage. Silence in an outcome window needs coverage evidence before it can be counted as no opening. No observation files or previews were opened. The 180-day gate, existing eligibility conditions, negative results and test seals remain in force.
+
+日本語：ORCATECH/CARTは世帯別の同時稼働・欠測と元時刻を確認できず保留。Orange4Homeは最大26暦日で期間条件を満たさない。
+
+简体中文：ORCATECH/CART 缺少逐户共同运行、缺测区间及原始时间戳的证据。Orange4Home 最多覆盖26个日历日，未达到时长门槛。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
