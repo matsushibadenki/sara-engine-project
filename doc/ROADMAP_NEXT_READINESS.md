@@ -156,6 +156,18 @@ Keep the independent task pending. Advance a release only with a source-backed r
 
 简体中文：TigerPlace 有多年研究记录，但入户门与 PIR 的共同覆盖及事件时间来源仍未确认。东京智能房间每位住户最长记录两个月，未达时长门槛。
 
+### TigerPlace deployment follow-up
+
+The TigerPlace sensor-network paper documents a ceiling-mounted PIR near the entrance to infer departures. It explains that residents often left entrance doors ajar, making magnetic contacts unreliable for that departure measure. Its typical floor plan does not link dwelling IDs to physical entrance contact IDs. The published motion density maps include different months for the same resident, but provide no dated paired PIR and entrance-contact coverage or outage intervals. The reviewed technical papers and linked public material provide no contact-event schema establishing separate open and close labels and the origin of their timestamps. Keep TigerPlace on hold. Neither 180 eligible development days nor the exact delayed entrance-opening outcome is established. [Sensor-network paper](https://c2ship.missouri.edu/wp-content/uploads/2024/01/Using-Sensor-Networks-to-Detect-Urinary-Tract.pdf) · [Motion density study](https://c2ship.missouri.edu/wp-content/uploads/2024/01/Density_Map_Visualization_from_Motion_Sensors_IEEE-1.pdf)
+
+Prioritized an independent residential release with binary door sensing, the original van Kasteren home study. Its authors document 28 days of sensor data, so the release fails the 180-day gate even if every day were usable. Continue screening independent releases with a documented span of at least 180 development days before investing in event provenance and outage checks. [Original study](https://dare.uva.nl/id/1d2afcf6-c9a0-4a65-bb28-2646924685a6)
+
+No observation files or previews were accessed. Existing eligibility rules, negative findings and sealed test periods remain in force.
+
+日本語：TigerPlaceは玄関付近のPIRを確認したが、開閉イベントと同時稼働の証跡が不足。van Kasterenの原公開版は28日で除外。
+
+简体中文：TigerPlace 证实入口附近装有 PIR，但缺少门开闭事件及共同覆盖证据。van Kasteren 原版仅28天，未达时长门槛。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
