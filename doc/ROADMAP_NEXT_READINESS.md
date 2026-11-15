@@ -194,6 +194,18 @@ Observation files and previews stayed unopened. Existing eligibility rules, nega
 
 简体中文：Fritz 和 Cook 的研究与 CASAS 共用资助编号，各户独立性与共同观测范围仍未确认。VocADom@DOMUS 未达到时长门槛。
 
+### Minneapolis homedata release screen
+
+The independent LinkNLearn release documents a single residence and distinguishes its front and back doors. Its README reports four months of door open/close data alongside multiyear environmental logs. The door stream therefore falls short of the 180-day development requirement even before reserving any test dates. Temperature and humidity coverage cannot extend the door stream. [Publisher README](https://github.com/LinkNLearn/homedata#included-within-dataset)
+
+The public README establishes the physical front-door location and describes open/close data. It does not establish the released direction encoding or whether the timestamp is assigned at the sensor, gateway or database. It does not document a paired PIR stream, joint operating dates or dated outages. An interval with no reported opening cannot be classified as a negative example on that evidence. Exclude the release at the duration gate and record the other checks as unverified. [Publisher README](https://github.com/LinkNLearn/homedata)
+
+No qualifying source was identified in this search. Observation files and previews stayed unopened. Existing eligibility rules, negative results and sealed test periods remain in force.
+
+日本語：homedataは玄関・裏口の開閉を記録するが、対象期間は4か月で除外。元時刻とPIRとの同時稼働は未確認。
+
+简体中文：homedata 区分前门与后门，开闭记录仅四个月，未达时长门槛。原始时间来源与 PIR 共同覆盖仍未确认。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
