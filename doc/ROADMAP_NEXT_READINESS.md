@@ -118,6 +118,18 @@ No source advances. Keep ORCATECH/CART on hold pending public evidence that ties
 
 简体中文：ORCATECH/CART 缺少逐户共同运行、缺测区间及原始时间戳的证据。Orange4Home 最多覆盖26个日历日，未达到时长门槛。
 
+### CART dictionary follow-up and TIHM screen
+
+**CART remains on hold.** The February 2020 sensor activity dictionary covers watch, computer-use and scale fields. It does not supply the dwelling-to-entrance mapping or dated PIR/contact availability. OHSU's home guide identifies a front-door use case, while the technical protocol describes internal outage monitoring. Neither publishes dwelling-level paired operating days or outage intervals. The NYCE technical specification documents state changes and two-hour heartbeat reports. It explicitly dates both PIR and contact reports at hub arrival. That timestamp has no documented bound to the physical transition in the reviewed materials. The device-origin timestamp specification for the TimerCap applies to pillbox doors. The reviewed public evidence cannot certify 180 development days or exact opening timestamps. [CART dictionary](https://www.ohsu.edu/sites/default/files/2020-02/CART%20Study%20-%20Sensor%20Activity%20Data%20Dictionary%20-%20Feb%202020.pdf) · [CART Home](https://www.ohsu.edu/collaborative-aging-research-using-technology/cart-home) · [Technical protocol](https://www.ohsu.edu/sites/default/files/2019-11/CART-VA-Protocol-Template.pdf) · [NYCE specification](https://api.orcatech.org/orcatech/v0.9/docs/items.html#nyce)
+
+**Prioritize TIHM for metadata follow-up.** The independent release documents a main-entrance sensor, hallway and living-room PIR, a Front Door location in the Activity schema and second-resolution event timestamps. Figure 2 identifies a collection-server failure on 2019-06-14. The reported mean of about 50 days per participant is insufficient to determine the longest eligible household span. The public materials reviewed provide no household-level paired coverage calendar or complete outage intervals. They also do not establish that the exported front-door records preserve separate opening and closing transitions at source event times. The next check requires those three items before any development roster can be fixed. [TIHM descriptor](https://www.nature.com/articles/s41597-023-02519-y) · [TIHM deposit](https://zenodo.org/records/7622128)
+
+No source qualified. Observation files and previews stayed unopened. The existing 180-day requirement, outcome definition, current-state and support gates, negative findings and test seals retain their recorded status.
+
+日本語：CARTの玄関センサー時刻はハブ受信時刻。同時稼働は未確認。次の公開資料確認はTIHMを優先する。
+
+简体中文：CART 的门传感器采用网关接收时间，共同运行区间未确认。优先核查 TIHM 的公开元数据。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
