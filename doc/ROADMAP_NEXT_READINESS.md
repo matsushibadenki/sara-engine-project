@@ -130,6 +130,20 @@ No source qualified. Observation files and previews stayed unopened. The existin
 
 简体中文：CART 的门传感器采用网关接收时间，共同运行区间未确认。优先核查 TIHM 的公开元数据。
 
+### TIHM release follow-up
+
+**Exclude TIHM at the duration gate.** The authors' Activity schema dates the release from April 1 through June 30, 2019, inclusive. This caps the entire release at 91 calendar dates before any development split or coverage exclusions. The descriptor identifies a collection server failure on June 14 but gives no dated household-level intersection of PIR and entrance-contact operation or complete outage intervals. [Release schema](https://github.com/PBarnaghi/TIHM-Dataset/blob/main/README.md#activity) · [Descriptor](https://www.nature.com/articles/s41597-023-02519-y)
+
+The Activity schema documents participant, location and date fields. The descriptor identifies the entrance location and second-resolution event times. Neither document establishes a direction field separating open from close or specifies whether event time originates at the sensor or is assigned downstream. A front-door record alone therefore cannot certify a delayed opening label. The outcome remains unverified independently of the duration failure.
+
+**Alternative screened.** Prioritized the independent LACE House release because its public sensor map distinguishes the entry contact from the fridge contact and documents room multisensors. The companion study reports 31 days of readings, so it also fails the 180-day gate. Continue the search for a source with sufficient release span, a directional entrance event schema and dated paired coverage. [LACE release](https://lcas.lincoln.ac.uk/wp/research/data-sets-software/lace-house-domotic-sensors-dataset/) · [Companion study](https://www.research.unipd.it/bitstream/11577/3494789/4/Fernandez-Carmona2024.pdf)
+
+No observation files or previews were accessed. Existing eligibility rules, negative results and test seals remain in force.
+
+日本語：TIHM公開版は最大91暦日、LACE Houseは31日で期間条件を満たさない。TIHMの開閉方向・時刻由来・同時稼働範囲は未確認。
+
+简体中文：TIHM 公开版本最多覆盖91个日历日，LACE House 为31天，均未达到时长门槛。TIHM 的开闭方向、时间来源和共同运行范围尚未确认。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
