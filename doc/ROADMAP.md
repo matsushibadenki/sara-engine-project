@@ -22,6 +22,7 @@ This page tracks current progress, priorities and the conditions for advancing. 
 5. 🔴 [Later] Evaluate exact reuse of local readouts when their dependencies are unchanged, after the independent-task and causal gates pass. [Evaluation contract](#local-readout-reuse)
 
 6. 🔴 [Later] Evaluate bounded inference escalation after the same independent-task and causal gates pass. [Evaluation contract](#bounded-inference-escalation)
+7. 🔴 [Later] Evaluate local repair with explicit constraints and a bounded stopping rule. [Evaluation design](#local-constraint-repair)
 
 ### Early route selection
 
@@ -54,6 +55,16 @@ Compare always-current, always-temporal and conditional readouts, and give the e
 日本語：現在状態から読み出し、根拠が不足する場合に時間履歴を参照する段階推論を将来候補に追加。
 
 简体中文：将分级推理列为后续候选，先读取当前状态，证据不足时再读取时间历史。
+
+### Local constraint repair
+
+CRAM motivates updating one variable at a time, scoring a change from its incident constraints, and checking whether further search is needed. Explore this on a small CPU-only constraint task with fixed observations. Maintain an index from variables to constraints and update only affected scores. Learn any weights from local training evidence without differentiating through the search. Compare learned weights with hand-set weights and a direct constraint solver. [Hoover, Blayney and Whittington, arXiv v1](https://arxiv.org/html/2611.17309v1)
+
+Accept early only when an independent verifier confirms the required constraints. For tasks with soft constraints, register the quality requirement separately. Keep a fixed step budget and record exhaustion or stalled search. Compare against fixed-budget search and give the event-driven scalar control the same stopping rule. Count score updates, queue operations and verification work at matched solution quality. The paper's GPU timings and puzzle results apply to its own benchmarks. Use the existing promotion gates before new resource comparisons or claims of SNN-specific benefit.
+
+日本語：局所的な制約修復と検証付き早期停止を将来候補に追加。手設計と直接ソルバーも対照に含める。
+
+简体中文：将局部约束修复和经验证的提前停止列为后续候选，并与手工设置及直接求解器比较。
 
 ## Selected execution gates
 
