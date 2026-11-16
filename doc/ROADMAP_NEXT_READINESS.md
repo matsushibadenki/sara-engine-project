@@ -260,6 +260,14 @@ Use the following placeholder configuration as a starting point. Replace the val
 }
 ```
 
+🟢 [Done] Validate the operator configuration locally before attempting a live cycle:
+
+```text
+workspace/.venv310/bin/python scripts/eval/authoritative_external_pilot.py --config workspace/config/authoritative_external_pilot.json --check-config
+```
+
+This mode checks the same schema, limits and question routing as a live run. It prints only validation status and a question count. The mode exits before runtime initialization, HTTPS access or report creation. Publisher identity and trust still require the independent operator review.
+
 Run one explicit cycle:
 
 ```text

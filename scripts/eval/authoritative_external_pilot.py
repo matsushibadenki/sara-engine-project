@@ -131,7 +131,12 @@ def run_pilot(payload, *, cycles, client_factory=EvidenceHTTPClient,
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
-    parser.add_argument("--cycles", required=True, type=int)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--cycles", type=int)
+    mode.add_argument(
+        "--check-config", action="store_true",
+        help="Validate the configuration locally and print a summary.",
+    )
     parser.add_argument(
         "--output",
         default=workspace_path("evaluation", "authoritative_external_pilot.json"),
@@ -141,7 +146,15 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    report = run_pilot(load_configuration(args.config), cycles=args.cycles)
+    payload = load_configuration(args.config)
+    if args.check_config:
+        _, questions = parse_configuration(payload)
+        print(json.dumps({
+            "configuration_valid": True,
+            "question_count": len(questions),
+        }))
+        return
+    report = run_pilot(payload, cycles=args.cycles)
     output = Path(ensure_parent_directory(args.output))
     output.write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
