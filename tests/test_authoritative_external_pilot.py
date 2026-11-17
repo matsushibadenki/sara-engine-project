@@ -115,3 +115,18 @@ def test_pilot_configuration_fails_closed(pilot_payload, change):
 def test_pilot_cycle_bound(pilot_payload, cycles):
     with pytest.raises(ValueError):
         PILOT.run_pilot(pilot_payload, cycles=cycles, client_factory=ScriptedTransport(()))
+
+
+@pytest.mark.parametrize("mode", [("--check-config",), ("--cycles", "1")])
+@pytest.mark.parametrize("suffix", ["", ".lock"])
+def test_cli_refuses_report_overlapping_sequence(pilot_payload, monkeypatch, mode, suffix):
+    monkeypatch.setattr(PILOT, "load_configuration", lambda path: pilot_payload)
+
+    def unexpected_run(*args, **kwargs):
+        pytest.fail("Pilot started with an overlapping report path")
+
+    monkeypatch.setattr(PILOT, "run_pilot", unexpected_run)
+    output = pilot_payload["sequence_state_path"] + suffix
+    with pytest.raises(ValueError, match="report path overlaps"):
+        PILOT.main(["--config", "pilot.json", "--output", output, *mode])
+    assert not Path(output).exists()

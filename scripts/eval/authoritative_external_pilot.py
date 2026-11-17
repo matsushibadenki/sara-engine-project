@@ -147,14 +147,27 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
+def validate_report_path(output, config_path, sequence_path):
+    report = Path(ensure_allowed_output_path(output))
+    sequence = Path(ensure_allowed_output_path(sequence_path))
+    lock = Path(ensure_allowed_output_path(str(sequence) + ".lock"))
+    for protected in (Path(config_path).resolve(), sequence, lock):
+        if report == protected or (
+            report.exists() and protected.exists() and report.samefile(protected)
+        ):
+            raise ValueError("Pilot report path overlaps configuration or sequence state")
+    if report.exists() and not report.is_file():
+        raise ValueError("Pilot report path must be a file")
+    return report
+
+
 def main(argv=None):
     args = parse_args(argv)
     payload = load_configuration(args.config)
+    config, questions = parse_configuration(payload)
+    output = validate_report_path(args.output, args.config, config.sequence_state_path)
     if args.check_config:
-        config, questions = parse_configuration(payload)
         validate_authoritative_evidence_config(config)
-        state_path = ensure_allowed_output_path(config.sequence_state_path)
-        ensure_allowed_output_path(state_path + ".lock")
         EvidenceHTTPClient(
             config.endpoint, lambda value: value,
             timeout_seconds=config.timeout_seconds, max_bytes=config.max_bytes,
@@ -166,7 +179,7 @@ def main(argv=None):
         }))
         return
     report = run_pilot(payload, cycles=args.cycles)
-    output = Path(ensure_parent_directory(args.output))
+    ensure_parent_directory(str(output))
     output.write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
     )

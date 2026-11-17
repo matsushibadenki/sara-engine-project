@@ -266,7 +266,7 @@ Use the following placeholder configuration as a starting point. Replace the val
 workspace/.venv310/bin/python scripts/eval/authoritative_external_pilot.py --config workspace/config/authoritative_external_pilot.json --check-config
 ```
 
-This mode checks the same schema, limits, HTTPS endpoint, CA bundle and question routing as a live run. It validates the managed sequence and lock paths without opening or creating state files. Existing watermark contents and write access are checked during the live run. It prints only validation status and a question count. The mode exits before runtime initialization, HTTPS access or report creation. Publisher identity and trust still require the independent operator review.
+This mode checks the same schema, limits, HTTPS endpoint, CA bundle and question routing as a live run. It validates the managed sequence and lock paths without opening or creating state files. Both CLI modes reject a report path that overlaps the configuration, sequence state or lock before connecting. Existing watermark contents and write access are checked during the live run. It prints only validation status and a question count. The mode exits before runtime initialization, HTTPS access or report creation. Publisher identity and trust still require the independent operator review.
 
 Run one explicit cycle:
 
