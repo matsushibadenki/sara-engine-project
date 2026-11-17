@@ -11,10 +11,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from sara_engine.agent.sara_agent import SaraAgent
 from sara_engine.memory.authoritative_evidence import (
     AuthoritativeEvidenceConfig, AuthoritativeEvidenceRuntime,
+    validate_authoritative_evidence_config,
 )
 from sara_engine.memory.evidence_http import EvidenceHTTPClient
 from sara_engine.memory.verified_chat_router import route_verified_chat
-from sara_engine.utils.project_paths import workspace_path, ensure_parent_directory
+from sara_engine.utils.project_paths import (
+    ensure_allowed_output_path, ensure_parent_directory, workspace_path,
+)
 
 
 CONFIG_SCHEMA = "sara-authoritative-external-pilot-config-v1"
@@ -148,7 +151,15 @@ def main(argv=None):
     args = parse_args(argv)
     payload = load_configuration(args.config)
     if args.check_config:
-        _, questions = parse_configuration(payload)
+        config, questions = parse_configuration(payload)
+        validate_authoritative_evidence_config(config)
+        state_path = ensure_allowed_output_path(config.sequence_state_path)
+        ensure_allowed_output_path(state_path + ".lock")
+        EvidenceHTTPClient(
+            config.endpoint, lambda value: value,
+            timeout_seconds=config.timeout_seconds, max_bytes=config.max_bytes,
+            ca_file=config.ca_file,
+        )
         print(json.dumps({
             "configuration_valid": True,
             "question_count": len(questions),

@@ -35,6 +35,48 @@ class AuthoritativeEvidenceConfig:
     sequence_state_path: str | None = None
 
 
+def validate_authoritative_evidence_config(config):
+    """Validate publisher settings without constructing runtime state."""
+    if not isinstance(config, AuthoritativeEvidenceConfig):
+        raise TypeError("AuthoritativeEvidenceConfig is required")
+    url = urlsplit(config.endpoint) if isinstance(config.endpoint, str) else None
+    if (
+        url is None or not 0 < len(config.endpoint) <= 2048
+        or url.scheme != "https" or not url.hostname
+        or url.username or url.password or url.fragment
+    ):
+        raise ValueError("Authoritative evidence requires HTTPS")
+    for value in (config.publisher_id, config.scope):
+        if not isinstance(value, str) or not 0 < len(value) <= 128 or value != value.strip():
+            raise ValueError("Invalid publisher configuration")
+    if config.language not in ("en", "ja", "zh-CN"):
+        raise ValueError("Invalid publisher language")
+    probe = route_verified_chat(
+        "sara configuration probe", language=config.language,
+        aliases=config.aliases, markers=config.markers,
+    )
+    if probe.parse_decision == "invalid_config":
+        raise ValueError("Invalid routing configuration")
+    for value, maximum, name in (
+        (config.max_snapshot_lifetime_seconds, 86400, "lifetime"),
+        (config.max_future_skew_seconds, 86400, "clock skew"),
+        (config.max_fetch_seconds, 60, "fetch time"),
+    ):
+        if type(value) is not int or not 0 < value <= maximum:
+            raise ValueError("Invalid " + name)
+    if (
+        isinstance(config.timeout_seconds, bool)
+        or not isinstance(config.timeout_seconds, (int, float))
+        or not math.isfinite(config.timeout_seconds)
+        or not 0 < config.timeout_seconds <= 60
+        or type(config.max_bytes) is not int
+        or not 1 <= config.max_bytes <= 1048576
+        or (config.ca_file is not None
+            and (not isinstance(config.ca_file, str) or not config.ca_file))
+    ):
+        raise ValueError("Invalid transport configuration")
+
+
 class AuthoritativeEvidenceRuntime:
     """Serialize refreshes and prevent publisher-sequence rollback.
 
@@ -45,44 +87,7 @@ class AuthoritativeEvidenceRuntime:
 
     def __init__(self, config, *, clock=None, client_factory=EvidenceHTTPClient,
                  performance_clock=None):
-        if not isinstance(config, AuthoritativeEvidenceConfig):
-            raise TypeError("AuthoritativeEvidenceConfig is required")
-        url = urlsplit(config.endpoint) if isinstance(config.endpoint, str) else None
-        if (
-            url is None or not 0 < len(config.endpoint) <= 2048
-            or url.scheme != "https" or not url.hostname
-            or url.username or url.password or url.fragment
-        ):
-            raise ValueError("Authoritative evidence requires HTTPS")
-        for value in (config.publisher_id, config.scope):
-            if not isinstance(value, str) or not 0 < len(value) <= 128 or value != value.strip():
-                raise ValueError("Invalid publisher configuration")
-        if config.language not in ("en", "ja", "zh-CN"):
-            raise ValueError("Invalid publisher language")
-        probe = route_verified_chat(
-            "sara configuration probe", language=config.language,
-            aliases=config.aliases, markers=config.markers,
-        )
-        if probe.parse_decision == "invalid_config":
-            raise ValueError("Invalid routing configuration")
-        for value, maximum, name in (
-            (config.max_snapshot_lifetime_seconds, 86400, "lifetime"),
-            (config.max_future_skew_seconds, 86400, "clock skew"),
-            (config.max_fetch_seconds, 60, "fetch time"),
-        ):
-            if type(value) is not int or not 0 < value <= maximum:
-                raise ValueError("Invalid " + name)
-        if (
-            isinstance(config.timeout_seconds, bool)
-            or not isinstance(config.timeout_seconds, (int, float))
-            or not math.isfinite(config.timeout_seconds)
-            or not 0 < config.timeout_seconds <= 60
-            or type(config.max_bytes) is not int
-            or not 1 <= config.max_bytes <= 1048576
-            or (config.ca_file is not None
-                and (not isinstance(config.ca_file, str) or not config.ca_file))
-        ):
-            raise ValueError("Invalid transport configuration")
+        validate_authoritative_evidence_config(config)
         if (
             (clock is not None and not callable(clock))
             or not callable(client_factory)
