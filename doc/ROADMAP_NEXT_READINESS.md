@@ -250,7 +250,7 @@ Choose two disjoint trial questions, one for a record to revise and withdraw and
 
 For the withdrawal checks across separate CLI launches, coordinate separate higher-sequence publications with the same post-withdrawal content, or check both questions together and use an approved per-question observation to attribute each outcome. Equal-sequence HTTP 200 is rejected by design.
 
-Mark the live pilot **pass** only when the trust review and every required row have matching operator and client evidence. Mark an observed mismatch **fail** and preserve its report and sequence state before investigating. Mark missing independent evidence or unassessed required measures **pending**. A local success establishes the client behavior exercised by the fixture. The five-process TLS rehearsal covered revisions, 304, rollback and persisted restart recovery. Withdrawal completeness and independent operational evidence require the live checks above.
+Mark the live pilot **pass** only when the trust review and every required row have matching operator and client evidence. Mark an observed mismatch **fail** and preserve its report and sequence state before investigating. Mark missing independent evidence or unassessed required measures **pending**. A local success establishes the client behavior exercised by the fixture. The local TLS rehearsal also covered abstention for an omitted record and a verified answer for the retained record on separate launches. Withdrawal completeness and independent operational evidence require the live checks above.
 
 日本語：接続先と信頼元を事前確認し、改訂・撤回・304・再起動を公開者側の記録と照合する。証拠が不足する項目は保留とする。
 
@@ -297,6 +297,8 @@ Each refresh records the accepted sequence before and after the request. Compare
 🟢 [Done] The scripted lifecycle check applies sequence 1, preserves it on 304, starts a new runtime against the same on-disk watermark, rejects a replay of sequence 1 as rollback, and applies sequence 2. The restarted client uses sequence 1 as its conditional validator for both requests. This exercise uses an in-process transport and a new runtime instance. The independent HTTPS pilot remains pending.
 
 🟢 [Done] A localhost HTTPS integration test ran five separate CLI processes against a simulated publisher and a shared sequence file. The CLI published sequences 2 and 3, preserved 3 on a conditional 304, rejected sequence 2 as rollback, and published 4 on the next launch. Each report's final accepted sequence matched the on-disk value. Each new process reported the previous persisted value before its request. The independent publisher trial remains pending.
+
+🟢 [Done] The localhost HTTPS rehearsal now uses seven CLI launches. Sequence 4 answers both trial questions. Sequence 5 omits the tank record from the complete snapshot and the tank question yields verified abstention. Sequence 6 republishes the same reduced record set and the vent question yields a verified answer. The two questions were checked separately because the CLI reports aggregate response counts. This checks the two snapshots across process restarts. Live review still checks the operator's withdrawal record and the actual retained answer.
 
 Run one explicit cycle:
 

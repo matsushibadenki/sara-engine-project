@@ -221,7 +221,6 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                     **pilot_payload, "endpoint": f"https://localhost:{server.server_port}/evidence",
                     "ca_file": str(cert), "sequence_state_path": str(state),
                 }
-                config.write_text(json.dumps(payload), encoding="utf-8")
                 offset = int(time.time()) - V2.NOW
                 for index, (offered, validator, before, after, decision) in enumerate([
                     (2, None, None, 2, "published"),
@@ -229,12 +228,25 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                     (3, 3, 3, 3, "publisher_not_modified"),
                     (2, None, 3, 3, "publisher_rollback"),
                     (4, None, 3, 4, "published"),
+                    (5, None, 4, 5, "published"),
+                    (6, None, 5, 6, "published"),
                 ]):
                     pages = V2.make_payload(
                         PROTOCOL, EVIDENCE, "en", sequence=offered,
                         issued_offset=offset, expiry_offset=offset + 120,
                     )
-                    publisher.set_payload(pages[0], not_modified_sequence=validator)
+                    page = pages[0]
+                    questions = payload["questions"]
+                    if offered >= 5:
+                        # The complete revision retains the vent and omits the tank.
+                        page["records"] = page["records"][:1]
+                        page["total_records"] = 1
+                    if offered in (4, 6):
+                        questions = [*questions, "What is west vent state?"] if offered == 4 else [
+                            "What is west vent state?",
+                        ]
+                    config.write_text(json.dumps({**payload, "questions": questions}), encoding="utf-8")
+                    publisher.set_payload(page, not_modified_sequence=validator)
                     output = root / f"report-{index}.json"
                     result = subprocess.run([
                         sys.executable, str(ROOT / "scripts/eval/authoritative_external_pilot.py"),
@@ -247,6 +259,13 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                     assert refresh["accepted_sequence_before_refresh"] == before
                     assert refresh["accepted_sequence"] == after
                     assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == after
+                    if offered >= 4:
+                        expected_kinds = {
+                            4: {"verified_answer": 2},
+                            5: {"verified_abstention": 1},
+                            6: {"verified_answer": 1},
+                        }
+                        assert report["question_checks"][0]["response_kind_counts"] == expected_kinds[offered]
                     assert not report["promotion_ready"] and not report["automatic_default_enabled"]
             finally:
                 server.shutdown()
