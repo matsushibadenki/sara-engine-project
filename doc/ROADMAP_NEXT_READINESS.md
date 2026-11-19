@@ -304,6 +304,8 @@ Each refresh records the accepted sequence before and after the request. Compare
 
 🟢 [Done] The localhost HTTPS rehearsal used the production runtime with a controlled clock to receive an empty 304 one second before withdrawal sequence 8's original expiry. The tank answer remained withheld and the vent answer remained available. One second after the original expiry, both questions yielded verified abstention. The in-memory and persisted accepted sequence remained 8. The controlled-clock check uses the runtime directly.
 
+🟢 [Done] After withdrawal sequence 8 expired, the same runtime rejected a simulated sequence 7 response with a current validity window as `publisher_rollback`. Both questions still yielded verified abstention and the accepted sequence stayed at 8 in memory and on disk. A fresh sequence 9 retained the withdrawal and restored only the vent answer. The accepted sequence advanced to 9 in memory and on disk on that publication.
+
 Run one explicit cycle:
 
 ```text

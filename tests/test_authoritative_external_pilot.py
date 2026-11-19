@@ -346,6 +346,29 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                 assert response_kinds() == ["verified_abstention", "verified_abstention"]
                 assert runtime.accepted_sequence == 8
                 assert json.loads(expiry_state.read_text(encoding="utf-8"))["accepted_sequence"] == 8
+
+                # A fresh validity window isolates sequence rejection from expiry.
+                old_page, = V2.make_payload(
+                    PROTOCOL, EVIDENCE, "en", sequence=7,
+                    issued_offset=now - V2.NOW, expiry_offset=now - V2.NOW + 120,
+                )
+                publisher.set_payload(old_page)
+                assert runtime.refresh().decision == "publisher_rollback"
+                assert response_kinds() == ["verified_abstention", "verified_abstention"]
+                assert runtime.accepted_sequence == 8
+                assert json.loads(expiry_state.read_text(encoding="utf-8"))["accepted_sequence"] == 8
+
+                new_page, = V2.make_payload(
+                    PROTOCOL, EVIDENCE, "en", sequence=9,
+                    issued_offset=now - V2.NOW, expiry_offset=now - V2.NOW + 120,
+                )
+                new_page["records"] = new_page["records"][:1]
+                new_page["total_records"] = 1
+                publisher.set_payload(new_page)
+                assert runtime.refresh().decision == "published"
+                assert response_kinds() == ["verified_abstention", "verified_answer"]
+                assert runtime.accepted_sequence == 9
+                assert json.loads(expiry_state.read_text(encoding="utf-8"))["accepted_sequence"] == 9
             finally:
                 server.shutdown()
                 worker.join(timeout=5)
