@@ -114,13 +114,14 @@ def run_pilot(payload, *, cycles, client_factory=EvidenceHTTPClient,
             "accepted_sequence_before_refresh": sequence_before_refresh,
             **trace,
         })
-        kinds = Counter()
+        kinds = []
         for question in questions:
             runtime.chat(agent, question)
-            kinds[agent.get_last_response_trace()["kind"]] += 1
+            kinds.append(agent.get_last_response_trace()["kind"])
         question_checks.append({
             "cycle": cycle, "question_count": len(questions),
-            "response_kind_counts": dict(sorted(kinds.items())),
+            "response_kind_counts": dict(sorted(Counter(kinds).items())),
+            "response_kinds_in_question_order": kinds,
         })
     return {
         "schema": REPORT_SCHEMA,

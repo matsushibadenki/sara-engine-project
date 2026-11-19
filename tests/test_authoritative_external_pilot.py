@@ -85,9 +85,11 @@ def test_two_cycle_pilot_publishes_then_preserves_on_304(pilot_payload):
     assert not report["promotion_ready"] and not report["automatic_default_enabled"]
     assert report["question_checks"] == [
         {"cycle": 0, "question_count": 1,
-         "response_kind_counts": {"verified_answer": 1}},
+         "response_kind_counts": {"verified_answer": 1},
+         "response_kinds_in_question_order": ["verified_answer"]},
         {"cycle": 1, "question_count": 1,
-         "response_kind_counts": {"verified_answer": 1}},
+         "response_kind_counts": {"verified_answer": 1},
+         "response_kinds_in_question_order": ["verified_answer"]},
     ]
     rendered = repr(report)
     assert pilot_payload["endpoint"] not in rendered
@@ -200,6 +202,14 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
     from threading import Thread
 
     publisher = load("live_authoritative_evidence")
+    staged_pages = []
+
+    class StagedPublisher(publisher.Handler):
+        def do_GET(self):
+            if staged_pages:
+                publisher.set_payload(staged_pages.pop(0))
+            super().do_GET()
+
     scratch = Path(pilot_payload["sequence_state_path"]).parent
     with tempfile.TemporaryDirectory(dir=scratch) as directory:
         root = Path(directory)
@@ -211,7 +221,7 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
         ], check=True, capture_output=True, timeout=20)
         tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         tls.load_cert_chain(cert, key)
-        with publisher.ThreadingHTTPServer(("127.0.0.1", 0), publisher.Handler) as server:
+        with publisher.ThreadingHTTPServer(("127.0.0.1", 0), StagedPublisher) as server:
             server.socket = tls.wrap_socket(server.socket, server_side=True)
             worker = Thread(target=server.serve_forever, daemon=True)
             worker.start()
@@ -267,6 +277,36 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                         }
                         assert report["question_checks"][0]["response_kind_counts"] == expected_kinds[offered]
                     assert not report["promotion_ready"] and not report["automatic_default_enabled"]
+                for sequence in (7, 8):
+                    page, = V2.make_payload(
+                        PROTOCOL, EVIDENCE, "en", sequence=sequence,
+                        issued_offset=offset, expiry_offset=offset + 120,
+                    )
+                    if sequence == 8:
+                        page["records"] = page["records"][:1]
+                        page["total_records"] = 1
+                    staged_pages.append(page)
+                config.write_text(json.dumps({
+                    **payload, "questions": [*payload["questions"], "What is west vent state?"],
+                }), encoding="utf-8")
+                output = root / "same-process-withdrawal.json"
+                result = subprocess.run([
+                    sys.executable, str(ROOT / "scripts/eval/authoritative_external_pilot.py"),
+                    "--config", str(config), "--output", str(output), "--cycles", "2",
+                ], capture_output=True, text=True, timeout=20)
+                assert result.returncode == 0, result.stderr
+                report = json.loads(output.read_text(encoding="utf-8"))
+                assert [
+                    (row["decision"], row["accepted_sequence_before_refresh"], row["accepted_sequence"])
+                    for row in report["refreshes"]
+                ] == [("published", 6, 7), ("published", 7, 8)]
+                assert [
+                    row["response_kinds_in_question_order"] for row in report["question_checks"]
+                ] == [
+                    ["verified_answer", "verified_answer"],
+                    ["verified_abstention", "verified_answer"],
+                ]
+                assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == 8
             finally:
                 server.shutdown()
                 worker.join(timeout=5)

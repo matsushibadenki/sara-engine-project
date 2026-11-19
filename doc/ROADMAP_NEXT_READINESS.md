@@ -238,7 +238,7 @@ Use the existing authoritative evidence V2 runner. Before scheduling the pilot, 
 
 Before connecting, have the scope owner confirm the exact HTTPS URL, publisher ID, scope, permitted trial questions and independent operator through an established contact channel. Record the trust source, expected hostname, and who approves certificate changes. For a private CA, compare the bundle fingerprint against the value supplied through that channel. Run the offline check with the planned configuration and report path. Reserve one sequence file for the approved publisher and scope, and reuse it across the trial launches. Agree on the trial window, expected availability, and any latency or cost limits before running. Record missing limits as unassessed.
 
-Choose two disjoint trial questions, one for a record to revise and withdraw and one for an unaffected record. The CLI reports response kinds as counts. Use one question per CLI configuration when attributing a result to a specific record, keeping the publisher, scope and sequence file the same. Have the operator provide a dated list of expected sequences and record changes. Compare the actual approved answer with the anticipated value through a restricted operator check because the CLI report contains counts rather than answer text.
+Choose two disjoint trial questions, one for a record to revise and withdraw and one for an unaffected record. The CLI reports response kinds in configuration question order alongside the aggregate counts. Use both questions in one configuration to attribute the two outcomes to the same snapshot. Have the operator provide a dated list of expected sequences and record changes. Compare the actual approved answer with the anticipated value through a restricted operator check because the CLI report contains counts rather than answer text.
 
 | Step | Evidence required for a pass |
 | --- | --- |
@@ -248,7 +248,7 @@ Choose two disjoint trial questions, one for a record to revise and withdraw and
 | Replay and recovery | In the agreed trial scope, serve an earlier sequence as HTTP 200. After a fresh CLI launch, verify `publisher_rollback` and the previous on-disk value. Serve a higher valid snapshot on the next launch and verify `published`, with the accepted sequence matching the on-disk value. |
 | Availability and cost | Record attempted and successful refreshes during the agreed window, request counts, response-body bytes and refresh latency. Compare measurements with the agreed limits. Record publisher-side work and transport overhead separately if evaluating complete-path cost. |
 
-For the withdrawal checks across separate CLI launches, coordinate separate higher-sequence publications with the same post-withdrawal content, or check both questions together and use an approved per-question observation to attribute each outcome. Equal-sequence HTTP 200 is rejected by design.
+For the withdrawal check, use two refresh cycles in one CLI invocation. Coordinate the publisher to serve the complete pre-withdrawal snapshot first and the higher withdrawal revision on the second request.
 
 Mark the live pilot **pass** only when the trust review and every required row have matching operator and client evidence. Mark an observed mismatch **fail** and preserve its report and sequence state before investigating. Mark missing independent evidence or unassessed required measures **pending**. A local success establishes the client behavior exercised by the fixture. The local TLS rehearsal also covered abstention for an omitted record and a verified answer for the retained record on separate launches. Withdrawal completeness and independent operational evidence require the live checks above.
 
@@ -299,6 +299,8 @@ Each refresh records the accepted sequence before and after the request. Compare
 🟢 [Done] A localhost HTTPS integration test ran five separate CLI processes against a simulated publisher and a shared sequence file. The CLI published sequences 2 and 3, preserved 3 on a conditional 304, rejected sequence 2 as rollback, and published 4 on the next launch. Each report's final accepted sequence matched the on-disk value. Each new process reported the previous persisted value before its request. The independent publisher trial remains pending.
 
 🟢 [Done] The localhost HTTPS rehearsal now uses seven CLI launches. Sequence 4 answers both trial questions. Sequence 5 omits the tank record from the complete snapshot and the tank question yields verified abstention. Sequence 6 republishes the same reduced record set and the vent question yields a verified answer. The two questions were checked separately because the CLI reports aggregate response counts. This checks the two snapshots across process restarts. Live review still checks the operator's withdrawal record and the actual retained answer.
+
+🟢 [Done] A two-cycle localhost HTTPS run applied sequence 7 and then withdrawal sequence 8 in one CLI process. Both questions yielded verified answers on 7. On 8 the tank question yielded verified abstention and the vent question still yielded a verified answer. The persisted sequence matched the report at 8. The report includes response kinds by question position, with question and answer text omitted.
 
 Run one explicit cycle:
 
