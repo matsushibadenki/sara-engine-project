@@ -234,6 +234,28 @@ Observation files and previews stayed unopened. Existing eligibility rules, nega
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
 
+### Live pilot acceptance procedure
+
+Before connecting, have the scope owner confirm the exact HTTPS URL, publisher ID, scope, permitted trial questions and independent operator through an established contact channel. Record the trust source, expected hostname, and who approves certificate changes. For a private CA, compare the bundle fingerprint against the value supplied through that channel. Run the offline check with the planned configuration and report path. Reserve one sequence file for the approved publisher and scope, and reuse it across the trial launches. Agree on the trial window, expected availability, and any latency or cost limits before running. Record missing limits as unassessed.
+
+Choose two disjoint trial questions, one for a record to revise and withdraw and one for an unaffected record. The CLI reports response kinds as counts. Use one question per CLI configuration when attributing a result to a specific record, keeping the publisher, scope and sequence file the same. Have the operator provide a dated list of expected sequences and record changes. Compare the actual approved answer with the anticipated value through a restricted operator check because the CLI report contains counts rather than answer text.
+
+| Step | Evidence required for a pass |
+| --- | --- |
+| Initial publication and revision | The operator supplies complete snapshots with increasing sequences. The CLI reports `published` and the expected new sequence. The approved answer check confirms the revised value and the unaffected record. |
+| Conditional refresh | The operator observes the expected validator and returns an empty page-zero 304. The CLI reports `publisher_not_modified` and keeps the sequence. Use a bounded multi-cycle run with a loaded snapshot to check answer continuity. A new process retains the sequence but does not reload the prior snapshot contents. |
+| Withdrawal | The operator lists the removal and publishes a higher complete snapshot omitting the withdrawn record while retaining the unaffected record. Check `published`, the higher sequence, verified abstention for the withdrawn record and a verified answer for the unaffected record. Check both against the same published revision. |
+| Replay and recovery | In the agreed trial scope, serve an earlier sequence as HTTP 200. After a fresh CLI launch, verify `publisher_rollback` and the previous on-disk value. Serve a higher valid snapshot on the next launch and verify `published`, with the accepted sequence matching the on-disk value. |
+| Availability and cost | Record attempted and successful refreshes during the agreed window, request counts, response-body bytes and refresh latency. Compare measurements with the agreed limits. Record publisher-side work and transport overhead separately if evaluating complete-path cost. |
+
+For the withdrawal checks across separate CLI launches, coordinate separate higher-sequence publications with the same post-withdrawal content, or check both questions together and use an approved per-question observation to attribute each outcome. Equal-sequence HTTP 200 is rejected by design.
+
+Mark the live pilot **pass** only when the trust review and every required row have matching operator and client evidence. Mark an observed mismatch **fail** and preserve its report and sequence state before investigating. Mark missing independent evidence or unassessed required measures **pending**. A local success establishes the client behavior exercised by the fixture. The five-process TLS rehearsal covered revisions, 304, rollback and persisted restart recovery. Withdrawal completeness and independent operational evidence require the live checks above.
+
+日本語：接続先と信頼元を事前確認し、改訂・撤回・304・再起動を公開者側の記録と照合する。証拠が不足する項目は保留とする。
+
+简体中文：预先核实端点与信任来源，并将修订、撤回、304 和重启结果与发布方记录核对。证据不足的项目保持待定。
+
 Use the following placeholder configuration as a starting point. Replace the values with approved settings and save it to `workspace/config/authoritative_external_pilot.json`.
 
 ```json
