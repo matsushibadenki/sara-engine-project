@@ -385,14 +385,16 @@ namespace["run_pilot"] = functools.partial(
 )
 main()
 """
-                for offered_page, decision, before, after, kinds in (
-                    (old_page, "publisher_rollback", 8, 8,
+                for offered_page, validator, decision, before, after, kinds in (
+                    (page, 8, "publisher_not_modified", 8, 8,
                      ["verified_abstention", "verified_abstention"]),
-                    (new_page, "published", 8, 9,
+                    (old_page, None, "publisher_rollback", 8, 8,
+                     ["verified_abstention", "verified_abstention"]),
+                    (new_page, None, "published", 8, 9,
                      ["verified_abstention", "verified_answer"]),
                 ):
-                    publisher.set_payload(offered_page)
-                    output = root / f"after-expiry-{after}.json"
+                    publisher.set_payload(offered_page, not_modified_sequence=validator)
+                    output = root / f"after-expiry-{decision}.json"
                     result = subprocess.run([
                         sys.executable, "-c", cli_clock_wrapper,
                         str(ROOT / "scripts/eval/authoritative_external_pilot.py"), str(now),
@@ -402,6 +404,8 @@ main()
                     report = json.loads(output.read_text(encoding="utf-8"))
                     refresh, = report["refreshes"]
                     assert refresh["decision"] == decision
+                    if validator is not None:
+                        assert refresh["response_bytes"] == 0
                     assert refresh["accepted_sequence_before_refresh"] == before
                     assert refresh["accepted_sequence"] == after
                     assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == after
