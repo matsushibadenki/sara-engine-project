@@ -54,6 +54,12 @@ class TopicEvidenceStore:
         with self._lock:
             return self._generation
 
+    @property
+    def snapshot_expires_at(self):
+        """Return the deadline of the snapshot currently held by the store."""
+        with self._lock:
+            return self._expires_at
+
     def publish(self, records: tuple[TopicEvidence, ...], *, expected_generation: int, now_segment: int,
                 valid_until_segment: int | None = None, before_commit=None) -> PublishResult:
         with self._lock:

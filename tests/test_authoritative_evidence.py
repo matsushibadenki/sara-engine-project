@@ -110,6 +110,7 @@ def test_refresh_trace_is_bounded_and_does_not_expose_configuration():
     assert trace == {
         "schema": "sara-authoritative-refresh-trace-v1",
         "decision": "published", "generation": 1, "accepted_sequence": 1,
+        "snapshot_expires_at_epoch": MODULE.NOW + 120,
         "request_count": None, "response_bytes": None, "elapsed_seconds": 0.25,
         "sequence_persistence_enabled": False,
         "automatic_default_enabled": False,

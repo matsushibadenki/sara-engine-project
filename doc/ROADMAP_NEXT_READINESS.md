@@ -292,7 +292,7 @@ This mode checks the same schema, limits, HTTPS endpoint, CA bundle and question
 
 The live CLI opens a temporary report in the destination directory before contacting the publisher. It replaces the previous report after the new JSON is fully written. A run or serialization exception leaves the prior report available. Publisher sequence persistence is independent of report completion.
 
-Each refresh records the accepted sequence before and after the request. Compare those values with the decision to distinguish a published revision from a 304 that preserves the accepted sequence. On a restart, the first cycle starts from the loaded sequence. Use the publisher's revision and withdrawal records to assess completeness.
+Each refresh records the accepted sequence before and after the request and the deadline of any snapshot held in memory at refresh completion. Use the deadline to check that a warm 304 preserves expiry. A cold 304 can report a persisted sequence with a null snapshot deadline. Compare those values with the decision to distinguish a published revision from a 304 that preserves the accepted sequence. On a restart, the first cycle starts from the loaded sequence. Use the publisher's revision and withdrawal records to assess completeness.
 
 🟢 [Done] The scripted lifecycle check applies sequence 1, preserves it on 304, starts a new runtime against the same on-disk watermark, rejects a replay of sequence 1 as rollback, and applies sequence 2. The restarted client uses sequence 1 as its conditional validator for both requests. This exercise uses an in-process transport and a new runtime instance. The independent HTTPS pilot remains pending.
 

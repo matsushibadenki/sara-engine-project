@@ -163,6 +163,7 @@ class AuthoritativeEvidenceRuntime:
             "schema": "sara-authoritative-refresh-trace-v1",
             "decision": result.decision,
             "generation": result.generation,
+            "snapshot_expires_at_epoch": self.store.snapshot_expires_at,
             "accepted_sequence": self._accepted_sequence,
             "request_count": request_count,
             "response_bytes": response_bytes,

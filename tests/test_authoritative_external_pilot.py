@@ -81,6 +81,9 @@ def test_two_cycle_pilot_publishes_then_preserves_on_304(pilot_payload):
         (refresh["accepted_sequence_before_refresh"], refresh["accepted_sequence"])
         for refresh in report["refreshes"]
     ] == [(None, 1), (1, 1)]
+    assert [row["snapshot_expires_at_epoch"] for row in report["refreshes"]] == [
+        V2.NOW + 120, V2.NOW + 120,
+    ]
     assert report["cycle_count"] == 2 and report["completed"]
     assert not report["promotion_ready"] and not report["automatic_default_enabled"]
     assert report["question_checks"] == [
@@ -404,6 +407,8 @@ main()
                     report = json.loads(output.read_text(encoding="utf-8"))
                     refresh, = report["refreshes"]
                     assert refresh["decision"] == decision
+                    expected_expiry = now + 120 if decision == "published" else None
+                    assert refresh["snapshot_expires_at_epoch"] == expected_expiry
                     if validator is not None:
                         assert refresh["response_bytes"] == 0
                     assert refresh["accepted_sequence_before_refresh"] == before
