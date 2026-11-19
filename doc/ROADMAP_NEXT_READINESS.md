@@ -306,6 +306,8 @@ Each refresh records the accepted sequence before and after the request. Compare
 
 🟢 [Done] After withdrawal sequence 8 expired, the same runtime rejected a simulated sequence 7 response with a current validity window as `publisher_rollback`. Both questions still yielded verified abstention and the accepted sequence stayed at 8 in memory and on disk. A fresh sequence 9 retained the withdrawal and restored only the vent answer. The accepted sequence advanced to 9 in memory and on disk on that publication.
 
+🟢 [Done] Two fresh CLI processes reused the on-disk state from withdrawal sequence 8. The test supplied a runtime clock one second past the original expiry and used localhost HTTPS for both requests. The first process rejected a time-valid sequence 7 and reported two verified abstentions. Its report and disk both retained sequence 8. The next process started at 8, applied sequence 9 carrying the withdrawal, and reported abstention for the tank and a verified answer for the vent. The report and disk both advanced to 9.
+
 Run one explicit cycle:
 
 ```text

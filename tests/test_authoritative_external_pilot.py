@@ -369,6 +369,43 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                 assert response_kinds() == ["verified_abstention", "verified_answer"]
                 assert runtime.accepted_sequence == 9
                 assert json.loads(expiry_state.read_text(encoding="utf-8"))["accepted_sequence"] == 9
+
+                # Restart the CLI with its runtime clock fixed past sequence 8's expiry.
+                cli_clock_wrapper = """
+import functools
+import runpy
+import sys
+
+script, epoch = sys.argv[1:3]
+sys.argv = [script, *sys.argv[3:]]
+main = runpy.run_path(script)["main"]
+namespace = main.__globals__
+namespace["run_pilot"] = functools.partial(
+    namespace["run_pilot"], clock=lambda: int(epoch),
+)
+main()
+"""
+                for offered_page, decision, before, after, kinds in (
+                    (old_page, "publisher_rollback", 8, 8,
+                     ["verified_abstention", "verified_abstention"]),
+                    (new_page, "published", 8, 9,
+                     ["verified_abstention", "verified_answer"]),
+                ):
+                    publisher.set_payload(offered_page)
+                    output = root / f"after-expiry-{after}.json"
+                    result = subprocess.run([
+                        sys.executable, "-c", cli_clock_wrapper,
+                        str(ROOT / "scripts/eval/authoritative_external_pilot.py"), str(now),
+                        "--config", str(config), "--output", str(output), "--cycles", "1",
+                    ], capture_output=True, text=True, timeout=20)
+                    assert result.returncode == 0, result.stderr
+                    report = json.loads(output.read_text(encoding="utf-8"))
+                    refresh, = report["refreshes"]
+                    assert refresh["decision"] == decision
+                    assert refresh["accepted_sequence_before_refresh"] == before
+                    assert refresh["accepted_sequence"] == after
+                    assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == after
+                    assert report["question_checks"][0]["response_kinds_in_question_order"] == kinds
             finally:
                 server.shutdown()
                 worker.join(timeout=5)
