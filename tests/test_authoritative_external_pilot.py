@@ -150,3 +150,42 @@ def test_failed_report_serialization_preserves_previous_report(pilot_payload, mo
         assert set(output.parent.iterdir()) == existing_files
     finally:
         output.unlink()
+
+
+def test_pilot_revision_lifecycle_across_runtime_restart(pilot_payload):
+    def snapshot(sequence):
+        return V2.make_payload(
+            PROTOCOL, EVIDENCE, "en", sequence=sequence,
+            issued_offset=0, expiry_offset=120,
+        )
+
+    first = PILOT.run_pilot(
+        pilot_payload, cycles=2,
+        client_factory=ScriptedTransport(snapshot(1)),
+        clock=lambda: V2.NOW,
+    )
+    assert first["decision_counts"] == {"published": 1, "publisher_not_modified": 1}
+
+    responses = iter([(1, snapshot(1)), (1, snapshot(2))])
+
+    def restarted_transport(endpoint, decoder, *, after_sequence, **options):
+        # The runtime constructs an unused client during configuration validation.
+        def fetch(index):
+            expected_validator, pages = next(responses)
+            assert after_sequence == expected_validator
+            return decoder(pages[index])
+
+        return fetch
+
+    restarted = PILOT.run_pilot(
+        pilot_payload, cycles=2, client_factory=restarted_transport,
+        clock=lambda: V2.NOW,
+    )
+    assert restarted["decision_counts"] == {"publisher_rollback": 1, "published": 1}
+    assert [
+        (refresh["decision"], refresh["accepted_sequence_before_refresh"],
+         refresh["accepted_sequence"])
+        for refresh in restarted["refreshes"]
+    ] == [("publisher_rollback", 1, 1), ("published", 1, 2)]
+    assert next(responses, None) is None
+    assert not restarted["promotion_ready"] and not restarted["automatic_default_enabled"]

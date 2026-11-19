@@ -272,6 +272,8 @@ The live CLI opens a temporary report in the destination directory before contac
 
 Each refresh records the accepted sequence before and after the request. Compare those values with the decision to distinguish a published revision from a 304 that preserves the accepted sequence. On a restart, the first cycle starts from the loaded sequence. Use the publisher's revision and withdrawal records to assess completeness.
 
+🟢 [Done] The scripted lifecycle check applies sequence 1, preserves it on 304, starts a new runtime against the same on-disk watermark, rejects a replay of sequence 1 as rollback, and applies sequence 2. The restarted client uses sequence 1 as its conditional validator for both requests. This exercise uses an in-process transport and a new runtime instance. The independent HTTPS pilot remains pending.
+
 Run one explicit cycle:
 
 ```text
