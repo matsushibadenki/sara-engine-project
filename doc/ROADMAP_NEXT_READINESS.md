@@ -308,6 +308,8 @@ Each refresh records the accepted sequence before and after the request and the 
 
 🟢 [Done] Three fresh CLI processes reused the on-disk state from withdrawal sequence 8, with the runtime clock set one second past its original expiry. The first request received an empty conditional 304 for sequence 8. Both questions yielded verified abstention and the report and disk retained sequence 8. The next process rejected a time-valid sequence 7 and verified the same abstentions and persisted value. The final process started at 8, applied sequence 9 carrying the withdrawal, and restored only the vent answer. The report and disk both advanced to 9.
 
+🟢 [Done] The localhost HTTPS CLI reports the published withdrawal deadline unchanged on the next empty 304 within the same process. After expiry, a fresh CLI process receiving an empty 304 reports a null snapshot deadline and verified abstention for both questions. The report and on-disk sequence remain 8 across both 304 responses. During the first 304, the unaffected vent still yields a verified answer.
+
 Run one explicit cycle:
 
 ```text

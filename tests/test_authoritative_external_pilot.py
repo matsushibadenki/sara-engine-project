@@ -309,7 +309,12 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                     ("published", 7, 8),
                     ("publisher_not_modified", 8, 8),
                 ]
-                assert report["refreshes"][2]["response_bytes"] == 0
+                _, withdrawal_refresh, unchanged_refresh = report["refreshes"]
+                assert withdrawal_refresh["snapshot_expires_at_epoch"] == page["expires_at_epoch"]
+                assert unchanged_refresh["snapshot_expires_at_epoch"] == withdrawal_refresh[
+                    "snapshot_expires_at_epoch"
+                ]
+                assert unchanged_refresh["response_bytes"] == 0
                 assert not staged_pages
                 assert [
                     row["response_kinds_in_question_order"] for row in report["question_checks"]
