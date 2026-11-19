@@ -23,6 +23,7 @@ This page tracks current progress, priorities and the conditions for advancing. 
 
 6. 🔴 [Later] Evaluate bounded inference escalation after the same independent-task and causal gates pass. [Evaluation contract](#bounded-inference-escalation)
 7. 🔴 [Later] Evaluate local repair with explicit constraints and a bounded stopping rule. [Evaluation design](#local-constraint-repair)
+8. 🔴 [Later] Compare targeted local-state edits on isolated copies. [Evaluation design](#local-state-edit-evaluation)
 
 ### Early route selection
 
@@ -65,6 +66,16 @@ Accept early only when an independent verifier confirms the required constraints
 日本語：局所的な制約修復と検証付き早期停止を将来候補に追加。手設計と直接ソルバーも対照に含める。
 
 简体中文：将局部约束修复和经验证的提前停止列为后续候选，并与手工设置及直接求解器比较。
+
+### Local-state edit evaluation
+
+Adapt Fan et al.'s paired edit evaluation to a bounded copy of SARA's local route state. Use development diagnostics to select a fixed set of fields, apply the proposed edit to a copy, and validate the exact write set and resulting numerical deltas. Keep the original snapshot available for recovery. Treat recovery from injected damage and improvement of intact state as separate hypotheses. [Fan et al., arXiv v1](https://arxiv.org/html/2611.21885v1)
+
+Compare targeted edits with a no-edit reference and a seeded control that changes the same number of local fields by comparable magnitudes. Fix the evaluation protocol before proposing edits and use paired inputs and delayed outcomes. Check target recovery and unrelated-route retention, including rare histories. Record withdrawals and regressions. Candidate selection uses development evidence, with sealed evaluation subject to the existing gates.
+
+日本語：局所状態の複製に対する編集を対応比較し、故障からの回復と正常状態の改善を別々に検証する。
+
+简体中文：在局部状态副本上配对比较编辑效果，分别验证故障恢复与完好状态的改进。
 
 ## Selected execution gates
 
