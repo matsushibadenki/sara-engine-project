@@ -248,7 +248,7 @@ Choose two disjoint trial questions, one for a record to revise and withdraw and
 | Replay and recovery | In the agreed trial scope, serve an earlier sequence as HTTP 200. After a fresh CLI launch, verify `publisher_rollback` and the previous on-disk value. Serve a higher valid snapshot on the next launch and verify `published`, with the accepted sequence matching the on-disk value. |
 | Availability and cost | Record attempted and successful refreshes during the agreed window, request counts, response-body bytes and refresh latency. Compare measurements with the agreed limits. Record publisher-side work and transport overhead separately if evaluating complete-path cost. |
 
-For the withdrawal check, use two refresh cycles in one CLI invocation. Coordinate the publisher to serve the complete pre-withdrawal snapshot first and the higher withdrawal revision on the second request.
+For the withdrawal check, use three refresh cycles in one CLI invocation. Coordinate the publisher to serve the complete pre-withdrawal snapshot first, the higher withdrawal revision second, and an empty conditional 304 third. On the third cycle, require the same per-question response kinds as the withdrawal cycle and the same accepted sequence in the report and on disk.
 
 Mark the live pilot **pass** only when the trust review and every required row have matching operator and client evidence. Mark an observed mismatch **fail** and preserve its report and sequence state before investigating. Mark missing independent evidence or unassessed required measures **pending**. A local success establishes the client behavior exercised by the fixture. The local TLS rehearsal also covered abstention for an omitted record and a verified answer for the retained record on separate launches. Withdrawal completeness and independent operational evidence require the live checks above.
 
@@ -300,7 +300,7 @@ Each refresh records the accepted sequence before and after the request. Compare
 
 🟢 [Done] The localhost HTTPS rehearsal now uses seven CLI launches. Sequence 4 answers both trial questions. Sequence 5 omits the tank record from the complete snapshot and the tank question yields verified abstention. Sequence 6 republishes the same reduced record set and the vent question yields a verified answer. The two questions were checked separately because the CLI reports aggregate response counts. This checks the two snapshots across process restarts. Live review still checks the operator's withdrawal record and the actual retained answer.
 
-🟢 [Done] A two-cycle localhost HTTPS run applied sequence 7 and then withdrawal sequence 8 in one CLI process. Both questions yielded verified answers on 7. On 8 the tank question yielded verified abstention and the vent question still yielded a verified answer. The persisted sequence matched the report at 8. The report includes response kinds by question position, with question and answer text omitted.
+🟢 [Done] A three-cycle localhost HTTPS run applied sequence 7, applied withdrawal sequence 8 and received an empty conditional 304 for sequence 8 in one CLI process. Both questions yielded verified answers on 7. On 8 the tank question yielded verified abstention and the vent question still yielded a verified answer. The 304 retained both response kinds and the accepted sequence. The persisted sequence matched the report at 8. The report includes response kinds by question position, with question and answer text omitted.
 
 Run one explicit cycle:
 

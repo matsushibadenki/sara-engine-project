@@ -207,7 +207,8 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
     class StagedPublisher(publisher.Handler):
         def do_GET(self):
             if staged_pages:
-                publisher.set_payload(staged_pages.pop(0))
+                page, validator = staged_pages.pop(0)
+                publisher.set_payload(page, not_modified_sequence=validator)
             super().do_GET()
 
     scratch = Path(pilot_payload["sequence_state_path"]).parent
@@ -285,25 +286,33 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                     if sequence == 8:
                         page["records"] = page["records"][:1]
                         page["total_records"] = 1
-                    staged_pages.append(page)
+                    staged_pages.append((page, None))
+                staged_pages.append((page, 8))
                 config.write_text(json.dumps({
                     **payload, "questions": [*payload["questions"], "What is west vent state?"],
                 }), encoding="utf-8")
                 output = root / "same-process-withdrawal.json"
                 result = subprocess.run([
                     sys.executable, str(ROOT / "scripts/eval/authoritative_external_pilot.py"),
-                    "--config", str(config), "--output", str(output), "--cycles", "2",
+                    "--config", str(config), "--output", str(output), "--cycles", "3",
                 ], capture_output=True, text=True, timeout=20)
                 assert result.returncode == 0, result.stderr
                 report = json.loads(output.read_text(encoding="utf-8"))
                 assert [
                     (row["decision"], row["accepted_sequence_before_refresh"], row["accepted_sequence"])
                     for row in report["refreshes"]
-                ] == [("published", 6, 7), ("published", 7, 8)]
+                ] == [
+                    ("published", 6, 7),
+                    ("published", 7, 8),
+                    ("publisher_not_modified", 8, 8),
+                ]
+                assert report["refreshes"][2]["response_bytes"] == 0
+                assert not staged_pages
                 assert [
                     row["response_kinds_in_question_order"] for row in report["question_checks"]
                 ] == [
                     ["verified_answer", "verified_answer"],
+                    ["verified_abstention", "verified_answer"],
                     ["verified_abstention", "verified_answer"],
                 ]
                 assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == 8
