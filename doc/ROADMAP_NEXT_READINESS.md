@@ -302,6 +302,8 @@ Each refresh records the accepted sequence before and after the request. Compare
 
 🟢 [Done] A three-cycle localhost HTTPS run applied sequence 7, applied withdrawal sequence 8 and received an empty conditional 304 for sequence 8 in one CLI process. Both questions yielded verified answers on 7. On 8 the tank question yielded verified abstention and the vent question still yielded a verified answer. The 304 retained both response kinds and the accepted sequence. The persisted sequence matched the report at 8. The report includes response kinds by question position, with question and answer text omitted.
 
+🟢 [Done] The localhost HTTPS rehearsal used the production runtime with a controlled clock to receive an empty 304 one second before withdrawal sequence 8's original expiry. The tank answer remained withheld and the vent answer remained available. One second after the original expiry, both questions yielded verified abstention. The in-memory and persisted accepted sequence remained 8. The controlled-clock check uses the runtime directly.
+
 Run one explicit cycle:
 
 ```text

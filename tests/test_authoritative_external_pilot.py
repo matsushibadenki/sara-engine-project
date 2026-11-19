@@ -316,6 +316,36 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                     ["verified_abstention", "verified_answer"],
                 ]
                 assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == 8
+                # Use the same HTTPS transport with a controlled runtime clock.
+                now = V2.NOW + offset
+                expiry = now + 120
+                expiry_state = root / "expiry-sequence.json"
+                runtime_config, questions = PILOT.parse_configuration({
+                    **payload, "sequence_state_path": str(expiry_state),
+                    "questions": [*payload["questions"], "What is west vent state?"],
+                })
+                runtime = PILOT.AuthoritativeEvidenceRuntime(runtime_config, clock=lambda: now)
+                agent = PILOT.SaraAgent(input_size=256, hidden_size=256, compartments=["general"])
+
+                def response_kinds():
+                    kinds = []
+                    for question in questions:
+                        runtime.chat(agent, question)
+                        kinds.append(agent.get_last_response_trace()["kind"])
+                    return kinds
+
+                publisher.set_payload(page)
+                assert runtime.refresh().decision == "published"
+                now = expiry - 1
+                publisher.set_payload(page, not_modified_sequence=8)
+                assert runtime.refresh().decision == "publisher_not_modified"
+                assert runtime.get_last_refresh_trace()["response_bytes"] == 0
+                assert response_kinds() == ["verified_abstention", "verified_answer"]
+
+                now = expiry + 1
+                assert response_kinds() == ["verified_abstention", "verified_abstention"]
+                assert runtime.accepted_sequence == 8
+                assert json.loads(expiry_state.read_text(encoding="utf-8"))["accepted_sequence"] == 8
             finally:
                 server.shutdown()
                 worker.join(timeout=5)
