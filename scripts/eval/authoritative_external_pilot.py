@@ -5,6 +5,7 @@ from collections import Counter
 import json
 from pathlib import Path
 import sys
+import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -178,11 +179,20 @@ def main(argv=None):
             "question_count": len(questions),
         }))
         return
-    report = run_pilot(payload, cycles=args.cycles)
     ensure_parent_directory(str(output))
-    output.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
-    )
+    with tempfile.NamedTemporaryFile(
+        dir=output.parent, prefix=".pilot-report-", mode="w", encoding="utf-8",
+        delete=False,
+    ) as handle:
+        pending_report = Path(handle.name)
+        try:
+            report = run_pilot(payload, cycles=args.cycles)
+            json.dump(report, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.close()
+            pending_report.replace(output)
+        finally:
+            pending_report.unlink(missing_ok=True)
     print(json.dumps({
         "schema": report["schema"], "cycle_count": report["cycle_count"],
         "decision_counts": report["decision_counts"],

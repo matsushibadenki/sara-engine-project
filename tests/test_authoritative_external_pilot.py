@@ -130,3 +130,19 @@ def test_cli_refuses_report_overlapping_sequence(pilot_payload, monkeypatch, mod
     with pytest.raises(ValueError, match="report path overlaps"):
         PILOT.main(["--config", "pilot.json", "--output", output, *mode])
     assert not Path(output).exists()
+
+
+def test_failed_report_serialization_preserves_previous_report(pilot_payload, monkeypatch):
+    sequence_path = Path(pilot_payload["sequence_state_path"])
+    output = sequence_path.with_suffix(".report.json")
+    output.write_text('{"previous": true}\n', encoding="utf-8")
+    monkeypatch.setattr(PILOT, "load_configuration", lambda path: pilot_payload)
+    monkeypatch.setattr(PILOT, "run_pilot", lambda *args, **kwargs: {"invalid": object()})
+    try:
+        existing_files = set(output.parent.iterdir())
+        with pytest.raises(TypeError, match="not JSON serializable"):
+            PILOT.main(["--config", "pilot.json", "--output", str(output), "--cycles", "1"])
+        assert output.read_text(encoding="utf-8") == '{"previous": true}\n'
+        assert set(output.parent.iterdir()) == existing_files
+    finally:
+        output.unlink()

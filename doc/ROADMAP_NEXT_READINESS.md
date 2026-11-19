@@ -268,6 +268,8 @@ workspace/.venv310/bin/python scripts/eval/authoritative_external_pilot.py --con
 
 This mode checks the same schema, limits, HTTPS endpoint, CA bundle and question routing as a live run. It validates the managed sequence and lock paths without opening or creating state files. Both CLI modes reject a report path that overlaps the configuration, sequence state or lock before connecting. Existing watermark contents and write access are checked during the live run. It prints only validation status and a question count. The mode exits before runtime initialization, HTTPS access or report creation. Publisher identity and trust still require the independent operator review.
 
+The live CLI opens a temporary report in the destination directory before contacting the publisher. It replaces the previous report after the new JSON is fully written. A run or serialization exception leaves the prior report available. Publisher sequence persistence is independent of report completion.
+
 Run one explicit cycle:
 
 ```text
