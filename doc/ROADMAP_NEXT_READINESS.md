@@ -274,6 +274,8 @@ Each refresh records the accepted sequence before and after the request. Compare
 
 🟢 [Done] The scripted lifecycle check applies sequence 1, preserves it on 304, starts a new runtime against the same on-disk watermark, rejects a replay of sequence 1 as rollback, and applies sequence 2. The restarted client uses sequence 1 as its conditional validator for both requests. This exercise uses an in-process transport and a new runtime instance. The independent HTTPS pilot remains pending.
 
+🟢 [Done] A localhost HTTPS integration test ran five separate CLI processes against a simulated publisher and a shared sequence file. The CLI published sequences 2 and 3, preserved 3 on a conditional 304, rejected sequence 2 as rollback, and published 4 on the next launch. Each report's final accepted sequence matched the on-disk value. Each new process reported the previous persisted value before its request. The independent publisher trial remains pending.
+
 Run one explicit cycle:
 
 ```text

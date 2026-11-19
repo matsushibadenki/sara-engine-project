@@ -189,3 +189,65 @@ def test_pilot_revision_lifecycle_across_runtime_restart(pilot_payload):
     ] == [("publisher_rollback", 1, 1), ("published", 1, 2)]
     assert next(responses, None) is None
     assert not restarted["promotion_ready"] and not restarted["automatic_default_enabled"]
+
+
+def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
+    import ssl
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    from threading import Thread
+
+    publisher = load("live_authoritative_evidence")
+    scratch = Path(pilot_payload["sequence_state_path"]).parent
+    with tempfile.TemporaryDirectory(dir=scratch) as directory:
+        root = Path(directory)
+        key, cert = root / "key.pem", root / "cert.pem"
+        subprocess.run([
+            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+            "-subj", "/CN=localhost", "-addext", "subjectAltName=DNS:localhost",
+            "-keyout", str(key), "-out", str(cert),
+        ], check=True, capture_output=True, timeout=20)
+        tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        tls.load_cert_chain(cert, key)
+        with publisher.ThreadingHTTPServer(("127.0.0.1", 0), publisher.Handler) as server:
+            server.socket = tls.wrap_socket(server.socket, server_side=True)
+            worker = Thread(target=server.serve_forever, daemon=True)
+            worker.start()
+            try:
+                state, config = root / "sequence.json", root / "config.json"
+                payload = {
+                    **pilot_payload, "endpoint": f"https://localhost:{server.server_port}/evidence",
+                    "ca_file": str(cert), "sequence_state_path": str(state),
+                }
+                config.write_text(json.dumps(payload), encoding="utf-8")
+                offset = int(time.time()) - V2.NOW
+                for index, (offered, validator, before, after, decision) in enumerate([
+                    (2, None, None, 2, "published"),
+                    (3, None, 2, 3, "published"),
+                    (3, 3, 3, 3, "publisher_not_modified"),
+                    (2, None, 3, 3, "publisher_rollback"),
+                    (4, None, 3, 4, "published"),
+                ]):
+                    pages = V2.make_payload(
+                        PROTOCOL, EVIDENCE, "en", sequence=offered,
+                        issued_offset=offset, expiry_offset=offset + 120,
+                    )
+                    publisher.set_payload(pages[0], not_modified_sequence=validator)
+                    output = root / f"report-{index}.json"
+                    result = subprocess.run([
+                        sys.executable, str(ROOT / "scripts/eval/authoritative_external_pilot.py"),
+                        "--config", str(config), "--output", str(output), "--cycles", "1",
+                    ], capture_output=True, text=True, timeout=20)
+                    assert result.returncode == 0, result.stderr
+                    report = json.loads(output.read_text(encoding="utf-8"))
+                    refresh, = report["refreshes"]
+                    assert refresh["decision"] == decision
+                    assert refresh["accepted_sequence_before_refresh"] == before
+                    assert refresh["accepted_sequence"] == after
+                    assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == after
+                    assert not report["promotion_ready"] and not report["automatic_default_enabled"]
+            finally:
+                server.shutdown()
+                worker.join(timeout=5)
