@@ -105,10 +105,15 @@ def run_pilot(payload, *, cycles, client_factory=EvidenceHTTPClient,
     question_checks = []
     decisions = Counter()
     for cycle in range(cycles):
+        sequence_before_refresh = runtime.accepted_sequence
         result = runtime.refresh()
         decisions[result.decision] += 1
         trace = runtime.get_last_refresh_trace()
-        refreshes.append({"cycle": cycle, **trace})
+        refreshes.append({
+            "cycle": cycle,
+            "accepted_sequence_before_refresh": sequence_before_refresh,
+            **trace,
+        })
         kinds = Counter()
         for question in questions:
             runtime.chat(agent, question)

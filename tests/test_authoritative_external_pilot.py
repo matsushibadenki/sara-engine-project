@@ -77,6 +77,10 @@ def test_two_cycle_pilot_publishes_then_preserves_on_304(pilot_payload):
         clock=lambda: V2.NOW, performance_clock=lambda: next(ticks),
     )
     assert report["decision_counts"] == {"published": 1, "publisher_not_modified": 1}
+    assert [
+        (refresh["accepted_sequence_before_refresh"], refresh["accepted_sequence"])
+        for refresh in report["refreshes"]
+    ] == [(None, 1), (1, 1)]
     assert report["cycle_count"] == 2 and report["completed"]
     assert not report["promotion_ready"] and not report["automatic_default_enabled"]
     assert report["question_checks"] == [

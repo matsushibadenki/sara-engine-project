@@ -270,6 +270,8 @@ This mode checks the same schema, limits, HTTPS endpoint, CA bundle and question
 
 The live CLI opens a temporary report in the destination directory before contacting the publisher. It replaces the previous report after the new JSON is fully written. A run or serialization exception leaves the prior report available. Publisher sequence persistence is independent of report completion.
 
+Each refresh records the accepted sequence before and after the request. Compare those values with the decision to distinguish a published revision from a 304 that preserves the accepted sequence. On a restart, the first cycle starts from the loaded sequence. Use the publisher's revision and withdrawal records to assess completeness.
+
 Run one explicit cycle:
 
 ```text
