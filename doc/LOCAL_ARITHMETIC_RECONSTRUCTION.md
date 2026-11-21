@@ -14,3 +14,7 @@ Register these expectations before implementation. Compare the eleven existing l
 | 1023 | cumulative | public_exponential | yes | 0 | 0 | left | 0x1p-1 | 0x1p+13 |
 
 The reconstruction uses the written rules without importing existing arithmetic helpers. Verification uses hand records only. Historical results and sealed test inputs are outside the audit.
+
+## Rounding audit v2 preregistration
+
+Use every ordered pair of integer masses from 0 through 63, both outcome sides, tick 0, cumulative history, uniform weighting and allocated keys. This yields 8,192 cases including probabilities with non-power-of-two reduced denominators. Compare the probability and error increment by binary64 hexadecimal representation between the frozen blind and standalone implementations. Count mismatches separately, report the first error mismatch in left-major, right-minor, left-outcome-first order, and record the runtime. Use exact rational arithmetic on the already rounded residual to identify the correctly rounded square for any mismatch. Preserve both implementations and the prior results regardless of the outcome.
