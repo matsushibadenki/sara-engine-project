@@ -91,6 +91,8 @@ The specification defines allocation, prior mass, probability and the receipt-ti
 
 🟢 [Done] Specification v2 fixes the square to binary64 multiplication and defines the rounding order. The versioned implementation matched the rational reference for both outputs on all 8,207 cases. The eleven literal records and four boundary cases also retained exact agreement with their registered expectations. [Specification v2](LOCAL_ARITHMETIC_RECONSTRUCTION.md#local-arithmetic-specification-v2)
 
+🟢 [Done] A separate agent received only the v2 calculation rules and interface, without inherited context, repository access or expected values. Its code was frozen in `bb8df9b` before testing. The blind reconstruction matched both rational-reference outputs on all 8,207 cases, including the unallocated and allocated-zero boundaries. The audit used the existing 11 literal records, four boundaries and 8,192 generated cases.
+
 日本語　短い仕様だけから局所計算を再実装し、固定記録で数値と欠損の意味を照合する。
 
 简体中文　仅依据简短规格重建局部计算，并用固定记录核对数值与缺失状态。

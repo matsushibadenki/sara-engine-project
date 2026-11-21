@@ -10,6 +10,8 @@ from sara_engine.evaluation.route_arithmetic_reconstruction import reconstruct
 from sara_engine.evaluation.route_arithmetic_reconstruction_v2 import reconstruct as reconstruct_v2
 from sara_engine.evaluation.route_blind_arithmetic import reconstruct as blind_reconstruct
 
+from sara_engine.evaluation.route_blind_arithmetic_v2 import reconstruct as blind_reconstruct_v2
+
 
 FIXTURE = (
     Path(__file__).resolve().parents[1] / "data/processed/benchmark_fixtures"
@@ -49,7 +51,8 @@ def rational_reference(tick, history, weighting, allocated, left, right, outcome
     return rounded_probability, float(Fraction(square) * weight)
 
 
-def test_v2_matches_rational_reference():
+@pytest.mark.parametrize("implementation", [reconstruct_v2, blind_reconstruct_v2], ids=["v2", "blind-v2"])
+def test_v2_matches_rational_reference(implementation):
     sweep = (
         (0, "cumulative", "uniform", True, left, right, side)
         for left, right, side in product(range(64), range(64), ("mass_left", "mass_right"))
@@ -58,6 +61,6 @@ def test_v2_matches_rational_reference():
     cases.extend(sweep)
     assert len(cases) == 8207
     for args in cases:
-        for actual, expected in zip(reconstruct_v2(*args), rational_reference(*args)):
+        for actual, expected in zip(implementation(*args), rational_reference(*args)):
             assert type(actual) is type(expected), args
             assert (actual is None if expected is None else actual.hex() == expected.hex()), args
