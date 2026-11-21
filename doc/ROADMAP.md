@@ -93,6 +93,8 @@ The specification defines allocation, prior mass, probability and the receipt-ti
 
 🟢 [Done] A separate agent received only the v2 calculation rules and interface, without inherited context, repository access or expected values. Its code was frozen in `bb8df9b` before testing. The blind reconstruction matched both rational-reference outputs on all 8,207 cases, including the unallocated and allocated-zero boundaries. The audit used the existing 11 literal records, four boundaries and 8,192 generated cases.
 
+🟢 [Done] The v2 transition and count-limit audit was registered in `3c3fa46`. Both frozen v2 implementations matched the rational reference for both outputs on all 4,352 cases per implementation. Coverage included every tick scale transition, maximum and near-maximum masses, and all history, weighting and outcome combinations. The audit used generated inputs and kept the historical evidence and test seals intact. [Registered cases](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-limit-and-transition-audit-preregistration)
+
 日本語　短い仕様だけから局所計算を再実装し、固定記録で数値と欠損の意味を照合する。
 
 简体中文　仅依据简短规格重建局部计算，并用固定记录核对数值与缺失状态。

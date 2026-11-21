@@ -64,3 +64,26 @@ def test_v2_matches_rational_reference(implementation):
         for actual, expected in zip(implementation(*args), rational_reference(*args)):
             assert type(actual) is type(expected), args
             assert (actual is None if expected is None else actual.hex() == expected.hex()), args
+
+
+@pytest.mark.parametrize("implementation", [reconstruct_v2, blind_reconstruct_v2], ids=["v2", "blind-v2"])
+def test_v2_scale_transitions_and_count_limits(implementation):
+    ticks = [0, 1023]
+    for transition in range(64, 1024, 64):
+        ticks.extend((transition - 1, transition))
+    masses = (0, 1, 6717439, 6717440)
+    allocations = [(True, left, right) for left, right in product(masses, repeat=2)]
+    allocations.append((False, 0, 0))
+    cases = list(product(
+        ticks, ("cumulative", "discounted"), ("uniform", "public_exponential"),
+        allocations, ("mass_left", "mass_right"),
+    ))
+    assert len(cases) == 4352
+    for tick, history, weighting, (allocated, left, right), outcome in cases:
+        args = (tick, history, weighting, allocated, left, right, outcome)
+        for actual, expected in zip(implementation(*args), rational_reference(*args)):
+            assert type(actual) is type(expected), args
+            if expected is None:
+                assert actual is None, args
+            else:
+                assert actual.hex() == expected.hex(), args
