@@ -77,6 +77,16 @@ Compare targeted edits with a no-edit reference and a seeded control that change
 
 简体中文：在局部状态副本上配对比较编辑效果，分别验证故障恢复与完好状态的改进。
 
+### Reconstruct local arithmetic from a written specification
+
+Adopt the iWSP reconstruction audit as a research and implementation target for SARA's local readout. The paper tests whether a fresh session can rebuild a model from a short description. SARA can apply a stricter, numerical check to its deterministic local arithmetic. [Mehta et al., arXiv v1](https://arxiv.org/html/2611.18114v1)
+
+🔴 [Later] Write a versioned specification for allocation, prior mass, probability and the receipt-time error increment. Give only the specification and input interface to an independent implementer. Freeze the reconstructed implementation before comparing it against the existing eleven literal records. Require exact agreement for probability and error increment, including the distinction between an unallocated key and allocated zero counts. Add separately registered boundary cases to distinguish rules that happen to agree on the existing examples. Keep the original expected values and test seals intact. A pass would establish reproducibility of the documented rules on those cases. [Existing independent arithmetic test](../tests/test_route_independent_scalar_preflight.py)
+
+日本語　短い仕様だけから局所計算を再実装し、固定記録で数値と欠損の意味を照合する。
+
+简体中文　仅依据简短规格重建局部计算，并用固定记录核对数值与缺失状态。
+
 ## Selected execution gates
 
 - 🟢 [Done] Fixed CartPole comparison completed with a negative V2 gate; no retry. <!-- gate:cartpole-fixed-comparison -->
