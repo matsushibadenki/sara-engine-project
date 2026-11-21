@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from sara_engine.evaluation.route_arithmetic_reconstruction import reconstruct
+from sara_engine.evaluation.route_blind_arithmetic import reconstruct as blind_reconstruct
 
 
 FIXTURE = (
@@ -21,8 +22,9 @@ BOUNDARIES = [
 
 
 @pytest.mark.parametrize("row", [*LITERAL_ROWS, *BOUNDARIES])
-def test_matches_registered_expectation(row):
-    probability, increment = reconstruct(*row[:7])
+@pytest.mark.parametrize("implementation", [reconstruct, blind_reconstruct], ids=["original", "blind"])
+def test_matches_registered_expectation(row, implementation):
+    probability, increment = implementation(*row[:7])
     for actual, expected in zip((probability, increment), row[7:9]):
         assert type(actual) is type(expected)
         if expected is None:
