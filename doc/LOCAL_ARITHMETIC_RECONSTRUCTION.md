@@ -36,3 +36,7 @@ Verify the eleven literal records, four registered boundaries and 8,192 register
 ### v2 limit and transition audit preregistration
 
 Use ticks 0 and 1023 and both sides of every scale transition (64k − 1 and 64k for k = 1 through 15). For allocated keys, cross left and right masses independently over 0, 1, 6717439 and 6717440. Include an unallocated zero-mass case at each tick. Cross all 17 allocation/mass cases with both history rules, both error weights and both outcome sides. This yields 4,352 cases per implementation. Compare both frozen v2 reconstructions with the existing rational reference by exact type and binary64 hexadecimal representation for each output. Report discrepancies without modifying the implementations, historical evidence or sealed inputs.
+
+### v2 invalid input audit preregistration
+
+Start from tick 0, cumulative history, uniform weighting, an allocated key, zero masses and a left outcome. Replace tick with −1, 1024, False and True in separate cases. For each mass field independently, replace it with −1, 6717441, False and True. For each of history, weighting and outcome, replace it with the string `unknown`. Finally use an unallocated key and set the masses to (1, 0), (0, 1) and (1, 1). Both frozen v2 implementations must raise ValueError in all 18 cases per implementation. Verify the allocated and unallocated zero-mass base cases still agree with the rational reference. Use only generated inputs.
