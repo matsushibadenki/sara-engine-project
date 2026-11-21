@@ -26,3 +26,9 @@ On CPython 3.10.22 (macOS 27.2.1 arm64), all 8,192 probabilities matched and eig
 The v1 instruction to square the residual admits both Python expressions. Their equivalence on the 15 original cases leaves the operator choice unresolved for bitwise reproduction. A future version should specify the exact operator and rounding order. Multiplication is the candidate when the intended result is a correctly rounded square of the binary64 residual. Historical implementations and expectations are retained as evidence. The audit generated inputs from the registered range and did not open sealed test data.
 
 Reproduce from the repository root with `PYTHONPATH=src workspace/.venv310/bin/python scripts/eval/route_arithmetic_rounding.py`.
+
+## Local arithmetic specification v2
+
+The v2 implementation keeps the v1 input domain, allocation rules and output types. Compute prior, numerator and denominator as exact integers. Round the probability division to binary64, nearest with ties to even. For an unallocated key, return null probability and use exact 0.5 in the residual. Subtract the binary outcome and round the residual to binary64. Square that rounded residual with one binary64 multiplication `residual * residual`. Round this product before multiplying it by the exactly representable binary64 weight and rounding again. Each rounding uses nearest with ties to even.
+
+Verify the eleven literal records, four registered boundaries and 8,192 registered rounding cases. Build an independent oracle from exact rational arithmetic, converting to binary64 after each specified operation. Compare type and hexadecimal representation for both outputs. Also retain the original literal expectations as checks on the first fifteen cases. The historical specifications, implementations, negative results and sealed test inputs remain outside this change.
