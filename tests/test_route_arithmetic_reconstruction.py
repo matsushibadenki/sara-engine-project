@@ -87,3 +87,39 @@ def test_v2_scale_transitions_and_count_limits(implementation):
                 assert actual is None, args
             else:
                 assert actual.hex() == expected.hex(), args
+
+
+@pytest.mark.parametrize("implementation", [reconstruct_v2, blind_reconstruct_v2], ids=["v2", "blind-v2"])
+def test_v2_rejects_registered_invalid_inputs(implementation):
+    base = (0, "cumulative", "uniform", True, 0, 0, "mass_left")
+    replacements = {
+        0: (-1, 1024, False, True),
+        1: ("unknown",),
+        2: ("unknown",),
+        4: (-1, 6717441, False, True),
+        5: (-1, 6717441, False, True),
+        6: ("unknown",),
+    }
+    invalid = [
+        (*base[:index], value, *base[index + 1:])
+        for index, values in replacements.items()
+        for value in values
+    ]
+    invalid.extend(
+        (*base[:3], False, left, right, base[6])
+        for left, right in ((1, 0), (0, 1), (1, 1))
+    )
+    assert len(invalid) == 18
+    for args in invalid:
+        with pytest.raises(ValueError):
+            implementation(*args)
+
+    for allocated in (True, False):
+        args = (*base[:3], allocated, *base[4:])
+        probability, increment = implementation(*args)
+        expected_probability, expected_increment = rational_reference(*args)
+        if allocated:
+            assert probability.hex() == expected_probability.hex()
+        else:
+            assert probability is expected_probability is None
+        assert increment.hex() == expected_increment.hex()

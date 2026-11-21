@@ -95,6 +95,8 @@ The specification defines allocation, prior mass, probability and the receipt-ti
 
 🟢 [Done] The v2 transition and count-limit audit was registered in `3c3fa46`. Both frozen v2 implementations matched the rational reference for both outputs on all 4,352 cases per implementation. Coverage included every tick scale transition, maximum and near-maximum masses, and all history, weighting and outcome combinations. The audit used generated inputs and kept the historical evidence and test seals intact. [Registered cases](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-limit-and-transition-audit-preregistration)
 
+🟢 [Done] Both frozen v2 implementations rejected all 18 registered invalid inputs with `ValueError`. The cases covered out-of-range ticks and counts, booleans in integer fields, unknown rules and outcomes, and nonzero masses on unallocated keys. Both zero-mass controls still matched the rational reference. [Registered invalid input cases](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-invalid-input-audit-preregistration)
+
 日本語　短い仕様だけから局所計算を再実装し、固定記録で数値と欠損の意味を照合する。
 
 简体中文　仅依据简短规格重建局部计算，并用固定记录核对数值与缺失状态。
