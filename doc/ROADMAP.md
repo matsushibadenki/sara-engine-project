@@ -87,6 +87,8 @@ The specification defines allocation, prior mass, probability and the receipt-ti
 
 🟢 [Done] A separate agent received only the registered calculation rules and interface, with no inherited conversation or tool use. Its implementation was frozen in `00c46bf` before comparison. Probability and receipt-time error increment matched exactly on all 11 literal records and four registered boundaries. The unallocated and allocated-zero cases retained distinct probabilities of null and 0.5 with equal error increments. The comparison used only registered hand records.
 
+🟢 [Done] The registered rounding audit found zero probability mismatches and eight increment mismatches across 8,192 cases. Multiplication matched the rational oracle in those eight cases. Specify the squaring operator explicitly in any future bitwise contract. [Audit and first counterexample](LOCAL_ARITHMETIC_RECONSTRUCTION.md#rounding-audit-results)
+
 日本語　短い仕様だけから局所計算を再実装し、固定記録で数値と欠損の意味を照合する。
 
 简体中文　仅依据简短规格重建局部计算，并用固定记录核对数值与缺失状态。

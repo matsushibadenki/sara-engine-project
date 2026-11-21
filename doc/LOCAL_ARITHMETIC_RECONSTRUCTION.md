@@ -18,3 +18,11 @@ The reconstruction uses the written rules without importing existing arithmetic 
 ## Rounding audit v2 preregistration
 
 Use every ordered pair of integer masses from 0 through 63, both outcome sides, tick 0, cumulative history, uniform weighting and allocated keys. This yields 8,192 cases including probabilities with non-power-of-two reduced denominators. Compare the probability and error increment by binary64 hexadecimal representation between the frozen blind and standalone implementations. Count mismatches separately, report the first error mismatch in left-major, right-minor, left-outcome-first order, and record the runtime. Use exact rational arithmetic on the already rounded residual to identify the correctly rounded square for any mismatch. Preserve both implementations and the prior results regardless of the outcome.
+
+### Rounding audit results
+
+On CPython 3.10.22 (macOS 27.2.1 arm64), all 8,192 probabilities matched and eight increments differed. Multiplication matched the rational oracle in all eight mismatches. The first case uses masses 6 and 47 with a right outcome. Its probability is 48/55 before rounding, represented by `0x1.bed61bed61bedp-1`. The multiplication and oracle yield `0x1.0964cac4d84f7p-6`. Power yields `0x1.0964cac4d84f6p-6`, one ULP lower.
+
+The v1 instruction to square the residual admits both Python expressions. Their equivalence on the 15 original cases leaves the operator choice unresolved for bitwise reproduction. A future version should specify the exact operator and rounding order. Multiplication is the candidate when the intended result is a correctly rounded square of the binary64 residual. Historical implementations and expectations are retained as evidence. The audit generated inputs from the registered range and did not open sealed test data.
+
+Reproduce from the repository root with `PYTHONPATH=src workspace/.venv310/bin/python scripts/eval/route_arithmetic_rounding.py`.
