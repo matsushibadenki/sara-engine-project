@@ -40,3 +40,7 @@ Use ticks 0 and 1023 and both sides of every scale transition (64k − 1 and 64k
 ### v2 invalid input audit preregistration
 
 Start from tick 0, cumulative history, uniform weighting, an allocated key, zero masses and a left outcome. Replace tick with −1, 1024, False and True in separate cases. For each mass field independently, replace it with −1, 6717441, False and True. For each of history, weighting and outcome, replace it with the string `unknown`. Finally use an unallocated key and set the masses to (1, 0), (0, 1) and (1, 1). Both frozen v2 implementations must raise ValueError in all 18 cases per implementation. Verify the allocated and unallocated zero-mass base cases still agree with the rational reference. Use only generated inputs.
+
+### v2 invalid type audit preregistration
+
+Use the prior audit's allocated zero-mass base. Change one field at a time. For each of tick, left mass and right mass, use 0.0, the string `0`, NaN, positive infinity and negative infinity. For allocation use integer 0, integer 1, float 0.0, the string `true` and null. For each of history, weighting and outcome use integer 0, True, null and empty bytes. Both frozen implementations must raise ValueError on all 32 cases per implementation. Generate all inputs locally.
