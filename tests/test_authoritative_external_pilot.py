@@ -374,6 +374,33 @@ def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
                     ["verified_abstention", "verified_answer"],
                 ]
                 assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == 8
+                summary = report["observation_summary"]
+                refreshes = report["refreshes"]
+                checks = report["question_checks"]
+                assert summary["attempted_refreshes"] == len(refreshes) == 3
+                assert summary["accepted_refreshes"] == 3
+                assert summary["refresh_acceptance_rate"] == 1.0
+                assert summary["question_checks"] == sum(row["question_count"] for row in checks) == 6
+                assert summary["verified_answer_rate"] == 4 / 6
+                for index, question in enumerate(summary["response_counts_by_question"]):
+                    kinds = [row["response_kinds_in_question_order"][index] for row in checks]
+                    assert question == {
+                        "question_index": index,
+                        "response_kind_counts": {kind: kinds.count(kind) for kind in set(kinds)},
+                    }
+                assert len(summary["response_counts_by_question"]) == 2
+                assert [row["request_count"] for row in refreshes] == [1, 1, 1]
+                assert all(row["response_bytes"] > 0 for row in refreshes[:2])
+                for metric in ("request_count", "response_bytes", "elapsed_seconds"):
+                    values = [row[metric] for row in refreshes]
+                    assert all(value >= 0 for value in values)
+                    totals = summary["metrics"][metric]
+                    assert totals["measured_cycles"] == 3
+                    assert totals["observed_total"] == sum(values)
+                    assert totals["complete_total"] == sum(values)
+                    if metric == "elapsed_seconds":
+                        assert totals["observed_max"] == max(values)
+
                 # Use the same HTTPS transport with a controlled runtime clock.
                 now = V2.NOW + offset
                 expiry = now + 120

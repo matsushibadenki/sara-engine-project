@@ -330,6 +330,8 @@ Request counts, response-body bytes and refresh duration include measured-cycle 
 
 简体中文：已实现分别汇总刷新接受率与回答率，并明确标注通信量及耗时的缺失测量。独立运行的可用性及验收条件仍未评估。
 
+🟢 [Done] The three-cycle localhost HTTPS withdrawal rehearsal reconciles the invocation summary with the cycle records. The tank yields one verified answer and two abstentions. The vent yields three verified answers. All three refreshes are accepted and four of six question checks yield verified answers. Three requests were recorded. The two published snapshots have positive response-body byte counts and the 304 has zero. The test reconciles measured-cycle counts, complete and observed totals, and maximum refresh duration with the individual records.
+
 The local runner tests cover its conditional refresh, observation summaries and configuration checks. Independent operation remains pending because the operator, endpoint and approved trust material were unavailable.
 
 日本語：REFIT は別の遅延結果課題の候補です。取得前にCC BY 4.0 と圧縮サイズを確認済みで、世帯別の同期・観測範囲は未確認です。HTTPS 試験は独立運用者・接続先・審査済み信頼情報の確定待ちです。
