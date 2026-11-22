@@ -500,3 +500,18 @@ main()
             finally:
                 server.shutdown()
                 worker.join(timeout=5)
+
+
+def test_pilot_waits_between_cycles_only(pilot_payload, monkeypatch):
+    waits = []
+    monkeypatch.setattr(PILOT, "sleep", waits.append)
+    pages = V2.make_payload(
+        PROTOCOL, EVIDENCE, "en", sequence=1, issued_offset=0, expiry_offset=120,
+    )
+    report = PILOT.run_pilot(
+        pilot_payload, cycles=3, interval_seconds=5,
+        client_factory=ScriptedTransport(pages), clock=lambda: V2.NOW,
+    )
+    assert waits == [5, 5]
+    assert report["interval_seconds"] == 5
+    assert report["decision_counts"] == {"published": 1, "publisher_not_modified": 2}

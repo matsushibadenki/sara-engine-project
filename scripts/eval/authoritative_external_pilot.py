@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+from time import sleep
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -136,9 +137,11 @@ def summarize_observations(refreshes, question_checks):
 
 
 def run_pilot(payload, *, cycles, client_factory=EvidenceHTTPClient,
-              clock=None, performance_clock=None):
+              clock=None, performance_clock=None, interval_seconds=0):
     if type(cycles) is not int or not 1 <= cycles <= 32:
         raise ValueError("Pilot cycles must be between 1 and 32")
+    if type(interval_seconds) is not int or not 0 <= interval_seconds <= 60:
+        raise ValueError("Pilot interval must be between 0 and 60 seconds")
     config, questions = parse_configuration(payload)
     runtime = AuthoritativeEvidenceRuntime(
         config, clock=clock, client_factory=client_factory,
@@ -149,6 +152,8 @@ def run_pilot(payload, *, cycles, client_factory=EvidenceHTTPClient,
     question_checks = []
     decisions = Counter()
     for cycle in range(cycles):
+        if cycle and interval_seconds:
+            sleep(interval_seconds)
         sequence_before_refresh = runtime.accepted_sequence
         result = runtime.refresh()
         decisions[result.decision] += 1
@@ -173,6 +178,7 @@ def run_pilot(payload, *, cycles, client_factory=EvidenceHTTPClient,
         "scope": config.scope,
         "language": config.language,
         "cycle_count": cycles,
+        "interval_seconds": interval_seconds,
         "decision_counts": dict(sorted(decisions.items())),
         "refreshes": refreshes,
         "question_checks": question_checks,
@@ -196,7 +202,14 @@ def parse_args(argv=None):
         "--output",
         default=workspace_path("evaluation", "authoritative_external_pilot.json"),
     )
-    return parser.parse_args(argv)
+    parser.add_argument(
+        "--interval-seconds", type=int, choices=range(61), metavar="0..60",
+        help="Wait this many seconds between live cycles (default: 0).",
+    )
+    args = parser.parse_args(argv)
+    if args.check_config and args.interval_seconds is not None:
+        parser.error("--interval-seconds requires --cycles")
+    return args
 
 
 def validate_report_path(output, config_path, sequence_path):
@@ -237,7 +250,9 @@ def main(argv=None):
     ) as handle:
         pending_report = Path(handle.name)
         try:
-            report = run_pilot(payload, cycles=args.cycles)
+            report = run_pilot(
+                payload, cycles=args.cycles, interval_seconds=args.interval_seconds or 0,
+            )
             json.dump(report, handle, ensure_ascii=False, indent=2)
             handle.write("\n")
             handle.close()
