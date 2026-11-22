@@ -91,6 +91,50 @@ def parse_configuration(payload):
     return config, tuple(questions)
 
 
+def summarize_observations(refreshes, question_checks):
+    """Summarize client observations without inferring independent acceptance."""
+    count = len(refreshes)
+    accepted = sum(
+        row["decision"] in {"published", "publisher_not_modified"}
+        for row in refreshes
+    )
+    metrics = {}
+    for key in ("request_count", "response_bytes", "elapsed_seconds"):
+        values = [row[key] for row in refreshes if row[key] is not None]
+        metrics[key] = {
+            "measured_cycles": len(values),
+            "observed_total": sum(values) if values else None,
+            "complete_total": sum(values) if len(values) == count and count else None,
+        }
+        if key == "elapsed_seconds":
+            metrics[key]["observed_max"] = max(values) if values else None
+    kinds = Counter()
+    by_question = {}
+    for row in question_checks:
+        for index, kind in enumerate(row["response_kinds_in_question_order"]):
+            kinds[kind] += 1
+            by_question.setdefault(index, Counter())[kind] += 1
+    checks = sum(kinds.values())
+    return {
+        "attempted_refreshes": count,
+        "accepted_refreshes": accepted,
+        "refresh_acceptance_rate": accepted / count if count else None,
+        "question_checks": checks,
+        "response_kind_counts": dict(sorted(kinds.items())),
+        "verified_answer_rate": kinds["verified_answer"] / checks if checks else None,
+        "response_counts_by_question": [
+            {"question_index": index, "response_kind_counts": dict(sorted(counts.items()))}
+            for index, counts in sorted(by_question.items())
+        ],
+        "metrics": metrics,
+        "independent_availability_assessed": False,
+        "authority_review_assessed": False,
+        "revision_completeness_assessed": False,
+        "complete_path_cost_assessed": False,
+        "agreed_limits_assessed": False,
+    }
+
+
 def run_pilot(payload, *, cycles, client_factory=EvidenceHTTPClient,
               clock=None, performance_clock=None):
     if type(cycles) is not int or not 1 <= cycles <= 32:
@@ -132,6 +176,7 @@ def run_pilot(payload, *, cycles, client_factory=EvidenceHTTPClient,
         "decision_counts": dict(sorted(decisions.items())),
         "refreshes": refreshes,
         "question_checks": question_checks,
+        "observation_summary": summarize_observations(refreshes, question_checks),
         "completed": True,
         "promotion_ready": False,
         "automatic_default_enabled": False,

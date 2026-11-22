@@ -77,6 +77,11 @@ def test_two_cycle_pilot_publishes_then_preserves_on_304(pilot_payload):
         clock=lambda: V2.NOW, performance_clock=lambda: next(ticks),
     )
     assert report["decision_counts"] == {"published": 1, "publisher_not_modified": 1}
+    summary = report["observation_summary"]
+    assert summary["refresh_acceptance_rate"] == 1
+    assert summary["verified_answer_rate"] == 1
+    assert summary["metrics"]["elapsed_seconds"]["complete_total"] == pytest.approx(0.15)
+    assert summary["metrics"]["request_count"]["complete_total"] is None
     assert [
         (refresh["accepted_sequence_before_refresh"], refresh["accepted_sequence"])
         for refresh in report["refreshes"]
@@ -107,6 +112,51 @@ def test_example_configuration_is_parseable_and_remains_disabled():
     assert config.endpoint == "https://publisher.example/evidence"
     assert config.sequence_state_path.startswith("data/interim/")
     assert questions == ("Report tank temperature.",)
+
+
+def test_observation_summary_preserves_missing_cost_and_abstentions():
+    refreshes = [
+        {"decision": "published", "request_count": 2, "response_bytes": 100,
+         "elapsed_seconds": 0.25},
+        {"decision": "publisher_not_modified", "request_count": 1,
+         "response_bytes": 0, "elapsed_seconds": 0.5},
+        {"decision": "publisher_rollback", "request_count": None,
+         "response_bytes": None, "elapsed_seconds": None},
+    ]
+    checks = [
+        {"response_kinds_in_question_order": ["verified_answer", "verified_abstention"]},
+        {"response_kinds_in_question_order": ["verified_abstention", "verified_abstention"]},
+        {"response_kinds_in_question_order": ["verified_abstention", "verified_abstention"]},
+    ]
+    summary = PILOT.summarize_observations(refreshes, checks)
+    assert summary["attempted_refreshes"] == 3
+    assert summary["accepted_refreshes"] == 2
+    assert summary["refresh_acceptance_rate"] == 2 / 3
+    assert summary["verified_answer_rate"] == 1 / 6
+    assert summary["response_counts_by_question"] == [
+        {"question_index": 0, "response_kind_counts": {
+            "verified_answer": 1, "verified_abstention": 2,
+        }},
+        {"question_index": 1, "response_kind_counts": {"verified_abstention": 3}},
+    ]
+    assert summary["metrics"]["response_bytes"] == {
+        "measured_cycles": 2, "observed_total": 100, "complete_total": None,
+    }
+    assert summary["metrics"]["elapsed_seconds"]["observed_max"] == 0.5
+    assert not any(value for key, value in summary.items() if key.endswith("_assessed"))
+    complete = PILOT.summarize_observations(refreshes[:2], checks[:2])
+    assert complete["metrics"]["request_count"]["complete_total"] == 3
+
+
+def test_observation_summary_without_measurements_does_not_report_zero_cost():
+    summary = PILOT.summarize_observations([
+        {"decision": "publisher_not_modified", "request_count": None,
+         "response_bytes": None, "elapsed_seconds": None},
+    ], [{"response_kinds_in_question_order": ["verified_abstention"]}])
+    assert summary["refresh_acceptance_rate"] == 1
+    assert summary["verified_answer_rate"] == 0
+    assert summary["metrics"]["request_count"]["observed_total"] is None
+    assert summary["metrics"]["elapsed_seconds"]["observed_max"] is None
 
 
 @pytest.mark.parametrize("change", [

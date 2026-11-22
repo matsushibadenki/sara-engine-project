@@ -318,7 +318,19 @@ workspace/.venv310/bin/python scripts/eval/authoritative_external_pilot.py --con
 
 Record operator-side revision and withdrawal evidence alongside the client decisions, requests, response-body bytes and complete-refresh latency. An unchanged 304 preserves the original expiry. Report authority review, revision completeness and availability separately from client timing and byte counts. The runner measures response bodies, so full-path costs require separate evidence for publisher-side work and transport overhead. Use the existing bounded pilot conditions and preserve the disabled promotion and automatic-default flags. [Pilot runner](../scripts/eval/authoritative_external_pilot.py)
 
-The local runner tests cover its conditional refresh and configuration checks. Independent operation remains pending because the operator, endpoint and approved trust material were unavailable.
+### Pilot observation summary
+
+🟢 [Done] The runner adds `observation_summary` to its JSON report. It separates accepted refreshes (`published` or `publisher_not_modified`) from the fraction of question checks yielding `verified_answer`. An accepted cold 304 can still yield abstention; an intended withdrawal can also reduce the answer rate. Neither rate establishes answer correctness or independent service availability.
+
+The invocation summary also groups response counts by zero-based question position. This lets the operator track abstention for a withdrawn record independently of answers for retained records across the invocation. Match positions to the configuration used for that run.
+
+Request counts, response-body bytes and refresh duration include measured-cycle counts and observed totals. Complete totals are null when any cycle lacks the measurement. Maximum duration covers measured cycles only. Durations cover refresh processing, excluding subsequent question checks. These summaries describe the bounded invocation, not an agreed operational window. Authority review, revision completeness, independent availability, agreed limits and complete-path cost remain explicitly unassessed. Promotion and automatic-default flags remain disabled.
+
+日本語：更新受理率と回答率を分離し、通信量・処理時間の未計測を明示する集計を実装。独立運用の可用性や合格条件は未評価のまま保持する。
+
+简体中文：已实现分别汇总刷新接受率与回答率，并明确标注通信量及耗时的缺失测量。独立运行的可用性及验收条件仍未评估。
+
+The local runner tests cover its conditional refresh, observation summaries and configuration checks. Independent operation remains pending because the operator, endpoint and approved trust material were unavailable.
 
 日本語：REFIT は別の遅延結果課題の候補です。取得前にCC BY 4.0 と圧縮サイズを確認済みで、世帯別の同期・観測範囲は未確認です。HTTPS 試験は独立運用者・接続先・審査済み信頼情報の確定待ちです。
 
