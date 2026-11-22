@@ -145,3 +145,32 @@ def test_v2_rejects_registered_invalid_types(implementation):
             args = (*base[:index], value, *base[index + 1:])
             with pytest.raises(ValueError):
                 implementation(*args)
+
+
+@pytest.mark.parametrize("implementation", [reconstruct_v2, blind_reconstruct_v2], ids=["v2", "blind-v2"])
+def test_v2_rejects_subclasses_and_conversion_probes(implementation):
+    class IntegerSubclass(int):
+        pass
+
+    class StringSubclass(str):
+        pass
+
+    class ConversionProbe:
+        def unexpected_call(self, *args):
+            raise AssertionError("Invalid input triggered conversion or comparison")
+
+        __int__ = __index__ = __float__ = __str__ = __bool__ = __eq__ = unexpected_call
+
+    base = (0, "cumulative", "uniform", True, 0, 0, "mass_left")
+    substitutions = [
+        (index, IntegerSubclass(base[index])) for index in (0, 4, 5)
+    ] + [
+        (index, StringSubclass(base[index])) for index in (1, 2, 6)
+    ] + [
+        (index, ConversionProbe()) for index in range(len(base))
+    ]
+    assert len(substitutions) == 13
+    for index, value in substitutions:
+        args = (*base[:index], value, *base[index + 1:])
+        with pytest.raises(ValueError):
+            implementation(*args)

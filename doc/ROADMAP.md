@@ -10,6 +10,7 @@ This page tracks current progress, priorities and the conditions for advancing. 
 | 🟢 [Done] | Independent scalar comparison | 700 receipts and 6,291 local updates matched through two reactivation cycles and their cooldowns. [Comparison](SPARSE_ROUTE_MULTICYCLE_COMPARISON.md) |
 | 🟢 [Done] | Durable receipt processing | Nine-route updates and receipt consumption commit together. Sequential processing, duplicate refusal and recovery were verified with local SQLite. [Durability](SPARSE_ROUTE_DURABLE_COMMIT.md) |
 | 🟢 [Done] | Authenticated delivery | Separate test producers send authenticated JSON to the stdin CLI. Key rotation, tamper rejection and idempotent replay across restarts pass. [Ingress](SPARSE_ROUTE_DURABLE_COMMIT.md#separate-process-delivery-ingress) |
+| 🟢 [Done] | Pilot observation summary | Client reports aggregate refresh acceptance, answer rates, measured request/body-byte totals and maximum refresh latency. Missing measurements remain explicit; independent acceptance remains pending. [Measurement scope](ROADMAP_NEXT_READINESS.md#pilot-observation-summary) |
 | ⭕️ [Pending] | Independent task and SNN effect | Qualify an independent source and test the causal contribution of the SNN mechanism against matched event-driven scalar controls. [Decision gate](R2_MECHANISM_DECISION_GATE.md) |
 | ⭕️ [Pending] | Operational deployment | Independent producers, reviewed key distribution and broader writer coverage are still required. Candidate V2 launch remains disabled. [Capture candidate](SPARSE_ROUTE_CAPTURE_CANDIDATE_V2.md) |
 
@@ -98,6 +99,8 @@ The specification defines allocation, prior mass, probability and the receipt-ti
 🟢 [Done] Both frozen v2 implementations rejected all 18 registered invalid inputs with `ValueError`. The cases covered out-of-range ticks and counts, booleans in integer fields, unknown rules and outcomes, and nonzero masses on unallocated keys. Both zero-mass controls still matched the rational reference. [Registered invalid input cases](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-invalid-input-audit-preregistration)
 
 🟢 [Done] Each frozen v2 implementation rejected all 32 registered invalid types with `ValueError`. The audit covered floats, numeric strings and nonfinite numbers in integer fields, non-booleans in allocation, and non-strings in history, weighting and outcome. [Registered type cases](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-invalid-type-audit-preregistration)
+
+🟢 [Done] Both frozen v2 implementations rejected all 13 registered subclass and conversion-probe cases with `ValueError`. No instrumented conversion or comparison method ran. [Registered audit](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-subclass-and-coercion-audit-preregistration)
 
 日本語　短い仕様だけから局所計算を再実装し、固定記録で数値と欠損の意味を照合する。
 
