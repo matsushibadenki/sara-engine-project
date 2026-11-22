@@ -230,6 +230,18 @@ Observation files and previews stayed unopened. Existing eligibility rules, nega
 
 简体中文：TNO 附录确认同三户的12个月监测。入户门原始事件时间及与 PIR 的共同覆盖仍未确认。替代来源仅21天。
 
+## ASOS independent task metadata screen
+
+Prioritize a separate weather hypothesis alongside the held entrance-opening task. NOAA's ASOS archive offers scheduled one-minute observations. Its metadata documents a one-minute visibility window, a one-minute temperature and dew-point window, and a two-minute wind window. These documented input and outcome channels make it possible to define a future visibility result at a fixed positive lag and distinguish a valid observation from an absent report. The outcome would describe visibility in its documented measurement window. [NOAA metadata](https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc%3AC00544) · [Archive guide](https://www.ncei.noaa.gov/products/land-based-station/automated-surface-weather-observing-systems)
+
+Before acquisition, inspect the release specification and public station inventory for a finite roster with at least 180 calendar days available for development at one station and room for a separate sealed period. Fix the station identity, calendar split, available-at-prediction inputs and their encoding, history and outcome windows, visibility class boundary, quality codes and acquisition budget before reading observations. Exclude windows with missing or invalid required readings, and ensure each outcome measurement window lies strictly after prediction. A station inventory can establish file availability. Eligible days, repeated exact current states, contrasting histories and support for both classes require a later development-only preflight under the existing gates. Include a strong current-state control with the latest permissible visibility information and a matched event-driven scalar control. Preserve the real local-write accounting.
+
+ASOS is a candidate at the metadata stage. No station or cutoff has been selected and no observations were acquired. The prior household tasks retain their own outcome definitions, thresholds and sealed periods.
+
+日本語　NOAA ASOSの将来視程を独立課題の候補とし、観測仕様を確認した。地点別の収録範囲と開発期間での成立は確認待ち。
+
+简体中文　将 NOAA ASOS 的未来能见度列为独立任务候选，已核对观测规格，站点覆盖和开发期可行性待核实。
+
 ## Independent HTTPS publisher pilot
 
 Use the existing authoritative evidence V2 runner. Before scheduling the pilot, record the independent operator and scope owner, approved HTTPS endpoint and publisher ID, TLS trust and certificate rollover plan, and whether the sequence store is single-host or backed by a reviewed transactional authority. Confirm with the operator how complete revisions and withdrawals are produced and agree on the expected cadence and outage behavior. Keep the approved configuration and trust material in the managed workspace.
