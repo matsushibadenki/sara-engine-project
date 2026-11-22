@@ -123,3 +123,25 @@ def test_v2_rejects_registered_invalid_inputs(implementation):
         else:
             assert probability is expected_probability is None
         assert increment.hex() == expected_increment.hex()
+
+
+@pytest.mark.parametrize("implementation", [reconstruct_v2, blind_reconstruct_v2], ids=["v2", "blind-v2"])
+def test_v2_rejects_registered_invalid_types(implementation):
+    base = (0, "cumulative", "uniform", True, 0, 0, "mass_left")
+    invalid_integers = (0.0, "0", float("nan"), float("inf"), float("-inf"))
+    invalid_strings = (0, True, None, b"")
+    replacements = {
+        0: invalid_integers,
+        1: invalid_strings,
+        2: invalid_strings,
+        3: (0, 1, 0.0, "true", None),
+        4: invalid_integers,
+        5: invalid_integers,
+        6: invalid_strings,
+    }
+    assert sum(map(len, replacements.values())) == 32
+    for index, values in replacements.items():
+        for value in values:
+            args = (*base[:index], value, *base[index + 1:])
+            with pytest.raises(ValueError):
+                implementation(*args)

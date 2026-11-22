@@ -97,6 +97,8 @@ The specification defines allocation, prior mass, probability and the receipt-ti
 
 🟢 [Done] Both frozen v2 implementations rejected all 18 registered invalid inputs with `ValueError`. The cases covered out-of-range ticks and counts, booleans in integer fields, unknown rules and outcomes, and nonzero masses on unallocated keys. Both zero-mass controls still matched the rational reference. [Registered invalid input cases](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-invalid-input-audit-preregistration)
 
+🟢 [Done] Each frozen v2 implementation rejected all 32 registered invalid types with `ValueError`. The audit covered floats, numeric strings and nonfinite numbers in integer fields, non-booleans in allocation, and non-strings in history, weighting and outcome. [Registered type cases](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-invalid-type-audit-preregistration)
+
 日本語　短い仕様だけから局所計算を再実装し、固定記録で数値と欠損の意味を照合する。
 
 简体中文　仅依据简短规格重建局部计算，并用固定记录核对数值与缺失状态。
