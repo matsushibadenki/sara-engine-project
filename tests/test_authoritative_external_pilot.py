@@ -246,7 +246,7 @@ def test_pilot_revision_lifecycle_across_runtime_restart(pilot_payload):
     assert not restarted["promotion_ready"] and not restarted["automatic_default_enabled"]
 
 
-def test_https_pilot_lifecycle_across_cli_processes(pilot_payload):
+def test_https_pilot_lifecycle_across_cli_processes(pilot_payload, monkeypatch):
     import ssl
     import subprocess
     import sys
@@ -497,6 +497,60 @@ main()
                     assert refresh["accepted_sequence"] == after
                     assert json.loads(state.read_text(encoding="utf-8"))["accepted_sequence"] == after
                     assert report["question_checks"][0]["response_kinds_in_question_order"] == kinds
+
+                paced_state = root / "paced-sequence.json"
+                waits = []
+                measured_steps = iter((0.0, 0.25, 0.25, 0.75, 0.75, 0.875))
+                elapsed_wait = 0
+
+                def publish_during_wait(seconds):
+                    nonlocal elapsed_wait
+                    waits.append(seconds)
+                    elapsed_wait += seconds
+                    saved = json.loads(paced_state.read_text(encoding="utf-8"))
+                    assert saved["accepted_sequence"] == (7 if len(waits) == 1 else 9)
+                    validator = None if len(waits) == 1 else 9
+                    publisher.set_payload(new_page, not_modified_sequence=validator)
+
+                monkeypatch.setattr(PILOT, "sleep", publish_during_wait)
+                publisher.set_payload(old_page)
+                paced_report = PILOT.run_pilot(
+                    {**payload, "sequence_state_path": str(paced_state), "questions": list(questions)},
+                    cycles=3, interval_seconds=10, clock=lambda: now + elapsed_wait,
+                    performance_clock=lambda: next(measured_steps) + elapsed_wait,
+                )
+                assert waits == [10, 10]
+                assert paced_report["interval_seconds"] == 10
+                assert [
+                    (row["decision"], row["accepted_sequence_before_refresh"], row["accepted_sequence"])
+                    for row in paced_report["refreshes"]
+                ] == [
+                    ("published", None, 7), ("published", 7, 9),
+                    ("publisher_not_modified", 9, 9),
+                ]
+                assert paced_report["refreshes"][2]["response_bytes"] == 0
+                assert [
+                    row["response_kinds_in_question_order"] for row in paced_report["question_checks"]
+                ] == [
+                    ["verified_answer", "verified_answer"],
+                    ["verified_abstention", "verified_answer"],
+                    ["verified_abstention", "verified_answer"],
+                ]
+                summary = paced_report["observation_summary"]
+                assert summary["response_counts_by_question"] == [
+                    {"question_index": 0, "response_kind_counts": {
+                        "verified_answer": 1, "verified_abstention": 2,
+                    }},
+                    {"question_index": 1, "response_kind_counts": {"verified_answer": 3}},
+                ]
+                assert [row["elapsed_seconds"] for row in paced_report["refreshes"]] == [
+                    0.25, 0.5, 0.125,
+                ]
+                assert summary["metrics"]["elapsed_seconds"] == {
+                    "measured_cycles": 3, "observed_total": 0.875,
+                    "complete_total": 0.875, "observed_max": 0.5,
+                }
+                assert json.loads(paced_state.read_text(encoding="utf-8"))["accepted_sequence"] == 9
             finally:
                 server.shutdown()
                 worker.join(timeout=5)

@@ -334,6 +334,8 @@ Request counts, response-body bytes and refresh duration include measured-cycle 
 
 🟢 [Done] The live runner supports a bounded inter-cycle wait. For a coordinated three-cycle withdrawal rehearsal, use `--cycles 3 --interval-seconds 10` if the operator needs ten seconds between cycles. The interval defaults to zero and accepts whole seconds through 60. The report records the configured interval. Refresh duration metrics exclude these waits and the questions that follow each refresh.
 
+🟢 [Done] In a localhost HTTPS rehearsal, the wait callback advanced both test clocks by ten seconds per interval. During the first wait the publisher replaced sequence 7 with sequence 9 withdrawing the tank record. During the second wait it enabled conditional 304 for sequence 9. The refresh reports and persisted sequence agreed at 7, 9 and 9. The tank produced one answer and two abstentions. The vent produced three answers. The controlled refresh durations were 0.25, 0.5 and 0.125 seconds and the report totaled 0.875 seconds while the simulated waits totaled 20 seconds.
+
 The local runner tests cover its conditional refresh, observation summaries and configuration checks. Independent operation remains pending because the operator, endpoint and approved trust material were unavailable.
 
 日本語：REFIT は別の遅延結果課題の候補です。取得前にCC BY 4.0 と圧縮サイズを確認済みで、世帯別の同期・観測範囲は未確認です。HTTPS 試験は独立運用者・接続先・審査済み信頼情報の確定待ちです。
