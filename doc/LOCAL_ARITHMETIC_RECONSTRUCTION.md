@@ -44,3 +44,7 @@ Start from tick 0, cumulative history, uniform weighting, an allocated key, zero
 ### v2 invalid type audit preregistration
 
 Use the prior audit's allocated zero-mass base. Change one field at a time. For each of tick, left mass and right mass, use 0.0, the string `0`, NaN, positive infinity and negative infinity. For allocation use integer 0, integer 1, float 0.0, the string `true` and null. For each of history, weighting and outcome use integer 0, True, null and empty bytes. Both frozen implementations must raise ValueError on all 32 cases per implementation. Generate all inputs locally.
+
+### v2 subclass and coercion audit preregistration
+
+Use the allocated zero-mass base from the invalid type audit. Substitute one field at a time. Test a subclass of int carrying the valid base value in each of the three integer fields and a subclass of str carrying the valid base value in each of the three selector fields. Then substitute a conversion probe in each of the seven fields. The probe raises AssertionError if Python invokes its integer, index, float, string, truth-value or equality method. Both frozen implementations must raise ValueError on all 13 cases per implementation without invoking a probe method. Generate all inputs locally.
