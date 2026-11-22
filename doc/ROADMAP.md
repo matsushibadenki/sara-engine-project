@@ -102,6 +102,8 @@ The specification defines allocation, prior mass, probability and the receipt-ti
 
 🟢 [Done] Both frozen v2 implementations rejected all 13 registered subclass and conversion-probe cases with `ValueError`. No instrumented conversion or comparison method ran. [Registered audit](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-subclass-and-coercion-audit-preregistration)
 
+🟢 [Done] Both frozen v2 implementations matched the rational reference for both outputs on 32,768 generated cases each. The audit covered every tick, asymmetric small and maximum counts, and all history, weighting and outcome combinations for those count pairs. [Registered cases](LOCAL_ARITHMETIC_RECONSTRUCTION.md#v2-all-tick-audit-preregistration)
+
 日本語　短い仕様だけから局所計算を再実装し、固定記録で数値と欠損の意味を照合する。
 
 简体中文　仅依据简短规格重建局部计算，并用固定记录核对数值与缺失状态。

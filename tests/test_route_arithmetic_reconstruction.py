@@ -174,3 +174,20 @@ def test_v2_rejects_subclasses_and_conversion_probes(implementation):
         args = (*base[:index], value, *base[index + 1:])
         with pytest.raises(ValueError):
             implementation(*args)
+
+
+@pytest.mark.parametrize("implementation", [reconstruct_v2, blind_reconstruct_v2], ids=["v2", "blind-v2"])
+def test_v2_asymmetric_counts_at_every_tick(implementation):
+    cases = product(
+        range(1024), ("cumulative", "discounted"), ("uniform", "public_exponential"),
+        ((6, 47), (47, 6), (0, 6717440), (6717440, 0)),
+        ("mass_left", "mass_right"),
+    )
+    checked = 0
+    for tick, history, weighting, (left, right), outcome in cases:
+        args = (tick, history, weighting, True, left, right, outcome)
+        for actual, expected in zip(implementation(*args), rational_reference(*args)):
+            assert type(actual) is type(expected) is float, args
+            assert actual.hex() == expected.hex(), args
+        checked += 1
+    assert checked == 32768
