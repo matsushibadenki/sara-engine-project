@@ -48,3 +48,7 @@ Use the prior audit's allocated zero-mass base. Change one field at a time. For 
 ### v2 subclass and coercion audit preregistration
 
 Use the allocated zero-mass base from the invalid type audit. Substitute one field at a time. Test a subclass of int carrying the valid base value in each of the three integer fields and a subclass of str carrying the valid base value in each of the three selector fields. Then substitute a conversion probe in each of the seven fields. The probe raises AssertionError if Python invokes its integer, index, float, string, truth-value or equality method. Both frozen implementations must raise ValueError on all 13 cases per implementation without invoking a probe method. Generate all inputs locally.
+
+### v2 all-tick audit preregistration
+
+For each tick from 0 through 1023, use allocated mass pairs (6, 47), (47, 6), (0, 6717440) and (6717440, 0). Cross them with both history rules, both error weights and both outcomes. This yields 32,768 cases per frozen v2 implementation. Compare probability and error increment with the existing rational reference using exact types and binary64 hexadecimal forms. The asymmetric small masses exercise non-dyadic probabilities, including the earlier rounding counterexample. The asymmetric maximum masses exercise probabilities near zero and one. The audit uses generated inputs.
