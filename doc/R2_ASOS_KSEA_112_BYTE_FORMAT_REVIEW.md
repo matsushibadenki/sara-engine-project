@@ -15,3 +15,17 @@
 日本語　公開仕様で第一視程センサーのおおよその位置は確認できた。KSEAの112バイト行の追加部分と、第一センサーが欠測した場合の欄位置は確定できず、別版パーサーを保留した。
 
 简体中文　公开资料给出了第一能见度传感器的大致列范围，但无法确认KSEA的112字节行中额外字节的含义及第一传感器缺测时的字段位置，暂缓新版解析器。
+
+## Legacy documentation and published examples follow-up
+
+🟢 [Done] The NCAR EOL catalog for the 2013–2014 NCEI release lists a legacy `td6405.pdf` and a release README. Their legacy links returned the archive portal shell instead of the documents in a direct read. The checked old NCDC and NCEI PDF paths returned HTTP 404. These access results leave the legacy documents unverified. [NCAR EOL catalog](https://data.ucar.edu/dataset/asos-1-minute-data) · [Legacy PDF link](https://data.eol.ucar.edu/file/download/5103FB1B31AAA/td6405.pdf)
+
+The NOAA ASOS User's Guide §4.2.3a describes primary and meteorological-discontinuity visibility sensors independently. It specifies omission and a maintenance indicator in METAR when the primary is inoperative. That rule concerns METAR reports and supplies no DSI-6405 archive slot or padding definition. [NOAA ASOS User's Guide](https://www.weather.gov/media/asos/aum-toc.pdf)
+
+A primary TD6405 curation study shows three populated coefficient/code pairs for KIAD and a blank interior field between two pairs in a KDCA example. It also documents transmission losses within records. These examples show why numbering the surviving tokens cannot establish physical sensor identity. They do not document a 112-byte KSEA record, the extra bytes' location or meaning, or the case of a missing first sensor with a valid second sensor. [TD6405 curation study §2.1](https://engrxiv.org/preprint/download/2190/4318)
+
+⭕️ [Pending] Keep the decoder on hold until a NOAA byte map or an attributable example of the same delivered layout identifies both the extra bytes and the first-sensor-missing case. The V2 receipt remains the only evidence about the physical widths of the January 2024 file in this review. No observation payload was reacquired and no parser, acquisition contract, criterion, prior result or split was changed.
+
+日本語　NOAAの運用ガイドと公開研究の形式例を追加確認した。旧仕様ミラーの本文は確認できず、KSEAの112バイト配置と第一センサー欠測時の欄を裏付ける証拠は未確認。別版パーサーは保留する。
+
+简体中文　补查了NOAA操作指南和公开研究中的格式示例。旧版规范正文无法核实，KSEA的112字节布局及第一传感器缺测时的字段位置仍缺乏证据，暂缓新版解析器。
