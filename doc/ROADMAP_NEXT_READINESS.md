@@ -236,11 +236,33 @@ Prioritize a separate weather hypothesis alongside the held entrance-opening tas
 
 Before acquisition, inspect the release specification and public station inventory for a finite roster with at least 180 calendar days available for development at one station and room for a separate sealed period. Fix the station identity, calendar split, available-at-prediction inputs and their encoding, history and outcome windows, visibility class boundary, quality codes and acquisition budget before reading observations. Exclude windows with missing or invalid required readings, and ensure each outcome measurement window lies strictly after prediction. A station inventory can establish file availability. Eligible days, repeated exact current states, contrasting histories and support for both classes require a later development-only preflight under the existing gates. Include a strong current-state control with the latest permissible visibility information and a matched event-driven scalar control. Preserve the real local-write accounting.
 
-ASOS is a candidate at the metadata stage. No station or cutoff has been selected and no observations were acquired. The prior household tasks retain their own outcome definitions, thresholds and sealed periods.
+This initial screen established the metadata criteria. The station and calendar follow-up is recorded below. The prior household tasks retain their own outcome definitions, thresholds and sealed periods.
 
 日本語　NOAA ASOSの将来視程を独立課題の候補とし、観測仕様を確認した。地点別の収録範囲と開発期間での成立は確認待ち。
 
 简体中文　将 NOAA ASOS 的未来能见度列为独立任务候选，已核对观测规格，站点覆盖和开发期可行性待核实。
+
+## ASOS KSEA inventory and visibility specification
+
+The NOAA station list maps Seattle–Tacoma to ICAO **KSEA**, WBAN **24233**. The public DSI-6405 page 1 directory indexes each of the eight station-month filenames `asos-1min-pg1-KSEA-202401.dat` through `asos-1min-pg1-KSEA-202408.dat`. Select this single station and split by the archive's local standard date.
+
+| Role | 2024 local standard dates, inclusive | Calendar days | Listed files |
+| --- | --- | ---: | --- |
+| Development candidate | January 1–June 30 | 182 | January–June |
+| Excluded gap | July 1–31 | 31 | July |
+| Sealed temporal holdout | August 1–31 | 31 | August |
+
+File entries establish calendar availability. The 182 days are a calendar span and valid-minute coverage, sensor continuity and class support remain unverified. The July gap separates development from the sealed August period. Histories and outcome windows must stay within their assigned split. [NOAA station list](https://vlab.noaa.gov/web/mdl/verif-station-list) · [NCEI 2024 monthly indexes](https://www.ncei.noaa.gov/data/automated-surface-observing-system-one-minute-pg1/access/2024/)
+
+DSI-6405 stores the first and second visibility sensors' extinction coefficients and corresponding `D` (day) or `N` (night) indicators. The coefficient averages the preceding minute. The ASOS surface-visibility report uses a distinct rolling 10-minute harmonic mean of derived one-minute visibilities and requires at least eight values. A delayed outcome based on page 1 must define its coefficient-based visibility proxy or documented conversion, sensor, threshold and lag before acquisition. Require the whole outcome window to fall strictly after prediction and hold sensor identity fixed. [DSI-6405 §§2, 8](https://www.ncei.noaa.gov/data/automated-surface-observing-system-one-minute-pg1/doc/asos-1min-pg1_documentation.pdf) · [ASOS User's Guide §4.2.3](https://www.weather.gov/media/asos/aum-toc.pdf) · [NCEI metadata](https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc%3AC00544)
+
+The archive specification describes numeric missing or unknown fields as spaces or occasionally `[M]`, and space padding for truncated records. `D` and `N` describe lighting. The page 1 layout provides no separate per-coefficient quality grade. NOAA describes limited station QC and no NCEI correction for transmission errors. METAR/SPECI maintenance and sensor-status indicators such as `$` and `VISNO LOC` belong to that report format. At a later authorized preflight, exclude required minutes with a missing row, missing or malformed field, or unsupported indicator. Preserve gaps as unknown rather than labeling them as either outcome class. [DSI-6405 §§2, 8](https://www.ncei.noaa.gov/data/automated-surface-observing-system-one-minute-pg1/doc/asos-1min-pg1_documentation.pdf) · [ASOS User's Guide §§1.4, 5.3.2](https://www.weather.gov/media/asos/aum-toc.pdf)
+
+The calendar inventory gate is met. The independent-task gate remains open pending a preregistered acquisition budget and development-only validation of coverage, repeated current states, contrasting histories and both classes under the existing support criteria. Retain the strongest current-state control, event-driven scalar control and matched actual local writes. This screen requested directory indexes and documentation only. The prior negative results and all test seals remain in force.
+
+日本語　KSEAの開発候補は2024年1〜6月の182暦日、7月は除外、8月は封印した独立テスト候補。1分消散係数・欠測表現・品質管理の範囲を確認し、データ本体は未取得。有効観測と両クラスの支持は開発期間で確認が必要。
+
+简体中文　选定KSEA，2024年1至6月共182个日历日作为开发候选，排除7月，8月作为封存的独立测试候选。已核对一分钟消光系数、缺测表示及质控范围，未获取观测数据。有效覆盖与双类别支持仍待在开发期确认。
 
 ## Independent HTTPS publisher pilot
 
