@@ -1,0 +1,9 @@
+# KSEA first-sensor normalization V1
+
+## Registered format and scope
+
+Use the six in-memory development streams and existing station, timestamp, framing and line-budget checks. Use the paired visibility layout illustrated by NCEI DSI-6405 section 2 and EPA AERMINUTE Figure 1. Accept an exact example-shaped prefix after the 29-byte header: two consecutive eight-byte slots, each consisting of a space, one ASCII digit, a decimal point, three ASCII digits, a space and D or N. Require an ASCII space or end of record immediately after the slots. Read the first slot as integer thousandths. The second slot is a positional guard only. Never scan forward for a usable coefficient. [NCEI DSI-6405](https://www.ncei.noaa.gov/data/automated-surface-observing-system-one-minute-pg1/doc/asos-1min-pg1_documentation.pdf) · [EPA AERMINUTE Figure 1](https://www.epa.gov/sites/default/files/2020-10/documents/aerminute_userguide.pdf)
+
+For a structurally valid record, blanks, explicit missing markers, alternate spacing, single-sensor layouts and unrecognized payload prefixes produce one unavailable minute. In particular, a second sensor alone cannot substitute for the first. The published examples establish slot order for this shape. EPA documents variable columns and garbled records, so the parser does not establish that this shape covers the actual archive or that all source-level field shifts are detectable. Assess real format coverage under a separate authorized protocol before interpreting failure to find support.
+
+Verify exact conversion, illumination, opaque trailing fields, missing primary with valid second, single and shifted slots, malformed decimals and markers, fixed split and ordering, and downstream delay and gap behavior using synthetic records. No retrieval, external data read, learner or model scoring. Retain original conditions, negative results, July exclusion and August seal.
