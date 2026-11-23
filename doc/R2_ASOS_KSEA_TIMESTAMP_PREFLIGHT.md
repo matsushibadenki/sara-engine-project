@@ -9,3 +9,14 @@ Read at most 262,086 bounded line calls (182 × 1,440 minutes plus one EOF or fa
 Count unique indexed minutes, absent minutes and dates with any indexed row. The number of dates with a row is an upper bound on valid observation dates. Fewer than 180 indexed dates excludes this fixed development split under that necessary condition. At or above 180, return only that the split cannot be excluded by this bound. Even a fully indexed day may contain invalid sensor values. Neither status qualifies the independent task.
 
 Verify leap day, four calendar/split boundaries (start, January rollover, last development minute, first excluded month), month and station mismatches, UTC wrap, missing rows, duplicate/reversed timestamps, invalid calendar/time fields, overlength lines, and opaque payloads. Exercise 179 and 180 indexed days. Existing Kitchen ON conditions, including the 70,212 eligible arrivals and original development/test separation, remain specific to their original contract. This separate weather hypothesis preserves all previous negative results and seals. Repeated current states, opposing histories, both classes, support/effect, and matched actual local updates remain prerequisites for a comparison.
+
+
+## Verification and next gate
+
+🟢 [Done] The preregistered timestamp bound is implemented and verified with synthetic inputs. 15 preflight tests and 10 roadmap tests pass. No real observation files were obtained or read.
+
+🟠 [Next] Register a development-only acquisition and outcome contract before opening any station payload. Fix the visibility proxy or conversion, sensor, lag, available-at-prediction inputs and validation rules. Establish real data coverage and the history/class support gates before considering learning.
+
+日本語　KSEA開発期間の日時上限を合成データで検証した。真の観測範囲と両クラスの支持は未確認で、8月のテスト封印を維持する。
+
+简体中文　使用合成数据验证了KSEA开发期的时间戳上界。实际观测覆盖与双类别支持尚待核实，8月测试期继续封存。
