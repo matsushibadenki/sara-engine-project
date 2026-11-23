@@ -14,7 +14,7 @@ Verify exact threshold equality, strictly delayed delivery, opposite histories a
 
 🟢 [Done] A fixed acquisition manifest and streaming delayed-outcome extractor are implemented. Synthetic verification covers same-key opposing histories, both threshold sides, delivery time, gaps, malformed normalized rows and split violations. 42 related tests passed. No station payload was acquired or opened.
 
-🟠 [Next] Implement and verify first-sensor normalization against public format evidence and synthetic raw records. Real development coverage and support are pending. Independent testing and causal SNN or resource claims remain gated.
+🟢 [Done] The [first-sensor normalization follow-up](R2_ASOS_KSEA_FIRST_SENSOR_NORMALIZATION.md) verifies the example-shaped layout with synthetic raw records. Real development coverage and support are pending. Independent testing and causal SNN or resource claims remain gated.
 
 日本語　2024年1〜6月の取得上限と5分遅延の消散係数代理結果を固定し、同じ現在状態・異なる履歴の識別を合成入力で検証した。観測データ本体は取得しておらず、8月は封印を維持する。
 

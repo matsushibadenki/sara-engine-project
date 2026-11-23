@@ -1,6 +1,7 @@
 """Bound development coverage using only KSEA page 1 record headers."""
 
 from calendar import monthrange
+from collections.abc import Iterator
 from datetime import datetime, timedelta
 from typing import BinaryIO, NamedTuple
 
@@ -32,33 +33,41 @@ def _local_minute(header: bytes, month: int) -> datetime:
     return at
 
 
-def bound_development_dates(months: tuple[BinaryIO, ...]) -> TimestampCoverage:
-    """Return a necessary coverage bound for six January–June streams in order."""
+def iter_development_records(
+    months: tuple[BinaryIO, ...],
+) -> Iterator[tuple[datetime, bytes]]:
+    """Yield strictly ordered, framed records from the fixed development months."""
     if len(months) != 6:
         raise ValueError("Exactly six development streams required")
 
-    indexed = absent = dates = 0
     for month, stream in enumerate(months, 1):
         possible_minutes = monthrange(2024, month)[1] * 1440
         previous = None
-        count = 0
         for _ in range(possible_minutes + 1):
             line = stream.readline(102)
             if line == b"":
                 break
-            # Only line framing and the station/time header have meaning here.
             record = line.removesuffix(b"\n").removesuffix(b"\r")
             if len(record) != 99 or len(line) > 101:
                 raise ValueError("Invalid fixed-width record")
             at = _local_minute(record[:29], month)
             if previous is not None and at <= previous:
                 raise ValueError("Timestamps must be strictly increasing")
-            if previous is None or at.day != previous.day:
-                dates += 1
             previous = at
-            count += 1
+            yield at, record
         else:
             raise ValueError("Monthly line budget exhausted")
-        indexed += count
-        absent += possible_minutes - count
-    return TimestampCoverage(indexed, absent, dates)
+
+
+def bound_development_dates(months: tuple[BinaryIO, ...]) -> TimestampCoverage:
+    """Return a necessary coverage bound for six January–June streams in order."""
+    indexed = dates = 0
+    previous_date = None
+    for at, _ in iter_development_records(months):
+        indexed += 1
+        day = at.date()
+        if day != previous_date:
+            dates += 1
+            previous_date = day
+    possible_minutes = sum(monthrange(2024, month)[1] for month in range(1, 7)) * 1440
+    return TimestampCoverage(indexed, possible_minutes - indexed, dates)

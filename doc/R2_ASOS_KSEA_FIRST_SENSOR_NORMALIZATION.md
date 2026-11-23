@@ -7,3 +7,13 @@ Use the six in-memory development streams and existing station, timestamp, frami
 For a structurally valid record, blanks, explicit missing markers, alternate spacing, single-sensor layouts and unrecognized payload prefixes produce one unavailable minute. In particular, a second sensor alone cannot substitute for the first. The published examples establish slot order for this shape. EPA documents variable columns and garbled records, so the parser does not establish that this shape covers the actual archive or that all source-level field shifts are detectable. Assess real format coverage under a separate authorized protocol before interpreting failure to find support.
 
 Verify exact conversion, illumination, opaque trailing fields, missing primary with valid second, single and shifted slots, malformed decimals and markers, fixed split and ordering, and downstream delay and gap behavior using synthetic records. No retrieval, external data read, learner or model scoring. Retain original conditions, negative results, July exclusion and August seal.
+
+## Verification and next gate
+
+🟢 [Done] Shared framing and timestamp validation feeds the first-sensor normalizer and the registered delayed outcome extractor. Fifteen new synthetic tests cover the registered cases. All 57 related tests pass. No station observations were obtained or read.
+
+🟠 [Next] Prepare a bounded acquisition and format-coverage report for the six development files. Distinguish absent minutes from records with unsupported visibility layouts, and establish coverage and both-class/history support before any predictor comparison. Keep August sealed and resource measurement pending.
+
+日本語　公開例と同じ形式の第一センサーを合成レコードから読み取り、遅延結果まで検証した。実ファイルの形式と有効観測範囲は未確認で、8月の封印を維持する。
+
+简体中文　用合成记录验证了公开示例格式的第一传感器解析及延迟结果。实际文件格式和有效观测覆盖仍待确认，8月继续封存。
