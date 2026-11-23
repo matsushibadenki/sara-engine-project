@@ -24,7 +24,8 @@ Build a fully autonomous, CPU-first multimodal learning bot that continuously co
 - Phase 5 Operations & Observability: `in progress` (structured events, status visibility, alert severity/rotation)
 - Phase 6 Security & Compliance: `in progress` (PII guard, source-type compliance policy, retention + audit snapshot)
 - Backlog Item (Plugin Collectors): `implemented` (drop-in collector loader under `bot/collectors_plugins`)
-- Backlog Item (Lightweight Dashboard): `implemented` (`bot/dashboard.py`, `dashboard_start.sh`, `dashboard_stop.sh`)
+- 🟢 [Done] Local dashboard pages for Overview, Queue, Alerts and Diagnostics, with English, Japanese and Simplified Chinese navigation and live status. [Page implementation](dashboard_pages.py)
+- 🟠 [Next] Verify page states with production-shaped local status fixtures as the status schema evolves.
 - Backlog Item (Multi-bot Sharding): `implemented` (hash-based shard ownership with `shard_id`/`total_shards`)
 - Backlog Item (Benchmark Suite): `implemented` (`bot/benchmark_suite.py`, `bot/benchmark_cases.json`, `bot/benchmark.sh`)
 
