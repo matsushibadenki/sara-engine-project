@@ -12,7 +12,7 @@ Use the existing timestamp parser, first-sensor normalizer and delayed outcome e
 
 ⭕️ [Pending] Real record omissions, unrecognized visibility, 180 eligible dates, exact-current recurrence, contrasting histories and both-class support are unmeasured. The stop gives no evidence about why the response size differs or whether the task is feasible. Synthetic verification covers separate missing/unrecognized counts, paired opposite histories and outcomes, and stopping on an oversize response before body read or subsequent requests. All 59 related tests passed.
 
-🟠 [Next] Check publicly available file sizes and framing documentation before considering a separately registered transport revision. Keep the original task conditions, prior negative results, July exclusion and August seal. The V1 acquisition is closed.
+🟢 [Done] The [metadata follow-up and transport V2 registration](R2_ASOS_KSEA_TRANSPORT_V2.md) pin the six published sizes and ETags. The V1 acquisition remains closed.
 
 日本語　1月の応答サイズが登録範囲外だったため本文を読まずに終了した。実データでの180日・履歴・両クラスの確認は保留し、8月の封印を維持する。
 
