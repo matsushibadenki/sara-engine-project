@@ -15,7 +15,7 @@ Verify leap day, four calendar/split boundaries (start, January rollover, last d
 
 🟢 [Done] The preregistered timestamp bound is implemented and verified with synthetic inputs. 15 preflight tests and 10 roadmap tests pass. No real observation files were obtained or read.
 
-🟠 [Next] Register a development-only acquisition and outcome contract before opening any station payload. Fix the visibility proxy or conversion, sensor, lag, available-at-prediction inputs and validation rules. Establish real data coverage and the history/class support gates before considering learning.
+🟢 [Done] The [delayed outcome follow-up](R2_ASOS_KSEA_DELAYED_CONTRACT.md) fixes the development acquisition ceiling and the normalized outcome contract. Real coverage and support remain pending.
 
 日本語　KSEA開発期間の日時上限を合成データで検証した。真の観測範囲と両クラスの支持は未確認で、8月のテスト封印を維持する。
 
