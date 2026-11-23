@@ -407,3 +407,25 @@ Use 2024 UTC as the calendar candidate: January 1–June 30 (182 calendar days) 
 日本語　Schiphol 240の地点・期間指定は公開仕様で確認した。2024年1〜6月の182暦日と8月の31日を候補とし、実測・補完・欠測の値別識別と有効日数は未確認。観測本体は未取得。
 
 简体中文　已核对Schiphol 240的站点和时间筛选接口，候选开发期为2024年1至6月共182个日历日，留出期为8月31天。实测、补值与缺测的逐值区分和有效天数尚未确认，未获取观测正文。
+
+### Schiphol ten-minute archive metadata audit
+
+🟢 [Done] Reviewed KNMI's current ten-minute collection, its release notice, public OpenAPI definition, station metadata and the CoverageJSON standard. The OpenAPI location operation for this specific collection lists Schiphol as `0-20000-0-06240` and accepts `parameter-name`, a closed RFC 3339 `datetime` interval and `CoverageJSON`. The official variable table defines lowercase `vv` as horizontal visibility in metres averaged over the preceding ten minutes, with a UTC interval-end timestamp. This confirms development-only selection at the interface level. The location operation itself was not called. [KNMI OpenAPI 1.0.0](https://api.dataplatform.knmi.nl/edr/v1/openapi.json) · [Ten-minute product specification](https://dataplatform.knmi.nl/dataset/docs/10-minute-in-situ-meteorological-observations-1-0)
+
+**Value provenance.** The near-real-time historical archive has no manual validation step and can receive previously missing observations for up to seven days. This describes a late-arrival policy, leaving the provenance of individual numeric values unverified. The reviewed public field table and interface provide no documented flag that identifies a numeric Schiphol `vv` as an original measurement or a replacement. CoverageJSON defines a returned `null` value as missing. A timestamp absent from the returned axis would be a separate coverage gap on the expected grid. Whether KNMI emits nulls, omits timestamps or uses both for this station was not checked against payloads. Neither category can serve as a negative outcome. The time of observation and time of availability also differ, so a future experiment must specify when a delayed or backfilled value can be used as input. [KNMI collection release notice](https://english.knmidata.nl/latest/news/2025/07/03/edr-api-new-10-minute-in-situ-meteorological-observations-collection) · [OGC CoverageJSON §8.1](https://docs.ogc.org/cs/21-069r2/21-069r2.html)
+
+**Calendar bounds.** KNMI documents archive-wide availability since 2012 and notes that individual stations and variables can have narrower coverage. Its general station catalogue describes identity, type and location, and its digitized historical metadata archive covers up to 2015. These sources do not establish dated `vv` uptime or gaps for station 240 in either proposed 2024 period. The published interface can express the conservative development-only closed interval below. The bounds omit the boundary-midnight timestamps so the request returns only dates within the intended split and each preceding ten-minute window starts within that split.
+
+| Role | 2024 UTC calendar dates | Calendar days | Candidate interval-end timestamps, inclusive |
+| --- | --- | ---: | --- |
+| Development | January 1–June 30 | 182 | January 1 00:10 to June 30 23:50 |
+| Excluded gap | July 1–31 | 31 | No selection |
+| Sealed temporal holdout | August 1–31 | 31 | August 1 00:10 to August 31 23:50, unrequested |
+
+[Station metadata](https://dataplatform.knmi.nl/dataset/waarneemstations-csv-1-0) · [Digitized archive scope](https://dataplatform.knmi.nl/dataset/digitalized-weather-station-metadata-archive-1-0) · [EDR location and time selection](https://developer.dataplatform.knmi.nl/edr-api)
+
+⭕️ [Pending] The latest evidence supports a bounded development-only request in principle. Actual server enforcement, historical response limits, station-variable coverage over both periods, 180 eligible development days and per-value provenance remain unverified. Keep acquisition on hold pending station-specific coverage and visibility-provenance evidence. No observation API, observation preview or data package was accessed. Existing exact-current recurrence, differing histories, class/support and matched-update rules, prior negative findings and the KSEA August test seal remain in force.
+
+日本語　Schipholの10分視程だけを開発期間に限定できるAPI仕様を確認した。CoverageJSONのnullは欠測だが、地点別の出力実態、数値の実測・補完区分、2024年の有効な収録範囲は未確認。取得は保留。
+
+简体中文　已确认API可按站点、变量和时间限定Schiphol十分钟能见度开发期。CoverageJSON的null表示缺测，但站点实际输出、实测与补值的区分及2024年有效覆盖仍待确认，暂缓获取。
