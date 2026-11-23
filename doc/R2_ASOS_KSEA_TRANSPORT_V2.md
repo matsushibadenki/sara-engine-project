@@ -18,12 +18,30 @@ The January HEAD exceeds the V1 cap by 160,068 bytes, reproducing the reason the
 
 ## Preregistered transport and framing diagnostic
 
-🟠 [Next] Transport V2 is registered and unexecuted. Use the same six URLs in order, one direct HTTPS GET per URL, with no redirects, retries or additions. Keep the 60-second socket timeout and 300-second total deadline. Send identity encoding and the corresponding quoted ETag in `If-Match`. Before reading each body, require HTTP 200, the matching ETag and one exact Content-Length as listed above, identity or absent Content-Encoding, and no Transfer-Encoding. Reserve the listed size before reading. Stop on mismatch, truncation or timeout. The fixed aggregate body ceiling is 27,589,402 bytes. Record lengths and SHA-256 digests of completed bodies. The ETags are HTTP validators. The SHA-256 values identify the acquired bytes.
+Transport V2 was registered before execution. Use the same six URLs in order, one direct HTTPS GET per URL, with no redirects, retries or additions. Keep the 60-second socket timeout and 300-second total deadline. Send identity encoding and the corresponding quoted ETag in `If-Match`. Before reading each body, require HTTP 200, the matching ETag and one exact Content-Length as listed above, identity or absent Content-Encoding, and no Transfer-Encoding. Reserve the listed size before reading. Stop on mismatch, truncation or timeout. The fixed aggregate body ceiling is 27,589,402 bytes. Record lengths and SHA-256 digests of completed bodies. The ETags are HTTP validators. The SHA-256 values identify the acquired bytes.
 
 The revision changes transport admission while preserving the existing decoder. Before visibility normalization, run the unchanged V1 framing and timestamp parser for each acquired month, using empty streams for the other months. If a structural check fails, record aggregate LF-delimited length frequencies (excluding LF, retaining CR), final-LF presence and the failing stage for that complete body, then stop before requesting the next month. Publish no payload or example timestamps. Only six fully validated months permit the unchanged development summary. A framing failure remains inconclusive. A new decoder would require separate evidence and registration.
 
 The V1 stop, the 180 eligible development dates, exact-current recurrence, history and class support, original evidence thresholds and matched actual-write conditions remain in force. No learner, scores or resource comparison are authorized by this contract. July is excluded and August remains sealed.
 
-日本語　HEADで6ファイルの正確なサイズを確認した。1月は旧上限を160,068バイト超過。物理形式の差の内訳は未確認。本文を取得せず、別版の取得・停止条件を登録した。
+## Execution result
 
-简体中文　通过HEAD核对六个文件的精确大小。1月比旧上限多160,068字节，物理记录差异仍待确认。未获取正文，已登记新版传输和停止条件。
+🟢 [Done] The [V2 runner](../scripts/eval/asos_ksea_transport_v2.py) made one GET. January matched the registered ETag and size. The existing parser then rejected its fixed-width framing. The runner stopped before requesting February and produced this aggregate receipt.
+
+| Field | Value |
+| --- | --- |
+| Status / stage | `inconclusive / structure` |
+| Parser error | `Invalid fixed-width record` |
+| Reserved and acquired body bytes | 4,668,708 |
+| January SHA-256 | `93f27e1b7776e779e53284716f898af3294869f5039bdca5c1f63f60241e6d57` |
+| Physical line lengths excluding LF, retaining any CR | 112 bytes × 41,316 |
+| Final LF | Present |
+| February–June GETs | 0 |
+
+The distribution accounts for all 4,668,708 bytes as 41,316 × (112 + 1). It establishes a physical line width different from the V1 admission rule. The audit does not determine the meaning of additional bytes, whether CR contributes to the reported width, or the count of unique valid timestamps. Visibility normalization and the development summary did not run. Bodies were held in memory only. Related tests passed (67), including wrong headers, truncation, stopping before the next month, and a synthetic six-month success.
+
+⭕️ [Pending] The 180 eligible development dates, exact-current recurrence, opposing histories and both-class support remain unmeasured. A new framing decoder requires separate evidence and registration. Keep the V1 acquisition stop, existing negative results, July exclusion and August seal.
+
+日本語　1月のETagとサイズは登録値に一致した。既存パーサーが形式を拒否し、LFを除く112バイトの行を41,316行と記録した。2月以降の取得前に停止し、8月の封印を維持した。
+
+简体中文　1月的ETag和大小与登记值一致。既有解析器拒绝该格式，记录了41,316行，每行112字节（不含LF）。在获取2月之前停止，8月继续封存。
