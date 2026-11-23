@@ -4,9 +4,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 from collections import deque
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -37,7 +36,17 @@ def _tail_lines(path: str, n: int) -> list[str]:
         return []
 
 
-def _critical_alerts_recent(path: str, window_minutes: int) -> int:
+def _count_lines(path: str) -> int | None:
+    try:
+        with open(path, "rb") as f:
+            return sum(1 for _ in f)
+    except FileNotFoundError:
+        return 0
+    except OSError:
+        return None
+
+
+def _critical_alerts_recent(path: str, window_minutes: int) -> int | None:
     if not os.path.exists(path):
         return 0
     cutoff = datetime.utcnow() - timedelta(minutes=max(1, window_minutes))
@@ -45,8 +54,10 @@ def _critical_alerts_recent(path: str, window_minutes: int) -> int:
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             lines = deque(f, maxlen=3000)
-    except Exception:
+    except FileNotFoundError:
         return 0
+    except OSError:
+        return None
     for line in reversed(lines):
         if "severity=CRITICAL" not in line:
             continue
@@ -57,12 +68,15 @@ def _critical_alerts_recent(path: str, window_minutes: int) -> int:
         ts_end = line.find(" ", ts_start)
         raw_ts = line[ts_start:] if ts_end < 0 else line[ts_start:ts_end]
         try:
+            if raw_ts.endswith("Z"):
+                raw_ts = raw_ts[:-1] + "+00:00"
             ts = datetime.fromisoformat(raw_ts)
         except Exception:
             continue
-        if ts < cutoff:
-            break
-        count += 1
+        if ts.tzinfo is not None:
+            ts = ts.astimezone(timezone.utc).replace(tzinfo=None)
+        if ts >= cutoff:
+            count += 1
     return count
 
 
@@ -76,8 +90,9 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
             with open(pid_path, "r", encoding="utf-8") as f:
                 pid = int(f.read().strip())
             proc["pid"] = pid
-            os.kill(pid, 0)
-            proc["running"] = True
+            if pid > 0:
+                os.kill(pid, 0)
+                proc["running"] = True
         except Exception:
             proc["running"] = False
     data["process"] = proc
@@ -114,7 +129,7 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
         "alerts_exists": os.path.exists(alerts),
         "dead_letters_exists": os.path.exists(dead),
         "events_exists": os.path.exists(events),
-        "dead_letter_lines": int(subprocess.getoutput(f"wc -l < '{dead}'").strip() or "0") if os.path.exists(dead) else 0,
+        "dead_letter_lines": _count_lines(dead),
         "critical_alerts_recent": _critical_alerts_recent(alerts, cfg_window),
         "critical_alert_window_minutes": cfg_window,
     }

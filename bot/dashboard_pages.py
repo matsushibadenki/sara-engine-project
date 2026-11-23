@@ -10,19 +10,19 @@ _LABELS = {
         ("Overview", "Queue", "Alerts", "Diagnostics"),
         ("Process", "Last metrics update", "Pending", "New samples", "Failed items",
          "Dead letters", "Recent critical alerts", "Window (minutes)", "Control actions",
-         "Running", "Stopped", "Unavailable", "Refresh", "Language", "Refresh failed"),
+         "Running", "Stopped", "Unavailable", "Refresh", "Language", "Refresh failed", "No metrics received", "Metrics could not be read"),
     ),
     "ja": (
         ("概要", "キュー", "アラート", "診断"),
         ("プロセス", "メトリクス更新時刻", "処理待ち", "新規サンプル", "失敗件数",
          "デッドレター", "直近の重大アラート", "集計期間（分）", "制御アクション",
-         "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました"),
+         "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました", "メトリクス未取得", "メトリクスを読み取れません"),
     ),
     "zh-CN": (
         ("概览", "队列", "告警", "诊断"),
         ("进程", "指标更新时间", "待处理", "新增样本", "失败数",
          "死信", "近期严重告警", "统计窗口（分钟）", "控制操作",
-         "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败"),
+         "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败", "尚无指标", "无法读取指标"),
     ),
 }
 _LANG_NAMES = {"en": "English", "ja": "日本語", "zh-CN": "简体中文"}
@@ -59,7 +59,9 @@ def render_page(path, lang, status):
     lang = lang if lang in _LABELS else "en"
     names, labels = _LABELS[lang]
     process = status.get("process", {})
-    metrics = status.get("metrics", {}).get("data") or {}
+    metrics_source = status.get("metrics", {})
+    metrics = metrics_source.get("data") or {}
+    metrics_error = metrics_source.get("error")
     logs = status.get("logs", {})
     running = process.get("running")
 
@@ -67,8 +69,10 @@ def render_page(path, lang, status):
         return (f'<div><dt>{labels[index]}</dt><dd class="{tone}">'
                 f'{escape(str(labels[11] if value is None else value))}</dd></div>')
 
-    def count(index, value):
-        tone = "warn" if isinstance(value, (int, float)) and value > 0 else ""
+    def count(index, value, highlight=False):
+        if type(value) is not int or value < 0:
+            value = None
+        tone = "warn" if highlight and value else ""
         return card(index, value, tone)
 
     if page == 0:
@@ -77,20 +81,27 @@ def render_page(path, lang, status):
         cards += card(1, metrics.get("ts"))
     elif page == 1:
         actions = metrics.get("control_actions")
-        cards = card(2, metrics.get("queue_pending")) + card(3, metrics.get("new_samples"))
-        cards += count(4, metrics.get("failed_item_count"))
+        cards = count(2, metrics.get("queue_pending")) + count(3, metrics.get("new_samples"))
+        cards += count(4, metrics.get("failed_item_count"), highlight=True)
         if isinstance(actions, list):
             actions = ", ".join(map(str, actions)) if actions else "—"
         cards += card(8, actions)
     elif page == 2:
-        cards = count(5, logs.get("dead_letter_lines"))
-        cards += count(6, logs.get("critical_alerts_recent"))
+        dead_letters = logs.get("dead_letter_lines") if logs.get("dead_letters_exists") else None
+        critical = logs.get("critical_alerts_recent") if logs.get("alerts_exists") else None
+        cards = count(5, dead_letters, highlight=True)
+        cards += count(6, critical, highlight=True)
         cards += card(7, logs.get("critical_alert_window_minutes"))
 
     if page == 3:
         content = f'<pre>{escape(json.dumps(status, ensure_ascii=False, indent=2))}</pre>'
     else:
-        content = f"<dl>{cards}</dl>"
+        notice = ""
+        if page in (0, 1) and metrics_error == "not_found":
+            notice = f'<p>{labels[15]}</p>'
+        elif page in (0, 1) and metrics_error:
+            notice = f'<p class="bad">{labels[16]}</p>'
+        content = f"{notice}<dl>{cards}</dl>"
 
     navigation = "".join(
         f'<a href="{route}?lang={lang}" {"aria-current=page" if route == path else ""}>'
