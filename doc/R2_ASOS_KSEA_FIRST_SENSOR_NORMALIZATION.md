@@ -12,7 +12,7 @@ Verify exact conversion, illumination, opaque trailing fields, missing primary w
 
 🟢 [Done] Shared framing and timestamp validation feeds the first-sensor normalizer and the registered delayed outcome extractor. Fifteen new synthetic tests cover the registered cases. All 57 related tests pass. No station observations were obtained or read.
 
-🟠 [Next] Prepare a bounded acquisition and format-coverage report for the six development files. Distinguish absent minutes from records with unsupported visibility layouts, and establish coverage and both-class/history support before any predictor comparison. Keep August sealed and resource measurement pending.
+⭕️ [Pending] The [bounded acquisition and format audit](R2_ASOS_KSEA_FORMAT_AUDIT.md) stopped at the first response size gate. Real coverage and support remain unmeasured.
 
 日本語　公開例と同じ形式の第一センサーを合成レコードから読み取り、遅延結果まで検証した。実ファイルの形式と有効観測範囲は未確認で、8月の封印を維持する。
 
