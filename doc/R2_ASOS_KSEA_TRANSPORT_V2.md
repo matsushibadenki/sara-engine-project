@@ -40,7 +40,7 @@ The V1 stop, the 180 eligible development dates, exact-current recurrence, histo
 
 The distribution accounts for all 4,668,708 bytes as 41,316 × (112 + 1). It establishes a physical line width different from the V1 admission rule. The audit does not determine the meaning of additional bytes, whether CR contributes to the reported width, or the count of unique valid timestamps. Visibility normalization and the development summary did not run. Bodies were held in memory only. Related tests passed (67), including wrong headers, truncation, stopping before the next month, and a synthetic six-month success.
 
-⭕️ [Pending] The 180 eligible development dates, exact-current recurrence, opposing histories and both-class support remain unmeasured. A new framing decoder requires separate evidence and registration. Keep the V1 acquisition stop, existing negative results, July exclusion and August seal.
+⭕️ [Pending] The 180 eligible development dates, exact-current recurrence, opposing histories and both-class support remain unmeasured. The [public format follow-up](R2_ASOS_KSEA_112_BYTE_FORMAT_REVIEW.md) leaves a new decoder on hold pending a source-backed byte map. Keep the V1 acquisition stop, existing negative results, July exclusion and August seal.
 
 日本語　1月のETagとサイズは登録値に一致した。既存パーサーが形式を拒否し、LFを除く112バイトの行を41,316行と記録した。2月以降の取得前に停止し、8月の封印を維持した。
 
