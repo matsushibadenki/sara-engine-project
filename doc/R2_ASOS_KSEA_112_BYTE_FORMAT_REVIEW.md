@@ -29,3 +29,11 @@ A primary TD6405 curation study shows three populated coefficient/code pairs for
 日本語　NOAAの運用ガイドと公開研究の形式例を追加確認した。旧仕様ミラーの本文は確認できず、KSEAの112バイト配置と第一センサー欠測時の欄を裏付ける証拠は未確認。別版パーサーは保留する。
 
 简体中文　补查了NOAA操作指南和公开研究中的格式示例。旧版规范正文无法核实，KSEA的112字节布局及第一传感器缺测时的字段位置仍缺乏证据，暂缓新版解析器。
+
+## NOAA archive appraisal and independent candidate priority
+
+🟢 [Done] Reviewed NCEI's 2022 archive appraisal, questions 3 and 10–14. It identifies dial-in acquisition, DSI-6405 and uncompressed ASCII, and indicates documentation can be supplied on request. It contains no byte map or first-missing/second-valid example. The older NCAR `nph-get/353.001/td6405.pdf` route returned an HTML portal, and the NCEI legacy document-library and metadata-directory probes returned HTTP 404. FAA's March 2025 archive comparison confirms that the high-resolution archive retains raw extinction and that METAR uses a derived 10-minute harmonic mean. It supplies neither the 112-byte layout nor a rule for absent sensor slots. [NCEI archive appraisal](https://www.ncei.noaa.gov/archive/atrac/export/2022-01-13T14-11-44.pdf?id=65639) · [NCAR legacy route](https://data.eol.ucar.edu/dataset/nph-get/353.001/td6405.pdf) · [FAA archive comparison, pp. 8–9](https://data.ntsb.gov/Docket/Document/docBLOB?FileExtension=pdf&FileName=WX_DCA25MA108_Attachment_1_redacted-Rel.pdf&ID=18843279)
+
+⭕️ [Pending] Both format prerequisites remain unmet. The 112-byte decoder stays on hold, with no new parser registration, synthetic decoder or KSEA acquisition.
+
+🟠 [Next] Prioritize the [KNMI Schiphol independent-source screen](ROADMAP_NEXT_READINESS.md#knmi-schiphol-independent-visibility-candidate).

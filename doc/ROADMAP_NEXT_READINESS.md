@@ -375,3 +375,15 @@ The local runner tests cover its conditional refresh, observation summaries and 
 日本語：REFIT は別の遅延結果課題の候補です。取得前にCC BY 4.0 と圧縮サイズを確認済みで、世帯別の同期・観測範囲は未確認です。HTTPS 試験は独立運用者・接続先・審査済み信頼情報の確定待ちです。
 
 简体中文：REFIT 是另一项延迟结果任务的候选来源。已确认 CC BY 4.0 和压缩大小，仍需核实各家庭的时间同步和观测覆盖。HTTPS 试点仍需独立运营方、端点和经审核的信任材料。
+
+## KNMI Schiphol independent visibility candidate
+
+🟠 [Next] Prioritize station **240, Schiphol Airport**, from the Dutch KNMI hourly archive. KNMI collects these in-situ observations in a separate network from NOAA ASOS. The public archive lists an ASCII package for this station under 2021–2030, and the public selection service exposes a named `VV` horizontal visibility field and station 240. These establish a candidate inventory and field identity. They do not establish coverage for every date in the directory label. [KNMI hourly archive](https://www.knmi.nl/nederland-nu/klimatologie/uurgegevens) · [Station and variable list](https://www.daggegevens.knmi.nl/klimatologie/uurgegevens)
+
+KNMI documents `VV` as visibility over the preceding ten minutes at the observation time, published hourly. Code `0` represents visibility below 100 m and must count as an observed value. KNMI describes adjustment and completion of missing values during validation of its hourly archive. Before acquisition, verify whether the chosen release exposes original missingness and provenance for corrected or filled values, or whether a separate documented product is needed. An hourly future observation can put its full ten-minute window after prediction. The time convention, availability, lag, threshold, current key and history must be fixed for a separate hypothesis, preserving existing controls and evidence thresholds. [Hourly field definitions](https://dataplatform.knmi.nl/dataset/docs/hourly-in-situ-meteorological-observations-1-0) · [KNMI visibility technical report](https://cdn.knmi.nl/knmi/pdf/bibliotheek/knmipubTR/TR298.pdf)
+
+⭕️ [Pending] Confirm station-specific coverage and dated retrieval that keeps the future test split out of the acquired payload. Register a bounded development-only acquisition and require 180 eligible days, exact current-state recurrence, contrasting histories and both classes with sufficient support before scoring. If the provenance is insufficient, hold this release instead of treating filled or absent entries as outcomes. No observation payload was acquired. KSEA's V2 result, July exclusion and August seal, and all prior negative results and task conditions remain in force.
+
+日本語　KSEAの形式根拠が不足したため、視程欄が明示されたKNMIのSchiphol 240を独立候補として優先。実測と補完の区別、180日の有効観測、履歴・両クラスの支持は確認待ち。
+
+简体中文　KSEA格式证据不足，优先核查明确提供能见度字段的KNMI Schiphol 240。原始观测与补值的区分、180天有效覆盖及历史与双类别支持仍待确认。
