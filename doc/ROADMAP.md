@@ -74,9 +74,13 @@ Adapt Fan et al.'s paired edit evaluation to a bounded copy of SARA's local rout
 
 Compare targeted edits with a no-edit reference and a seeded control that changes the same number of local fields by comparable magnitudes. Fix the evaluation protocol before proposing edits and use paired inputs and delayed outcomes. Check target recovery and unrelated-route retention, including rare histories. Record withdrawals and regressions. Candidate selection uses development evidence, with sealed evaluation subject to the existing gates.
 
-日本語：局所状態の複製に対する編集を対応比較し、故障からの回復と正常状態の改善を別々に検証する。
+🔴 [Later] Use evolution strategies as a design reference for a seed-reproducible, CPU-only search over a fixed set of branch-local fields on isolated snapshots. Register the allowed write set, seed and generator version, candidate count, perturbation scale, delayed-outcome horizon and stop rule before evaluation. Replay the same development receipts and settled outcomes from the same snapshot for each candidate. Restore from the original snapshot between trials and verify the restored state, since applying inverse floating-point edits is insufficient for exact recovery. Compare with the unchanged snapshot, a budget-matched control that evaluates the same proposals and selects one at random and an event-driven scalar with the same search opportunity. Keep actual changed local writes matched in comparisons that allow learning. Record candidate replay, temporary state, writes and delayed delivery work separately. [Qiu et al., arXiv v3, §3.2 and Appendix A.8](https://arxiv.org/html/2509.24372v3)
 
-简体中文：在局部状态副本上配对比较编辑效果，分别验证故障恢复与完好状态的改进。
+The paper evaluates population search with global response-level rewards on GPU-based LLMs. SARA's end-to-end cost and spike-specific effect require separate evidence. This candidate evaluates offline local edits and preserves the existing online credit assignment, independent-task and causal gates, negative findings and test seals. Any experiment requires separate preregistration after those gates.
+
+日本語：局所状態の複製に対する編集を対応比較し、故障からの回復と正常状態の改善を別々に検証する。固定した枝の局所状態を対象に、乱数シードで再現できるオフライン探索を将来候補に追加する。
+
+简体中文：在局部状态副本上配对比较编辑效果，分别验证故障恢复与完好状态的改进。将可用随机种子重现的分支局部状态离线搜索列为后续候选。
 
 ### Reconstruct local arithmetic from a written specification
 
