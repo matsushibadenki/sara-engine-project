@@ -51,3 +51,39 @@ def test_dashboard_with_live_process_and_alerts(tmp_path, monkeypatch):
     alerts = render_page("/alerts", "en", current)
     assert 'class="">0</dd>' in alerts
     assert 'class="warn">1</dd>' in alerts
+
+
+def test_status_collection_failure_returns_recoverable_pages(monkeypatch, caplog):
+    from io import BytesIO
+
+    from bot import dashboard
+
+    def failed_status(verbose=False):
+        raise OSError("private failure details")
+
+    def get(path):
+        handler = dashboard.Handler.__new__(dashboard.Handler)
+        handler.rfile = BytesIO(f"GET {path} HTTP/1.0\r\n\r\n".encode())
+        handler.wfile = BytesIO()
+        handler.handle_one_request()
+        headers, _, body = handler.wfile.getvalue().partition(b"\r\n\r\n")
+        return int(headers.split()[1]), body.decode()
+
+    monkeypatch.setattr(dashboard, "build_status", failed_status)
+    for path in dashboard.PAGES:
+        code, html = get(path + "?lang=ja")
+        assert code == 503
+        assert 'lang="ja"' in html
+        assert "状態を取得できません" in html
+        assert '<div id="panel"></div>' in html
+        assert "private failure details" not in html
+    code, body = get("/api/status")
+    assert code == 503
+    assert json.loads(body) == {"error": "status_unavailable"}
+    assert "Autobot status collection failed" in caplog.text
+
+    monkeypatch.setattr(dashboard, "build_status", lambda verbose=False: {"process": {"running": True}})
+    code, html = get("/")
+    assert code == 200
+    assert "Running</dd>" in html
+    assert json.loads(get("/api/status")[1]) == {"process": {"running": True}}

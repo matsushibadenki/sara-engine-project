@@ -10,19 +10,19 @@ _LABELS = {
         ("Overview", "Queue", "Alerts", "Diagnostics"),
         ("Process", "Last metrics update", "Pending", "New samples", "Failed items",
          "Dead letters", "Recent critical alerts", "Window (minutes)", "Control actions",
-         "Running", "Stopped", "Unavailable", "Refresh", "Language", "Refresh failed", "No metrics received", "Metrics could not be read"),
+         "Running", "Stopped", "Unavailable", "Refresh", "Language", "Refresh failed. Showing the last available status.", "No metrics received", "Metrics could not be read", "Status unavailable. Retrying automatically."),
     ),
     "ja": (
         ("概要", "キュー", "アラート", "診断"),
         ("プロセス", "メトリクス更新時刻", "処理待ち", "新規サンプル", "失敗件数",
          "デッドレター", "直近の重大アラート", "集計期間（分）", "制御アクション",
-         "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました", "メトリクス未取得", "メトリクスを読み取れません"),
+         "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました。直前の状態を表示しています。", "メトリクス未取得", "メトリクスを読み取れません", "状態を取得できません。自動で再試行します。"),
     ),
     "zh-CN": (
         ("概览", "队列", "告警", "诊断"),
         ("进程", "指标更新时间", "待处理", "新增样本", "失败数",
          "死信", "近期严重告警", "统计窗口（分钟）", "控制操作",
-         "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败", "尚无指标", "无法读取指标"),
+         "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败。正在显示上次可用的状态。", "尚无指标", "无法读取指标", "无法获取状态。将自动重试。"),
     ),
 }
 _LANG_NAMES = {"en": "English", "ja": "日本語", "zh-CN": "简体中文"}
@@ -58,6 +58,8 @@ def render_page(path, lang, status):
     page = PAGES[path]
     lang = lang if lang in _LABELS else "en"
     names, labels = _LABELS[lang]
+    unavailable = status is None
+    status = {} if unavailable else status
     process = status.get("process", {})
     metrics_source = status.get("metrics", {})
     metrics = metrics_source.get("data") or {}
@@ -103,6 +105,9 @@ def render_page(path, lang, status):
             notice = f'<p class="bad">{labels[16]}</p>'
         content = f"{notice}<dl>{cards}</dl>"
 
+    if unavailable:
+        content = ""
+
     navigation = "".join(
         f'<a href="{route}?lang={lang}" {"aria-current=page" if route == path else ""}>'
         f'{names[index]}</a>' for route, index in PAGES.items()
@@ -132,7 +137,8 @@ def render_page(path, lang, status):
   <h1>{names[page]}</h1>
   <form><input type="hidden" name="lang" value="{lang}">
     <button type="submit">{labels[12]}</button></form>
-  <p id="error" role="status" hidden>{labels[14]}</p>
+  <p id="error" role="status" data-stale="{labels[14]}" data-unavailable="{labels[17]}"
+     {"" if unavailable else "hidden"}>{labels[17] if unavailable else labels[14]}</p>
   <div id="panel">{content}</div>
 </main>
 </div>
@@ -149,6 +155,7 @@ async function refresh() {{
     if (panel.innerHTML !== next.innerHTML) panel.replaceChildren(...next.childNodes);
     error.hidden = true;
   }} catch (failure) {{
+    error.textContent = panel.childElementCount ? error.dataset.stale : error.dataset.unavailable;
     error.hidden = false;
     console.error(failure);
   }} finally {{

@@ -26,6 +26,7 @@ Build a fully autonomous, CPU-first multimodal learning bot that continuously co
 - Backlog Item (Plugin Collectors): `implemented` (drop-in collector loader under `bot/collectors_plugins`)
 - 🟢 [Done] Local dashboard pages for Overview, Queue, Alerts and Diagnostics, with English, Japanese and Simplified Chinese navigation and live status. [Page implementation](dashboard_pages.py)
 - 🟢 [Done] Verify the four pages through the real status reader using isolated PID, metrics and log fixtures. Missing metrics and logs are explicit, empty logs show zero, and unreadable status and positive alert counts are visible. Chrome checks covered desktop and narrow layouts, polling failure and recovery. [Regression tests](../tests/test_autobot_dashboard.py)
+- 🟢 [Done] Keep the four dashboard routes navigable during status collection failures. An initial failure shows a localized retry message without values, and polling failures retain the last good panel with an explicit stale-status message. The status API returns HTTP 503 with a stable error code. [Dashboard recovery regression](../tests/test_autobot_dashboard.py)
 - Backlog Item (Multi-bot Sharding): `implemented` (hash-based shard ownership with `shard_id`/`total_shards`)
 - Backlog Item (Benchmark Suite): `implemented` (`bot/benchmark_suite.py`, `bot/benchmark_cases.json`, `bot/benchmark.sh`)
 

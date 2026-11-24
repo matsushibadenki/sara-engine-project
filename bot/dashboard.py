@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,18 +15,21 @@ from bot.dashboard_pages import PAGES, render_page
 from bot.status import build_status
 PID_PATH = os.path.join(ROOT, "workspace", "autobot", "dashboard.pid")
 
+
+
 class Handler(BaseHTTPRequestHandler):
-    def _write_json(self, payload: dict) -> None:
+    def _write_json(self, payload: dict, status_code: int = 200) -> None:
         raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        self.send_response(200)
+        self.send_response(status_code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
         self.wfile.write(raw)
 
-    def _write_html(self, html: str) -> None:
+    def _write_html(self, html: str, status_code: int = 200) -> None:
         raw = html.encode("utf-8")
-        self.send_response(200)
+        self.send_response(status_code)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(raw)))
@@ -38,15 +42,25 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         url = urlparse(self.path)
         path = "/" if url.path == "/index.html" else url.path
+        if path != "/api/status" and path not in PAGES:
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        try:
+            status = build_status(verbose=False)
+        except Exception:
+            logging.getLogger(__name__).exception("Autobot status collection failed")
+            status = None
+
+        status_code = 503 if status is None else 200
         if path == "/api/status":
-            self._write_json(build_status(verbose=False))
-            return
-        if path in PAGES:
+            payload = {"error": "status_unavailable"} if status is None else status
+            self._write_json(payload, status_code)
+        else:
             lang = parse_qs(url.query).get("lang", ["en"])[0]
-            self._write_html(render_page(path, lang, build_status(verbose=False)))
-            return
-        self.send_response(404)
-        self.end_headers()
+            self._write_html(render_page(path, lang, status), status_code)
+
 
 
 def main() -> int:
