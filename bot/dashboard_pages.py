@@ -145,9 +145,17 @@ def render_page(path, lang, status):
 <script>
 const panel = document.querySelector('#panel');
 const error = document.querySelector('#error');
+const form = document.querySelector('main form');
+let scheduled;
+let refreshing = false;
 async function refresh() {{
+  if (refreshing) return;
+  clearTimeout(scheduled);
+  refreshing = true;
+  const controller = new AbortController();
+  const deadline = setTimeout(() => controller.abort(), 5000);
   try {{
-    const response = await fetch(location.href, {{cache: 'no-store'}});
+    const response = await fetch(location.href, {{cache: 'no-store', signal: controller.signal}});
     if (!response.ok) throw Error('Dashboard request failed');
     const page = new DOMParser().parseFromString(await response.text(), 'text/html');
     const next = page.querySelector('#panel');
@@ -159,10 +167,16 @@ async function refresh() {{
     error.hidden = false;
     console.error(failure);
   }} finally {{
-    setTimeout(refresh, 3000);
+    clearTimeout(deadline);
+    refreshing = false;
+    scheduled = setTimeout(refresh, 3000);
   }}
 }}
-setTimeout(refresh, 3000);
+form.addEventListener('submit', event => {{
+  event.preventDefault();
+  refresh();
+}});
+scheduled = setTimeout(refresh, 3000);
 </script>
 </body>
 </html>
