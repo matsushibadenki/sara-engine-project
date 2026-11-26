@@ -193,7 +193,16 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert "稼働中</dd>" in _page("/")
         check_window("fallback", 20, 1)
         check_metrics(False, "pid_mismatch")
+        old_snapshot = json.loads(metrics.read_text())
+        old_snapshot["producer_pid"] = second.pid
+        metrics.write_text(json.dumps(old_snapshot))
+        check_metrics(False, "launch_id_mismatch")
+        live = status.build_status()["process"]
+        assert live["launch_id"] != old_snapshot["producer_launch_id"]
+        active = _page("/diagnostics").split('id="active-producer"', 1)[1].split("</section>", 1)[0]
+        assert f'<dd class="">{second.pid}</dd>' in active
+        assert f'<dd class="">{live["launch_id"]}</dd>' in active
         second_gate.touch()
-        _wait_for(second, metrics_pid, second.pid)
+        _wait_for(second, lambda: status.build_status()["metrics"]["current"], True)
         check_window("runtime", 45, 2)
         check_metrics(True)

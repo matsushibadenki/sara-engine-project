@@ -13,7 +13,8 @@ _LABELS = {
          "Running", "Stopped", "Unavailable", "Refresh", "Language", "Refresh failed. Showing the last available status.", "No metrics received", "Metrics could not be read", "Status unavailable. Retrying automatically.",
          "Fallback window. Runtime setting unavailable.",
          "Previous metrics are available in Diagnostics. Waiting for current metrics.",
-         "Current metrics", "Previous metrics (diagnostics only)", "Producer PID", "Launch ID"),
+         "Current metrics", "Previous metrics (diagnostics only)", "Producer PID", "Launch ID",
+         "Active Autobot", "Stored metrics", "PID"),
     ),
     "ja": (
         ("概要", "キュー", "アラート", "診断"),
@@ -22,7 +23,7 @@ _LABELS = {
          "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました。直前の状態を表示しています。", "メトリクス未取得", "メトリクスを読み取れません", "状態を取得できません。自動で再試行します。",
          "実行時設定が取得できないため、代替の集計期間を使用しています。",
          "前回のメトリクスは診断で確認できます。現在のメトリクスを待っています。",
-         "現行メトリクス", "前回のメトリクス（診断用）", "発行PID", "起動ID"),
+         "現行メトリクス", "前回のメトリクス（診断用）", "発行PID", "起動ID", "稼働中のAutobot", "保存済みメトリクス", "PID"),
     ),
     "zh-CN": (
         ("概览", "队列", "告警", "诊断"),
@@ -31,7 +32,7 @@ _LABELS = {
          "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败。正在显示上次可用的状态。", "尚无指标", "无法读取指标", "无法获取状态。将自动重试。",
          "无法获取运行时设置，正在使用备用统计窗口。",
          "可在诊断中查看旧指标。正在等待当前指标。",
-         "当前指标", "上次指标（仅供诊断）", "发布进程 PID", "启动 ID"),
+         "当前指标", "上次指标（仅供诊断）", "发布进程 PID", "启动 ID", "运行中的 Autobot", "已保存指标", "PID"),
     ),
 }
 _LANG_NAMES = {"en": "English", "ja": "日本語", "zh-CN": "简体中文"}
@@ -76,6 +77,9 @@ form { margin-bottom: 14px; }
 h1 { font-size: clamp(1.65rem, 4vw, 2.4rem); margin: 26px 0 16px; }
 dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 12px; margin: 0; }
 dl > div, pre { min-width: 0; border: 1px solid #34424f; border-radius: 10px; background: #18232e; padding: 16px; }
+.producer-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.producer-compare section { min-width: 0; }
+.producer-compare dl { grid-template-columns: 1fr; }
 dt { color: #bac8d4; }
 dd { margin: 6px 0 0; font-size: 1.2rem; font-weight: 650; overflow-wrap: anywhere; }
 .ok { color: #9aebcd; }.warn { color: #ffd085; }.bad { color: #ffaaa5; }
@@ -142,7 +146,14 @@ def render_page(path, lang, status):
         fields = card(22, stored.get("producer_pid"))
         fields += card(23, stored.get("producer_launch_id"))
         fields += card(1, stored.get("ts"))
-        content = f'<h2 class="{tone}">{label}</h2>{explanation}<dl>{fields}</dl><pre>{raw}</pre>'
+        live = card(26, process.get("pid") if running else None)
+        live += card(23, process.get("launch_id") if running else None)
+        content = (
+            f'<h2 class="{tone}">{label}</h2>{explanation}<div class="producer-compare">'
+            f'<section id="active-producer"><h3>{labels[24]}</h3><dl>{live}</dl></section>'
+            f'<section id="stored-producer"><h3>{labels[25]}</h3><dl>{fields}</dl></section>'
+            f'</div><pre>{raw}</pre>'
+        )
     else:
         notice = ""
         if page in (0, 1) and metrics_error == "not_found":

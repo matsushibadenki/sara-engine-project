@@ -103,6 +103,7 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
                 proc["running"] = launch_id is not None
         except Exception:
             proc["running"] = False
+    proc["launch_id"] = launch_id
     data["process"] = proc
 
     files = {
