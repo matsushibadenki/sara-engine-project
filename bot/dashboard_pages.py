@@ -11,21 +11,24 @@ _LABELS = {
         ("Process", "Last metrics update", "Pending", "New samples", "Failed items",
          "Dead letters", "Recent critical alerts", "Window (minutes)", "Control actions",
          "Running", "Stopped", "Unavailable", "Refresh", "Language", "Refresh failed. Showing the last available status.", "No metrics received", "Metrics could not be read", "Status unavailable. Retrying automatically.",
-         "Fallback window. Runtime setting unavailable."),
+         "Fallback window. Runtime setting unavailable.",
+         "Previous metrics are available in Diagnostics. Waiting for current metrics."),
     ),
     "ja": (
         ("概要", "キュー", "アラート", "診断"),
         ("プロセス", "メトリクス更新時刻", "処理待ち", "新規サンプル", "失敗件数",
          "デッドレター", "直近の重大アラート", "集計期間（分）", "制御アクション",
          "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました。直前の状態を表示しています。", "メトリクス未取得", "メトリクスを読み取れません", "状態を取得できません。自動で再試行します。",
-         "実行時設定が取得できないため、代替の集計期間を使用しています。"),
+         "実行時設定が取得できないため、代替の集計期間を使用しています。",
+         "前回のメトリクスは診断で確認できます。現在のメトリクスを待っています。"),
     ),
     "zh-CN": (
         ("概览", "队列", "告警", "诊断"),
         ("进程", "指标更新时间", "待处理", "新增样本", "失败数",
          "死信", "近期严重告警", "统计窗口（分钟）", "控制操作",
          "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败。正在显示上次可用的状态。", "尚无指标", "无法读取指标", "无法获取状态。将自动重试。",
-         "无法获取运行时设置，正在使用备用统计窗口。"),
+         "无法获取运行时设置，正在使用备用统计窗口。",
+         "可在诊断中查看旧指标。正在等待当前指标。"),
     ),
 }
 _LANG_NAMES = {"en": "English", "ja": "日本語", "zh-CN": "简体中文"}
@@ -65,7 +68,8 @@ def render_page(path, lang, status):
     status = {} if unavailable else status
     process = status.get("process", {})
     metrics_source = status.get("metrics", {})
-    metrics = metrics_source.get("data") or {}
+    metrics_current = metrics_source.get("current") is True
+    metrics = (metrics_source.get("data") or {}) if metrics_current else {}
     metrics_error = metrics_source.get("error")
     logs = status.get("logs", {})
     running = process.get("running")
@@ -106,6 +110,8 @@ def render_page(path, lang, status):
             notice = f'<p>{labels[15]}</p>'
         elif page in (0, 1) and metrics_error:
             notice = f'<p class="bad">{labels[16]}</p>'
+        elif page in (0, 1) and not metrics_current and metrics_source.get("data") is not None:
+            notice = f"<p>{labels[19]}</p>"
         elif page == 2 and logs.get("critical_alert_window_source") == "fallback":
             notice = f"<p>{labels[18]}</p>"
         content = f"{notice}<dl>{cards}</dl>"

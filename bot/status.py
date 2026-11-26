@@ -126,10 +126,14 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
     events = os.path.join(ROOT, "workspace", "autobot", "events.jsonl")
 
     metrics = data["metrics"]["data"] or {}
+    metrics_current = (
+        launch_id is not None
+        and metrics.get("producer_pid") == proc["pid"]
+        and metrics.get("producer_launch_id") == launch_id
+    )
+    data["metrics"]["current"] = metrics_current
     runtime_window = metrics.get("critical_alert_window_minutes")
-    if (proc["running"] and metrics.get("producer_pid") == proc["pid"]
-            and type(runtime_window) is int and runtime_window > 0
-            and metrics.get("producer_launch_id") == launch_id):
+    if metrics_current and type(runtime_window) is int and runtime_window > 0:
         cfg_window = runtime_window
         window_source = "runtime"
     else:

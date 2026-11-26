@@ -127,6 +127,19 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert f'集計期間（分）</dt><dd class="">{minutes}</dd>' in page
         assert f'直近の重大アラート</dt><dd class="warn">{count}</dd>' in page
 
+    def check_metrics(current):
+        source = status.build_status()["metrics"]
+        assert source["current"] is current
+        timestamp = source["data"]["ts"]
+        overview = _page("/")
+        queue = _page("/queue")
+        assert (timestamp in overview) is current
+        if not current:
+            assert 'メトリクス更新時刻</dt><dd class="">取得不可' in overview
+        assert queue.count("取得不可</dd>") == (0 if current else 4)
+        assert ("前回のメトリクス" in queue) == (not current)
+        assert timestamp in _page("/diagnostics")
+
     first_gate = data / "first-metrics"
     with _autobot(tmp_path, 90, first_gate, force_stop=force_stop) as first:
         _wait_for(first, lambda: status.build_status()["process"]["pid"], first.pid)
@@ -136,6 +149,7 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         first_gate.touch()
         _wait_for(first, metrics_pid, first.pid)
         check_window("runtime", 90, 3)
+        check_metrics(True)
         if force_stop:
             pre_stop_metrics = metrics.read_bytes()
 
@@ -145,6 +159,7 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert prior_metrics == pre_stop_metrics
         assert status.build_status()["process"]["running"] is False
     check_window("fallback", 20, 1)
+    check_metrics(False)
 
     if force_stop:
         # Model PID reuse with a live unrelated process and matching old PID fields.
@@ -157,6 +172,7 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
                 assert status.build_status()["process"]["running"] is False
                 assert "停止中</dd>" in _page("/")
                 check_window("fallback", 20, 1)
+                check_metrics(False)
                 prior_metrics = metrics.read_bytes()
             finally:
                 unrelated.terminate()
@@ -169,6 +185,8 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert metrics.read_bytes() == prior_metrics
         assert "稼働中</dd>" in _page("/")
         check_window("fallback", 20, 1)
+        check_metrics(False)
         second_gate.touch()
         _wait_for(second, metrics_pid, second.pid)
         check_window("runtime", 45, 2)
+        check_metrics(True)

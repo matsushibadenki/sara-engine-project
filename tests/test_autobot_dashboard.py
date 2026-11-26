@@ -33,10 +33,6 @@ def test_dashboard_with_live_process_and_alerts(tmp_path, monkeypatch):
     data = tmp_path / "workspace" / "autobot"
     data.mkdir(parents=True)
     (data / "bot.pid").write_text(str(os.getpid()))
-    (data / "metrics.json").write_text(json.dumps({
-        "ts": "2026-11-23T00:00:00", "queue_pending": 0, "new_samples": 3,
-        "failed_item_count": 2, "control_actions": ["<paused>"],
-    }))
     (data / "dead_letter.jsonl").write_text("")
     now = datetime.now(timezone.utc)
     (data / "alerts.log").write_text(
@@ -44,7 +40,12 @@ def test_dashboard_with_live_process_and_alerts(tmp_path, monkeypatch):
         f"ALERT ts={(now - timedelta(hours=1)).isoformat()} severity=CRITICAL kind=old\n"
     )
 
-    with producer_lease(str(data / LEASE_FILENAME)):
+    with producer_lease(str(data / LEASE_FILENAME)) as launch_id:
+        (data / "metrics.json").write_text(json.dumps({
+            "producer_pid": os.getpid(), "producer_launch_id": launch_id,
+            "ts": "2026-11-23T00:00:00", "queue_pending": 0, "new_samples": 3,
+            "failed_item_count": 2, "control_actions": ["<paused>"],
+        }))
         current = status.build_status()
     assert "Running</dd>" in render_page("/", "en", current)
     queue = render_page("/queue", "en", current)
