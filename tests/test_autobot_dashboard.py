@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from bot import status
 from bot.dashboard_pages import render_page
+from bot.process_lease import LEASE_FILENAME, producer_lease
 
 
 def test_dashboard_with_missing_and_damaged_status(tmp_path, monkeypatch):
@@ -43,7 +44,8 @@ def test_dashboard_with_live_process_and_alerts(tmp_path, monkeypatch):
         f"ALERT ts={(now - timedelta(hours=1)).isoformat()} severity=CRITICAL kind=old\n"
     )
 
-    current = status.build_status()
+    with producer_lease(str(data / LEASE_FILENAME)):
+        current = status.build_status()
     assert "Running</dd>" in render_page("/", "en", current)
     queue = render_page("/queue", "en", current)
     assert 'class="">0</dd>' in queue
@@ -108,9 +110,7 @@ def test_alert_window_uses_only_live_producer_metrics(tmp_path, monkeypatch):
     bot.state = SimpleNamespace(visited_urls=set(), processed_files=set(), modality_counts={})
     bot.alert_suppressed_total = 0
     bot.metrics_path = str(metrics)
-    from bot.process_lease import producer_lease
-
-    with producer_lease(str(data / "metrics-producer.lock")) as launch_id:
+    with producer_lease(str(data / LEASE_FILENAME)) as launch_id:
         bot._producer_launch_id = launch_id
         bot._write_metrics({})
         live = status.build_status()

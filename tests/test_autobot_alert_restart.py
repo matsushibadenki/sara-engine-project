@@ -90,9 +90,9 @@ def _wait_for(process, read, expected):
     raise AssertionError(f"Autobot did not publish expected value {expected!r}")
 
 
-def _alert_page():
+def _page(path):
     handler = dashboard.Handler.__new__(dashboard.Handler)
-    handler.rfile = BytesIO(b"GET /alerts?lang=ja HTTP/1.0\r\n\r\n")
+    handler.rfile = BytesIO(f"GET {path}?lang=ja HTTP/1.0\r\n\r\n".encode())
     handler.wfile = BytesIO()
     handler.handle_one_request()
     headers, _, body = handler.wfile.getvalue().partition(b"\r\n\r\n")
@@ -122,7 +122,7 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert logs["critical_alert_window_source"] == source
         assert logs["critical_alert_window_minutes"] == minutes
         assert logs["critical_alerts_recent"] == count
-        page = _alert_page()
+        page = _page("/alerts")
         assert ("代替の集計期間" in page) == (source == "fallback")
         assert f'集計期間（分）</dt><dd class="">{minutes}</dd>' in page
         assert f'直近の重大アラート</dt><dd class="warn">{count}</dd>' in page
@@ -131,6 +131,7 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
     with _autobot(tmp_path, 90, first_gate, force_stop=force_stop) as first:
         _wait_for(first, lambda: status.build_status()["process"]["pid"], first.pid)
         assert not metrics.exists()
+        assert "稼働中</dd>" in _page("/")
         check_window("fallback", 20, 1)
         first_gate.touch()
         _wait_for(first, metrics_pid, first.pid)
@@ -153,7 +154,8 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
                 reused_metrics["producer_pid"] = unrelated.pid
                 metrics.write_text(json.dumps(reused_metrics))
                 pid_file.write_text(str(unrelated.pid))
-                assert status.build_status()["process"]["running"] is True
+                assert status.build_status()["process"]["running"] is False
+                assert "停止中</dd>" in _page("/")
                 check_window("fallback", 20, 1)
                 prior_metrics = metrics.read_bytes()
             finally:
@@ -165,6 +167,7 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         _wait_for(second, lambda: status.build_status()["process"]["pid"], second.pid)
         assert pid_file.read_text() == str(second.pid)
         assert metrics.read_bytes() == prior_metrics
+        assert "稼働中</dd>" in _page("/")
         check_window("fallback", 20, 1)
         second_gate.touch()
         _wait_for(second, metrics_pid, second.pid)

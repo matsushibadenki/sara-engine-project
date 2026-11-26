@@ -9,9 +9,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 if __package__:
-    from bot.process_lease import LEASE_FILENAME, matches_live_producer
+    from bot.process_lease import LEASE_FILENAME, live_launch_id
 else:
-    from process_lease import LEASE_FILENAME, matches_live_producer
+    from process_lease import LEASE_FILENAME, live_launch_id
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -89,6 +89,8 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
     data: dict[str, Any] = {}
 
     pid_path = os.path.join(ROOT, "workspace", "autobot", "bot.pid")
+    lease = os.path.join(ROOT, "workspace", "autobot", LEASE_FILENAME)
+    launch_id = None
     proc = {"pid_file": os.path.exists(pid_path), "running": False, "pid": None}
     if os.path.exists(pid_path):
         try:
@@ -97,7 +99,8 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
             proc["pid"] = pid
             if pid > 0:
                 os.kill(pid, 0)
-                proc["running"] = True
+                launch_id = live_launch_id(lease, pid)
+                proc["running"] = launch_id is not None
         except Exception:
             proc["running"] = False
     data["process"] = proc
@@ -124,10 +127,9 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
 
     metrics = data["metrics"]["data"] or {}
     runtime_window = metrics.get("critical_alert_window_minutes")
-    lease = os.path.join(ROOT, "workspace", "autobot", LEASE_FILENAME)
     if (proc["running"] and metrics.get("producer_pid") == proc["pid"]
             and type(runtime_window) is int and runtime_window > 0
-            and matches_live_producer(lease, metrics.get("producer_launch_id"))):
+            and metrics.get("producer_launch_id") == launch_id):
         cfg_window = runtime_window
         window_source = "runtime"
     else:

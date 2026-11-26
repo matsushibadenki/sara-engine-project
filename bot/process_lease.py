@@ -18,7 +18,7 @@ def producer_lease(path: str):
         temporary_path = lease.name
         try:
             flock(lease, LOCK_EX)
-            lease.write(token)
+            lease.write(f"{os.getpid()} {token}")
             lease.flush()
             os.replace(temporary_path, path)
             temporary_path = None
@@ -28,15 +28,16 @@ def producer_lease(path: str):
                 os.unlink(temporary_path)
 
 
-def matches_live_producer(path: str, token: object) -> bool:
-    if not isinstance(token, str) or not token:
-        return False
+def live_launch_id(path: str, pid: int) -> str | None:
+    """Read the launch ID only from an active lease belonging to the given PID."""
     try:
         with open(path, encoding="ascii") as lease:
             try:
                 flock(lease, LOCK_SH | LOCK_NB)
             except BlockingIOError:
-                return lease.read(33) == token
+                owner, separator, token = lease.read(64).partition(" ")
+                if owner == str(pid) and separator and len(token) == 32:
+                    return token
     except (OSError, UnicodeError):
-        return False
-    return False
+        pass
+    return None
