@@ -125,13 +125,20 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
     dead = os.path.join(ROOT, "workspace", "autobot", "dead_letter.jsonl")
     events = os.path.join(ROOT, "workspace", "autobot", "events.jsonl")
 
-    metrics = data["metrics"]["data"] or {}
-    metrics_current = (
-        launch_id is not None
-        and metrics.get("producer_pid") == proc["pid"]
-        and metrics.get("producer_launch_id") == launch_id
-    )
-    data["metrics"]["current"] = metrics_current
+    metrics_source = data["metrics"]
+    metrics = metrics_source["data"] or {}
+    if metrics_source["data"] is None:
+        reason = "missing" if metrics_source["error"] == "not_found" else "unreadable"
+    elif launch_id is None:
+        reason = "no_live_producer"
+    elif metrics.get("producer_pid") != proc["pid"]:
+        reason = "pid_mismatch"
+    elif metrics.get("producer_launch_id") != launch_id:
+        reason = "launch_id_mismatch"
+    else:
+        reason = "verified_live_producer"
+    metrics_current = reason == "verified_live_producer"
+    metrics_source.update(current=metrics_current, reason=reason)
     runtime_window = metrics.get("critical_alert_window_minutes")
     if metrics_current and type(runtime_window) is int and runtime_window > 0:
         cfg_window = runtime_window

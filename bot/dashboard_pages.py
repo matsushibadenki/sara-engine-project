@@ -13,7 +13,7 @@ _LABELS = {
          "Running", "Stopped", "Unavailable", "Refresh", "Language", "Refresh failed. Showing the last available status.", "No metrics received", "Metrics could not be read", "Status unavailable. Retrying automatically.",
          "Fallback window. Runtime setting unavailable.",
          "Previous metrics are available in Diagnostics. Waiting for current metrics.",
-         "Current metrics", "Previous metrics (diagnostics only)"),
+         "Current metrics", "Previous metrics (diagnostics only)", "Producer PID", "Launch ID"),
     ),
     "ja": (
         ("概要", "キュー", "アラート", "診断"),
@@ -22,7 +22,7 @@ _LABELS = {
          "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました。直前の状態を表示しています。", "メトリクス未取得", "メトリクスを読み取れません", "状態を取得できません。自動で再試行します。",
          "実行時設定が取得できないため、代替の集計期間を使用しています。",
          "前回のメトリクスは診断で確認できます。現在のメトリクスを待っています。",
-         "現行メトリクス", "前回のメトリクス（診断用）"),
+         "現行メトリクス", "前回のメトリクス（診断用）", "発行PID", "起動ID"),
     ),
     "zh-CN": (
         ("概览", "队列", "告警", "诊断"),
@@ -31,10 +31,31 @@ _LABELS = {
          "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败。正在显示上次可用的状态。", "尚无指标", "无法读取指标", "无法获取状态。将自动重试。",
          "无法获取运行时设置，正在使用备用统计窗口。",
          "可在诊断中查看旧指标。正在等待当前指标。",
-         "当前指标", "上次指标（仅供诊断）"),
+         "当前指标", "上次指标（仅供诊断）", "发布进程 PID", "启动 ID"),
     ),
 }
 _LANG_NAMES = {"en": "English", "ja": "日本語", "zh-CN": "简体中文"}
+
+_METRICS_REASONS = {
+    "en": {
+        "no_live_producer": "No active Autobot launch matches the PID file.",
+        "pid_mismatch": "The producer PID differs from the active Autobot PID.",
+        "launch_id_mismatch": "The stored launch ID differs from the active Autobot launch ID.",
+        "verified_live_producer": "The producer PID and launch ID match the active Autobot lock.",
+    },
+    "ja": {
+        "no_live_producer": "PIDファイルに対応する稼働中の起動ロックを確認できません。",
+        "pid_mismatch": "発行PIDが稼働中のAutobotのPIDと一致しません。",
+        "launch_id_mismatch": "保存された起動IDが稼働中のAutobotの起動IDと一致しません。",
+        "verified_live_producer": "発行PIDと起動IDが稼働中の起動ロックと一致しています。",
+    },
+    "zh-CN": {
+        "no_live_producer": "未找到与 PID 文件匹配的运行中 Autobot 锁。",
+        "pid_mismatch": "发布进程 PID 与运行中的 Autobot PID 不一致。",
+        "launch_id_mismatch": "保存的启动 ID 与运行中的 Autobot 启动 ID 不一致。",
+        "verified_live_producer": "发布进程 PID 和启动 ID 均与运行中的 Autobot 锁匹配。",
+    },
+}
 
 _STYLE = """
 :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10151c; color: #eff5fa; }
@@ -115,7 +136,13 @@ def render_page(path, lang, status):
         else:
             label, tone = labels[15], ""
         raw = escape(json.dumps(status, ensure_ascii=False, indent=2))
-        content = f'<h2 class="{tone}">{label}</h2><pre>{raw}</pre>'
+        stored = metrics_source.get("data") or {}
+        reason = _METRICS_REASONS[lang].get(metrics_source.get("reason"))
+        explanation = f'<p id="metrics-reason">{reason}</p>' if reason else ""
+        fields = card(22, stored.get("producer_pid"))
+        fields += card(23, stored.get("producer_launch_id"))
+        fields += card(1, stored.get("ts"))
+        content = f'<h2 class="{tone}">{label}</h2>{explanation}<dl>{fields}</dl><pre>{raw}</pre>'
     else:
         notice = ""
         if page in (0, 1) and metrics_error == "not_found":

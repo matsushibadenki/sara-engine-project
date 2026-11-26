@@ -121,7 +121,10 @@ def test_alert_window_uses_only_live_producer_metrics(tmp_path, monkeypatch):
         stale = json.loads(metrics.read_text())
         stale["producer_launch_id"] = "previous-launch"
         metrics.write_text(json.dumps(stale))
-        assert status.build_status()["logs"]["critical_alert_window_source"] == "fallback"
+        unmatched = status.build_status()
+        assert unmatched["logs"]["critical_alert_window_source"] == "fallback"
+        assert unmatched["metrics"]["reason"] == "launch_id_mismatch"
+        assert "stored launch ID differs" in render_page("/diagnostics", "en", unmatched)
 
     assert live["logs"]["critical_alert_window_minutes"] == 45
     assert live["logs"]["critical_alerts_recent"] == 1

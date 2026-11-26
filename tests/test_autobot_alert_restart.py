@@ -127,9 +127,10 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert f'集計期間（分）</dt><dd class="">{minutes}</dd>' in page
         assert f'直近の重大アラート</dt><dd class="warn">{count}</dd>' in page
 
-    def check_metrics(current):
+    def check_metrics(current, reason="no_live_producer"):
         source = status.build_status()["metrics"]
         assert source["current"] is current
+        assert source["reason"] == ("verified_live_producer" if current else reason)
         timestamp = source["data"]["ts"]
         overview = _page("/")
         queue = _page("/queue")
@@ -139,7 +140,10 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert queue.count("取得不可</dd>") == (0 if current else 4)
         assert ("前回のメトリクス" in queue) == (not current)
         diagnostics = _page("/diagnostics")
-        assert timestamp in diagnostics
+        assert f'<dd class="">{timestamp}</dd>' in diagnostics
+        assert f'<dt>発行PID</dt><dd class="">{source["data"]["producer_pid"]}</dd>' in diagnostics
+        assert f'<dt>起動ID</dt><dd class="">{source["data"]["producer_launch_id"]}</dd>' in diagnostics
+        assert 'id="metrics-reason"' in diagnostics
         label = "現行メトリクス" if current else "前回のメトリクス（診断用）"
         assert f">{label}</h2>" in diagnostics
 
@@ -188,7 +192,7 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert metrics.read_bytes() == prior_metrics
         assert "稼働中</dd>" in _page("/")
         check_window("fallback", 20, 1)
-        check_metrics(False)
+        check_metrics(False, "pid_mismatch")
         second_gate.touch()
         _wait_for(second, metrics_pid, second.pid)
         check_window("runtime", 45, 2)
