@@ -1,12 +1,15 @@
 """Exercise alert status through two isolated Autobot processes."""
 
 import json
+import signal
 import subprocess
 import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from io import BytesIO
+
+import pytest
 
 from bot import dashboard, status
 
@@ -58,7 +61,7 @@ bot.run()
 
 
 @contextmanager
-def _autobot(root, minutes, gate):
+def _autobot(root, minutes, gate, *, force_stop=False):
     with subprocess.Popen(
         [sys.executable, "-B", "-u", "-c", _LAUNCH, str(root), str(minutes), str(gate)],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -67,14 +70,15 @@ def _autobot(root, minutes, gate):
             yield process
         finally:
             if process.poll() is None:
-                process.terminate()
+                process.send_signal(signal.SIGKILL if force_stop else signal.SIGTERM)
             try:
                 output, _ = process.communicate(timeout=10)
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.communicate()
                 raise
-            assert process.returncode == 0, output
+            expected = -signal.SIGKILL if force_stop else 0
+            assert process.returncode == expected, output
 
 
 def _wait_for(process, read, expected):
@@ -96,7 +100,8 @@ def _alert_page():
     return body.decode()
 
 
-def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch):
+@pytest.mark.parametrize("force_stop", [False, True], ids=["graceful", "sigkill"])
+def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch, force_stop):
     monkeypatch.setattr(status, "ROOT", str(tmp_path))
     data = tmp_path / "workspace" / "autobot"
     data.mkdir(parents=True)
@@ -123,15 +128,21 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch)
         assert f'直近の重大アラート</dt><dd class="warn">{count}</dd>' in page
 
     first_gate = data / "first-metrics"
-    with _autobot(tmp_path, 90, first_gate) as first:
+    with _autobot(tmp_path, 90, first_gate, force_stop=force_stop) as first:
         _wait_for(first, lambda: status.build_status()["process"]["pid"], first.pid)
         assert not metrics.exists()
         check_window("fallback", 20, 1)
         first_gate.touch()
         _wait_for(first, metrics_pid, first.pid)
         check_window("runtime", 90, 3)
+        if force_stop:
+            pre_stop_metrics = metrics.read_bytes()
 
     prior_metrics = metrics.read_bytes()
+    if force_stop:
+        assert pid_file.read_text() == str(first.pid)
+        assert prior_metrics == pre_stop_metrics
+        assert status.build_status()["process"]["running"] is False
     check_window("fallback", 20, 1)
 
     second_gate = data / "second-metrics"
