@@ -117,13 +117,17 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
     dead = os.path.join(ROOT, "workspace", "autobot", "dead_letter.jsonl")
     events = os.path.join(ROOT, "workspace", "autobot", "events.jsonl")
 
-    cfg_window = 20
-    cfg_data = data.get("config", {}).get("data") if isinstance(data.get("config"), dict) else None
-    if isinstance(cfg_data, dict):
-        try:
-            cfg_window = int(cfg_data.get("critical_alert_window_minutes", 20) or 20)
-        except Exception:
-            cfg_window = 20
+    metrics = data["metrics"]["data"] or {}
+    runtime_window = metrics.get("critical_alert_window_minutes")
+    if (proc["running"] and metrics.get("producer_pid") == proc["pid"]
+            and type(runtime_window) is int and runtime_window > 0):
+        cfg_window = runtime_window
+        window_source = "runtime"
+    else:
+        cfg = data["config"]["data"] or {}
+        fallback = cfg.get("critical_alert_window_minutes")
+        cfg_window = fallback if type(fallback) is int and fallback > 0 else 20
+        window_source = "fallback"
 
     data["logs"] = {
         "alerts_exists": os.path.exists(alerts),
@@ -132,6 +136,7 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
         "dead_letter_lines": _count_lines(dead),
         "critical_alerts_recent": _critical_alerts_recent(alerts, cfg_window),
         "critical_alert_window_minutes": cfg_window,
+        "critical_alert_window_source": window_source,
     }
 
     if verbose:

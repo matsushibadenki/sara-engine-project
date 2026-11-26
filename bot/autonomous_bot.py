@@ -719,6 +719,8 @@ class AutonomousLearningBot:
 
     def _write_metrics(self, snapshot: dict[str, object]) -> None:
         metrics = {
+            "producer_pid": os.getpid(),
+            "critical_alert_window_minutes": int(self.config.critical_alert_window_minutes),
             "ts": datetime.utcnow().isoformat(),
             "hot_processed": int(snapshot.get("hot_processed", 0)),
             "web_processed": int(snapshot.get("web_processed", 0)),

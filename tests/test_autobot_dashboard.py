@@ -1,5 +1,6 @@
 import json
 import os
+from types import SimpleNamespace
 from datetime import datetime, timedelta, timezone
 
 from bot import status
@@ -87,3 +88,44 @@ def test_status_collection_failure_returns_recoverable_pages(monkeypatch, caplog
     assert code == 200
     assert "Running</dd>" in html
     assert json.loads(get("/api/status")[1]) == {"process": {"running": True}}
+
+
+def test_alert_window_uses_only_live_producer_metrics(tmp_path, monkeypatch):
+    from bot.autonomous_bot import AutonomousLearningBot
+
+    monkeypatch.setattr(status, "ROOT", str(tmp_path))
+    data = tmp_path / "workspace" / "autobot"
+    data.mkdir(parents=True)
+    (data / "bot.pid").write_text(str(os.getpid()))
+    (data / "alerts.log").write_text(
+        f"ALERT ts={(datetime.utcnow() - timedelta(minutes=30)).isoformat()} severity=CRITICAL\n"
+    )
+    metrics = data / "metrics.json"
+
+    bot = AutonomousLearningBot.__new__(AutonomousLearningBot)
+    bot.config = SimpleNamespace(critical_alert_window_minutes=45)
+    bot.policy = SimpleNamespace(max_pages_per_cycle=1)
+    bot.state = SimpleNamespace(visited_urls=set(), processed_files=set(), modality_counts={})
+    bot.alert_suppressed_total = 0
+    bot.metrics_path = str(metrics)
+    bot._write_metrics({})
+    live = status.build_status()
+    assert live["logs"]["critical_alert_window_minutes"] == 45
+    assert live["logs"]["critical_alerts_recent"] == 1
+    assert live["logs"]["critical_alert_window_source"] == "runtime"
+    assert "Fallback window." not in render_page("/alerts", "en", live)
+
+    for producer, window, pid, expected, source, count in [
+        (os.getpid() + 1, 45, os.getpid(), 20, "fallback", 0),
+        (os.getpid(), 45, 0, 20, "fallback", 0),
+        (os.getpid(), -1, os.getpid(), 20, "fallback", 0),
+    ]:
+        (data / "bot.pid").write_text(str(pid))
+        metrics.write_text(json.dumps({
+            "producer_pid": producer, "critical_alert_window_minutes": window,
+        }))
+        snapshot = status.build_status()
+        assert snapshot["logs"]["critical_alert_window_minutes"] == expected
+        assert snapshot["logs"]["critical_alert_window_source"] == source
+        assert snapshot["logs"]["critical_alerts_recent"] == count
+        assert ("Fallback window." in render_page("/alerts", "en", snapshot)) == (source == "fallback")
