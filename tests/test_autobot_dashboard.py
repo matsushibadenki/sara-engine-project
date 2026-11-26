@@ -108,8 +108,17 @@ def test_alert_window_uses_only_live_producer_metrics(tmp_path, monkeypatch):
     bot.state = SimpleNamespace(visited_urls=set(), processed_files=set(), modality_counts={})
     bot.alert_suppressed_total = 0
     bot.metrics_path = str(metrics)
-    bot._write_metrics({})
-    live = status.build_status()
+    from bot.process_lease import producer_lease
+
+    with producer_lease(str(data / "metrics-producer.lock")) as launch_id:
+        bot._producer_launch_id = launch_id
+        bot._write_metrics({})
+        live = status.build_status()
+        stale = json.loads(metrics.read_text())
+        stale["producer_launch_id"] = "previous-launch"
+        metrics.write_text(json.dumps(stale))
+        assert status.build_status()["logs"]["critical_alert_window_source"] == "fallback"
+
     assert live["logs"]["critical_alert_window_minutes"] == 45
     assert live["logs"]["critical_alerts_recent"] == 1
     assert live["logs"]["critical_alert_window_source"] == "runtime"

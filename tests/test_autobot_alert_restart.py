@@ -145,6 +145,20 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert status.build_status()["process"]["running"] is False
     check_window("fallback", 20, 1)
 
+    if force_stop:
+        # Model PID reuse with a live unrelated process and matching old PID fields.
+        with subprocess.Popen([sys.executable, "-B", "-c", "import time; time.sleep(30)"]) as unrelated:
+            try:
+                reused_metrics = json.loads(prior_metrics)
+                reused_metrics["producer_pid"] = unrelated.pid
+                metrics.write_text(json.dumps(reused_metrics))
+                pid_file.write_text(str(unrelated.pid))
+                assert status.build_status()["process"]["running"] is True
+                check_window("fallback", 20, 1)
+                prior_metrics = metrics.read_bytes()
+            finally:
+                unrelated.terminate()
+
     second_gate = data / "second-metrics"
     with _autobot(tmp_path, 45, second_gate) as second:
         assert second.pid != first.pid

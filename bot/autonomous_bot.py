@@ -30,6 +30,7 @@ from bot.evaluation_gate import EvaluationGate
 from bot.compliance import SourceCompliance
 from bot.event_log import EventLogger
 from bot.io_utils import atomic_write_json
+from bot.process_lease import LEASE_FILENAME, producer_lease
 from bot.model_registry import ModelRegistry
 from bot.planner import CapabilityGapSignal, CollectionPlanner
 from bot.policy import CrawlPolicy
@@ -720,6 +721,7 @@ class AutonomousLearningBot:
     def _write_metrics(self, snapshot: dict[str, object]) -> None:
         metrics = {
             "producer_pid": os.getpid(),
+            "producer_launch_id": getattr(self, "_producer_launch_id", None),
             "critical_alert_window_minutes": int(self.config.critical_alert_window_minutes),
             "ts": datetime.utcnow().isoformat(),
             "hot_processed": int(snapshot.get("hot_processed", 0)),
@@ -1401,6 +1403,12 @@ class AutonomousLearningBot:
         self.last_train_ts = now
 
     def run(self) -> None:
+        lease_path = os.path.join(os.path.dirname(self.metrics_path), LEASE_FILENAME)
+        with producer_lease(lease_path) as launch_id:
+            self._producer_launch_id = launch_id
+            self._run()
+
+    def _run(self) -> None:
         with open(self.pid_path, "w", encoding="utf-8") as f:
             f.write(str(os.getpid()))
 
