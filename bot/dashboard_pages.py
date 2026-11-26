@@ -14,7 +14,8 @@ _LABELS = {
          "Fallback window. Runtime setting unavailable.",
          "Previous metrics are available in Diagnostics. Waiting for current metrics.",
          "Current metrics", "Previous metrics (diagnostics only)", "Producer PID", "Launch ID",
-         "Active Autobot", "Stored metrics", "PID"),
+         "Active Autobot", "Stored metrics", "PID",
+         "PID comparison", "Launch ID comparison", "Match", "Mismatch", "Cannot compare"),
     ),
     "ja": (
         ("概要", "キュー", "アラート", "診断"),
@@ -23,7 +24,8 @@ _LABELS = {
          "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました。直前の状態を表示しています。", "メトリクス未取得", "メトリクスを読み取れません", "状態を取得できません。自動で再試行します。",
          "実行時設定が取得できないため、代替の集計期間を使用しています。",
          "前回のメトリクスは診断で確認できます。現在のメトリクスを待っています。",
-         "現行メトリクス", "前回のメトリクス（診断用）", "発行PID", "起動ID", "稼働中のAutobot", "保存済みメトリクス", "PID"),
+         "現行メトリクス", "前回のメトリクス（診断用）", "発行PID", "起動ID", "稼働中のAutobot", "保存済みメトリクス", "PID",
+         "PIDの照合", "起動IDの照合", "一致", "不一致", "照合不可"),
     ),
     "zh-CN": (
         ("概览", "队列", "告警", "诊断"),
@@ -32,7 +34,8 @@ _LABELS = {
          "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败。正在显示上次可用的状态。", "尚无指标", "无法读取指标", "无法获取状态。将自动重试。",
          "无法获取运行时设置，正在使用备用统计窗口。",
          "可在诊断中查看旧指标。正在等待当前指标。",
-         "当前指标", "上次指标（仅供诊断）", "发布进程 PID", "启动 ID", "运行中的 Autobot", "已保存指标", "PID"),
+         "当前指标", "上次指标（仅供诊断）", "发布进程 PID", "启动 ID", "运行中的 Autobot", "已保存指标", "PID",
+         "PID 比对", "启动 ID 比对", "一致", "不一致", "无法比对"),
     ),
 }
 _LANG_NAMES = {"en": "English", "ja": "日本語", "zh-CN": "简体中文"}
@@ -146,10 +149,22 @@ def render_page(path, lang, status):
         fields = card(22, stored.get("producer_pid"))
         fields += card(23, stored.get("producer_launch_id"))
         fields += card(1, stored.get("ts"))
-        live = card(26, process.get("pid") if running else None)
-        live += card(23, process.get("launch_id") if running else None)
+        active_pid = process.get("pid") if running else None
+        active_id = process.get("launch_id") if running else None
+        live = card(26, active_pid) + card(23, active_id)
+
+        def comparison(index, active, saved):
+            if active is None or not saved or type(active) is not type(saved):
+                return card(index, labels[31])
+            if active == saved:
+                return card(index, labels[29], "ok")
+            return card(index, labels[30], "warn")
+
+        checks = comparison(27, active_pid, stored.get("producer_pid"))
+        checks += comparison(28, active_id, stored.get("producer_launch_id"))
         content = (
-            f'<h2 class="{tone}">{label}</h2>{explanation}<div class="producer-compare">'
+            f'<h2 class="{tone}">{label}</h2>{explanation}<dl id="identity-checks">{checks}</dl>'
+            '<div class="producer-compare">'
             f'<section id="active-producer"><h3>{labels[24]}</h3><dl>{live}</dl></section>'
             f'<section id="stored-producer"><h3>{labels[25]}</h3><dl>{fields}</dl></section>'
             f'</div><pre>{raw}</pre>'

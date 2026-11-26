@@ -146,6 +146,14 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert 'id="metrics-reason"' in diagnostics
         label = "現行メトリクス" if current else "前回のメトリクス（診断用）"
         assert f">{label}</h2>" in diagnostics
+        checks = diagnostics.split('id="identity-checks"', 1)[1].split("</dl>", 1)[0]
+        if current:
+            assert checks.count(">一致</dd>") == 2
+        elif reason == "launch_id_mismatch":
+            assert '<dt>PIDの照合</dt><dd class="ok">一致</dd>' in checks
+            assert '<dt>起動IDの照合</dt><dd class="warn">不一致</dd>' in checks
+        elif reason == "no_live_producer":
+            assert checks.count(">照合不可</dd>") == 2
 
     first_gate = data / "first-metrics"
     with _autobot(tmp_path, 90, first_gate, force_stop=force_stop) as first:
