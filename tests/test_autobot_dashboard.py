@@ -18,13 +18,16 @@ def test_dashboard_with_missing_and_damaged_status(tmp_path, monkeypatch):
     overview = render_page("/", "en", missing)
     assert "Stopped</dd>" in overview
     assert "No metrics received</p>" in overview
+    assert "No metrics received</h2>" in render_page("/diagnostics", "en", missing)
     assert render_page("/alerts", "en", missing).count("Unavailable</dd>") == 2
 
     (data / "metrics.json").write_text("{")
     (data / "alerts.log").mkdir()
     damaged = status.build_status()
     assert "Metrics could not be read</p>" in render_page("/queue", "en", damaged)
-    assert "parse_error" in render_page("/diagnostics", "en", damaged)
+    diagnostics = render_page("/diagnostics", "en", damaged)
+    assert "Metrics could not be read</h2>" in diagnostics
+    assert "parse_error" in diagnostics
     assert damaged["logs"]["critical_alerts_recent"] is None
 
 

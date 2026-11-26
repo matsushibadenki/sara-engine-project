@@ -12,7 +12,8 @@ _LABELS = {
          "Dead letters", "Recent critical alerts", "Window (minutes)", "Control actions",
          "Running", "Stopped", "Unavailable", "Refresh", "Language", "Refresh failed. Showing the last available status.", "No metrics received", "Metrics could not be read", "Status unavailable. Retrying automatically.",
          "Fallback window. Runtime setting unavailable.",
-         "Previous metrics are available in Diagnostics. Waiting for current metrics."),
+         "Previous metrics are available in Diagnostics. Waiting for current metrics.",
+         "Current metrics", "Previous metrics (diagnostics only)"),
     ),
     "ja": (
         ("概要", "キュー", "アラート", "診断"),
@@ -20,7 +21,8 @@ _LABELS = {
          "デッドレター", "直近の重大アラート", "集計期間（分）", "制御アクション",
          "稼働中", "停止中", "取得不可", "更新", "言語", "更新に失敗しました。直前の状態を表示しています。", "メトリクス未取得", "メトリクスを読み取れません", "状態を取得できません。自動で再試行します。",
          "実行時設定が取得できないため、代替の集計期間を使用しています。",
-         "前回のメトリクスは診断で確認できます。現在のメトリクスを待っています。"),
+         "前回のメトリクスは診断で確認できます。現在のメトリクスを待っています。",
+         "現行メトリクス", "前回のメトリクス（診断用）"),
     ),
     "zh-CN": (
         ("概览", "队列", "告警", "诊断"),
@@ -28,7 +30,8 @@ _LABELS = {
          "死信", "近期严重告警", "统计窗口（分钟）", "控制操作",
          "运行中", "已停止", "不可用", "刷新", "语言", "刷新失败。正在显示上次可用的状态。", "尚无指标", "无法读取指标", "无法获取状态。将自动重试。",
          "无法获取运行时设置，正在使用备用统计窗口。",
-         "可在诊断中查看旧指标。正在等待当前指标。"),
+         "可在诊断中查看旧指标。正在等待当前指标。",
+         "当前指标", "上次指标（仅供诊断）"),
     ),
 }
 _LANG_NAMES = {"en": "English", "ja": "日本語", "zh-CN": "简体中文"}
@@ -103,7 +106,16 @@ def render_page(path, lang, status):
         cards += card(7, logs.get("critical_alert_window_minutes"))
 
     if page == 3:
-        content = f'<pre>{escape(json.dumps(status, ensure_ascii=False, indent=2))}</pre>'
+        if metrics_current:
+            label, tone = labels[20], "ok"
+        elif metrics_source.get("data") is not None:
+            label, tone = labels[21], "warn"
+        elif metrics_error and metrics_error != "not_found":
+            label, tone = labels[16], "bad"
+        else:
+            label, tone = labels[15], ""
+        raw = escape(json.dumps(status, ensure_ascii=False, indent=2))
+        content = f'<h2 class="{tone}">{label}</h2><pre>{raw}</pre>'
     else:
         notice = ""
         if page in (0, 1) and metrics_error == "not_found":

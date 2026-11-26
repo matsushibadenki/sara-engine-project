@@ -138,7 +138,10 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
             assert 'メトリクス更新時刻</dt><dd class="">取得不可' in overview
         assert queue.count("取得不可</dd>") == (0 if current else 4)
         assert ("前回のメトリクス" in queue) == (not current)
-        assert timestamp in _page("/diagnostics")
+        diagnostics = _page("/diagnostics")
+        assert timestamp in diagnostics
+        label = "現行メトリクス" if current else "前回のメトリクス（診断用）"
+        assert f">{label}</h2>" in diagnostics
 
     first_gate = data / "first-metrics"
     with _autobot(tmp_path, 90, first_gate, force_stop=force_stop) as first:
