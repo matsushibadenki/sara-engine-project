@@ -9,9 +9,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 if __package__:
-    from bot.process_lease import LEASE_FILENAME, live_launch_id
+    from bot.process_lease import LEASE_FILENAME, live_launch_id, valid_launch_id, valid_pid
 else:
-    from process_lease import LEASE_FILENAME, live_launch_id
+    from process_lease import LEASE_FILENAME, live_launch_id, valid_launch_id, valid_pid
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -132,8 +132,10 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
         reason = "missing" if metrics_source["error"] == "not_found" else "unreadable"
     elif launch_id is None:
         reason = "no_live_producer"
-    elif not metrics.get("producer_pid") or not metrics.get("producer_launch_id"):
+    elif metrics.get("producer_pid") in (None, "") or metrics.get("producer_launch_id") in (None, ""):
         reason = "identity_missing"
+    elif not valid_pid(metrics.get("producer_pid")) or not valid_launch_id(metrics.get("producer_launch_id")):
+        reason = "identity_invalid"
     elif metrics.get("producer_pid") != proc["pid"]:
         reason = "pid_mismatch"
     elif metrics.get("producer_launch_id") != launch_id:

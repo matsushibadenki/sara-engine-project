@@ -9,6 +9,14 @@ from uuid import uuid4
 LEASE_FILENAME = "metrics-producer.lock"
 
 
+def valid_pid(value: object) -> bool:
+    return type(value) is int and value > 0
+
+
+def valid_launch_id(value: object) -> bool:
+    return type(value) is str and len(value) == 32 and all(c in "0123456789abcdef" for c in value)
+
+
 @contextmanager
 def producer_lease(path: str):
     """Publish a new locked inode so readers never see a locked old token."""
@@ -36,7 +44,7 @@ def live_launch_id(path: str, pid: int) -> str | None:
                 flock(lease, LOCK_SH | LOCK_NB)
             except BlockingIOError:
                 owner, separator, token = lease.read(64).partition(" ")
-                if owner == str(pid) and separator and len(token) == 32:
+                if owner == str(pid) and separator and valid_launch_id(token):
                     return token
     except (OSError, UnicodeError):
         pass

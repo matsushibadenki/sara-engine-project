@@ -3,6 +3,8 @@
 import json
 from html import escape
 
+from bot.process_lease import valid_launch_id, valid_pid
+
 PAGES = {"/": 0, "/queue": 1, "/alerts": 2, "/diagnostics": 3}
 
 _LABELS = {
@@ -44,6 +46,7 @@ _METRICS_REASONS = {
     "en": {
         "no_live_producer": "No active Autobot launch matches the PID file.",
         "identity_missing": "The saved metrics are missing a producer PID or launch ID.",
+        "identity_invalid": "The saved producer PID or launch ID has an invalid format.",
         "pid_mismatch": "The producer PID differs from the active Autobot PID.",
         "launch_id_mismatch": "The stored launch ID differs from the active Autobot launch ID.",
         "verified_live_producer": "The producer PID and launch ID match the active Autobot lock.",
@@ -51,6 +54,7 @@ _METRICS_REASONS = {
     "ja": {
         "no_live_producer": "PIDファイルに対応する稼働中の起動ロックを確認できません。",
         "identity_missing": "保存済みメトリクスに発行PIDまたは起動IDがありません。",
+        "identity_invalid": "保存済みメトリクスの発行PIDまたは起動IDの形式が不正です。",
         "pid_mismatch": "発行PIDが稼働中のAutobotのPIDと一致しません。",
         "launch_id_mismatch": "保存された起動IDが稼働中のAutobotの起動IDと一致しません。",
         "verified_live_producer": "発行PIDと起動IDが稼働中の起動ロックと一致しています。",
@@ -58,6 +62,7 @@ _METRICS_REASONS = {
     "zh-CN": {
         "no_live_producer": "未找到与 PID 文件匹配的运行中 Autobot 锁。",
         "identity_missing": "已保存指标缺少发布进程 PID 或启动 ID。",
+        "identity_invalid": "已保存指标的发布进程 PID 或启动 ID 格式无效。",
         "pid_mismatch": "发布进程 PID 与运行中的 Autobot PID 不一致。",
         "launch_id_mismatch": "保存的启动 ID 与运行中的 Autobot 启动 ID 不一致。",
         "verified_live_producer": "发布进程 PID 和启动 ID 均与运行中的 Autobot 锁匹配。",
@@ -156,15 +161,15 @@ def render_page(path, lang, status):
         active_id = process.get("launch_id") if running else None
         live = card(26, active_pid) + card(23, active_id)
 
-        def comparison(index, active, saved):
-            if active is None or not saved or type(active) is not type(saved):
+        def comparison(index, active, saved, validate):
+            if active is None or not validate(saved):
                 return card(index, labels[31])
             if active == saved:
                 return card(index, labels[29], "ok")
             return card(index, labels[30], "warn")
 
-        checks = comparison(27, active_pid, stored.get("producer_pid"))
-        checks += comparison(28, active_id, stored.get("producer_launch_id"))
+        checks = comparison(27, active_pid, stored.get("producer_pid"), valid_pid)
+        checks += comparison(28, active_id, stored.get("producer_launch_id"), valid_launch_id)
         content = (
             f'<h2 class="{tone}">{label}</h2>{explanation}<dl id="identity-checks">{checks}</dl>'
             '<div class="producer-compare">'

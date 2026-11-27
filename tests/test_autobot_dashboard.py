@@ -119,7 +119,7 @@ def test_alert_window_uses_only_live_producer_metrics(tmp_path, monkeypatch):
         bot._write_metrics({})
         live = status.build_status()
         stale = json.loads(metrics.read_text())
-        stale["producer_launch_id"] = "previous-launch"
+        stale["producer_launch_id"] = "0" * 32
         metrics.write_text(json.dumps(stale))
         unmatched = status.build_status()
         assert unmatched["logs"]["critical_alert_window_source"] == "fallback"

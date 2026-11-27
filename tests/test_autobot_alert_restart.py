@@ -212,6 +212,10 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         assert f'<dd class="">{live["launch_id"]}</dd>' in active
         matching = dict(old_snapshot, producer_launch_id=live["launch_id"])
         cases = [
+            (dict(matching, producer_pid=float(second.pid)), "identity_invalid", "照合不可", "一致"),
+            (dict(matching, producer_pid=str(second.pid)), "identity_invalid", "照合不可", "一致"),
+            (dict(matching, producer_pid=True), "identity_invalid", "照合不可", "一致"),
+            (dict(matching, producer_launch_id="bad-token"), "identity_invalid", "一致", "照合不可"),
             (dict(matching, producer_pid=first.pid), "pid_mismatch", "不一致", "一致"),
             ({k: v for k, v in matching.items() if k != "producer_pid"},
              "identity_missing", "照合不可", "一致"),
