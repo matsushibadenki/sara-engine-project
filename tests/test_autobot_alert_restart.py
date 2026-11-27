@@ -210,6 +210,28 @@ def test_alert_window_switches_after_real_autobot_restart(tmp_path, monkeypatch,
         active = _page("/diagnostics").split('id="active-producer"', 1)[1].split("</section>", 1)[0]
         assert f'<dd class="">{second.pid}</dd>' in active
         assert f'<dd class="">{live["launch_id"]}</dd>' in active
+        matching = dict(old_snapshot, producer_launch_id=live["launch_id"])
+        cases = [
+            (dict(matching, producer_pid=first.pid), "pid_mismatch", "不一致", "一致"),
+            ({k: v for k, v in matching.items() if k != "producer_pid"},
+             "identity_missing", "照合不可", "一致"),
+            ({k: v for k, v in matching.items() if k != "producer_launch_id"},
+             "identity_missing", "一致", "照合不可"),
+            ({k: v for k, v in matching.items() if k not in ("producer_pid", "producer_launch_id")},
+             "identity_missing", "照合不可", "照合不可"),
+        ]
+        for snapshot, reason, pid_result, launch_result in cases:
+            metrics.write_text(json.dumps(snapshot))
+            verdict = status.build_status()["metrics"]
+            assert verdict["current"] is False
+            assert verdict["reason"] == reason
+            diagnostics = _page("/diagnostics")
+            checks = diagnostics.split('id="identity-checks"', 1)[1].split("</dl>", 1)[0]
+            assert '<dt>PIDの照合</dt><dd class="' in checks
+            assert f'>{pid_result}</dd>' in checks.split("起動IDの照合", 1)[0]
+            assert f'>{launch_result}</dd>' in checks.split("起動IDの照合", 1)[1]
+            assert ">前回のメトリクス（診断用）</h2>" in diagnostics
+
         second_gate.touch()
         _wait_for(second, lambda: status.build_status()["metrics"]["current"], True)
         check_window("runtime", 45, 2)

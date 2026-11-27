@@ -43,18 +43,21 @@ _LANG_NAMES = {"en": "English", "ja": "日本語", "zh-CN": "简体中文"}
 _METRICS_REASONS = {
     "en": {
         "no_live_producer": "No active Autobot launch matches the PID file.",
+        "identity_missing": "The saved metrics are missing a producer PID or launch ID.",
         "pid_mismatch": "The producer PID differs from the active Autobot PID.",
         "launch_id_mismatch": "The stored launch ID differs from the active Autobot launch ID.",
         "verified_live_producer": "The producer PID and launch ID match the active Autobot lock.",
     },
     "ja": {
         "no_live_producer": "PIDファイルに対応する稼働中の起動ロックを確認できません。",
+        "identity_missing": "保存済みメトリクスに発行PIDまたは起動IDがありません。",
         "pid_mismatch": "発行PIDが稼働中のAutobotのPIDと一致しません。",
         "launch_id_mismatch": "保存された起動IDが稼働中のAutobotの起動IDと一致しません。",
         "verified_live_producer": "発行PIDと起動IDが稼働中の起動ロックと一致しています。",
     },
     "zh-CN": {
         "no_live_producer": "未找到与 PID 文件匹配的运行中 Autobot 锁。",
+        "identity_missing": "已保存指标缺少发布进程 PID 或启动 ID。",
         "pid_mismatch": "发布进程 PID 与运行中的 Autobot PID 不一致。",
         "launch_id_mismatch": "保存的启动 ID 与运行中的 Autobot 启动 ID 不一致。",
         "verified_live_producer": "发布进程 PID 和启动 ID 均与运行中的 Autobot 锁匹配。",

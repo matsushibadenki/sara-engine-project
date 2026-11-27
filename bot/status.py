@@ -132,6 +132,8 @@ def build_status(verbose: bool = False) -> dict[str, Any]:
         reason = "missing" if metrics_source["error"] == "not_found" else "unreadable"
     elif launch_id is None:
         reason = "no_live_producer"
+    elif not metrics.get("producer_pid") or not metrics.get("producer_launch_id"):
+        reason = "identity_missing"
     elif metrics.get("producer_pid") != proc["pid"]:
         reason = "pid_mismatch"
     elif metrics.get("producer_launch_id") != launch_id:
