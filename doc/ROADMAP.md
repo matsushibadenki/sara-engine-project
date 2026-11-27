@@ -72,13 +72,17 @@ Treat error-based omission of local writes as a separate learning intervention. 
 
 ### Bounded inference escalation
 
+🔴 [Later] Jelinčič et al. use successive sparse, locally connected stages for denoising. Use staged local processing as a design reference for SARA's conditional readout. The paper's energy estimate is for specialized hardware on binarized Fashion-MNIST. [Jelinčič et al.](https://www.nature.com/articles/s44335-026-00075-3)
+
+Independent-task qualification remains the highest research priority. Evaluate escalation only after the independent-task and causal gates pass. Preserve the recorded negative results and test seals.
+
 Start with the existing current-state readout. Use development-only evidence of support and uncertainty to decide whether to consult the temporal readout. Escalate on unknown keys or insufficient support. Fix the policy and quality margins before evaluation. Inference routing leaves the receipt lifecycle and local write schedule intact.
 
-Compare always-current, always-temporal and conditional readouts, and give the event-driven scalar control the same routing opportunity. Check aggregate quality and the quality of predictions that stayed on the cheap path, including rare histories and delayed outcomes. Use the existing work-accounting contract to include routing, both readouts on fallback, shared event processing and memory. Report fallback frequency and tail latency alongside total work. Evaluate this policy separately from exact reuse before testing their combination.
+Compare always-current, always-temporal and conditional readouts, and apply the same support criteria, routing policy, input availability and readout budget to the event-driven scalar control. Check aggregate quality and the quality of predictions that stayed on the cheap path, including rare histories and delayed outcomes. Use the existing work-accounting contract to include routing, both readouts on fallback, shared event processing and memory. Report fallback frequency and tail latency alongside total work. Evaluate this policy separately from exact reuse before testing their combination.
 
-日本語：現在状態から読み出し、根拠が不足する場合に時間履歴を参照する段階推論を将来候補に追加。
+日本語：現在状態から読み出し、根拠が不足する場合に時間履歴を参照する段階推論の設計参考として採用。独立課題の成立確認を最優先とし、イベント駆動スカラー対照にも同じ判定・予算を適用する。負の結果とテスト封印を維持する。
 
-简体中文：将分级推理列为后续候选，先读取当前状态，证据不足时再读取时间历史。
+简体中文：将分级推理列为后续候选，先读取当前状态，证据不足时再读取时间历史。优先确认独立任务成立，对事件驱动标量对照使用相同判定规则和预算，保留负面结果及测试封存。
 
 ### Local constraint repair
 
