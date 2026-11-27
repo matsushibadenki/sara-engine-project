@@ -443,3 +443,20 @@ No observation files or response payloads were acquired. Existing eligibility an
 日本語　Schipholの公開資料からは2024年の指定期間の視程稼働日・欠測区間と値の由来を確定できず、取得を保留した。観測値の品質欄と原報の版が文書化された英国MIDAS Openを次候補とする。
 
 简体中文　公开资料不足以确认Schiphol指定期间的能见度运行日、缺测区间及数值来源，继续暂停获取。下一步优先核查具有字段级质控及原始版本说明的英国MIDAS Open。
+
+
+### Camborne hourly visibility metadata audit
+
+🟢 [Done] CEDA identifies Camborne as MIDAS source 1395 and WMO 03808. The station FAQ lists SYNOP reporting from 1978-09-01 onward. The pinned v202507 hourly collection ends on 2024-12-31. The station-specific v202507 inventory was inaccessible in this review. The published reporting dates establish station history, with the actual first and last hourly visibility records, valid days and gaps in that release still unresolved. [CEDA station FAQ](https://help.ceda.ac.uk/article/269-midas-faq) · [Pinned release](https://catalogue.ceda.ac.uk/uuid/99173f6a802147aeba430d96d2bb3099/)
+
+The hourly weather schema stores horizontal visibility in decametres. Its hour-ending timestamp describes archive placement. The Met Office documents human estimates, instrument-derived meteorological optical range and possible observer overrides. The reviewed documents supply no Camborne-specific visibility integration window or mapping from report time to the end of that window. An hourly report supplies no evidence by itself that the target measurement window starts after prediction. The release lists field-level quality and descriptor fields. CEDA's version 1 is the latest row, and version 0 stores the first received row when QC changes it. A first received report may itself contain an estimate. A complete Camborne mapping for instrument readings, estimates, corrections and the visibility missing marker remains unverified. Treat absent hours separately from unavailable visibility on a present row and keep both out of outcome labels. [Hourly schema](https://artefacts.ceda.ac.uk/badc_datadocs/ukmo-midas/WH_Table.html) · [Met Office visibility and record timing](https://artefacts.ceda.ac.uk/badc_datadocs/ukmo-midas/ukmo_guide.html) · [CEDA quality versions](https://help.ceda.ac.uk/article/4982-midas-open-user-guide)
+
+CEDA partitions station files by calendar year and QC version. An illustrative 2023 development year and 2024 holdout year could be physically isolated if both station files exist. A January–June 2024 download via the documented annual-file route would include the rest of 2024. A month-level selection service for MIDAS Open and the Camborne files needed for the annual split were unverified. [CEDA file partitioning](https://help.ceda.ac.uk/article/4982-midas-open-user-guide)
+
+For one station and one distinct hourly cutoff, allow at most one candidate per hour across all reporting streams and QC versions. Even with complete visibility and no history or outcome losses, the upper bounds are 4,320 for 180 calendar days, 4,368 for January–June 2024 and 8,760 for calendar 2023. The 2023/2024 two-year ceiling before any split is 17,544. Missing values, unsupported histories and an outcome beyond the development boundary can only reduce these counts. At 24 cutoffs per day the fixed 70,212-arrival target would need at least 2,926 calendar days even before those losses. This is a capacity comparison with the existing planning target. A separate hourly weather task would require its own preregistered delayed outcome and evidence of support under the existing gates.
+
+⭕️ [Pending] The annual split permits 180 days on the calendar. The reviewed material does not establish 180 eligible days, exact current-state recurrence, distinct histories or adequate support for both classes. The evaluated windows also fall short of the fixed arrival target. Keep Camborne acquisition on hold. No observation payload or sealed period was accessed. Existing conditions, negative results and test seals are preserved.
+
+日本語　CamborneのSYNOP報告履歴と年別ファイル方式を確認した。180暦日で最大4,320件、2023年全体で最大8,760件。既存の70,212件の目標には届かず、視程の測定窓・値の由来・有効日数と支持も未確定のため取得を保留する。
+
+简体中文　已确认Camborne的SYNOP报告历史和按年分档规则。180个日历日最多4,320条，2023年最多8,760条。低于既定的70,212条目标，且测量窗口、数值来源、有效天数和支持仍未确认，暂缓获取。
